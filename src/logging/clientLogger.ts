@@ -18,7 +18,7 @@ function createId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function sanitizeData(data: unknown): unknown {
+export function sanitizeData(data: unknown): unknown {
   if (!data || typeof data !== "object") {
     return data;
   }
@@ -48,7 +48,7 @@ export function createCorrelationId() {
   return createId();
 }
 
-function extractCorrelationId(data: unknown) {
+export function extractCorrelationId(data: unknown) {
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     return undefined;
   }
@@ -91,6 +91,10 @@ export function logClientEvent(
 export function clearClientLogs() {
   entries = [];
   emit();
+}
+
+export function getClientLogsSnapshot() {
+  return entries;
 }
 
 export function useClientLogs() {

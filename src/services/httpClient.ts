@@ -9,13 +9,13 @@ interface JsonRequestOptions {
   onMeta?: (meta: { correlationId: string; status: number; url: string }) => void;
 }
 
-function getNetworkErrorMessage(url: string, error: unknown) {
+export function getNetworkErrorMessage(url: string, error: unknown) {
   const message = error instanceof Error ? error.message : "Unknown network error";
 
   return `Unable to reach ${url}. ${message}. If you are on iPhone, confirm the device trusts the local certificate and can open the API URL in Safari.`;
 }
 
-function getDisplayErrorMessage(responseText: string, status: number) {
+export function getDisplayErrorMessage(responseText: string, status: number) {
   if (!responseText) {
     return `Request failed with status ${status}`;
   }

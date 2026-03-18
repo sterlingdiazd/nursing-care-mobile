@@ -6,7 +6,9 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -31,7 +33,8 @@
   "devDependencies": {
     "@types/react": "~19.1.0",
     "react-test-renderer": "19.1.0",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "vitest": "^1.6.1"
   },
   "private": true
 }

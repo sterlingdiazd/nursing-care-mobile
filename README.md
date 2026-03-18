@@ -65,18 +65,32 @@ Then choose:
 - `npm run ios` - Start Expo and open iOS
 - `npm run android` - Start Expo and open Android
 - `npm run web` - Start Expo for web
+- `npm test` - Run the mobile Vitest suite
+- `npm run typecheck` - Run TypeScript checks
 
 ## API Configuration
 
 API base URL is defined in:
 
 - `src/config/api.ts`
+- `.env.local` for local overrides
+- `.env.example` as the committed template
+
+Shared cross-project source of truth:
+
+- [Environment Matrix](https://github.com/sterlingdiazd/NursingCare/blob/main/ENVIRONMENT_MATRIX.md)
 
 ```ts
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || "https://10.0.0.33:5050";
 ```
 
 For physical devices, use your machine LAN IP and make sure the device trusts the local development certificate.
+
+Environment mapping:
+
+- `local` and `docker`: `EXPO_PUBLIC_API_BASE_URL=https://<lan-ip>:5050`
+- `staging`: `EXPO_PUBLIC_API_BASE_URL=https://api-staging.<your-domain>`
+- `production`: `EXPO_PUBLIC_API_BASE_URL=https://api.<your-domain>`
 
 ## Current Behavior
 
