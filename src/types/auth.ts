@@ -1,5 +1,7 @@
 export interface AuthResponse {
   token: string;
+  refreshToken: string;
+  expiresAtUtc: string | null;
   email: string;
   roles: string[];
   correlationId?: string;
