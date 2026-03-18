@@ -24,6 +24,7 @@ interface AuthContextValue {
   isLoading: boolean;
   error: string | null;
   setSession: (response: AuthResponse) => void;
+  completeOAuthLogin: (response: AuthResponse) => Promise<void>;
   setTokenManually: (token: string) => void;
   login: (email: string, password: string) => Promise<AuthResponse>;
   register: (
@@ -88,6 +89,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const resolveProfileType = (response: AuthResponse, fallbackProfileType?: UserProfileType | null) =>
+    response.roles?.includes("Nurse") ? UserProfileType.Nurse : (fallbackProfileType ?? UserProfileType.Client);
+
+  const persistSession = async (response: AuthResponse, fallbackProfileType?: UserProfileType | null) => {
+    const detectedProfileType = resolveProfileType(response, fallbackProfileType);
+
+    setSession(response);
+    setProfileType(detectedProfileType);
+
+    await saveAuthSession({
+      token: response.token,
+      refreshToken: response.refreshToken,
+      expiresAtUtc: response.expiresAtUtc,
+      email: response.email,
+      roles: response.roles ?? [],
+      profileType: detectedProfileType,
+    });
+  };
+
   const setTokenManually = (nextToken: string) => {
     const trimmed = nextToken.trim();
     setToken(trimmed.length > 0 ? trimmed : null);
@@ -122,22 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
       });
 
-      setSession(response);
-
-      // Determine profile type from roles
-      const detectedProfileType = response.roles?.includes("Nurse")
-        ? UserProfileType.Nurse
-        : UserProfileType.Client;
-      setProfileType(detectedProfileType);
-
-      await saveAuthSession({
-        token: response.token,
-        refreshToken: response.refreshToken,
-        expiresAtUtc: response.expiresAtUtc,
-        email: response.email,
-        roles: response.roles ?? [],
-        profileType: detectedProfileType,
-      });
+      await persistSession(response);
 
       return response;
     } catch (err) {
@@ -172,19 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (response.token) {
         // Client registration - token returned, user is active
-        setSession(response);
-        setProfileType(profileTypeInput);
-        setEmail(response.email);
-        setRoles(response.roles ?? []);
-
-        await saveAuthSession({
-          token: response.token,
-          refreshToken: response.refreshToken,
-          expiresAtUtc: response.expiresAtUtc,
-          email: response.email,
-          roles: response.roles ?? [],
-          profileType: profileTypeInput,
-        });
+        await persistSession(response, profileTypeInput);
 
         logClientEvent("mobile.auth", "Client registration successful", {
           email: response.email,
@@ -194,9 +187,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setEmail(emailAddress);
         setProfileType(profileTypeInput);
         setRoles(response.roles ?? []);
-        setToken(null);
+      setToken(null);
 
-        logClientEvent("mobile.auth", "Nurse registration successful - pending approval", {
+      logClientEvent("mobile.auth", "Nurse registration successful - pending approval", {
           email: emailAddress,
         });
       }
@@ -209,6 +202,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const completeOAuthLogin = async (response: AuthResponse) => {
+    setError(null);
+    await persistSession(response);
+
+    logClientEvent("mobile.auth", "Google OAuth login successful", {
+      email: response.email,
+      roles: response.roles ?? [],
+    });
   };
 
   const logout = async () => {
@@ -237,6 +240,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       error,
       setSession,
+      completeOAuthLogin,
       setTokenManually,
       login,
       register,

@@ -103,6 +103,10 @@ export function getMobileApiBaseUrl() {
   return API_BASE_URL;
 }
 
+export function getGoogleOAuthStartUrl(target: "web" | "mobile" = "mobile") {
+  return `${API_BASE_URL.replace(/\/$/, "")}/api/auth/google/start?target=${target}`;
+}
+
 export async function checkBackendHealth(): Promise<HealthResponse> {
   return requestJson<HealthResponse>({
     path: "/api/health",
