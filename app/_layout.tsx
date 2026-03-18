@@ -48,10 +48,37 @@ function RootLayoutNav() {
   return (
     <AuthProvider>
       <Stack>
+        {/* Auth Screens */}
+        <Stack.Screen
+          name="register"
+          options={{
+            title: "Register",
+            headerShown: true,
+            headerBackVisible: true,
+          }}
+        />
+        <Stack.Screen
+          name="login"
+          options={{
+            title: "Log In",
+            headerShown: true,
+            headerBackVisible: true,
+          }}
+        />
+
+        {/* Main App Screens */}
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="create-care-request"
           options={{ title: "Create Care Request" }}
+        />
+        <Stack.Screen
+          name="care-requests/index"
+          options={{ title: "Care Requests" }}
+        />
+        <Stack.Screen
+          name="care-requests/[id]"
+          options={{ title: "Request Detail" }}
         />
         <Stack.Screen name="modal" options={{ presentation: "modal" }} />
       </Stack>
