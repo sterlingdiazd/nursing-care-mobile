@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -10,12 +10,16 @@ import {
   StyleSheet,
 } from "react-native";
 import { useRouter } from "expo-router";
+import * as Linking from "expo-linking";
 import { useAuth } from "@/src/context/AuthContext";
 import { validateEmail } from "@/src/api/auth";
+import { AuthResponse } from "@/src/types/auth";
+import { getGoogleOAuthStartUrl } from "@/src/services/authService";
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, isLoading } = useAuth();
+  const { login, completeOAuthLogin, isLoading } = useAuth();
+  const lastHandledUrlRef = useRef<string | null>(null);
 
   // Form state
   const [email, setEmail] = useState("");
@@ -71,6 +75,85 @@ export default function LoginScreen() {
     }
   };
 
+  useEffect(() => {
+    const handleOAuthUrl = async (url: string | null) => {
+      if (!url || lastHandledUrlRef.current === url) {
+        return;
+      }
+
+      const parsed = Linking.parse(url);
+      const oauthStatus = getParamValue(parsed.queryParams?.oauth);
+
+      if (!oauthStatus) {
+        return;
+      }
+
+      lastHandledUrlRef.current = url;
+
+      if (oauthStatus === "error") {
+        Alert.alert(
+          "Google Sign-In Error",
+          getParamValue(parsed.queryParams?.message) || "Unable to sign in with Google."
+        );
+        return;
+      }
+
+      const token = getParamValue(parsed.queryParams?.token);
+      const refreshToken = getParamValue(parsed.queryParams?.refreshToken);
+      const emailFromRedirect = getParamValue(parsed.queryParams?.email);
+      const roles = (getParamValue(parsed.queryParams?.roles) || "")
+        .split(",")
+        .map((role) => role.trim())
+        .filter(Boolean);
+
+      if (!token || !refreshToken || !emailFromRedirect || roles.length === 0) {
+        Alert.alert("Google Sign-In Error", "The Google login response was incomplete.");
+        return;
+      }
+
+      const response: AuthResponse = {
+        token,
+        refreshToken,
+        expiresAtUtc: getParamValue(parsed.queryParams?.expiresAtUtc) ?? null,
+        email: emailFromRedirect,
+        roles,
+      };
+
+      await completeOAuthLogin(response);
+      Alert.alert("Login Successful", "Redirecting to dashboard...", [
+        {
+          text: "OK",
+          onPress: () => router.replace("/(tabs)"),
+        },
+      ]);
+    };
+
+    Linking.getInitialURL()
+      .then((url) => handleOAuthUrl(url))
+      .catch((error) => {
+        console.error("Failed to process initial OAuth URL:", error);
+      });
+
+    const subscription = Linking.addEventListener("url", ({ url }) => {
+      void handleOAuthUrl(url);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [completeOAuthLogin, router]);
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await Linking.openURL(getGoogleOAuthStartUrl("mobile"));
+    } catch (error) {
+      Alert.alert(
+        "Google Sign-In Error",
+        error instanceof Error ? error.message : "Unable to open Google sign-in."
+      );
+    }
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       {/* Title */}
@@ -120,6 +203,22 @@ export default function LoginScreen() {
         ) : (
           <Text style={styles.buttonText}>Log In</Text>
         )}
+      </TouchableOpacity>
+
+      <View style={styles.dividerContainer}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>or</Text>
+        <View style={styles.dividerLine} />
+      </View>
+
+      <TouchableOpacity
+        style={[styles.secondaryButton, isLoading ? styles.buttonDisabled : null]}
+        onPress={() => {
+          void handleGoogleSignIn();
+        }}
+        disabled={isLoading}
+      >
+        <Text style={styles.secondaryButtonText}>Continue with Google</Text>
       </TouchableOpacity>
 
       {/* Register Link */}
@@ -209,4 +308,39 @@ const styles = StyleSheet.create({
     color: "#0066cc",
     fontWeight: "600",
   },
+  dividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#ddd",
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    color: "#777",
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  secondaryButton: {
+    borderWidth: 1,
+    borderColor: "#0066cc",
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
+    backgroundColor: "#f5f9ff",
+  },
+  secondaryButtonText: {
+    color: "#0066cc",
+    fontSize: 16,
+    fontWeight: "600",
+  },
 });
+
+function getParamValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
