@@ -12,6 +12,8 @@ import {
 import { useRouter } from "expo-router";
 import { useAuth, UserProfileType } from "@/src/context/AuthContext";
 import { validateEmail, validatePassword } from "@/src/api/auth";
+import * as Linking from "expo-linking";
+import { getGoogleOAuthStartUrl } from "@/src/services/authService";
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -101,6 +103,17 @@ export default function RegisterScreen() {
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Registration failed";
       Alert.alert("Registration Error", errorMsg);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await Linking.openURL(getGoogleOAuthStartUrl("mobile"));
+    } catch (error) {
+      Alert.alert(
+        "Google Sign-In Error",
+        error instanceof Error ? error.message : "Unable to open Google sign-in."
+      );
     }
   };
 
@@ -213,6 +226,24 @@ export default function RegisterScreen() {
           <Text style={styles.buttonText}>Create Account</Text>
         )}
       </TouchableOpacity>
+
+      <View style={styles.dividerContainer}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>or</Text>
+        <View style={styles.dividerLine} />
+      </View>
+
+      <TouchableOpacity
+        style={[styles.secondaryButton, isLoading ? styles.buttonDisabled : null]}
+        onPress={() => {
+          void handleGoogleSignIn();
+        }}
+        disabled={isLoading}
+      >
+        <Text style={styles.secondaryButtonText}>Continue with Google</Text>
+      </TouchableOpacity>
+
+      <Text style={styles.secondaryHint}>Google sign-in creates an active client account.</Text>
 
       {/* Login Link */}
       <View style={styles.loginLinkContainer}>
@@ -335,5 +366,42 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#0066cc",
     fontWeight: "600",
+  },
+  dividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#ddd",
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    color: "#777",
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  secondaryButton: {
+    borderWidth: 1,
+    borderColor: "#0066cc",
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+    backgroundColor: "#f5f9ff",
+  },
+  secondaryButtonText: {
+    color: "#0066cc",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  secondaryHint: {
+    textAlign: "center",
+    color: "#666",
+    fontSize: 13,
+    marginBottom: 20,
   },
 });
