@@ -6,6 +6,7 @@ import { AuthResponse } from "@/src/types/auth";
 import {
   clearAuthSession,
   loadAuthSession,
+  resolveUserIdFromToken,
   saveAuthSession,
   subscribeToAuthSession,
 } from "@/src/services/authSession";
@@ -17,6 +18,7 @@ export enum UserProfileType {
 
 interface AuthContextValue {
   token: string | null;
+  userId: string | null;
   email: string | null;
   roles: string[];
   profileType: UserProfileType | null;
@@ -39,8 +41,21 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+function resolveResponseUserId(response: AuthResponse, currentUserId?: string | null) {
+  if (response.userId?.trim().length) {
+    return response.userId;
+  }
+
+  if (response.token?.trim().length) {
+    return resolveUserIdFromToken(response.token);
+  }
+
+  return currentUserId ?? null;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
   const [profileType, setProfileType] = useState<UserProfileType | null>(null);
@@ -52,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!session) {
       setToken(null);
+      setUserId(null);
       setEmail(null);
       setRoles([]);
       setProfileType(null);
@@ -59,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setToken(session.token);
+    setUserId(session.userId);
     setEmail(session.email || null);
     setRoles(session.roles);
     setProfileType(session.profileType);
@@ -80,7 +97,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setSession = (response: AuthResponse) => {
+    const resolvedUserId = resolveResponseUserId(response, userId);
+
     setToken(response.token);
+    setUserId(resolvedUserId);
     setEmail(response.email);
     setRoles(response.roles ?? []);
     logClientEvent("mobile.auth", "Session loaded", {
@@ -94,14 +114,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const persistSession = async (response: AuthResponse, fallbackProfileType?: UserProfileType | null) => {
     const detectedProfileType = resolveProfileType(response, fallbackProfileType);
+    const resolvedUserId = resolveResponseUserId(response, userId);
 
-    setSession(response);
+    if (!resolvedUserId) {
+      throw new Error("Could not resolve the authenticated user identifier.");
+    }
+
+    setSession({
+      ...response,
+      userId: resolvedUserId,
+    });
     setProfileType(detectedProfileType);
 
     await saveAuthSession({
       token: response.token,
       refreshToken: response.refreshToken,
       expiresAtUtc: response.expiresAtUtc,
+      userId: resolvedUserId,
       email: response.email,
       roles: response.roles ?? [],
       profileType: detectedProfileType,
@@ -119,6 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         token: trimmed,
         refreshToken: "",
         expiresAtUtc: null,
+        userId: userId ?? "",
         email: email ?? "",
         roles,
         profileType,
@@ -185,6 +215,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         // Nurse registration - no token, account pending approval
         setEmail(emailAddress);
+        setUserId(resolveResponseUserId(response, userId));
         setProfileType(profileTypeInput);
         setRoles(response.roles ?? []);
       setToken(null);
@@ -216,6 +247,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     setToken(null);
+    setUserId(null);
     setEmail(null);
     setRoles([]);
     setProfileType(null);
@@ -233,6 +265,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       token,
+      userId,
       email,
       roles,
       profileType,
@@ -247,7 +280,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       clearError,
     }),
-    [token, email, roles, profileType, isLoading, error],
+    [token, userId, email, roles, profileType, isLoading, error],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

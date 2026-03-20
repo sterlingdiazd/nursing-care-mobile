@@ -14,7 +14,10 @@ import * as Linking from "expo-linking";
 import { useAuth } from "@/src/context/AuthContext";
 import { validateEmail } from "@/src/api/auth";
 import { AuthResponse } from "@/src/types/auth";
-import { getGoogleOAuthStartUrl } from "@/src/services/authService";
+import {
+  getGoogleOAuthStartUrl,
+  getLocalHttpsCertificateWarning,
+} from "@/src/services/authService";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -32,9 +35,9 @@ export default function LoginScreen() {
   // Validation functions
   const validateEmailField = (value: string) => {
     if (!value) {
-      setEmailError("Email is required");
+      setEmailError("El correo es obligatorio");
     } else if (!validateEmail(value)) {
-      setEmailError("Invalid email format");
+      setEmailError("El formato del correo no es valido");
     } else {
       setEmailError("");
     }
@@ -42,7 +45,7 @@ export default function LoginScreen() {
 
   const validatePasswordField = (value: string) => {
     if (!value) {
-      setPasswordError("Password is required");
+      setPasswordError("La contrasena es obligatoria");
     } else {
       setPasswordError("");
     }
@@ -52,17 +55,17 @@ export default function LoginScreen() {
   const handleSubmit = async () => {
     // Validate all fields
     if (emailError || passwordError || !email || !password) {
-      Alert.alert("Validation Error", "Please enter valid email and password");
+      Alert.alert("Validacion", "Ingresa un correo valido y tu contrasena.");
       return;
     }
 
     try {
       await login(email.trim(), password);
 
-      Alert.alert("Login Successful", "Redirecting to dashboard...", [
+      Alert.alert("Inicio de sesion exitoso", "Redirigiendo al panel...", [
         {
-          text: "OK",
-          onPress: () => router.push("/(tabs)"),
+          text: "Aceptar",
+          onPress: () => router.push("/care-requests"),
         },
       ]);
 
@@ -70,8 +73,8 @@ export default function LoginScreen() {
       setEmail("");
       setPassword("");
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : "Login failed";
-      Alert.alert("Login Error", errorMsg);
+      const errorMsg = error instanceof Error ? error.message : "No fue posible iniciar sesion";
+      Alert.alert("Error de inicio de sesion", errorMsg);
     }
   };
 
@@ -92,8 +95,8 @@ export default function LoginScreen() {
 
       if (oauthStatus === "error") {
         Alert.alert(
-          "Google Sign-In Error",
-          getParamValue(parsed.queryParams?.message) || "Unable to sign in with Google."
+          "Error con Google",
+          getParamValue(parsed.queryParams?.message) || "No fue posible iniciar sesion con Google."
         );
         return;
       }
@@ -107,7 +110,7 @@ export default function LoginScreen() {
         .filter(Boolean);
 
       if (!token || !refreshToken || !emailFromRedirect || roles.length === 0) {
-        Alert.alert("Google Sign-In Error", "The Google login response was incomplete.");
+        Alert.alert("Error con Google", "La respuesta de inicio de sesion de Google estaba incompleta.");
         return;
       }
 
@@ -115,15 +118,16 @@ export default function LoginScreen() {
         token,
         refreshToken,
         expiresAtUtc: getParamValue(parsed.queryParams?.expiresAtUtc) ?? null,
+        userId: getParamValue(parsed.queryParams?.userId) ?? "",
         email: emailFromRedirect,
         roles,
       };
 
       await completeOAuthLogin(response);
-      Alert.alert("Login Successful", "Redirecting to dashboard...", [
+      Alert.alert("Inicio de sesion exitoso", "Redirigiendo al panel...", [
         {
-          text: "OK",
-          onPress: () => router.replace("/(tabs)"),
+          text: "Aceptar",
+          onPress: () => router.replace("/care-requests"),
         },
       ]);
     };
@@ -144,12 +148,18 @@ export default function LoginScreen() {
   }, [completeOAuthLogin, router]);
 
   const handleGoogleSignIn = async () => {
+    const certificateWarning = getLocalHttpsCertificateWarning();
+
+    if (certificateWarning) {
+      Alert.alert("Certificado local requerido", certificateWarning);
+    }
+
     try {
       await Linking.openURL(getGoogleOAuthStartUrl("mobile"));
     } catch (error) {
       Alert.alert(
-        "Google Sign-In Error",
-        error instanceof Error ? error.message : "Unable to open Google sign-in."
+        "Error con Google",
+        error instanceof Error ? error.message : "No fue posible abrir el acceso con Google."
       );
     }
   };
@@ -157,14 +167,14 @@ export default function LoginScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       {/* Title */}
-      <Text style={styles.title}>Log In</Text>
+      <Text style={styles.title}>Iniciar sesion</Text>
 
       {/* Email Input */}
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Email</Text>
+        <Text style={styles.label}>Correo</Text>
         <TextInput
           style={[styles.input, emailError ? styles.inputError : null]}
-          placeholder="you@example.com"
+          placeholder="tu@correo.com"
           value={email}
           onChangeText={setEmail}
           onBlur={() => validateEmailField(email)}
@@ -178,10 +188,10 @@ export default function LoginScreen() {
 
       {/* Password Input */}
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Password</Text>
+        <Text style={styles.label}>Contrasena</Text>
         <TextInput
           style={[styles.input, passwordError ? styles.inputError : null]}
-          placeholder="Enter your password"
+          placeholder="Ingresa tu contrasena"
           value={password}
           onChangeText={setPassword}
           onBlur={() => validatePasswordField(password)}
@@ -201,13 +211,13 @@ export default function LoginScreen() {
         {isLoading ? (
           <ActivityIndicator color="white" size="small" />
         ) : (
-          <Text style={styles.buttonText}>Log In</Text>
+          <Text style={styles.buttonText}>Iniciar sesion</Text>
         )}
       </TouchableOpacity>
 
       <View style={styles.dividerContainer}>
         <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>or</Text>
+        <Text style={styles.dividerText}>o</Text>
         <View style={styles.dividerLine} />
       </View>
 
@@ -218,14 +228,14 @@ export default function LoginScreen() {
         }}
         disabled={isLoading}
       >
-        <Text style={styles.secondaryButtonText}>Continue with Google</Text>
+        <Text style={styles.secondaryButtonText}>Continuar con Google</Text>
       </TouchableOpacity>
 
       {/* Register Link */}
       <View style={styles.registerLinkContainer}>
-        <Text style={styles.registerLinkText}>Don't have an account? </Text>
+        <Text style={styles.registerLinkText}>¿No tienes cuenta? </Text>
         <TouchableOpacity onPress={() => router.push("/register")} disabled={isLoading}>
-          <Text style={styles.registerLink}>Register</Text>
+          <Text style={styles.registerLink}>Registrate</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

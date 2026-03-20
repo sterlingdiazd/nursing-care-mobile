@@ -12,6 +12,7 @@ interface JsonRequestOptions {
   path: string;
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
+  correlationId?: string;
   token?: string | null;
   auth?: boolean;
   skipAuthRefresh?: boolean;
@@ -23,7 +24,7 @@ let refreshPromise: Promise<string | null> | null = null;
 export function getNetworkErrorMessage(url: string, error: unknown) {
   const message = error instanceof Error ? error.message : "Unknown network error";
 
-  return `Unable to reach ${url}. ${message}. If you are on iPhone, confirm the device trusts the local certificate and can open the API URL in Safari.`;
+  return `No fue posible conectarse a ${url}. ${message}. Si estas en iPhone, confirma que el dispositivo confia en el certificado local y puede abrir la URL del API en Safari.`;
 }
 
 export function getDisplayErrorMessage(responseText: string, status: number) {
@@ -55,12 +56,13 @@ export async function requestJson<T>({
   path,
   method,
   body,
+  correlationId: providedCorrelationId,
   token,
   auth,
   skipAuthRefresh,
   onMeta,
 }: JsonRequestOptions): Promise<T> {
-  const correlationId = createCorrelationId();
+  const correlationId = providedCorrelationId ?? createCorrelationId();
   const url = `${API_BASE_URL}${path}`;
   const shouldUseAuth = auth || Boolean(token);
   const session = shouldUseAuth ? getCachedAuthSession() ?? (await loadAuthSession()) : null;
@@ -188,6 +190,7 @@ async function refreshAccessToken() {
           token: payload.token,
           refreshToken: payload.refreshToken,
           expiresAtUtc: payload.expiresAtUtc,
+          userId: payload.userId,
           email: payload.email,
           roles: payload.roles,
           profileType: session.profileType,

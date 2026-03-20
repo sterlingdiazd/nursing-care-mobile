@@ -51,7 +51,7 @@ describe("httpClient helpers", () => {
 
     expect(message).toContain("https://10.0.0.33:5050/api/health");
     expect(message).toContain("Network request failed");
-    expect(message).toContain("trusts the local certificate");
+    expect(message).toContain("confia en el certificado local");
   });
 
   it("retries an authenticated request after refreshing the access token", async () => {
@@ -59,6 +59,7 @@ describe("httpClient helpers", () => {
       token: "expired-token",
       refreshToken: "refresh-token",
       expiresAtUtc: null,
+      userId: "11111111-1111-1111-1111-111111111111",
       email: "care@example.com",
       roles: ["Admin"],
       profileType: 1,
@@ -80,6 +81,7 @@ describe("httpClient helpers", () => {
             token: "fresh-token",
             refreshToken: "fresh-refresh-token",
             expiresAtUtc: "2026-03-18T19:00:00Z",
+            userId: "11111111-1111-1111-1111-111111111111",
             email: "care@example.com",
             roles: ["Admin"],
           }),
@@ -105,6 +107,7 @@ describe("httpClient helpers", () => {
       token: "fresh-token",
       refreshToken: "fresh-refresh-token",
       expiresAtUtc: "2026-03-18T19:00:00Z",
+      userId: "11111111-1111-1111-1111-111111111111",
       email: "care@example.com",
       roles: ["Admin"],
       profileType: 1,
@@ -120,6 +123,7 @@ describe("httpClient helpers", () => {
       token: "expired-token",
       refreshToken: "",
       expiresAtUtc: null,
+      userId: "11111111-1111-1111-1111-111111111111",
       email: "care@example.com",
       roles: ["Admin"],
       profileType: 1,
