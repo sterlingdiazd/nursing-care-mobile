@@ -3,12 +3,12 @@ import { useLocalSearchParams, router } from "expo-router";
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 
+import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { logClientEvent } from "@/src/logging/clientLogger";
 import {
@@ -27,6 +27,19 @@ function getStatusColors(status: CareRequestDto["status"]) {
       return { bg: "#dbeafe", fg: "#1d4ed8" };
     default:
       return { bg: "#fef3c7", fg: "#92400e" };
+  }
+}
+
+function getStatusLabel(status: CareRequestDto["status"]) {
+  switch (status) {
+    case "Approved":
+      return "Aprobada";
+    case "Rejected":
+      return "Rechazada";
+    case "Completed":
+      return "Completada";
+    default:
+      return "Pendiente";
   }
 }
 
@@ -50,7 +63,7 @@ export default function CareRequestDetailScreen() {
       setCareRequest(response);
       logClientEvent("mobile.ui", "Care request detail loaded", { id });
     } catch (nextError: any) {
-      setError(nextError.message ?? "Unable to load care request.");
+      setError(nextError.message ?? "No fue posible cargar la solicitud.");
       logClientEvent(
         "mobile.ui",
         "Care request detail failed",
@@ -78,7 +91,7 @@ export default function CareRequestDetailScreen() {
       const updated = await transitionCareRequest(id, action);
       setCareRequest(updated);
     } catch (nextError: any) {
-      setError(nextError.message ?? "Unable to update care request.");
+      setError(nextError.message ?? "No fue posible actualizar la solicitud.");
     } finally {
       setIsActing(false);
     }
@@ -101,50 +114,62 @@ export default function CareRequestDetailScreen() {
   if (!careRequest) {
     return (
       <View style={styles.loadingState}>
-        <Text style={styles.errorText}>{error ?? "Care request not found."}</Text>
+        <Text style={styles.errorText}>{error ?? "Solicitud no encontrada."}</Text>
       </View>
     );
   }
 
   const colors = getStatusColors(careRequest.status);
+  const statusLabel = getStatusLabel(careRequest.status);
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <Pressable onPress={() => router.back()} style={styles.backButton}>
-        <Text style={styles.backButtonText}>Back To Queue</Text>
-      </Pressable>
-
+    <MobileWorkspaceShell
+      eyebrow="Detalle de solicitud"
+      title="Revisa contexto, estado y transiciones."
+      description="El detalle concentra la lectura operativa y las acciones permitidas segun el rol actual."
+      actions={
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [
+            styles.backActionButton,
+            pressed && styles.buttonPressed,
+          ]}
+        >
+          <Text style={styles.backActionButtonText}>Volver a la cola</Text>
+        </Pressable>
+      }
+    >
       <View style={styles.card}>
-        <Text style={styles.eyebrow}>Care Request Detail</Text>
+        <Text style={styles.eyebrow}>Detalle de solicitud</Text>
         <View style={styles.headerRow}>
-          <Text style={styles.title}>{careRequest.description}</Text>
+          <Text style={styles.title}>{careRequest.careRequestDescription}</Text>
           <View style={[styles.statusBadge, { backgroundColor: colors.bg }]}>
-            <Text style={[styles.statusText, { color: colors.fg }]}>{careRequest.status}</Text>
+            <Text style={[styles.statusText, { color: colors.fg }]}>{statusLabel}</Text>
           </View>
         </View>
 
         <View style={styles.metaGroup}>
-          <Text style={styles.metaText}>Request ID: {careRequest.id}</Text>
-          <Text style={styles.metaText}>Resident ID: {careRequest.residentId}</Text>
+          <Text style={styles.metaText}>ID de solicitud: {careRequest.id}</Text>
+          <Text style={styles.metaText}>ID de usuario: {careRequest.userID}</Text>
           <Text style={styles.metaText}>
-            Created: {new Date(careRequest.createdAtUtc).toLocaleString()}
+            Creada: {new Date(careRequest.createdAtUtc).toLocaleString()}
           </Text>
           <Text style={styles.metaText}>
-            Updated: {new Date(careRequest.updatedAtUtc).toLocaleString()}
+            Actualizada: {new Date(careRequest.updatedAtUtc).toLocaleString()}
           </Text>
           {careRequest.approvedAtUtc && (
             <Text style={styles.metaText}>
-              Approved: {new Date(careRequest.approvedAtUtc).toLocaleString()}
+              Aprobada: {new Date(careRequest.approvedAtUtc).toLocaleString()}
             </Text>
           )}
           {careRequest.rejectedAtUtc && (
             <Text style={styles.metaText}>
-              Rejected: {new Date(careRequest.rejectedAtUtc).toLocaleString()}
+              Rechazada: {new Date(careRequest.rejectedAtUtc).toLocaleString()}
             </Text>
           )}
           {careRequest.completedAtUtc && (
             <Text style={styles.metaText}>
-              Completed: {new Date(careRequest.completedAtUtc).toLocaleString()}
+              Completada: {new Date(careRequest.completedAtUtc).toLocaleString()}
             </Text>
           )}
         </View>
@@ -163,7 +188,7 @@ export default function CareRequestDetailScreen() {
                   pressed && styles.buttonPressed,
                 ]}
               >
-                <Text style={styles.primaryButtonText}>Approve</Text>
+                <Text style={styles.primaryButtonText}>Aprobar</Text>
               </Pressable>
               <Pressable
                 onPress={() => runAction("reject")}
@@ -174,7 +199,7 @@ export default function CareRequestDetailScreen() {
                   pressed && styles.buttonPressed,
                 ]}
               >
-                <Text style={styles.secondaryButtonText}>Reject</Text>
+                <Text style={styles.secondaryButtonText}>Rechazar</Text>
               </Pressable>
             </>
           )}
@@ -188,24 +213,16 @@ export default function CareRequestDetailScreen() {
                 pressed && styles.buttonPressed,
               ]}
             >
-              <Text style={styles.primaryButtonText}>Complete</Text>
+              <Text style={styles.primaryButtonText}>Completar</Text>
             </Pressable>
           )}
         </View>
       </View>
-    </ScrollView>
+    </MobileWorkspaceShell>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: "#eef3fb",
-  },
-  content: {
-    padding: 20,
-    paddingBottom: 32,
-  },
   loadingState: {
     flex: 1,
     alignItems: "center",
@@ -213,11 +230,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#eef3fb",
     padding: 24,
   },
-  backButton: {
-    marginBottom: 16,
+  backActionButton: {
+    borderRadius: 18,
+    paddingVertical: 15,
+    paddingHorizontal: 18,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.18)",
+    backgroundColor: "rgba(255,255,255,0.08)",
   },
-  backButtonText: {
-    color: "#1d4ed8",
+  backActionButtonText: {
+    color: "#f8fafc",
     fontWeight: "700",
   },
   card: {
