@@ -13,8 +13,7 @@ export {
 } from "expo-router";
 
 export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: "(tabs)",
+  initialRouteName: "index",
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -52,7 +51,7 @@ function RootLayoutNav() {
         <Stack.Screen
           name="register"
           options={{
-            title: "Register",
+            title: "Registro",
             headerShown: true,
             headerBackVisible: true,
           }}
@@ -60,25 +59,40 @@ function RootLayoutNav() {
         <Stack.Screen
           name="login"
           options={{
-            title: "Log In",
+            title: "Iniciar sesion",
             headerShown: true,
             headerBackVisible: true,
           }}
         />
+        <Stack.Screen
+          name="index"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="account"
+          options={{ title: "Cuenta", headerShown: false }}
+        />
+        <Stack.Screen
+          name="diagnostics"
+          options={{ title: "Diagnostico", headerShown: false }}
+        />
+        <Stack.Screen
+          name="tools"
+          options={{ title: "Herramientas", headerShown: false }}
+        />
 
         {/* Main App Screens */}
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="create-care-request"
-          options={{ title: "Create Care Request" }}
+          options={{ title: "Crear solicitud", headerShown: false }}
         />
         <Stack.Screen
           name="care-requests/index"
-          options={{ title: "Care Requests" }}
+          options={{ title: "Solicitudes", headerShown: false }}
         />
         <Stack.Screen
           name="care-requests/[id]"
-          options={{ title: "Request Detail" }}
+          options={{ title: "Detalle de solicitud", headerShown: false }}
         />
         <Stack.Screen name="modal" options={{ presentation: "modal" }} />
       </Stack>

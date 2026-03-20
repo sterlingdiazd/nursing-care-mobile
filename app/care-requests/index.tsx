@@ -3,13 +3,12 @@ import { router } from "expo-router";
 import {
   ActivityIndicator,
   Pressable,
-  RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 
+import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { logClientEvent } from "@/src/logging/clientLogger";
 import { getCareRequests } from "@/src/services/careRequestService";
@@ -28,6 +27,19 @@ function getStatusColors(status: CareRequestDto["status"]) {
   }
 }
 
+function getStatusLabel(status: CareRequestDto["status"]) {
+  switch (status) {
+    case "Approved":
+      return "Aprobada";
+    case "Rejected":
+      return "Rechazada";
+    case "Completed":
+      return "Completada";
+    default:
+      return "Pendiente";
+  }
+}
+
 export default function CareRequestsScreen() {
   const { roles } = useAuth();
   const [careRequests, setCareRequests] = useState<CareRequestDto[]>([]);
@@ -42,7 +54,7 @@ export default function CareRequestsScreen() {
       setCareRequests(response);
       logClientEvent("mobile.ui", "Care requests loaded", { count: response.length });
     } catch (nextError: any) {
-      setError(nextError.message ?? "Unable to load care requests.");
+      setError(nextError.message ?? "No fue posible cargar las solicitudes.");
       logClientEvent(
         "mobile.ui",
         "Care requests load failed",
@@ -59,30 +71,39 @@ export default function CareRequestsScreen() {
   }, []);
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={isLoading} onRefresh={loadCareRequests} />}
-    >
-      <View style={styles.hero}>
-        <Text style={styles.eyebrow}>Request Board</Text>
-        <Text style={styles.title}>Move requests through the full care lifecycle.</Text>
-        <Text style={styles.subtitle}>
-          Open a request to review detail, then approve, reject, or complete it based on your role.
-        </Text>
-        {(roles.includes("Nurse") || roles.includes("Admin")) && (
+    <MobileWorkspaceShell
+      eyebrow="Cola de solicitudes"
+      title="Supervisa captura, revision y cierre desde una sola cola."
+      description="La cola permite leer el estado de cada solicitud de un vistazo, abrir el detalle y refrescar la operacion sin perder el contexto."
+      actions={
+        <>
           <Pressable
-            onPress={() => router.push("/create-care-request")}
-            style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}
+            onPress={loadCareRequests}
+            style={({ pressed }) => [
+              styles.secondaryButton,
+              pressed && styles.buttonPressed,
+            ]}
           >
-            <Text style={styles.primaryButtonText}>Create New Request</Text>
+            <Text style={styles.secondaryButtonText}>Actualizar cola</Text>
           </Pressable>
-        )}
-      </View>
 
+          {(roles.includes("Nurse") || roles.includes("Admin")) && (
+            <Pressable
+              onPress={() => router.push("/create-care-request")}
+              style={({ pressed }) => [
+                styles.primaryButton,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              <Text style={styles.primaryButtonText}>Crear nueva solicitud</Text>
+            </Pressable>
+          )}
+        </>
+      }
+    >
       {error && (
         <View style={styles.errorCard}>
-          <Text style={styles.errorTitle}>Unable to load requests</Text>
+          <Text style={styles.errorTitle}>No fue posible cargar las solicitudes</Text>
           <Text style={styles.errorBody}>{error}</Text>
         </View>
       )}
@@ -95,6 +116,7 @@ export default function CareRequestsScreen() {
         <View style={styles.list}>
           {careRequests.map((careRequest) => {
             const colors = getStatusColors(careRequest.status);
+            const statusLabel = getStatusLabel(careRequest.status);
 
             return (
               <Pressable
@@ -109,73 +131,53 @@ export default function CareRequestsScreen() {
               >
                 <View style={styles.cardHeader}>
                   <Text style={styles.cardTitle} numberOfLines={2}>
-                    {careRequest.description}
+                    {careRequest.careRequestDescription}
                   </Text>
                   <View style={[styles.statusBadge, { backgroundColor: colors.bg }]}>
                     <Text style={[styles.statusText, { color: colors.fg }]}>
-                      {careRequest.status}
+                      {statusLabel}
                     </Text>
                   </View>
                 </View>
-                <Text style={styles.cardMeta}>Resident {careRequest.residentId}</Text>
+                <Text style={styles.cardMeta}>Usuario {careRequest.userID}</Text>
                 <Text style={styles.cardMeta}>
-                  Created {new Date(careRequest.createdAtUtc).toLocaleString()}
+                  Creada {new Date(careRequest.createdAtUtc).toLocaleString()}
                 </Text>
               </Pressable>
             );
           })}
         </View>
       )}
-    </ScrollView>
+    </MobileWorkspaceShell>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: "#eef3fb",
-  },
-  content: {
-    padding: 20,
-    paddingBottom: 32,
-  },
-  hero: {
-    backgroundColor: "#102a43",
-    borderRadius: 28,
-    padding: 24,
-    marginBottom: 18,
-  },
-  eyebrow: {
-    color: "#93c5fd",
-    textTransform: "uppercase",
-    letterSpacing: 1.4,
-    fontWeight: "800",
-    fontSize: 12,
-    marginBottom: 10,
-  },
-  title: {
-    color: "#f8fafc",
-    fontSize: 28,
-    lineHeight: 34,
-    fontWeight: "800",
-  },
-  subtitle: {
-    color: "#dbeafe",
-    fontSize: 15,
-    lineHeight: 23,
-    marginTop: 10,
-    marginBottom: 18,
-  },
   primaryButton: {
     backgroundColor: "#fef3c7",
     borderRadius: 18,
     paddingVertical: 15,
+    paddingHorizontal: 18,
     alignItems: "center",
   },
   primaryButtonText: {
     color: "#132d75",
     fontWeight: "800",
     fontSize: 16,
+  },
+  secondaryButton: {
+    borderRadius: 18,
+    paddingVertical: 15,
+    paddingHorizontal: 18,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.18)",
+    backgroundColor: "rgba(255,255,255,0.08)",
+  },
+  secondaryButtonText: {
+    color: "#f8fafc",
+    fontWeight: "700",
+    fontSize: 15,
   },
   buttonPressed: {
     opacity: 0.92,

@@ -10,7 +10,10 @@ export interface CreateCareRequestResponse {
   correlationId?: string;
 }
 
-export async function createCareRequest(dto: CreateCareRequestDto): Promise<CreateCareRequestResponse> {
+export async function createCareRequest(
+  dto: CreateCareRequestDto,
+  correlationId?: string,
+): Promise<CreateCareRequestResponse> {
   let responseMeta:
     | {
         correlationId: string;
@@ -21,6 +24,7 @@ export async function createCareRequest(dto: CreateCareRequestDto): Promise<Crea
     path: "/api/care-requests",
     method: "POST",
     body: dto,
+    correlationId,
     auth: true,
     onMeta: (meta) => {
       responseMeta = { correlationId: meta.correlationId };
