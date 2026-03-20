@@ -59,7 +59,7 @@ export async function registerUser(
       error.response?.data?.message ||
       error.response?.data?.title ||
       error.message ||
-      "Registration failed";
+      "No fue posible completar el registro";
 
     throw new Error(errorMessage);
   }
@@ -83,7 +83,7 @@ export async function loginUser(email: string, password: string): Promise<AuthRe
       error.response?.data?.message ||
       error.response?.data?.title ||
       error.message ||
-      "Login failed";
+      "No fue posible iniciar sesion";
 
     throw new Error(errorMessage);
   }
@@ -107,11 +107,11 @@ export function validatePassword(password: string): {
   if (password.length < 6) {
     return {
       isValid: false,
-      message: "Password must be at least 6 characters",
+      message: "La contrasena debe tener al menos 6 caracteres",
     };
   }
   return {
     isValid: true,
-    message: "Password is strong",
+    message: "Contrasena valida",
   };
 }

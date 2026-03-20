@@ -13,7 +13,10 @@ import { useRouter } from "expo-router";
 import { useAuth, UserProfileType } from "@/src/context/AuthContext";
 import { validateEmail, validatePassword } from "@/src/api/auth";
 import * as Linking from "expo-linking";
-import { getGoogleOAuthStartUrl } from "@/src/services/authService";
+import {
+  getGoogleOAuthStartUrl,
+  getLocalHttpsCertificateWarning,
+} from "@/src/services/authService";
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -33,9 +36,9 @@ export default function RegisterScreen() {
   // Validation functions
   const validateEmailField = (value: string) => {
     if (!value) {
-      setEmailError("Email is required");
+      setEmailError("El correo es obligatorio");
     } else if (!validateEmail(value)) {
-      setEmailError("Invalid email format");
+      setEmailError("El formato del correo no es valido");
     } else {
       setEmailError("");
     }
@@ -43,7 +46,7 @@ export default function RegisterScreen() {
 
   const validatePasswordField = (value: string) => {
     if (!value) {
-      setPasswordError("Password is required");
+      setPasswordError("La contrasena es obligatoria");
     } else {
       const validation = validatePassword(value);
       setPasswordError(validation.isValid ? "" : validation.message);
@@ -52,9 +55,9 @@ export default function RegisterScreen() {
 
   const validateConfirmPasswordField = (value: string) => {
     if (!value) {
-      setConfirmPasswordError("Please confirm your password");
+      setConfirmPasswordError("Confirma tu contrasena");
     } else if (value !== password) {
-      setConfirmPasswordError("Passwords do not match");
+      setConfirmPasswordError("Las contrasenas no coinciden");
     } else {
       setConfirmPasswordError("");
     }
@@ -64,7 +67,7 @@ export default function RegisterScreen() {
   const handleSubmit = async () => {
     // Validate all fields
     if (emailError || passwordError || confirmPasswordError || !email || !password || !confirmPassword) {
-      Alert.alert("Validation Error", "Please fix all errors before submitting");
+      Alert.alert("Validacion", "Corrige los errores antes de enviar el formulario.");
       return;
     }
 
@@ -74,22 +77,22 @@ export default function RegisterScreen() {
       // Show success message based on profile type
       if (profileType === UserProfileType.Nurse) {
         Alert.alert(
-          "Registration Successful",
-          "Your account is pending admin approval. You will receive an email when activated.",
+        "Registro exitoso",
+        "Tu cuenta quedo pendiente de aprobacion administrativa. Recibiras un correo cuando sea activada.",
           [
             {
-              text: "OK",
+              text: "Aceptar",
               onPress: () => router.push("/login"),
             },
           ]
         );
       } else {
         Alert.alert(
-          "Registration Successful",
-          "You can now log in with your credentials.",
+        "Registro exitoso",
+        "Ya puedes iniciar sesion con tus credenciales.",
           [
             {
-              text: "Go to Login",
+              text: "Ir a iniciar sesion",
               onPress: () => router.push("/login"),
             },
           ]
@@ -101,18 +104,24 @@ export default function RegisterScreen() {
       setPassword("");
       setConfirmPassword("");
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : "Registration failed";
-      Alert.alert("Registration Error", errorMsg);
+      const errorMsg = error instanceof Error ? error.message : "No fue posible completar el registro";
+      Alert.alert("Error de registro", errorMsg);
     }
   };
 
   const handleGoogleSignIn = async () => {
+    const certificateWarning = getLocalHttpsCertificateWarning();
+
+    if (certificateWarning) {
+      Alert.alert("Certificado local requerido", certificateWarning);
+    }
+
     try {
       await Linking.openURL(getGoogleOAuthStartUrl("mobile"));
     } catch (error) {
       Alert.alert(
-        "Google Sign-In Error",
-        error instanceof Error ? error.message : "Unable to open Google sign-in."
+        "Error con Google",
+        error instanceof Error ? error.message : "No fue posible abrir el acceso con Google."
       );
     }
   };
@@ -120,14 +129,14 @@ export default function RegisterScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       {/* Title */}
-      <Text style={styles.title}>Create Account</Text>
+      <Text style={styles.title}>Crear cuenta</Text>
 
       {/* Email Input */}
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Email</Text>
+        <Text style={styles.label}>Correo</Text>
         <TextInput
           style={[styles.input, emailError ? styles.inputError : null]}
-          placeholder="you@example.com"
+          placeholder="tu@correo.com"
           value={email}
           onChangeText={setEmail}
           onBlur={() => validateEmailField(email)}
@@ -141,10 +150,10 @@ export default function RegisterScreen() {
 
       {/* Password Input */}
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Password</Text>
+        <Text style={styles.label}>Contrasena</Text>
         <TextInput
           style={[styles.input, passwordError ? styles.inputError : null]}
-          placeholder="Minimum 6 characters"
+          placeholder="Minimo 6 caracteres"
           value={password}
           onChangeText={setPassword}
           onBlur={() => validatePasswordField(password)}
@@ -157,10 +166,10 @@ export default function RegisterScreen() {
 
       {/* Confirm Password Input */}
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Confirm Password</Text>
+        <Text style={styles.label}>Confirmar contrasena</Text>
         <TextInput
           style={[styles.input, confirmPasswordError ? styles.inputError : null]}
-          placeholder="Re-enter your password"
+          placeholder="Vuelve a escribir tu contrasena"
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           onBlur={() => validateConfirmPasswordField(confirmPassword)}
@@ -173,7 +182,7 @@ export default function RegisterScreen() {
 
       {/* Profile Type Selection */}
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Register as:</Text>
+        <Text style={styles.label}>Registrarse como:</Text>
         <View style={styles.radioGroup}>
           <TouchableOpacity
             style={styles.radioOption}
@@ -186,7 +195,7 @@ export default function RegisterScreen() {
                 profileType === UserProfileType.Client ? styles.radioButtonSelected : null,
               ]}
             />
-            <Text style={styles.radioLabel}>Client</Text>
+            <Text style={styles.radioLabel}>Cliente</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -200,7 +209,7 @@ export default function RegisterScreen() {
                 profileType === UserProfileType.Nurse ? styles.radioButtonSelected : null,
               ]}
             />
-            <Text style={styles.radioLabel}>Nurse (requires admin approval)</Text>
+            <Text style={styles.radioLabel}>Enfermeria (requiere aprobacion administrativa)</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -209,7 +218,7 @@ export default function RegisterScreen() {
       {profileType === UserProfileType.Nurse ? (
         <View style={styles.infoBox}>
           <Text style={styles.infoText}>
-            ℹ️ As a nurse, your account will require admin approval before you can log in.
+            Como cuenta de enfermeria, necesitaras aprobacion administrativa antes de iniciar sesion.
           </Text>
         </View>
       ) : null}
@@ -223,13 +232,13 @@ export default function RegisterScreen() {
         {isLoading ? (
           <ActivityIndicator color="white" size="small" />
         ) : (
-          <Text style={styles.buttonText}>Create Account</Text>
+          <Text style={styles.buttonText}>Crear cuenta</Text>
         )}
       </TouchableOpacity>
 
       <View style={styles.dividerContainer}>
         <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>or</Text>
+        <Text style={styles.dividerText}>o</Text>
         <View style={styles.dividerLine} />
       </View>
 
@@ -240,16 +249,16 @@ export default function RegisterScreen() {
         }}
         disabled={isLoading}
       >
-        <Text style={styles.secondaryButtonText}>Continue with Google</Text>
+        <Text style={styles.secondaryButtonText}>Continuar con Google</Text>
       </TouchableOpacity>
 
-      <Text style={styles.secondaryHint}>Google sign-in creates an active client account.</Text>
+      <Text style={styles.secondaryHint}>Google crea una cuenta de cliente activa de inmediato.</Text>
 
       {/* Login Link */}
       <View style={styles.loginLinkContainer}>
-        <Text style={styles.loginLinkText}>Already have an account? </Text>
+        <Text style={styles.loginLinkText}>¿Ya tienes cuenta? </Text>
         <TouchableOpacity onPress={() => router.push("/login")} disabled={isLoading}>
-          <Text style={styles.loginLink}>Log in</Text>
+          <Text style={styles.loginLink}>Inicia sesion</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
