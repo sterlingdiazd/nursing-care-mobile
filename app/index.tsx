@@ -5,7 +5,7 @@ import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { logClientEvent } from "@/src/logging/clientLogger";
 
-const quickSections = [
+const authenticatedQuickSections = [
   {
     title: "Solicitudes",
     body: "Revisa la cola viva, abre el detalle y recorre el ciclo completo de cada solicitud.",
@@ -33,64 +33,167 @@ const quickSections = [
   },
 ];
 
+const publicQuickSections = [
+  {
+    title: "Cuenta",
+    body: "Consulta el estado de la sesion actual y centraliza el acceso desde Google o login manual.",
+    path: "/account",
+  },
+  {
+    title: "Iniciar sesion",
+    body: "Entra con tu cuenta existente antes de abrir solicitudes o trabajar en la cola.",
+    path: "/login",
+  },
+  {
+    title: "Registrar",
+    body: "Completa tu alta si todavia no tienes perfil en la plataforma.",
+    path: "/register",
+  },
+];
+
 export default function HomeScreen() {
-  const { email, isAuthenticated, roles, requiresAdminReview, profileType } = useAuth();
+  const { email, isAuthenticated, roles, requiresAdminReview, requiresProfileCompletion, profileType } = useAuth();
   const isNurseUnderReview = requiresAdminReview && profileType === 1;
+  const isAnonymous = !isAuthenticated;
+  const hasOperationalAccess = isAuthenticated && !requiresProfileCompletion && !isNurseUnderReview;
   const canCreateRequest = (roles.includes("Client") || roles.includes("Admin")) && !isNurseUnderReview;
-  const quickSectionsToShow = quickSections.filter(
+  const quickSectionsSource = isAnonymous
+    ? publicQuickSections
+    : authenticatedQuickSections.filter(
+      (section) => !isNurseUnderReview || (section.path !== "/care-requests" && section.path !== "/create-care-request"),
+    );
+  const quickSectionsToShow = quickSectionsSource.filter(
     (section) => section.path !== "/create-care-request" || roles.includes("Client") || roles.includes("Admin"),
   );
+  const heroEyebrow = hasOperationalAccess ? "Resumen operativo" : isAnonymous ? "Acceso y cuenta" : "Estado de cuenta";
+  const heroTitle = hasOperationalAccess
+    ? "Una consola mobile clara para navegar, capturar y supervisar."
+    : isAnonymous
+      ? "Accede primero a tu cuenta antes de entrar al flujo operativo."
+      : "Tu cuenta necesita una validacion adicional antes de operar.";
+  const heroDescription = hasOperationalAccess
+    ? "La app ahora se organiza como un workspace: secciones visibles desde el inicio, navegacion lateral consistente y accesos directos segun el estado de la sesion."
+    : isAnonymous
+      ? "La pantalla principal publica se concentra en acceso, registro y estado de sesion. Las solicitudes y acciones operativas aparecen solo despues de autenticarte."
+      : "Mientras la revision administrativa siga pendiente, la pantalla principal prioriza estado, cuenta y herramientas no operativas.";
+  const sessionTitle = hasOperationalAccess
+    ? "La experiencia ya esta lista para operar."
+    : isAnonymous
+      ? "Necesitas iniciar sesion para ver solicitudes y acciones operativas."
+      : "Tu sesion esta activa, pero el acceso operativo sigue limitado.";
+  const sessionBody = isAuthenticated
+    ? `${email ?? "No hay cuenta cargada"} • ${roles.length > 0 ? roles.join(", ") : "Sin roles cargados"}`
+    : "Sin sesion activa • Accede o registrate para continuar";
+  const recommendedSteps = hasOperationalAccess
+    ? [
+      "1. Revisa el resumen y el estado de tu sesion.",
+      "2. Entra a la cola para revisar solicitudes activas.",
+      "3. Usa Nueva solicitud cuando necesites capturar trabajo nuevo.",
+      "4. Abre Cuenta o Diagnostico solo cuando el flujo lo requiera.",
+    ]
+    : isAnonymous
+      ? [
+        "1. Inicia sesion o registrate desde esta pantalla.",
+        "2. Completa tu perfil si la plataforma te lo solicita.",
+        "3. Vuelve al resumen para desbloquear solicitudes y acciones segun tu rol.",
+      ]
+      : [
+        "1. Revisa el estado actual de tu cuenta.",
+        "2. Ve a Cuenta si necesitas cambiar sesion o confirmar acceso.",
+        "3. Espera la completacion administrativa para habilitar la operacion completa.",
+      ];
 
   return (
     <MobileWorkspaceShell
-      eyebrow="Resumen operativo"
-      title="Una consola mobile clara para navegar, capturar y supervisar."
-      description="La app ahora se organiza como un workspace: secciones visibles desde el inicio, navegacion lateral consistente y accesos directos segun el estado de la sesion."
+      eyebrow={heroEyebrow}
+      title={heroTitle}
+      description={heroDescription}
       actions={
         <>
-          <Pressable
-            onPress={() => {
-              logClientEvent("mobile.ui", "Home hero opened create care request");
-              if (canCreateRequest) {
-                router.push("/create-care-request");
-              }
-            }}
-            style={({ pressed }) => [
-              styles.primaryButton,
-              !canCreateRequest && styles.disabledButton,
-              pressed && styles.buttonPressed,
-            ]}
-          >
-            <Text style={styles.primaryButtonText}>Crear solicitud</Text>
-          </Pressable>
+          {hasOperationalAccess ? (
+            <>
+              <Pressable
+                onPress={() => {
+                  logClientEvent("mobile.ui", "Home hero opened create care request");
+                  if (canCreateRequest) {
+                    router.push("/create-care-request");
+                  }
+                }}
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  !canCreateRequest && styles.disabledButton,
+                  pressed && styles.buttonPressed,
+                ]}
+              >
+                <Text style={styles.primaryButtonText}>Crear solicitud</Text>
+              </Pressable>
 
-          <Pressable
-            onPress={() => {
-              logClientEvent("mobile.ui", "Home hero opened care requests queue");
-              if (!isNurseUnderReview) {
-                router.push("/care-requests");
-              }
-            }}
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              isNurseUnderReview && styles.disabledButton,
-              pressed && styles.buttonPressed,
-            ]}
-          >
-            <Text style={styles.secondaryButtonText}>Abrir cola de solicitudes</Text>
-          </Pressable>
+              <Pressable
+                onPress={() => {
+                  logClientEvent("mobile.ui", "Home hero opened care requests queue");
+                  if (!isNurseUnderReview) {
+                    router.push("/care-requests");
+                  }
+                }}
+                style={({ pressed }) => [
+                  styles.secondaryButton,
+                  isNurseUnderReview && styles.disabledButton,
+                  pressed && styles.buttonPressed,
+                ]}
+              >
+                <Text style={styles.secondaryButtonText}>Abrir cola de solicitudes</Text>
+              </Pressable>
+            </>
+          ) : isAnonymous ? (
+            <>
+              <Pressable
+                onPress={() => {
+                  logClientEvent("mobile.ui", "Home hero opened login");
+                  router.push("/login");
+                }}
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  pressed && styles.buttonPressed,
+                ]}
+              >
+                <Text style={styles.primaryButtonText}>Iniciar sesion</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => {
+                  logClientEvent("mobile.ui", "Home hero opened register");
+                  router.push("/register");
+                }}
+                style={({ pressed }) => [
+                  styles.secondaryButton,
+                  pressed && styles.buttonPressed,
+                ]}
+              >
+                <Text style={styles.secondaryButtonText}>Registrar cuenta</Text>
+              </Pressable>
+            </>
+          ) : (
+            <Pressable
+              onPress={() => {
+                logClientEvent("mobile.ui", "Home hero opened account");
+                router.push("/account");
+              }}
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              <Text style={styles.secondaryButtonText}>Abrir cuenta</Text>
+            </Pressable>
+          )}
         </>
       }
     >
       <View style={styles.grid}>
         <View style={styles.sessionCard}>
           <Text style={styles.sessionEyebrow}>Sesion actual</Text>
-          <Text style={styles.sessionTitle}>
-            {isAuthenticated ? "La experiencia ya esta lista para operar." : "Necesitas iniciar sesion para operar con normalidad."}
-          </Text>
-          <Text style={styles.sessionBody}>
-            {email ?? "No hay cuenta cargada"} • {roles.length > 0 ? roles.join(", ") : "Sin roles cargados"}
-          </Text>
+          <Text style={styles.sessionTitle}>{sessionTitle}</Text>
+          <Text style={styles.sessionBody}>{sessionBody}</Text>
           {isNurseUnderReview ? (
             <Text style={styles.reviewNote}>
               Tu cuenta de enfermeria espera que administracion complete el perfil. El acceso operativo se habilitara despues de esa completacion.
@@ -121,11 +224,12 @@ export default function HomeScreen() {
 
       <View style={styles.recommendedCard}>
         <Text style={styles.cardEyebrow}>Flujo recomendado</Text>
-        <Text style={styles.cardTitle}>Un recorrido simple y profesional.</Text>
-        <Text style={styles.cardBody}>1. Revisa el resumen y el estado de tu sesion.</Text>
-        <Text style={styles.cardBody}>2. Entra a la cola para revisar solicitudes activas.</Text>
-        <Text style={styles.cardBody}>3. Usa Nueva solicitud cuando necesites capturar trabajo nuevo.</Text>
-        <Text style={styles.cardBody}>4. Abre Cuenta o Diagnostico solo cuando el flujo lo requiera.</Text>
+        <Text style={styles.cardTitle}>
+          {hasOperationalAccess ? "Un recorrido simple y profesional." : isAnonymous ? "Primero acceso, despues operacion." : "Estado claro mientras esperas aprobacion."}
+        </Text>
+        {recommendedSteps.map((step) => (
+          <Text key={step} style={styles.cardBody}>{step}</Text>
+        ))}
       </View>
     </MobileWorkspaceShell>
   );

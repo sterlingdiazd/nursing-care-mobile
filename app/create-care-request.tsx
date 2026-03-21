@@ -229,6 +229,12 @@ export default function CreateCareRequestScreen() {
   };
 
   useEffect(() => {
+    if (isReady && isAuthenticated && !canCreateRequest) {
+      router.replace("/care-requests");
+    }
+  }, [canCreateRequest, isAuthenticated, isReady]);
+
+  useEffect(() => {
     if (!isReady || !isAuthenticated || !userId || !form.careRequestType) {
       setExistingSameUnitTypeCount(0);
       return;

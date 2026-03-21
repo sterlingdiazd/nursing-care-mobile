@@ -33,8 +33,18 @@ interface NavigationItem {
 
 const navigationItems: NavigationItem[] = [
   { label: "Resumen", path: "/", description: "Pantalla principal" },
-  { label: "Solicitudes", path: "/care-requests", description: "Cola y revision" },
-  { label: "Nueva solicitud", path: "/create-care-request", description: "Captura guiada" },
+  {
+    label: "Solicitudes",
+    path: "/care-requests",
+    description: "Cola y revision",
+    hideWhenAnonymous: true,
+  },
+  {
+    label: "Nueva solicitud",
+    path: "/create-care-request",
+    description: "Captura guiada",
+    hideWhenAnonymous: true,
+  },
   { label: "Cuenta", path: "/account", description: "Sesion y acceso" },
   { label: "Diagnostico", path: "/diagnostics", description: "Backend y logs" },
   { label: "Herramientas", path: "/tools", description: "Utilidades avanzadas" },
@@ -60,6 +70,12 @@ function getActivePath(pathname: string) {
   return pathname;
 }
 
+function isOperationalPath(pathname: string) {
+  return pathname === "/care-requests"
+    || pathname.startsWith("/care-requests/")
+    || pathname === "/create-care-request";
+}
+
 export default function MobileWorkspaceShell({
   eyebrow,
   title,
@@ -68,12 +84,22 @@ export default function MobileWorkspaceShell({
   children,
 }: MobileWorkspaceShellProps) {
   const pathname = usePathname();
-  const { email, isAuthenticated, logout, roles, requiresProfileCompletion, requiresAdminReview, profileType } = useAuth();
+  const {
+    email,
+    isAuthenticated,
+    isReady,
+    logout,
+    roles,
+    requiresProfileCompletion,
+    requiresAdminReview,
+    profileType,
+  } = useAuth();
   const { width } = useWindowDimensions();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
 
   const activePath = getActivePath(pathname);
+  const operationalPath = isOperationalPath(pathname);
   const isWideLayout = hasMounted && width >= 1024;
 
   useEffect(() => {
@@ -85,11 +111,31 @@ export default function MobileWorkspaceShell({
       router.replace("/register");
     }
   }, [pathname, requiresProfileCompletion]);
+
   useEffect(() => {
-    if (requiresAdminReview && profileType === 1 && pathname !== "/" && pathname !== "/account") {
+    if (isReady && operationalPath && !isAuthenticated) {
+      router.replace("/login");
+    }
+  }, [isAuthenticated, isReady, operationalPath]);
+
+  useEffect(() => {
+    if (requiresAdminReview && profileType === 1 && operationalPath) {
       router.replace("/");
     }
-  }, [pathname, profileType, requiresAdminReview]);
+  }, [operationalPath, profileType, requiresAdminReview]);
+
+  useEffect(() => {
+    if (
+      isReady
+      && pathname === "/create-care-request"
+      && isAuthenticated
+      && !roles.includes("Client")
+      && !roles.includes("Admin")
+    ) {
+      router.replace("/care-requests");
+    }
+  }, [isAuthenticated, isReady, pathname, roles]);
+
   const isNurseUnderReview = requiresAdminReview && profileType === 1;
   const visibleItems = useMemo(
     () =>
@@ -114,6 +160,21 @@ export default function MobileWorkspaceShell({
       }),
     [isAuthenticated, isNurseUnderReview, roles],
   );
+
+  if (
+    (requiresProfileCompletion && pathname !== "/register")
+    || (isReady && operationalPath && !isAuthenticated)
+    || (isNurseUnderReview && operationalPath)
+    || (
+      isReady
+      && pathname === "/create-care-request"
+      && isAuthenticated
+      && !roles.includes("Client")
+      && !roles.includes("Admin")
+    )
+  ) {
+    return null;
+  }
 
   const currentItem =
     visibleItems.find((item) => item.path === activePath)
