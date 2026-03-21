@@ -45,7 +45,7 @@ function getStatusLabel(status: CareRequestDto["status"]) {
 
 export default function CareRequestDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { roles } = useAuth();
+  const { roles, userId } = useAuth();
   const [careRequest, setCareRequest] = useState<CareRequestDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isActing, setIsActing] = useState(false);
@@ -100,8 +100,10 @@ export default function CareRequestDetailScreen() {
   const canApproveOrReject =
     roles.includes("Admin") && careRequest?.status === "Pending";
   const canComplete =
-    (roles.includes("Admin") || roles.includes("Nurse")) &&
-    careRequest?.status === "Approved";
+    roles.includes("Nurse") &&
+    Boolean(userId) &&
+    careRequest?.status === "Approved" &&
+    careRequest.assignedNurse === userId;
 
   if (isLoading && !careRequest) {
     return (
@@ -151,6 +153,15 @@ export default function CareRequestDetailScreen() {
         <View style={styles.metaGroup}>
           <Text style={styles.metaText}>ID de solicitud: {careRequest.id}</Text>
           <Text style={styles.metaText}>ID de usuario: {careRequest.userID}</Text>
+          <Text style={styles.metaText}>
+            Enfermera asignada: {careRequest.assignedNurse ?? "Sin asignar"}
+          </Text>
+          <Text style={styles.metaText}>
+            Enfermera sugerida: {careRequest.suggestedNurse ?? "Sin sugerencia"}
+          </Text>
+          <Text style={styles.metaText}>
+            Fecha del servicio: {careRequest.careRequestDate ?? "Sin fecha"}
+          </Text>
           <Text style={styles.metaText}>
             Creada: {new Date(careRequest.createdAtUtc).toLocaleString()}
           </Text>
