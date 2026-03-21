@@ -26,6 +26,12 @@ const nurseSpecialties = [
   "Home Care",
 ];
 
+const clientProfileCopy =
+  "Perfil de cliente seleccionado. No hay campos adicionales por completar en esta etapa y el acceso operativo queda disponible cuando termine el registro.";
+
+const nurseProfileCopy =
+  "Perfil de enfermeria seleccionado. Podras iniciar sesion al terminar el registro, pero el panel quedara en revision administrativa hasta que completen tu perfil.";
+
 export default function RegisterScreen() {
   const router = useRouter();
   const {
@@ -417,8 +423,31 @@ export default function RegisterScreen() {
         </View>
       )}
 
+      {!isProfileCompletionMode && (
+        <View
+          style={[
+            styles.profileInfoBox,
+            profileType === UserProfileType.Nurse ? styles.nurseInfoBox : styles.clientInfoBox,
+          ]}
+        >
+          <Text style={styles.profileInfoTitle}>
+            {profileType === UserProfileType.Nurse ? "Perfil de enfermeria" : "Perfil de cliente"}
+          </Text>
+          <Text style={styles.profileInfoText}>
+            {profileType === UserProfileType.Nurse ? nurseProfileCopy : clientProfileCopy}
+          </Text>
+        </View>
+      )}
+
       {isNurseRegistration ? (
         <>
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionCardTitle}>Datos del perfil de enfermeria</Text>
+            <Text style={styles.sectionCardCopy}>
+              Completa estos datos para que administracion pueda terminar la configuracion del perfil.
+            </Text>
+          </View>
+
           <View style={styles.formGroup}>
             <Text style={styles.label}>Fecha de contratacion</Text>
             <TextInput
@@ -502,7 +531,7 @@ export default function RegisterScreen() {
       {!isProfileCompletionMode && profileType === UserProfileType.Nurse ? (
         <View style={styles.infoBox}>
           <Text style={styles.infoText}>
-            Como cuenta de enfermeria, podras iniciar sesion al terminar el registro, pero el acceso operativo quedara en revision administrativa.
+            Despues del registro veras un panel autenticado con estado de revision administrativa hasta que completen el perfil.
           </Text>
         </View>
       ) : null}
@@ -649,6 +678,50 @@ const styles = StyleSheet.create({
   },
   specialtyChipTextSelected: {
     color: "#fff",
+  },
+  profileInfoBox: {
+    marginBottom: 16,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  clientInfoBox: {
+    backgroundColor: "#ecfdf5",
+    borderColor: "#a7f3d0",
+  },
+  nurseInfoBox: {
+    backgroundColor: "#eff6ff",
+    borderColor: "#bfdbfe",
+  },
+  profileInfoTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#102a43",
+    marginBottom: 6,
+  },
+  profileInfoText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#52637a",
+  },
+  sectionCard: {
+    marginBottom: 16,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: "#f8fafc",
+    borderWidth: 1,
+    borderColor: "#dbe5f3",
+  },
+  sectionCardTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#102a43",
+    marginBottom: 4,
+  },
+  sectionCardCopy: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#52637a",
   },
   infoBox: {
     backgroundColor: "#e3f2fd",
