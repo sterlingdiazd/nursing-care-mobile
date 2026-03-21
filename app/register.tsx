@@ -209,7 +209,7 @@ export default function RegisterScreen() {
         if (profileType === UserProfileType.Nurse) {
           Alert.alert(
             "Registro exitoso",
-            "Tu cuenta ya puede iniciar sesion, pero el panel quedara en revision administrativa hasta que completen tu perfil de enfermeria.",
+            "Tu cuenta ya puede iniciar sesion, pero el panel mostrara que administracion debe completar tu perfil de enfermeria antes de habilitar el acceso operativo.",
             [
               {
                 text: "Aceptar",
@@ -220,11 +220,11 @@ export default function RegisterScreen() {
         } else {
           Alert.alert(
             "Registro exitoso",
-            "Ya puedes iniciar sesion con tus credenciales.",
+            "Tu cuenta ya entro al espacio autenticado.",
             [
               {
-                text: "Ir a iniciar sesion",
-                onPress: () => router.push("/login"),
+                text: "Continuar",
+                onPress: () => router.replace("/"),
               },
             ]
           );
@@ -417,7 +417,7 @@ export default function RegisterScreen() {
                   profileType === UserProfileType.Nurse ? styles.radioButtonSelected : null,
                 ]}
               />
-              <Text style={styles.radioLabel}>Enfermeria (entra en revision administrativa)</Text>
+              <Text style={styles.radioLabel}>Enfermeria (requiere completacion administrativa)</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -531,7 +531,7 @@ export default function RegisterScreen() {
       {!isProfileCompletionMode && profileType === UserProfileType.Nurse ? (
         <View style={styles.infoBox}>
           <Text style={styles.infoText}>
-            Despues del registro veras un panel autenticado con estado de revision administrativa hasta que completen el perfil.
+            Despues del registro veras un panel autenticado que indica que administracion debe completar tu perfil antes de habilitar las acciones clinicas.
           </Text>
         </View>
       ) : null}

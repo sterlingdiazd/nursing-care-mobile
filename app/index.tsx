@@ -93,7 +93,7 @@ export default function HomeScreen() {
           </Text>
           {isNurseUnderReview ? (
             <Text style={styles.reviewNote}>
-              Tu cuenta de enfermeria esta en revision administrativa. El acceso operativo se habilitara cuando completen tu perfil.
+              Tu cuenta de enfermeria espera que administracion complete el perfil. El acceso operativo se habilitara despues de esa completacion.
             </Text>
           ) : null}
         </View>
