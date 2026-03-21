@@ -76,7 +76,7 @@ function volumeDiscountPercent(existingCount: number): number {
 }
 
 export default function CreateCareRequestScreen() {
-  const { isAuthenticated, token, userId } = useAuth();
+  const { isAuthenticated, isReady, token, userId } = useAuth();
   const [form, setForm] = useState<CreateCareRequestDto>({
     careRequestDescription: "",
     careRequestType: "domicilio_24h",
@@ -144,6 +144,15 @@ export default function CreateCareRequestScreen() {
       return;
     }
 
+    if (!isReady) {
+      logClientEvent("mobile.ui", "Solicitud bloqueada mientras la sesion termina de cargar");
+      Alert.alert(
+        "Sesion cargando",
+        "La sesion todavia se esta preparando. Espera un momento e intenta de nuevo.",
+      );
+      return;
+    }
+
     if (!token || !userId) {
       logClientEvent("mobile.ui", "Solicitud bloqueada por sesion incompleta");
       Alert.alert(
@@ -207,7 +216,7 @@ export default function CreateCareRequestScreen() {
   };
 
   useEffect(() => {
-    if (!userId || !form.careRequestType) {
+    if (!isReady || !isAuthenticated || !userId || !form.careRequestType) {
       setExistingSameUnitTypeCount(0);
       return;
     }
@@ -220,7 +229,7 @@ export default function CreateCareRequestScreen() {
         setExistingSameUnitTypeCount(count);
       })
       .catch(() => setExistingSameUnitTypeCount(0));
-  }, [derivedUnitType, form.careRequestType, userId]);
+  }, [derivedUnitType, form.careRequestType, isAuthenticated, isReady, userId]);
 
   return (
     <MobileWorkspaceShell
@@ -277,7 +286,7 @@ export default function CreateCareRequestScreen() {
               </Text>
             </View>
 
-            {!userId && (
+            {isReady && isAuthenticated && !userId && (
               <View style={styles.warningBox}>
                 <Text style={styles.warningText}>
                   No hay un identificador de usuario disponible en la sesion. Vuelve a iniciar
