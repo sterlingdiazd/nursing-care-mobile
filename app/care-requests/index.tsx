@@ -99,7 +99,7 @@ export default function CareRequestsScreen() {
             <Text style={styles.secondaryButtonText}>Actualizar cola</Text>
           </Pressable>
 
-          {(roles.includes("Client") || roles.includes("Nurse") || roles.includes("Admin")) && (
+          {(roles.includes("Client") || roles.includes("Admin")) && (
             <Pressable
               onPress={() => router.push("/create-care-request")}
               style={({ pressed }) => [

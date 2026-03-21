@@ -76,9 +76,12 @@ function volumeDiscountPercent(existingCount: number): number {
 }
 
 export default function CreateCareRequestScreen() {
-  const { isAuthenticated, isReady, token, userId } = useAuth();
+  const { isAuthenticated, isReady, token, userId, roles } = useAuth();
+  const canCreateRequest = roles.includes("Client") || roles.includes("Admin");
   const [form, setForm] = useState<CreateCareRequestDto>({
     careRequestDescription: "",
+    suggestedNurse: "",
+    careRequestDate: undefined,
     careRequestType: "domicilio_24h",
     unit: 1,
     distanceFactor: "local",
@@ -121,6 +124,8 @@ export default function CreateCareRequestScreen() {
   const resetForm = () => {
     setForm({
       careRequestDescription: "",
+      suggestedNurse: "",
+      careRequestDate: undefined,
       careRequestType: "domicilio_24h",
       unit: 1,
       distanceFactor: "local",
@@ -140,6 +145,14 @@ export default function CreateCareRequestScreen() {
       Alert.alert(
         "Validacion",
         "La descripcion de la solicitud y el tipo de servicio son obligatorios.",
+      );
+      return;
+    }
+
+    if (!canCreateRequest) {
+      Alert.alert(
+        "Accion no permitida",
+        "Solo los perfiles de cliente o administracion pueden crear solicitudes de cuidado.",
       );
       return;
     }
@@ -240,11 +253,11 @@ export default function CreateCareRequestScreen() {
         <>
           <Pressable
             onPress={onSubmit}
-            disabled={isLoading}
+            disabled={isLoading || !canCreateRequest}
             style={({ pressed }) => [
               styles.heroPrimaryButton,
-              isLoading && styles.buttonDisabled,
-              pressed && !isLoading && styles.buttonPressed,
+              (isLoading || !canCreateRequest) && styles.buttonDisabled,
+              pressed && !isLoading && canCreateRequest && styles.buttonPressed,
             ]}
           >
             {isLoading ? (
@@ -281,10 +294,19 @@ export default function CreateCareRequestScreen() {
           <View style={styles.card}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Datos de la solicitud</Text>
-              <Text style={styles.sectionCopy}>
-                Esta solicitud se enviara al mismo backend protegido que usa la app web.
-              </Text>
-            </View>
+            <Text style={styles.sectionCopy}>
+              Esta solicitud se enviara al mismo backend protegido que usa la app web.
+            </Text>
+          </View>
+
+            {!canCreateRequest && (
+              <View style={styles.warningBox}>
+                <Text style={styles.warningText}>
+                  Solo los perfiles de cliente o administracion pueden crear solicitudes. Usa la
+                  cola para revisar el trabajo ya asignado.
+                </Text>
+              </View>
+            )}
 
             {isReady && isAuthenticated && !userId && (
               <View style={styles.warningBox}>
@@ -307,6 +329,30 @@ export default function CreateCareRequestScreen() {
             />
             <Text style={styles.helperText}>
               {form.careRequestDescription.trim().length} caracteres
+            </Text>
+
+            <Text style={styles.label}>Enfermera sugerida (opcional)</Text>
+            <TextInput
+              value={form.suggestedNurse ?? ""}
+              onChangeText={(text) => setForm((prev) => ({ ...prev, suggestedNurse: text }))}
+              placeholder="Nombre de la enfermera preferida"
+              editable={!isLoading}
+              style={[styles.input, isLoading && styles.inputDisabled]}
+            />
+            <Text style={styles.helperText}>
+              Administracion decidira si asigna la enfermera sugerida u otra disponible.
+            </Text>
+
+            <Text style={styles.label}>Fecha del servicio (opcional)</Text>
+            <TextInput
+              value={form.careRequestDate ?? ""}
+              onChangeText={(text) => setForm((prev) => ({ ...prev, careRequestDate: text }))}
+              placeholder="YYYY-MM-DD"
+              editable={!isLoading}
+              style={[styles.input, isLoading && styles.inputDisabled]}
+            />
+            <Text style={styles.helperText}>
+              La enfermera asignada no podra completar la solicitud antes de la fecha indicada.
             </Text>
 
             <Text style={styles.label}>Servicio</Text>
@@ -485,11 +531,11 @@ export default function CreateCareRequestScreen() {
             <View style={styles.buttonRow}>
               <Pressable
                 onPress={onSubmit}
-                disabled={isLoading}
+                disabled={isLoading || !canCreateRequest}
                 style={({ pressed }) => [
                   styles.button,
-                  isLoading && styles.buttonDisabled,
-                  pressed && !isLoading && styles.buttonPressed,
+                  (isLoading || !canCreateRequest) && styles.buttonDisabled,
+                  pressed && !isLoading && canCreateRequest && styles.buttonPressed,
                 ]}
               >
                 {isLoading ? (

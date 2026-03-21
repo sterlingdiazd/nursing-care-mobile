@@ -2,9 +2,7 @@ export interface CreateCareRequestDto {
   careRequestDescription: string;
   careRequestType: string;
   unit?: number;
-  nurseId?: string;
   suggestedNurse?: string;
-  assignedNurse?: string;
   price?: number;
   clientBasePriceOverride?: number;
   distanceFactor?: string;
@@ -27,6 +25,8 @@ export interface CareRequestDto {
   clientBasePrice?: number | null;
   medicalSuppliesCost?: number | null;
   careRequestDate?: string | null;
+  suggestedNurse?: string | null;
+  assignedNurse?: string | null;
   status: "Pending" | "Approved" | "Rejected" | "Completed";
   createdAtUtc: string;
   updatedAtUtc: string;

@@ -36,6 +36,10 @@ const quickSections = [
 export default function HomeScreen() {
   const { email, isAuthenticated, roles, requiresAdminReview, profileType } = useAuth();
   const isNurseUnderReview = requiresAdminReview && profileType === 1;
+  const canCreateRequest = (roles.includes("Client") || roles.includes("Admin")) && !isNurseUnderReview;
+  const quickSectionsToShow = quickSections.filter(
+    (section) => section.path !== "/create-care-request" || roles.includes("Client") || roles.includes("Admin"),
+  );
 
   return (
     <MobileWorkspaceShell
@@ -47,13 +51,13 @@ export default function HomeScreen() {
           <Pressable
             onPress={() => {
               logClientEvent("mobile.ui", "Home hero opened create care request");
-              if (!isNurseUnderReview) {
+              if (canCreateRequest) {
                 router.push("/create-care-request");
               }
             }}
             style={({ pressed }) => [
               styles.primaryButton,
-              isNurseUnderReview && styles.disabledButton,
+              !canCreateRequest && styles.disabledButton,
               pressed && styles.buttonPressed,
             ]}
           >
@@ -94,7 +98,7 @@ export default function HomeScreen() {
           ) : null}
         </View>
 
-        {quickSections.map((section) => (
+        {quickSectionsToShow.map((section) => (
           <Pressable
             key={section.path}
             onPress={() => {

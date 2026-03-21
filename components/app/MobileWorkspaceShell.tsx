@@ -106,9 +106,13 @@ export default function MobileWorkspaceShell({
           return false;
         }
 
+        if (item.path === "/create-care-request" && !roles.includes("Client") && !roles.includes("Admin")) {
+          return false;
+        }
+
         return true;
       }),
-    [isAuthenticated, isNurseUnderReview],
+    [isAuthenticated, isNurseUnderReview, roles],
   );
 
   const currentItem =
