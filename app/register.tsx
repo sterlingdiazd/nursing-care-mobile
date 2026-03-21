@@ -20,6 +20,8 @@ import {
 import {
   getExactDigitsFieldError,
   getOptionalDigitsFieldError,
+  getRejectedDigitsOnlyInputError,
+  getRejectedTextOnlyInputError,
   getTextOnlyFieldError,
   sanitizeDigitsOnlyInput,
   sanitizeTextOnlyInput,
@@ -284,7 +286,10 @@ export default function RegisterScreen() {
           style={[styles.input, nameError ? styles.inputError : null]}
           placeholder="Tu nombre"
           value={name}
-          onChangeText={(value) => setName(sanitizeTextOnlyInput(value))}
+          onChangeText={(value) => {
+            setName(sanitizeTextOnlyInput(value));
+            setNameError(getRejectedTextOnlyInputError(value, "El nombre"));
+          }}
           onBlur={() => setNameError(getTextOnlyFieldError(name, "El nombre"))}
           editable={!isLoading}
           placeholderTextColor="#999"
@@ -298,7 +303,10 @@ export default function RegisterScreen() {
           style={[styles.input, lastNameError ? styles.inputError : null]}
           placeholder="Tu apellido"
           value={lastName}
-          onChangeText={(value) => setLastName(sanitizeTextOnlyInput(value))}
+          onChangeText={(value) => {
+            setLastName(sanitizeTextOnlyInput(value));
+            setLastNameError(getRejectedTextOnlyInputError(value, "El apellido"));
+          }}
           onBlur={() => setLastNameError(getTextOnlyFieldError(lastName, "El apellido"))}
           editable={!isLoading}
           placeholderTextColor="#999"
@@ -312,7 +320,10 @@ export default function RegisterScreen() {
           style={[styles.input, identificationNumberError ? styles.inputError : null]}
           placeholder="00112345678"
           value={identificationNumber}
-          onChangeText={(value) => setIdentificationNumber(sanitizeDigitsOnlyInput(value, 11))}
+          onChangeText={(value) => {
+            setIdentificationNumber(sanitizeDigitsOnlyInput(value, 11));
+            setIdentificationNumberError(getRejectedDigitsOnlyInputError(value, "La cedula", 11));
+          }}
           onBlur={() => setIdentificationNumberError(getExactDigitsFieldError(identificationNumber, "La cedula", 11))}
           keyboardType="number-pad"
           maxLength={11}
@@ -330,7 +341,10 @@ export default function RegisterScreen() {
           style={[styles.input, phoneError ? styles.inputError : null]}
           placeholder="8095550101"
           value={phone}
-          onChangeText={(value) => setPhone(sanitizeDigitsOnlyInput(value, 10))}
+          onChangeText={(value) => {
+            setPhone(sanitizeDigitsOnlyInput(value, 10));
+            setPhoneError(getRejectedDigitsOnlyInputError(value, "El telefono", 10));
+          }}
           onBlur={() => setPhoneError(getExactDigitsFieldError(phone, "El telefono", 10))}
           keyboardType="number-pad"
           maxLength={10}
@@ -496,7 +510,10 @@ export default function RegisterScreen() {
               style={[styles.input, licenseIdError ? styles.inputError : null]}
               placeholder="Opcional"
               value={licenseId}
-              onChangeText={(value) => setLicenseId(sanitizeDigitsOnlyInput(value))}
+              onChangeText={(value) => {
+                setLicenseId(sanitizeDigitsOnlyInput(value));
+                setLicenseIdError(getRejectedDigitsOnlyInputError(value, "La licencia"));
+              }}
               onBlur={() => setLicenseIdError(getOptionalDigitsFieldError(licenseId, "La licencia"))}
               keyboardType="number-pad"
               editable={!isLoading}
@@ -511,7 +528,10 @@ export default function RegisterScreen() {
               style={[styles.input, bankNameError ? styles.inputError : null]}
               placeholder="Banco principal"
               value={bankName}
-              onChangeText={(value) => setBankName(sanitizeTextOnlyInput(value))}
+              onChangeText={(value) => {
+                setBankName(sanitizeTextOnlyInput(value));
+                setBankNameError(getRejectedTextOnlyInputError(value, "El banco"));
+              }}
               onBlur={() => setBankNameError(getTextOnlyFieldError(bankName, "El banco"))}
               editable={!isLoading}
               placeholderTextColor="#999"
@@ -525,7 +545,10 @@ export default function RegisterScreen() {
               style={[styles.input, accountNumberError ? styles.inputError : null]}
               placeholder="Opcional"
               value={accountNumber}
-              onChangeText={(value) => setAccountNumber(sanitizeDigitsOnlyInput(value))}
+              onChangeText={(value) => {
+                setAccountNumber(sanitizeDigitsOnlyInput(value));
+                setAccountNumberError(getRejectedDigitsOnlyInputError(value, "El numero de cuenta"));
+              }}
               onBlur={() => setAccountNumberError(getOptionalDigitsFieldError(accountNumber, "El numero de cuenta"))}
               keyboardType="number-pad"
               editable={!isLoading}
