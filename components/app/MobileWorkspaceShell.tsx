@@ -1,4 +1,4 @@
-import { ReactNode, useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import { usePathname, router } from "expo-router";
 import {
   KeyboardAvoidingView,
@@ -71,9 +71,14 @@ export default function MobileWorkspaceShell({
   const { email, isAuthenticated, logout, roles } = useAuth();
   const { width } = useWindowDimensions();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
 
   const activePath = getActivePath(pathname);
-  const isWideLayout = width >= 1024;
+  const isWideLayout = hasMounted && width >= 1024;
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
   const visibleItems = useMemo(
     () =>
       navigationItems.filter((item) => {

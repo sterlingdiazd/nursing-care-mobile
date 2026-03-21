@@ -19,6 +19,26 @@ import {
   getLocalHttpsCertificateWarning,
 } from "@/src/services/authService";
 
+function readOauthParams(url: string) {
+  const parsed = Linking.parse(url);
+  const initialQueryParams = parsed.queryParams ?? {};
+  const hashIndex = url.indexOf("#");
+
+  if (hashIndex < 0) {
+    return initialQueryParams;
+  }
+
+  const fragment = url.slice(hashIndex + 1);
+  const normalizedFragment = fragment.startsWith("?") ? fragment.slice(1) : fragment;
+  const hashParams = new URLSearchParams(normalizedFragment);
+
+  hashParams.forEach((value, key) => {
+    initialQueryParams[key] = value;
+  });
+
+  return initialQueryParams;
+}
+
 export default function LoginScreen() {
   const router = useRouter();
   const { login, completeOAuthLogin, isLoading } = useAuth();
@@ -84,8 +104,8 @@ export default function LoginScreen() {
         return;
       }
 
-      const parsed = Linking.parse(url);
-      const oauthStatus = getParamValue(parsed.queryParams?.oauth);
+      const queryParams = readOauthParams(url);
+      const oauthStatus = getParamValue(queryParams.oauth);
 
       if (!oauthStatus) {
         return;
@@ -96,15 +116,15 @@ export default function LoginScreen() {
       if (oauthStatus === "error") {
         Alert.alert(
           "Error con Google",
-          getParamValue(parsed.queryParams?.message) || "No fue posible iniciar sesion con Google."
+          getParamValue(queryParams.message) || "No fue posible iniciar sesion con Google."
         );
         return;
       }
 
-      const token = getParamValue(parsed.queryParams?.token);
-      const refreshToken = getParamValue(parsed.queryParams?.refreshToken);
-      const emailFromRedirect = getParamValue(parsed.queryParams?.email);
-      const roles = (getParamValue(parsed.queryParams?.roles) || "")
+      const token = getParamValue(queryParams.token);
+      const refreshToken = getParamValue(queryParams.refreshToken);
+      const emailFromRedirect = getParamValue(queryParams.email);
+      const roles = (getParamValue(queryParams.roles) || "")
         .split(",")
         .map((role) => role.trim())
         .filter(Boolean);
@@ -117,8 +137,8 @@ export default function LoginScreen() {
       const response: AuthResponse = {
         token,
         refreshToken,
-        expiresAtUtc: getParamValue(parsed.queryParams?.expiresAtUtc) ?? null,
-        userId: getParamValue(parsed.queryParams?.userId) ?? "",
+        expiresAtUtc: getParamValue(queryParams.expiresAtUtc) ?? null,
+        userId: getParamValue(queryParams.userId) ?? "",
         email: emailFromRedirect,
         roles,
       };

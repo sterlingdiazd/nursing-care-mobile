@@ -41,13 +41,21 @@ function getStatusLabel(status: CareRequestDto["status"]) {
 }
 
 export default function CareRequestsScreen() {
-  const { roles } = useAuth();
+  const { isAuthenticated, isReady, roles } = useAuth();
   const [careRequests, setCareRequests] = useState<CareRequestDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const loadCareRequests = async () => {
+    if (!isAuthenticated) {
+      setCareRequests([]);
+      setError("Inicia sesion para cargar tus solicitudes.");
+      setIsLoading(false);
+      return;
+    }
+
     setError(null);
+    setIsLoading(true);
 
     try {
       const response = await getCareRequests();
@@ -67,8 +75,12 @@ export default function CareRequestsScreen() {
   };
 
   useEffect(() => {
-    loadCareRequests();
-  }, []);
+    if (!isReady) {
+      return;
+    }
+
+    void loadCareRequests();
+  }, [isAuthenticated, isReady]);
 
   return (
     <MobileWorkspaceShell

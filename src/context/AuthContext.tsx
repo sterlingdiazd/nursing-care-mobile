@@ -23,6 +23,7 @@ interface AuthContextValue {
   roles: string[];
   profileType: UserProfileType | null;
   isAuthenticated: boolean;
+  isReady: boolean;
   isLoading: boolean;
   error: string | null;
   setSession: (response: AuthResponse) => void;
@@ -59,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [email, setEmail] = useState<string | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
   const [profileType, setProfileType] = useState<UserProfileType | null>(null);
+  const [isReady, setIsReady] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -85,6 +87,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     syncAuthState().catch((err) => {
       console.error("Failed to load auth state:", err);
+    }).finally(() => {
+      setIsReady(true);
     });
 
     const unsubscribe = subscribeToAuthSession(() => {
@@ -270,6 +274,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       roles,
       profileType,
       isAuthenticated: Boolean(token),
+      isReady,
       isLoading,
       error,
       setSession,
@@ -280,7 +285,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       clearError,
     }),
-    [token, userId, email, roles, profileType, isLoading, error],
+    [token, userId, email, roles, profileType, isReady, isLoading, error],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
