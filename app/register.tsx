@@ -18,6 +18,14 @@ import {
   getLocalHttpsCertificateWarning,
 } from "@/src/services/authService";
 
+const nurseSpecialties = [
+  "Adult Care",
+  "Pediatric Care",
+  "Geriatric Care",
+  "Critical Care",
+  "Home Care",
+];
+
 export default function RegisterScreen() {
   const router = useRouter();
   const {
@@ -38,7 +46,13 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [profileType, setProfileType] = useState<UserProfileType>(UserProfileType.Client);
+  const [hireDate, setHireDate] = useState("");
+  const [specialty, setSpecialty] = useState("");
+  const [licenseId, setLicenseId] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
   const isProfileCompletionMode = isAuthenticated && requiresProfileCompletion;
+  const isNurseRegistration = !isProfileCompletionMode && profileType === UserProfileType.Nurse;
   const effectiveEmail = isProfileCompletionMode ? authEmail ?? "" : email;
 
   // Validation errors
@@ -49,6 +63,9 @@ export default function RegisterScreen() {
   const [phoneError, setPhoneError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
+  const [hireDateError, setHireDateError] = useState("");
+  const [specialtyError, setSpecialtyError] = useState("");
+  const [bankNameError, setBankNameError] = useState("");
 
   const validateRequiredField = (
     value: string,
@@ -120,6 +137,9 @@ export default function RegisterScreen() {
     const nextEmailError = getEmailError(effectiveEmail);
     const nextPasswordError = isProfileCompletionMode ? "" : getPasswordError(password);
     const nextConfirmPasswordError = isProfileCompletionMode ? "" : getConfirmPasswordError(confirmPassword);
+    const nextHireDateError = isNurseRegistration && !hireDate.trim() ? "La fecha de contratacion es obligatoria" : "";
+    const nextSpecialtyError = isNurseRegistration && !specialty.trim() ? "La especialidad es obligatoria" : "";
+    const nextBankNameError = isNurseRegistration && !bankName.trim() ? "El banco es obligatorio" : "";
 
     setNameError(nextNameError);
     setLastNameError(nextLastNameError);
@@ -128,6 +148,9 @@ export default function RegisterScreen() {
     setEmailError(nextEmailError);
     setPasswordError(nextPasswordError);
     setConfirmPasswordError(nextConfirmPasswordError);
+    setHireDateError(nextHireDateError);
+    setSpecialtyError(nextSpecialtyError);
+    setBankNameError(nextBankNameError);
 
     if (
       nextNameError ||
@@ -136,7 +159,10 @@ export default function RegisterScreen() {
       nextPhoneError ||
       nextEmailError ||
       nextPasswordError ||
-      nextConfirmPasswordError
+      nextConfirmPasswordError ||
+      nextHireDateError ||
+      nextSpecialtyError ||
+      nextBankNameError
     ) {
       Alert.alert("Validacion", "Corrige los errores antes de enviar el formulario.");
       return;
@@ -165,6 +191,11 @@ export default function RegisterScreen() {
           effectiveEmail.trim(),
           password,
           confirmPassword,
+          isNurseRegistration ? hireDate.trim() : null,
+          isNurseRegistration ? specialty.trim() : null,
+          isNurseRegistration ? licenseId.trim() || null : null,
+          isNurseRegistration ? bankName.trim() : null,
+          isNurseRegistration ? accountNumber.trim() || null : null,
           profileType
         );
 
@@ -172,11 +203,11 @@ export default function RegisterScreen() {
         if (profileType === UserProfileType.Nurse) {
           Alert.alert(
             "Registro exitoso",
-            "Tu cuenta quedo pendiente de aprobacion administrativa. Recibiras un correo cuando sea activada.",
+            "Tu cuenta ya puede iniciar sesion, pero el panel quedara en revision administrativa hasta que completen tu perfil de enfermeria.",
             [
               {
                 text: "Aceptar",
-                onPress: () => router.push("/login"),
+                onPress: () => router.replace("/"),
               },
             ]
           );
@@ -202,6 +233,11 @@ export default function RegisterScreen() {
       setEmail("");
       setPassword("");
       setConfirmPassword("");
+      setHireDate("");
+      setSpecialty("");
+      setLicenseId("");
+      setBankName("");
+      setAccountNumber("");
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "No fue posible completar el registro";
       Alert.alert("Error de registro", errorMsg);
@@ -375,17 +411,98 @@ export default function RegisterScreen() {
                   profileType === UserProfileType.Nurse ? styles.radioButtonSelected : null,
                 ]}
               />
-              <Text style={styles.radioLabel}>Enfermeria (requiere aprobacion administrativa)</Text>
+              <Text style={styles.radioLabel}>Enfermeria (entra en revision administrativa)</Text>
             </TouchableOpacity>
           </View>
         </View>
       )}
 
+      {isNurseRegistration ? (
+        <>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Fecha de contratacion</Text>
+            <TextInput
+              style={[styles.input, hireDateError ? styles.inputError : null]}
+              placeholder="2026-03-21"
+              value={hireDate}
+              onChangeText={setHireDate}
+              editable={!isLoading}
+              placeholderTextColor="#999"
+            />
+            {hireDateError ? <Text style={styles.errorText}>{hireDateError}</Text> : null}
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Especialidad</Text>
+            <View style={styles.specialtyList}>
+              {nurseSpecialties.map((option) => (
+                <TouchableOpacity
+                  key={option}
+                  style={[
+                    styles.specialtyChip,
+                    specialty === option ? styles.specialtyChipSelected : null,
+                  ]}
+                  onPress={() => setSpecialty(option)}
+                  disabled={isLoading}
+                >
+                  <Text
+                    style={[
+                      styles.specialtyChipText,
+                      specialty === option ? styles.specialtyChipTextSelected : null,
+                    ]}
+                  >
+                    {option}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            {specialtyError ? <Text style={styles.errorText}>{specialtyError}</Text> : null}
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Licencia</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Opcional"
+              value={licenseId}
+              onChangeText={setLicenseId}
+              editable={!isLoading}
+              placeholderTextColor="#999"
+            />
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Banco</Text>
+            <TextInput
+              style={[styles.input, bankNameError ? styles.inputError : null]}
+              placeholder="Banco principal"
+              value={bankName}
+              onChangeText={setBankName}
+              editable={!isLoading}
+              placeholderTextColor="#999"
+            />
+            {bankNameError ? <Text style={styles.errorText}>{bankNameError}</Text> : null}
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Numero de cuenta</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Opcional"
+              value={accountNumber}
+              onChangeText={setAccountNumber}
+              editable={!isLoading}
+              placeholderTextColor="#999"
+            />
+          </View>
+        </>
+      ) : null}
+
       {/* Info Alert */}
       {!isProfileCompletionMode && profileType === UserProfileType.Nurse ? (
         <View style={styles.infoBox}>
           <Text style={styles.infoText}>
-            Como cuenta de enfermeria, necesitaras aprobacion administrativa antes de iniciar sesion.
+            Como cuenta de enfermeria, podras iniciar sesion al terminar el registro, pero el acceso operativo quedara en revision administrativa.
           </Text>
         </View>
       ) : null}
@@ -507,6 +624,31 @@ const styles = StyleSheet.create({
   radioLabel: {
     fontSize: 14,
     color: "#333",
+  },
+  specialtyList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  specialtyChip: {
+    borderWidth: 1,
+    borderColor: "#c9d8eb",
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: "#f4f7fb",
+  },
+  specialtyChipSelected: {
+    backgroundColor: "#0f4c81",
+    borderColor: "#0f4c81",
+  },
+  specialtyChipText: {
+    color: "#24415b",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  specialtyChipTextSelected: {
+    color: "#fff",
   },
   infoBox: {
     backgroundColor: "#e3f2fd",

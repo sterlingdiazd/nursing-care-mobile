@@ -6,6 +6,7 @@ export interface AuthResponse {
   email: string;
   roles: string[];
   requiresProfileCompletion: boolean;
+  requiresAdminReview: boolean;
   correlationId?: string;
 }
 

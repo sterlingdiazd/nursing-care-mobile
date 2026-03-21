@@ -68,7 +68,7 @@ export default function MobileWorkspaceShell({
   children,
 }: MobileWorkspaceShellProps) {
   const pathname = usePathname();
-  const { email, isAuthenticated, logout, roles, requiresProfileCompletion } = useAuth();
+  const { email, isAuthenticated, logout, roles, requiresProfileCompletion, requiresAdminReview, profileType } = useAuth();
   const { width } = useWindowDimensions();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
@@ -85,6 +85,12 @@ export default function MobileWorkspaceShell({
       router.replace("/register");
     }
   }, [pathname, requiresProfileCompletion]);
+  useEffect(() => {
+    if (requiresAdminReview && profileType === 1 && pathname !== "/" && pathname !== "/account") {
+      router.replace("/");
+    }
+  }, [pathname, profileType, requiresAdminReview]);
+  const isNurseUnderReview = requiresAdminReview && profileType === 1;
   const visibleItems = useMemo(
     () =>
       navigationItems.filter((item) => {
@@ -96,9 +102,13 @@ export default function MobileWorkspaceShell({
           return false;
         }
 
+        if (isNurseUnderReview && item.path !== "/" && item.path !== "/account") {
+          return false;
+        }
+
         return true;
       }),
-    [isAuthenticated],
+    [isAuthenticated, isNurseUnderReview],
   );
 
   const currentItem =

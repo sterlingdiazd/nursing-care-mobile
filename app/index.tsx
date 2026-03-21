@@ -34,7 +34,8 @@ const quickSections = [
 ];
 
 export default function HomeScreen() {
-  const { email, isAuthenticated, roles } = useAuth();
+  const { email, isAuthenticated, roles, requiresAdminReview, profileType } = useAuth();
+  const isNurseUnderReview = requiresAdminReview && profileType === 1;
 
   return (
     <MobileWorkspaceShell
@@ -46,10 +47,13 @@ export default function HomeScreen() {
           <Pressable
             onPress={() => {
               logClientEvent("mobile.ui", "Home hero opened create care request");
-              router.push("/create-care-request");
+              if (!isNurseUnderReview) {
+                router.push("/create-care-request");
+              }
             }}
             style={({ pressed }) => [
               styles.primaryButton,
+              isNurseUnderReview && styles.disabledButton,
               pressed && styles.buttonPressed,
             ]}
           >
@@ -59,10 +63,13 @@ export default function HomeScreen() {
           <Pressable
             onPress={() => {
               logClientEvent("mobile.ui", "Home hero opened care requests queue");
-              router.push("/care-requests");
+              if (!isNurseUnderReview) {
+                router.push("/care-requests");
+              }
             }}
             style={({ pressed }) => [
               styles.secondaryButton,
+              isNurseUnderReview && styles.disabledButton,
               pressed && styles.buttonPressed,
             ]}
           >
@@ -80,6 +87,11 @@ export default function HomeScreen() {
           <Text style={styles.sessionBody}>
             {email ?? "No hay cuenta cargada"} • {roles.length > 0 ? roles.join(", ") : "Sin roles cargados"}
           </Text>
+          {isNurseUnderReview ? (
+            <Text style={styles.reviewNote}>
+              Tu cuenta de enfermeria esta en revision administrativa. El acceso operativo se habilitara cuando completen tu perfil.
+            </Text>
+          ) : null}
         </View>
 
         {quickSections.map((section) => (
@@ -207,5 +219,14 @@ const styles = StyleSheet.create({
   },
   buttonPressed: {
     opacity: 0.92,
+  },
+  disabledButton: {
+    opacity: 0.55,
+  },
+  reviewNote: {
+    marginTop: 10,
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#fde68a",
   },
 });

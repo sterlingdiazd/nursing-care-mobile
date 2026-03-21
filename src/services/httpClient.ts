@@ -195,6 +195,7 @@ async function refreshAccessToken() {
           roles: payload.roles,
           profileType: session.profileType,
           requiresProfileCompletion: payload.requiresProfileCompletion,
+          requiresAdminReview: payload.requiresAdminReview,
         });
 
         return payload.token;

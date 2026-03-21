@@ -142,6 +142,7 @@ export default function LoginScreen() {
         email: emailFromRedirect,
         roles,
         requiresProfileCompletion: getParamValue(queryParams.requiresProfileCompletion) === "true",
+        requiresAdminReview: getParamValue(queryParams.requiresAdminReview) === "true",
       };
 
       await completeOAuthLogin(response);

@@ -27,6 +27,7 @@ interface AuthContextValue {
   roles: string[];
   profileType: UserProfileType | null;
   requiresProfileCompletion: boolean;
+  requiresAdminReview: boolean;
   isAuthenticated: boolean;
   isReady: boolean;
   isLoading: boolean;
@@ -43,6 +44,11 @@ interface AuthContextValue {
     email: string,
     password: string,
     confirmPassword: string,
+    hireDate: string | null,
+    specialty: string | null,
+    licenseId: string | null,
+    bankName: string | null,
+    accountNumber: string | null,
     profileType: UserProfileType
   ) => Promise<AuthResponse>;
   completeProfile: (
@@ -76,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<string[]>([]);
   const [profileType, setProfileType] = useState<UserProfileType | null>(null);
   const [requiresProfileCompletion, setRequiresProfileCompletion] = useState(false);
+  const [requiresAdminReview, setRequiresAdminReview] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setRoles([]);
       setProfileType(null);
       setRequiresProfileCompletion(false);
+      setRequiresAdminReview(false);
       return;
     }
 
@@ -99,6 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRoles(session.roles);
     setProfileType(session.profileType);
     setRequiresProfileCompletion(session.requiresProfileCompletion);
+    setRequiresAdminReview(session.requiresAdminReview);
   };
 
   // Load auth state from AsyncStorage on mount
@@ -126,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setEmail(response.email);
     setRoles(response.roles ?? []);
     setRequiresProfileCompletion(response.requiresProfileCompletion);
+    setRequiresAdminReview(response.requiresAdminReview);
     logClientEvent("mobile.auth", "Session loaded", {
       email: response.email,
       roles: response.roles,
@@ -158,6 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       roles: response.roles ?? [],
       profileType: detectedProfileType,
       requiresProfileCompletion: response.requiresProfileCompletion,
+      requiresAdminReview: response.requiresAdminReview,
     });
   };
 
@@ -177,6 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         roles,
         profileType,
         requiresProfileCompletion,
+        requiresAdminReview,
       });
     }
 
@@ -217,6 +229,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     emailAddress: string,
     passwordInput: string,
     confirmPasswordInput: string,
+    hireDateInput: string | null,
+    specialtyInput: string | null,
+    licenseIdInput: string | null,
+    bankNameInput: string | null,
+    accountNumberInput: string | null,
     profileTypeInput: UserProfileType
   ) => {
     setIsLoading(true);
@@ -235,29 +252,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         emailAddress,
         passwordInput,
         confirmPasswordInput,
+        hireDateInput,
+        specialtyInput,
+        licenseIdInput,
+        bankNameInput,
+        accountNumberInput,
         profileTypeInput
       );
 
-      if (response.token) {
-        // Client registration - token returned, user is active
-        await persistSession(response, profileTypeInput);
+      await persistSession(response, profileTypeInput);
 
-      logClientEvent("mobile.auth", "Client registration successful", {
-          email: response.email,
-        });
-      } else {
-        // Nurse registration - no token, account pending approval
-        setEmail(emailAddress);
-        setUserId(resolveResponseUserId(response, userId));
-        setProfileType(profileTypeInput);
-        setRoles(response.roles ?? []);
-        setRequiresProfileCompletion(false);
-        setToken(null);
-
-      logClientEvent("mobile.auth", "Nurse registration successful - pending approval", {
-          email: emailAddress,
-        });
-      }
+      logClientEvent("mobile.auth", "Registration successful", {
+        email: response.email,
+        requiresAdminReview: response.requiresAdminReview,
+      });
 
       return response;
     } catch (err) {
@@ -313,6 +321,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRoles([]);
     setProfileType(null);
     setRequiresProfileCompletion(false);
+    setRequiresAdminReview(false);
     setError(null);
 
     await clearAuthSession();
@@ -332,6 +341,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       roles,
       profileType,
       requiresProfileCompletion,
+      requiresAdminReview,
       isAuthenticated: Boolean(token),
       isReady,
       isLoading,
@@ -345,7 +355,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       clearError,
     }),
-    [token, userId, email, roles, profileType, requiresProfileCompletion, isReady, isLoading, error],
+    [token, userId, email, roles, profileType, requiresProfileCompletion, requiresAdminReview, isReady, isLoading, error],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

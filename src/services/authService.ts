@@ -15,6 +15,11 @@ export interface RegisterRequest {
   email: string;
   password: string;
   confirmPassword: string;
+  hireDate?: string | null;
+  specialty?: string | null;
+  licenseId?: string | null;
+  bankName?: string | null;
+  accountNumber?: string | null;
   profileType: UserProfileType;
 }
 
@@ -71,6 +76,11 @@ export async function registerUser(
   email: string,
   password: string,
   confirmPassword: string,
+  hireDate: string | null,
+  specialty: string | null,
+  licenseId: string | null,
+  bankName: string | null,
+  accountNumber: string | null,
   profileType: UserProfileType
 ): Promise<AuthResponse> {
   let responseMeta:
@@ -87,6 +97,11 @@ export async function registerUser(
     email,
     password,
     confirmPassword,
+    hireDate,
+    specialty,
+    licenseId,
+    bankName,
+    accountNumber,
     profileType,
   };
 
