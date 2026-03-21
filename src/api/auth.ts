@@ -8,6 +8,10 @@ export enum UserProfileType {
 }
 
 export interface RegisterRequest {
+  name: string;
+  lastName: string;
+  identificationNumber: string;
+  phone: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -38,6 +42,10 @@ const httpClient: AxiosInstance = axios.create({
  * Register a new user (Client or Nurse)
  */
 export async function registerUser(
+  name: string,
+  lastName: string,
+  identificationNumber: string,
+  phone: string,
   email: string,
   password: string,
   confirmPassword: string,
@@ -45,6 +53,10 @@ export async function registerUser(
 ): Promise<AuthResponse> {
   try {
     const request: RegisterRequest = {
+      name,
+      lastName,
+      identificationNumber,
+      phone,
       email,
       password,
       confirmPassword,

@@ -8,6 +8,10 @@ export enum UserProfileType {
 }
 
 export interface RegisterRequest {
+  name: string;
+  lastName: string;
+  identificationNumber: string;
+  phone: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -60,6 +64,10 @@ export async function refresh(refreshToken: string): Promise<AuthResponse> {
 }
 
 export async function registerUser(
+  name: string,
+  lastName: string,
+  identificationNumber: string,
+  phone: string,
   email: string,
   password: string,
   confirmPassword: string,
@@ -72,6 +80,10 @@ export async function registerUser(
     | undefined;
 
   const request: RegisterRequest = {
+    name,
+    lastName,
+    identificationNumber,
+    phone,
     email,
     password,
     confirmPassword,
@@ -82,6 +94,34 @@ export async function registerUser(
     path: "/api/auth/register",
     method: "POST",
     body: request,
+    onMeta: (meta) => {
+      responseMeta = { correlationId: meta.correlationId };
+    },
+  });
+
+  return {
+    ...response,
+    correlationId: responseMeta?.correlationId,
+  };
+}
+
+export async function completeProfile(request: {
+  name: string;
+  lastName: string;
+  identificationNumber: string;
+  phone: string;
+}): Promise<AuthResponse> {
+  let responseMeta:
+    | {
+        correlationId: string;
+      }
+    | undefined;
+
+  const response = await requestJson<AuthResponse>({
+    path: "/api/auth/complete-profile",
+    method: "POST",
+    body: request,
+    auth: true,
     onMeta: (meta) => {
       responseMeta = { correlationId: meta.correlationId };
     },

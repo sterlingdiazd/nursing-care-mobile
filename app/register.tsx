@@ -20,86 +20,185 @@ import {
 
 export default function RegisterScreen() {
   const router = useRouter();
-  const { register, isLoading } = useAuth();
+  const {
+    register,
+    completeProfile,
+    isLoading,
+    email: authEmail,
+    isAuthenticated,
+    requiresProfileCompletion,
+  } = useAuth();
 
   // Form state
+  const [name, setName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [identificationNumber, setIdentificationNumber] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [profileType, setProfileType] = useState<UserProfileType>(UserProfileType.Client);
+  const isProfileCompletionMode = isAuthenticated && requiresProfileCompletion;
+  const effectiveEmail = isProfileCompletionMode ? authEmail ?? "" : email;
 
   // Validation errors
   const [emailError, setEmailError] = useState("");
+  const [nameError, setNameError] = useState("");
+  const [lastNameError, setLastNameError] = useState("");
+  const [identificationNumberError, setIdentificationNumberError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
 
+  const validateRequiredField = (
+    value: string,
+    setError: (message: string) => void,
+    label: string
+  ) => {
+    setError(value.trim() ? "" : `${label} es obligatorio`);
+  };
+
+  const getRequiredFieldError = (value: string, label: string) =>
+    value.trim() ? "" : `${label} es obligatorio`;
+
+  const getEmailError = (value: string) => {
+    if (!value) {
+      return "El correo es obligatorio";
+    }
+
+    if (!validateEmail(value)) {
+      return "El formato del correo no es valido";
+    }
+
+    return "";
+  };
+
+  const getPasswordError = (value: string) => {
+    if (!value) {
+      return "La contrasena es obligatoria";
+    }
+
+    const validation = validatePassword(value);
+    return validation.isValid ? "" : validation.message;
+  };
+
+  const getConfirmPasswordError = (value: string) => {
+    if (!value) {
+      return "Confirma tu contrasena";
+    }
+
+    if (value !== password) {
+      return "Las contrasenas no coinciden";
+    }
+
+    return "";
+  };
+
   // Validation functions
   const validateEmailField = (value: string) => {
-    if (!value) {
-      setEmailError("El correo es obligatorio");
-    } else if (!validateEmail(value)) {
-      setEmailError("El formato del correo no es valido");
-    } else {
-      setEmailError("");
-    }
+    setEmailError(getEmailError(value));
   };
 
   const validatePasswordField = (value: string) => {
-    if (!value) {
-      setPasswordError("La contrasena es obligatoria");
-    } else {
-      const validation = validatePassword(value);
-      setPasswordError(validation.isValid ? "" : validation.message);
-    }
+    setPasswordError(getPasswordError(value));
   };
 
   const validateConfirmPasswordField = (value: string) => {
-    if (!value) {
-      setConfirmPasswordError("Confirma tu contrasena");
-    } else if (value !== password) {
-      setConfirmPasswordError("Las contrasenas no coinciden");
-    } else {
-      setConfirmPasswordError("");
-    }
+    setConfirmPasswordError(getConfirmPasswordError(value));
   };
 
   // Handle registration submission
   const handleSubmit = async () => {
     // Validate all fields
-    if (emailError || passwordError || confirmPasswordError || !email || !password || !confirmPassword) {
+    const nextNameError = getRequiredFieldError(name, "El nombre");
+    const nextLastNameError = getRequiredFieldError(lastName, "El apellido");
+    const nextIdentificationNumberError = getRequiredFieldError(
+      identificationNumber,
+      "La cedula"
+    );
+    const nextPhoneError = getRequiredFieldError(phone, "El telefono");
+    const nextEmailError = getEmailError(effectiveEmail);
+    const nextPasswordError = isProfileCompletionMode ? "" : getPasswordError(password);
+    const nextConfirmPasswordError = isProfileCompletionMode ? "" : getConfirmPasswordError(confirmPassword);
+
+    setNameError(nextNameError);
+    setLastNameError(nextLastNameError);
+    setIdentificationNumberError(nextIdentificationNumberError);
+    setPhoneError(nextPhoneError);
+    setEmailError(nextEmailError);
+    setPasswordError(nextPasswordError);
+    setConfirmPasswordError(nextConfirmPasswordError);
+
+    if (
+      nextNameError ||
+      nextLastNameError ||
+      nextIdentificationNumberError ||
+      nextPhoneError ||
+      nextEmailError ||
+      nextPasswordError ||
+      nextConfirmPasswordError
+    ) {
       Alert.alert("Validacion", "Corrige los errores antes de enviar el formulario.");
       return;
     }
 
     try {
-      await register(email.trim(), password, confirmPassword, profileType);
-
-      // Show success message based on profile type
-      if (profileType === UserProfileType.Nurse) {
-        Alert.alert(
-        "Registro exitoso",
-        "Tu cuenta quedo pendiente de aprobacion administrativa. Recibiras un correo cuando sea activada.",
-          [
-            {
-              text: "Aceptar",
-              onPress: () => router.push("/login"),
-            },
-          ]
+      if (isProfileCompletionMode) {
+        await completeProfile(
+          name.trim(),
+          lastName.trim(),
+          identificationNumber.trim(),
+          phone.trim()
         );
+        Alert.alert("Registro completado", "Tu cuenta ya esta activa y lista para usar.", [
+          {
+            text: "Continuar",
+            onPress: () => router.replace("/care-requests"),
+          },
+        ]);
       } else {
-        Alert.alert(
-        "Registro exitoso",
-        "Ya puedes iniciar sesion con tus credenciales.",
-          [
-            {
-              text: "Ir a iniciar sesion",
-              onPress: () => router.push("/login"),
-            },
-          ]
+        await register(
+          name.trim(),
+          lastName.trim(),
+          identificationNumber.trim(),
+          phone.trim(),
+          effectiveEmail.trim(),
+          password,
+          confirmPassword,
+          profileType
         );
+
+        // Show success message based on profile type
+        if (profileType === UserProfileType.Nurse) {
+          Alert.alert(
+            "Registro exitoso",
+            "Tu cuenta quedo pendiente de aprobacion administrativa. Recibiras un correo cuando sea activada.",
+            [
+              {
+                text: "Aceptar",
+                onPress: () => router.push("/login"),
+              },
+            ]
+          );
+        } else {
+          Alert.alert(
+            "Registro exitoso",
+            "Ya puedes iniciar sesion con tus credenciales.",
+            [
+              {
+                text: "Ir a iniciar sesion",
+                onPress: () => router.push("/login"),
+              },
+            ]
+          );
+        }
       }
 
       // Clear form
+      setName("");
+      setLastName("");
+      setIdentificationNumber("");
+      setPhone("");
       setEmail("");
       setPassword("");
       setConfirmPassword("");
@@ -129,93 +228,161 @@ export default function RegisterScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       {/* Title */}
-      <Text style={styles.title}>Crear cuenta</Text>
+      <Text style={styles.title}>{isProfileCompletionMode ? "Completar registro" : "Crear cuenta"}</Text>
 
       {/* Email Input */}
+      <View style={styles.formGroup}>
+        <Text style={styles.label}>Nombre</Text>
+        <TextInput
+          style={[styles.input, nameError ? styles.inputError : null]}
+          placeholder="Tu nombre"
+          value={name}
+          onChangeText={setName}
+          onBlur={() => validateRequiredField(name, setNameError, "El nombre")}
+          editable={!isLoading}
+          placeholderTextColor="#999"
+        />
+        {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
+      </View>
+
+      <View style={styles.formGroup}>
+        <Text style={styles.label}>Apellido</Text>
+        <TextInput
+          style={[styles.input, lastNameError ? styles.inputError : null]}
+          placeholder="Tu apellido"
+          value={lastName}
+          onChangeText={setLastName}
+          onBlur={() => validateRequiredField(lastName, setLastNameError, "El apellido")}
+          editable={!isLoading}
+          placeholderTextColor="#999"
+        />
+        {lastNameError ? <Text style={styles.errorText}>{lastNameError}</Text> : null}
+      </View>
+
+      <View style={styles.formGroup}>
+        <Text style={styles.label}>Cédula</Text>
+        <TextInput
+          style={[styles.input, identificationNumberError ? styles.inputError : null]}
+          placeholder="001-1234567-8"
+          value={identificationNumber}
+          onChangeText={setIdentificationNumber}
+          onBlur={() =>
+            validateRequiredField(
+              identificationNumber,
+              setIdentificationNumberError,
+              "La cedula"
+            )
+          }
+          editable={!isLoading}
+          placeholderTextColor="#999"
+        />
+        {identificationNumberError ? (
+          <Text style={styles.errorText}>{identificationNumberError}</Text>
+        ) : null}
+      </View>
+
+      <View style={styles.formGroup}>
+        <Text style={styles.label}>Telefono</Text>
+        <TextInput
+          style={[styles.input, phoneError ? styles.inputError : null]}
+          placeholder="8095550101"
+          value={phone}
+          onChangeText={setPhone}
+          onBlur={() => validateRequiredField(phone, setPhoneError, "El telefono")}
+          keyboardType="phone-pad"
+          editable={!isLoading}
+          placeholderTextColor="#999"
+        />
+        {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
+      </View>
+
       <View style={styles.formGroup}>
         <Text style={styles.label}>Correo</Text>
         <TextInput
           style={[styles.input, emailError ? styles.inputError : null]}
           placeholder="tu@correo.com"
-          value={email}
+          value={effectiveEmail}
           onChangeText={setEmail}
-          onBlur={() => validateEmailField(email)}
+          onBlur={() => validateEmailField(effectiveEmail)}
           keyboardType="email-address"
           autoCapitalize="none"
-          editable={!isLoading}
+          editable={!isLoading && !isProfileCompletionMode}
           placeholderTextColor="#999"
         />
         {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
       </View>
 
-      {/* Password Input */}
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Contrasena</Text>
-        <TextInput
-          style={[styles.input, passwordError ? styles.inputError : null]}
-          placeholder="Minimo 6 caracteres"
-          value={password}
-          onChangeText={setPassword}
-          onBlur={() => validatePasswordField(password)}
-          secureTextEntry
-          editable={!isLoading}
-          placeholderTextColor="#999"
-        />
-        {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
-      </View>
-
-      {/* Confirm Password Input */}
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Confirmar contrasena</Text>
-        <TextInput
-          style={[styles.input, confirmPasswordError ? styles.inputError : null]}
-          placeholder="Vuelve a escribir tu contrasena"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          onBlur={() => validateConfirmPasswordField(confirmPassword)}
-          secureTextEntry
-          editable={!isLoading}
-          placeholderTextColor="#999"
-        />
-        {confirmPasswordError ? <Text style={styles.errorText}>{confirmPasswordError}</Text> : null}
-      </View>
-
-      {/* Profile Type Selection */}
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Registrarse como:</Text>
-        <View style={styles.radioGroup}>
-          <TouchableOpacity
-            style={styles.radioOption}
-            onPress={() => setProfileType(UserProfileType.Client)}
-            disabled={isLoading}
-          >
-            <View
-              style={[
-                styles.radioButton,
-                profileType === UserProfileType.Client ? styles.radioButtonSelected : null,
-              ]}
+      {!isProfileCompletionMode && (
+        <>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Contrasena</Text>
+            <TextInput
+              style={[styles.input, passwordError ? styles.inputError : null]}
+              placeholder="Minimo 6 caracteres"
+              value={password}
+              onChangeText={setPassword}
+              onBlur={() => validatePasswordField(password)}
+              secureTextEntry
+              editable={!isLoading}
+              placeholderTextColor="#999"
             />
-            <Text style={styles.radioLabel}>Cliente</Text>
-          </TouchableOpacity>
+            {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+          </View>
 
-          <TouchableOpacity
-            style={styles.radioOption}
-            onPress={() => setProfileType(UserProfileType.Nurse)}
-            disabled={isLoading}
-          >
-            <View
-              style={[
-                styles.radioButton,
-                profileType === UserProfileType.Nurse ? styles.radioButtonSelected : null,
-              ]}
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Confirmar contrasena</Text>
+            <TextInput
+              style={[styles.input, confirmPasswordError ? styles.inputError : null]}
+              placeholder="Vuelve a escribir tu contrasena"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              onBlur={() => validateConfirmPasswordField(confirmPassword)}
+              secureTextEntry
+              editable={!isLoading}
+              placeholderTextColor="#999"
             />
-            <Text style={styles.radioLabel}>Enfermeria (requiere aprobacion administrativa)</Text>
-          </TouchableOpacity>
+            {confirmPasswordError ? <Text style={styles.errorText}>{confirmPasswordError}</Text> : null}
+          </View>
+        </>
+      )}
+
+      {!isProfileCompletionMode && (
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Registrarse como:</Text>
+          <View style={styles.radioGroup}>
+            <TouchableOpacity
+              style={styles.radioOption}
+              onPress={() => setProfileType(UserProfileType.Client)}
+              disabled={isLoading}
+            >
+              <View
+                style={[
+                  styles.radioButton,
+                  profileType === UserProfileType.Client ? styles.radioButtonSelected : null,
+                ]}
+              />
+              <Text style={styles.radioLabel}>Cliente</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.radioOption}
+              onPress={() => setProfileType(UserProfileType.Nurse)}
+              disabled={isLoading}
+            >
+              <View
+                style={[
+                  styles.radioButton,
+                  profileType === UserProfileType.Nurse ? styles.radioButtonSelected : null,
+                ]}
+              />
+              <Text style={styles.radioLabel}>Enfermeria (requiere aprobacion administrativa)</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      )}
 
       {/* Info Alert */}
-      {profileType === UserProfileType.Nurse ? (
+      {!isProfileCompletionMode && profileType === UserProfileType.Nurse ? (
         <View style={styles.infoBox}>
           <Text style={styles.infoText}>
             Como cuenta de enfermeria, necesitaras aprobacion administrativa antes de iniciar sesion.
@@ -232,35 +399,43 @@ export default function RegisterScreen() {
         {isLoading ? (
           <ActivityIndicator color="white" size="small" />
         ) : (
-          <Text style={styles.buttonText}>Crear cuenta</Text>
+          <Text style={styles.buttonText}>{isProfileCompletionMode ? "Completar registro" : "Crear cuenta"}</Text>
         )}
       </TouchableOpacity>
 
-      <View style={styles.dividerContainer}>
-        <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>o</Text>
-        <View style={styles.dividerLine} />
-      </View>
+      {!isProfileCompletionMode && (
+        <>
+          <View style={styles.dividerContainer}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>o</Text>
+            <View style={styles.dividerLine} />
+          </View>
 
-      <TouchableOpacity
-        style={[styles.secondaryButton, isLoading ? styles.buttonDisabled : null]}
-        onPress={() => {
-          void handleGoogleSignIn();
-        }}
-        disabled={isLoading}
-      >
-        <Text style={styles.secondaryButtonText}>Continuar con Google</Text>
-      </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, isLoading ? styles.buttonDisabled : null]}
+            onPress={() => {
+              void handleGoogleSignIn();
+            }}
+            disabled={isLoading}
+          >
+            <Text style={styles.secondaryButtonText}>Continuar con Google</Text>
+          </TouchableOpacity>
 
-      <Text style={styles.secondaryHint}>Google crea una cuenta de cliente activa de inmediato.</Text>
+          <Text style={styles.secondaryHint}>
+            Google te llevara a completar este mismo formulario antes de usar la app.
+          </Text>
+        </>
+      )}
 
       {/* Login Link */}
-      <View style={styles.loginLinkContainer}>
-        <Text style={styles.loginLinkText}>¿Ya tienes cuenta? </Text>
-        <TouchableOpacity onPress={() => router.push("/login")} disabled={isLoading}>
-          <Text style={styles.loginLink}>Inicia sesion</Text>
-        </TouchableOpacity>
-      </View>
+      {!isProfileCompletionMode && (
+        <View style={styles.loginLinkContainer}>
+          <Text style={styles.loginLinkText}>¿Ya tienes cuenta? </Text>
+          <TouchableOpacity onPress={() => router.push("/login")} disabled={isLoading}>
+            <Text style={styles.loginLink}>Inicia sesion</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </ScrollView>
   );
 }

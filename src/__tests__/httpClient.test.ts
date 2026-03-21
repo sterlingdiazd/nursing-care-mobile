@@ -63,6 +63,7 @@ describe("httpClient helpers", () => {
       email: "care@example.com",
       roles: ["Admin"],
       profileType: 1,
+      requiresProfileCompletion: false,
     });
 
     const fetchMock = vi
@@ -84,6 +85,7 @@ describe("httpClient helpers", () => {
             userId: "11111111-1111-1111-1111-111111111111",
             email: "care@example.com",
             roles: ["Admin"],
+            requiresProfileCompletion: false,
           }),
         headers: { get: () => "correlation-id" },
       })
@@ -111,6 +113,7 @@ describe("httpClient helpers", () => {
       email: "care@example.com",
       roles: ["Admin"],
       profileType: 1,
+      requiresProfileCompletion: false,
     });
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(fetchMock.mock.calls[2]?.[1]?.headers).toMatchObject({
@@ -127,6 +130,7 @@ describe("httpClient helpers", () => {
       email: "care@example.com",
       roles: ["Admin"],
       profileType: 1,
+      requiresProfileCompletion: false,
     });
 
     const fetchMock = vi.fn().mockResolvedValue({

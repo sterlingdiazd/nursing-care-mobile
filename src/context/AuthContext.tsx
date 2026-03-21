@@ -1,7 +1,11 @@
 import { createContext, ReactNode, useContext, useMemo, useState, useEffect } from "react";
 
 import { logClientEvent } from "@/src/logging/clientLogger";
-import { login as loginRequest, registerUser as registerUserRequest } from "@/src/services/authService";
+import {
+  completeProfile as completeProfileRequest,
+  login as loginRequest,
+  registerUser as registerUserRequest,
+} from "@/src/services/authService";
 import { AuthResponse } from "@/src/types/auth";
 import {
   clearAuthSession,
@@ -22,6 +26,7 @@ interface AuthContextValue {
   email: string | null;
   roles: string[];
   profileType: UserProfileType | null;
+  requiresProfileCompletion: boolean;
   isAuthenticated: boolean;
   isReady: boolean;
   isLoading: boolean;
@@ -31,10 +36,20 @@ interface AuthContextValue {
   setTokenManually: (token: string) => void;
   login: (email: string, password: string) => Promise<AuthResponse>;
   register: (
+    name: string,
+    lastName: string,
+    identificationNumber: string,
+    phone: string,
     email: string,
     password: string,
     confirmPassword: string,
     profileType: UserProfileType
+  ) => Promise<AuthResponse>;
+  completeProfile: (
+    name: string,
+    lastName: string,
+    identificationNumber: string,
+    phone: string
   ) => Promise<AuthResponse>;
   logout: () => Promise<void>;
   clearError: () => void;
@@ -60,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [email, setEmail] = useState<string | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
   const [profileType, setProfileType] = useState<UserProfileType | null>(null);
+  const [requiresProfileCompletion, setRequiresProfileCompletion] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setEmail(null);
       setRoles([]);
       setProfileType(null);
+      setRequiresProfileCompletion(false);
       return;
     }
 
@@ -81,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setEmail(session.email || null);
     setRoles(session.roles);
     setProfileType(session.profileType);
+    setRequiresProfileCompletion(session.requiresProfileCompletion);
   };
 
   // Load auth state from AsyncStorage on mount
@@ -107,6 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUserId(resolvedUserId);
     setEmail(response.email);
     setRoles(response.roles ?? []);
+    setRequiresProfileCompletion(response.requiresProfileCompletion);
     logClientEvent("mobile.auth", "Session loaded", {
       email: response.email,
       roles: response.roles,
@@ -138,6 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: response.email,
       roles: response.roles ?? [],
       profileType: detectedProfileType,
+      requiresProfileCompletion: response.requiresProfileCompletion,
     });
   };
 
@@ -156,6 +176,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: email ?? "",
         roles,
         profileType,
+        requiresProfileCompletion,
       });
     }
 
@@ -189,6 +210,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (
+    name: string,
+    lastName: string,
+    identificationNumber: string,
+    phone: string,
     emailAddress: string,
     passwordInput: string,
     confirmPasswordInput: string,
@@ -203,6 +228,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       const response = await registerUserRequest(
+        name,
+        lastName,
+        identificationNumber,
+        phone,
         emailAddress,
         passwordInput,
         confirmPasswordInput,
@@ -213,7 +242,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Client registration - token returned, user is active
         await persistSession(response, profileTypeInput);
 
-        logClientEvent("mobile.auth", "Client registration successful", {
+      logClientEvent("mobile.auth", "Client registration successful", {
           email: response.email,
         });
       } else {
@@ -222,7 +251,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUserId(resolveResponseUserId(response, userId));
         setProfileType(profileTypeInput);
         setRoles(response.roles ?? []);
-      setToken(null);
+        setRequiresProfileCompletion(false);
+        setToken(null);
 
       logClientEvent("mobile.auth", "Nurse registration successful - pending approval", {
           email: emailAddress,
@@ -232,6 +262,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return response;
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Registration failed";
+      setError(errorMsg);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const completeProfile = async (
+    name: string,
+    lastName: string,
+    identificationNumber: string,
+    phone: string
+  ) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await completeProfileRequest({
+        name,
+        lastName,
+        identificationNumber,
+        phone,
+      });
+
+      await persistSession(response, UserProfileType.Client);
+      return response;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Profile completion failed";
       setError(errorMsg);
       throw err;
     } finally {
@@ -255,6 +312,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setEmail(null);
     setRoles([]);
     setProfileType(null);
+    setRequiresProfileCompletion(false);
     setError(null);
 
     await clearAuthSession();
@@ -273,6 +331,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       roles,
       profileType,
+      requiresProfileCompletion,
       isAuthenticated: Boolean(token),
       isReady,
       isLoading,
@@ -282,10 +341,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setTokenManually,
       login,
       register,
+      completeProfile,
       logout,
       clearError,
     }),
-    [token, userId, email, roles, profileType, isReady, isLoading, error],
+    [token, userId, email, roles, profileType, requiresProfileCompletion, isReady, isLoading, error],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

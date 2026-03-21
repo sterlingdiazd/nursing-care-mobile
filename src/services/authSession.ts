@@ -10,6 +10,7 @@ export interface StoredAuthSession {
   email: string;
   roles: string[];
   profileType: UserProfileType | null;
+  requiresProfileCompletion: boolean;
 }
 
 const STORAGE_KEY = "authSession";
@@ -81,6 +82,7 @@ export async function loadAuthSession() {
       email: parsed.email,
       roles: parsed.roles,
       profileType: parsed.profileType ?? null,
+      requiresProfileCompletion: parsed.requiresProfileCompletion ?? false,
     };
 
     if (parsed.userId !== userId) {

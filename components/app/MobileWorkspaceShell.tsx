@@ -68,7 +68,7 @@ export default function MobileWorkspaceShell({
   children,
 }: MobileWorkspaceShellProps) {
   const pathname = usePathname();
-  const { email, isAuthenticated, logout, roles } = useAuth();
+  const { email, isAuthenticated, logout, roles, requiresProfileCompletion } = useAuth();
   const { width } = useWindowDimensions();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
@@ -79,6 +79,12 @@ export default function MobileWorkspaceShell({
   useEffect(() => {
     setHasMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (requiresProfileCompletion && pathname !== "/register") {
+      router.replace("/register");
+    }
+  }, [pathname, requiresProfileCompletion]);
   const visibleItems = useMemo(
     () =>
       navigationItems.filter((item) => {

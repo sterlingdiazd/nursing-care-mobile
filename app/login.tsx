@@ -141,13 +141,19 @@ export default function LoginScreen() {
         userId: getParamValue(queryParams.userId) ?? "",
         email: emailFromRedirect,
         roles,
+        requiresProfileCompletion: getParamValue(queryParams.requiresProfileCompletion) === "true",
       };
 
       await completeOAuthLogin(response);
-      Alert.alert("Inicio de sesion exitoso", "Redirigiendo al panel...", [
+      Alert.alert(
+        response.requiresProfileCompletion ? "Completa tu registro" : "Inicio de sesion exitoso",
+        response.requiresProfileCompletion
+          ? "Tu cuenta de Google quedo creada, pero debes completar el registro antes de usar la app."
+          : "Redirigiendo al panel...",
+        [
         {
           text: "Aceptar",
-          onPress: () => router.replace("/care-requests"),
+          onPress: () => router.replace(response.requiresProfileCompletion ? "/register" : "/care-requests"),
         },
       ]);
     };

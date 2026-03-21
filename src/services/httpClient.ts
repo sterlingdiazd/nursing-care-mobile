@@ -194,6 +194,7 @@ async function refreshAccessToken() {
           email: payload.email,
           roles: payload.roles,
           profileType: session.profileType,
+          requiresProfileCompletion: payload.requiresProfileCompletion,
         });
 
         return payload.token;
