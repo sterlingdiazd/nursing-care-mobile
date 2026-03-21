@@ -17,6 +17,13 @@ import {
   getGoogleOAuthStartUrl,
   getLocalHttpsCertificateWarning,
 } from "@/src/services/authService";
+import {
+  getExactDigitsFieldError,
+  getOptionalDigitsFieldError,
+  getTextOnlyFieldError,
+  sanitizeDigitsOnlyInput,
+  sanitizeTextOnlyInput,
+} from "@/src/utils/identityValidation";
 
 const nurseSpecialties = [
   "Adult Care",
@@ -71,18 +78,9 @@ export default function RegisterScreen() {
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
   const [hireDateError, setHireDateError] = useState("");
   const [specialtyError, setSpecialtyError] = useState("");
+  const [licenseIdError, setLicenseIdError] = useState("");
   const [bankNameError, setBankNameError] = useState("");
-
-  const validateRequiredField = (
-    value: string,
-    setError: (message: string) => void,
-    label: string
-  ) => {
-    setError(value.trim() ? "" : `${label} es obligatorio`);
-  };
-
-  const getRequiredFieldError = (value: string, label: string) =>
-    value.trim() ? "" : `${label} es obligatorio`;
+  const [accountNumberError, setAccountNumberError] = useState("");
 
   const getEmailError = (value: string) => {
     if (!value) {
@@ -133,19 +131,22 @@ export default function RegisterScreen() {
   // Handle registration submission
   const handleSubmit = async () => {
     // Validate all fields
-    const nextNameError = getRequiredFieldError(name, "El nombre");
-    const nextLastNameError = getRequiredFieldError(lastName, "El apellido");
-    const nextIdentificationNumberError = getRequiredFieldError(
+    const nextNameError = getTextOnlyFieldError(name, "El nombre");
+    const nextLastNameError = getTextOnlyFieldError(lastName, "El apellido");
+    const nextIdentificationNumberError = getExactDigitsFieldError(
       identificationNumber,
-      "La cedula"
+      "La cedula",
+      11
     );
-    const nextPhoneError = getRequiredFieldError(phone, "El telefono");
+    const nextPhoneError = getExactDigitsFieldError(phone, "El telefono", 10);
     const nextEmailError = getEmailError(effectiveEmail);
     const nextPasswordError = isProfileCompletionMode ? "" : getPasswordError(password);
     const nextConfirmPasswordError = isProfileCompletionMode ? "" : getConfirmPasswordError(confirmPassword);
     const nextHireDateError = isNurseRegistration && !hireDate.trim() ? "La fecha de contratacion es obligatoria" : "";
     const nextSpecialtyError = isNurseRegistration && !specialty.trim() ? "La especialidad es obligatoria" : "";
-    const nextBankNameError = isNurseRegistration && !bankName.trim() ? "El banco es obligatorio" : "";
+    const nextLicenseIdError = isNurseRegistration ? getOptionalDigitsFieldError(licenseId, "La licencia") : "";
+    const nextBankNameError = isNurseRegistration ? getTextOnlyFieldError(bankName, "El banco") : "";
+    const nextAccountNumberError = isNurseRegistration ? getOptionalDigitsFieldError(accountNumber, "El numero de cuenta") : "";
 
     setNameError(nextNameError);
     setLastNameError(nextLastNameError);
@@ -156,7 +157,9 @@ export default function RegisterScreen() {
     setConfirmPasswordError(nextConfirmPasswordError);
     setHireDateError(nextHireDateError);
     setSpecialtyError(nextSpecialtyError);
+    setLicenseIdError(nextLicenseIdError);
     setBankNameError(nextBankNameError);
+    setAccountNumberError(nextAccountNumberError);
 
     if (
       nextNameError ||
@@ -168,7 +171,9 @@ export default function RegisterScreen() {
       nextConfirmPasswordError ||
       nextHireDateError ||
       nextSpecialtyError ||
-      nextBankNameError
+      nextLicenseIdError ||
+      nextBankNameError ||
+      nextAccountNumberError
     ) {
       Alert.alert("Validacion", "Corrige los errores antes de enviar el formulario.");
       return;
@@ -279,8 +284,8 @@ export default function RegisterScreen() {
           style={[styles.input, nameError ? styles.inputError : null]}
           placeholder="Tu nombre"
           value={name}
-          onChangeText={setName}
-          onBlur={() => validateRequiredField(name, setNameError, "El nombre")}
+          onChangeText={(value) => setName(sanitizeTextOnlyInput(value))}
+          onBlur={() => setNameError(getTextOnlyFieldError(name, "El nombre"))}
           editable={!isLoading}
           placeholderTextColor="#999"
         />
@@ -293,8 +298,8 @@ export default function RegisterScreen() {
           style={[styles.input, lastNameError ? styles.inputError : null]}
           placeholder="Tu apellido"
           value={lastName}
-          onChangeText={setLastName}
-          onBlur={() => validateRequiredField(lastName, setLastNameError, "El apellido")}
+          onChangeText={(value) => setLastName(sanitizeTextOnlyInput(value))}
+          onBlur={() => setLastNameError(getTextOnlyFieldError(lastName, "El apellido"))}
           editable={!isLoading}
           placeholderTextColor="#999"
         />
@@ -305,16 +310,12 @@ export default function RegisterScreen() {
         <Text style={styles.label}>Cédula</Text>
         <TextInput
           style={[styles.input, identificationNumberError ? styles.inputError : null]}
-          placeholder="001-1234567-8"
+          placeholder="00112345678"
           value={identificationNumber}
-          onChangeText={setIdentificationNumber}
-          onBlur={() =>
-            validateRequiredField(
-              identificationNumber,
-              setIdentificationNumberError,
-              "La cedula"
-            )
-          }
+          onChangeText={(value) => setIdentificationNumber(sanitizeDigitsOnlyInput(value, 11))}
+          onBlur={() => setIdentificationNumberError(getExactDigitsFieldError(identificationNumber, "La cedula", 11))}
+          keyboardType="number-pad"
+          maxLength={11}
           editable={!isLoading}
           placeholderTextColor="#999"
         />
@@ -329,9 +330,10 @@ export default function RegisterScreen() {
           style={[styles.input, phoneError ? styles.inputError : null]}
           placeholder="8095550101"
           value={phone}
-          onChangeText={setPhone}
-          onBlur={() => validateRequiredField(phone, setPhoneError, "El telefono")}
-          keyboardType="phone-pad"
+          onChangeText={(value) => setPhone(sanitizeDigitsOnlyInput(value, 10))}
+          onBlur={() => setPhoneError(getExactDigitsFieldError(phone, "El telefono", 10))}
+          keyboardType="number-pad"
+          maxLength={10}
           editable={!isLoading}
           placeholderTextColor="#999"
         />
@@ -491,13 +493,16 @@ export default function RegisterScreen() {
           <View style={styles.formGroup}>
             <Text style={styles.label}>Licencia</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, licenseIdError ? styles.inputError : null]}
               placeholder="Opcional"
               value={licenseId}
-              onChangeText={setLicenseId}
+              onChangeText={(value) => setLicenseId(sanitizeDigitsOnlyInput(value))}
+              onBlur={() => setLicenseIdError(getOptionalDigitsFieldError(licenseId, "La licencia"))}
+              keyboardType="number-pad"
               editable={!isLoading}
               placeholderTextColor="#999"
             />
+            {licenseIdError ? <Text style={styles.errorText}>{licenseIdError}</Text> : null}
           </View>
 
           <View style={styles.formGroup}>
@@ -506,7 +511,8 @@ export default function RegisterScreen() {
               style={[styles.input, bankNameError ? styles.inputError : null]}
               placeholder="Banco principal"
               value={bankName}
-              onChangeText={setBankName}
+              onChangeText={(value) => setBankName(sanitizeTextOnlyInput(value))}
+              onBlur={() => setBankNameError(getTextOnlyFieldError(bankName, "El banco"))}
               editable={!isLoading}
               placeholderTextColor="#999"
             />
@@ -516,13 +522,16 @@ export default function RegisterScreen() {
           <View style={styles.formGroup}>
             <Text style={styles.label}>Numero de cuenta</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, accountNumberError ? styles.inputError : null]}
               placeholder="Opcional"
               value={accountNumber}
-              onChangeText={setAccountNumber}
+              onChangeText={(value) => setAccountNumber(sanitizeDigitsOnlyInput(value))}
+              onBlur={() => setAccountNumberError(getOptionalDigitsFieldError(accountNumber, "El numero de cuenta"))}
+              keyboardType="number-pad"
               editable={!isLoading}
               placeholderTextColor="#999"
             />
+            {accountNumberError ? <Text style={styles.errorText}>{accountNumberError}</Text> : null}
           </View>
         </>
       ) : null}
