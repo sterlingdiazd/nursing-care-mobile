@@ -10,6 +10,19 @@ export interface CreateCareRequestResponse {
   correlationId?: string;
 }
 
+export interface ActiveNurseProfileSummary {
+  userId: string;
+  email: string;
+  name: string | null;
+  lastName: string | null;
+  specialty: string | null;
+  category: string | null;
+}
+
+export interface AssignCareRequestNurseRequest {
+  assignedNurse: string;
+}
+
 export async function createCareRequest(
   dto: CreateCareRequestDto,
   correlationId?: string,
@@ -60,6 +73,26 @@ export async function transitionCareRequest(
   return requestJson<CareRequestDto>({
     path: `/api/care-requests/${id}/${action}`,
     method: "POST",
+    auth: true,
+  });
+}
+
+export async function assignCareRequestNurse(
+  id: string,
+  dto: AssignCareRequestNurseRequest,
+): Promise<CareRequestDto> {
+  return requestJson<CareRequestDto>({
+    path: `/api/care-requests/${id}/assignment`,
+    method: "PUT",
+    body: dto,
+    auth: true,
+  });
+}
+
+export async function getActiveNurseProfiles(): Promise<ActiveNurseProfileSummary[]> {
+  return requestJson<ActiveNurseProfileSummary[]>({
+    path: "/api/admin/nurse-profiles/active",
+    method: "GET",
     auth: true,
   });
 }
