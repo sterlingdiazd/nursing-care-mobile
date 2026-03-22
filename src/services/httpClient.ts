@@ -22,14 +22,14 @@ interface JsonRequestOptions {
 let refreshPromise: Promise<string | null> | null = null;
 
 export function getNetworkErrorMessage(url: string, error: unknown) {
-  const message = error instanceof Error ? error.message : "Unknown network error";
+  const message = error instanceof Error ? error.message : "Error de red desconocido";
 
   return `No fue posible conectarse a ${url}. ${message}. Si estas en iPhone, confirma que el dispositivo confia en el certificado local y puede abrir la URL del API en Safari.`;
 }
 
 export function getDisplayErrorMessage(responseText: string, status: number) {
   if (!responseText) {
-    return `Request failed with status ${status}`;
+    return `La solicitud no se pudo completar. Codigo ${status}.`;
   }
 
   try {
@@ -38,14 +38,19 @@ export function getDisplayErrorMessage(responseText: string, status: number) {
       detail?: string;
       error?: string;
       message?: string;
+      errors?: Record<string, string[] | undefined>;
     };
+    const firstValidationError = parsed.errors
+      ? Object.values(parsed.errors).flat().find((value) => Boolean(value))
+      : "";
 
     return (
       parsed.detail ||
+      firstValidationError ||
       parsed.error ||
       parsed.message ||
       parsed.title ||
-      `Request failed with status ${status}`
+      `La solicitud no se pudo completar. Codigo ${status}.`
     );
   } catch {
     return responseText;

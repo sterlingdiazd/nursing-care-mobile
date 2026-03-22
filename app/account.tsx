@@ -10,6 +10,7 @@ import {
   getLocalHttpsCertificateWarning,
   getMobileApiBaseUrl,
 } from "@/src/services/authService";
+import { formatRoleLabels } from "@/src/utils/roleLabels";
 
 export default function AccountScreen() {
   const { email, isAuthenticated, logout, roles, token } = useAuth();
@@ -49,7 +50,7 @@ export default function AccountScreen() {
         </Text>
         <Text style={styles.copy}>{email ?? "No hay correo cargado."}</Text>
         <Text style={styles.copy}>
-          Roles: {roles.length > 0 ? roles.join(", ") : "Sin roles cargados"}
+          Roles: {formatRoleLabels(roles)}
         </Text>
         <Text style={styles.copy}>
           Token: {token ? `${token.slice(0, 18)}...` : "Sin token cargado"}

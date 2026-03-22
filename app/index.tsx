@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { logClientEvent } from "@/src/logging/clientLogger";
+import { formatRoleLabels } from "@/src/utils/roleLabels";
 
 const authenticatedQuickSections = [
   {
@@ -82,7 +83,7 @@ export default function HomeScreen() {
       ? "Necesitas iniciar sesion para ver solicitudes y acciones operativas."
       : "Tu sesion esta activa, pero el acceso operativo sigue limitado.";
   const sessionBody = isAuthenticated
-    ? `${email ?? "No hay cuenta cargada"} • ${roles.length > 0 ? roles.join(", ") : "Sin roles cargados"}`
+    ? `${email ?? "No hay cuenta cargada"} • ${formatRoleLabels(roles)}`
     : "Sin sesion activa • Accede o registrate para continuar";
   const recommendedSteps = hasOperationalAccess
     ? [

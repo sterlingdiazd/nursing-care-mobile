@@ -30,13 +30,27 @@ describe("httpClient helpers", () => {
   it("prefers problem details detail text when present", () => {
     const message = getDisplayErrorMessage(
       JSON.stringify({
-        title: "Login failed",
-        detail: "Invalid email or password.",
+        title: "Inicio de sesion fallido",
+        detail: "Correo o contrasena invalidos.",
       }),
       401,
     );
 
-    expect(message).toBe("Invalid email or password.");
+    expect(message).toBe("Correo o contrasena invalidos.");
+  });
+
+  it("falls back to the first validation error when detail is missing", () => {
+    const message = getDisplayErrorMessage(
+      JSON.stringify({
+        title: "La solicitud contiene datos invalidos.",
+        errors: {
+          identificationNumber: ["La cedula debe tener exactamente 11 digitos."],
+        },
+      }),
+      400,
+    );
+
+    expect(message).toBe("La cedula debe tener exactamente 11 digitos.");
   });
 
   it("falls back to the raw response text when the payload is not json", () => {

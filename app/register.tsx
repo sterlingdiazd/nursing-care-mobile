@@ -26,14 +26,7 @@ import {
   sanitizeDigitsOnlyInput,
   sanitizeTextOnlyInput,
 } from "@/src/utils/identityValidation";
-
-const nurseSpecialties = [
-  "Adult Care",
-  "Pediatric Care",
-  "Geriatric Care",
-  "Critical Care",
-  "Home Care",
-];
+import { nurseSpecialties } from "@/src/constants/nurseProfileOptions";
 
 const clientProfileCopy =
   "Perfil de cliente seleccionado. No hay campos adicionales por completar en esta etapa y el acceso operativo queda disponible cuando termine el registro.";
@@ -192,7 +185,7 @@ export default function RegisterScreen() {
         Alert.alert("Registro completado", "Tu cuenta ya esta activa y lista para usar.", [
           {
             text: "Continuar",
-            onPress: () => router.replace("/care-requests"),
+            onPress: () => router.replace("/"),
           },
         ]);
       } else {

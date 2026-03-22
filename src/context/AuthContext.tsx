@@ -213,7 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return response;
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "Login failed";
+      const errorMsg = err instanceof Error ? err.message : "No fue posible iniciar sesion.";
       setError(errorMsg);
       throw err;
     } finally {
@@ -269,7 +269,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return response;
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "Registration failed";
+      const errorMsg = err instanceof Error ? err.message : "No fue posible completar el registro.";
       setError(errorMsg);
       throw err;
     } finally {
@@ -296,7 +296,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await persistSession(response, UserProfileType.Client);
       return response;
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "Profile completion failed";
+      const errorMsg = err instanceof Error ? err.message : "No fue posible completar el perfil.";
       setError(errorMsg);
       throw err;
     } finally {

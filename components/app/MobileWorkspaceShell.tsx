@@ -14,6 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAuth } from "@/src/context/AuthContext";
 import { logClientEvent } from "@/src/logging/clientLogger";
+import { formatRoleLabels } from "@/src/utils/roleLabels";
 
 interface MobileWorkspaceShellProps {
   eyebrow: string;
@@ -231,7 +232,7 @@ export default function MobileWorkspaceShell({
         <Text style={styles.sidebarMetaLabel}>Sesion actual</Text>
         <Text style={styles.sidebarMetaValue}>{email ?? "Sin correo cargado"}</Text>
         <Text style={styles.sidebarMetaCopy}>
-          {roles.length > 0 ? roles.join(", ") : "Sin roles cargados"}
+          {formatRoleLabels(roles)}
         </Text>
 
         {isAuthenticated && (
