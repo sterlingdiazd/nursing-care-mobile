@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -26,7 +26,8 @@ import {
   sanitizeDigitsOnlyInput,
   sanitizeTextOnlyInput,
 } from "@/src/utils/identityValidation";
-import { nurseSpecialties } from "@/src/constants/nurseProfileOptions";
+import { getNurseProfileOptions } from "@/src/services/catalogOptionsService";
+import type { CatalogCodeNameOption } from "@/src/types/catalog";
 
 const clientProfileCopy =
   "Perfil de cliente seleccionado. No hay campos adicionales por completar en esta etapa y el acceso operativo queda disponible cuando termine el registro.";
@@ -76,6 +77,13 @@ export default function RegisterScreen() {
   const [licenseIdError, setLicenseIdError] = useState("");
   const [bankNameError, setBankNameError] = useState("");
   const [accountNumberError, setAccountNumberError] = useState("");
+  const [specialtyOptions, setSpecialtyOptions] = useState<CatalogCodeNameOption[]>([]);
+
+  useEffect(() => {
+    void getNurseProfileOptions()
+      .then((response) => setSpecialtyOptions(response.specialties))
+      .catch(() => setSpecialtyOptions([]));
+  }, []);
 
   const getEmailError = (value: string) => {
     if (!value) {
@@ -473,23 +481,23 @@ export default function RegisterScreen() {
           <View style={styles.formGroup}>
             <Text style={styles.label}>Especialidad</Text>
             <View style={styles.specialtyList}>
-              {nurseSpecialties.map((option) => (
+              {specialtyOptions.map((option) => (
                 <TouchableOpacity
-                  key={option}
+                  key={option.code}
                   style={[
                     styles.specialtyChip,
-                    specialty === option ? styles.specialtyChipSelected : null,
+                    specialty === option.code ? styles.specialtyChipSelected : null,
                   ]}
-                  onPress={() => setSpecialty(option)}
+                  onPress={() => setSpecialty(option.code)}
                   disabled={isLoading}
                 >
                   <Text
                     style={[
                       styles.specialtyChipText,
-                      specialty === option ? styles.specialtyChipTextSelected : null,
+                      specialty === option.code ? styles.specialtyChipTextSelected : null,
                     ]}
                   >
-                    {option}
+                    {option.displayName}
                   </Text>
                 </TouchableOpacity>
               ))}

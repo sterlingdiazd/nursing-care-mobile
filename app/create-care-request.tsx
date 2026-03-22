@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -13,67 +13,11 @@ import { router } from "expo-router";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { createCorrelationId, logClientEvent } from "@/src/logging/clientLogger";
+import { getCareRequestOptions } from "@/src/services/catalogOptionsService";
 import { createCareRequest, getCareRequests } from "@/src/services/careRequestService";
+import type { CatalogOptionsResponse } from "@/src/types/catalog";
 import { CreateCareRequestDto } from "@/src/types/careRequest";
-
-const SERVICE_TYPES: Record<
-  string,
-  { category: "hogar" | "domicilio" | "medicos"; basePrice: number; unitType: string }
-> = {
-  hogar_diario: { category: "hogar", basePrice: 2500, unitType: "dia_completo" },
-  hogar_basico: { category: "hogar", basePrice: 55000, unitType: "mes" },
-  hogar_estandar: { category: "hogar", basePrice: 60000, unitType: "mes" },
-  hogar_premium: { category: "hogar", basePrice: 65000, unitType: "mes" },
-  domicilio_dia_12h: { category: "domicilio", basePrice: 2500, unitType: "medio_dia" },
-  domicilio_noche_12h: { category: "domicilio", basePrice: 2500, unitType: "medio_dia" },
-  domicilio_24h: { category: "domicilio", basePrice: 3500, unitType: "dia_completo" },
-  suero: { category: "medicos", basePrice: 2000, unitType: "sesion" },
-  medicamentos: { category: "medicos", basePrice: 2000, unitType: "sesion" },
-  sonda_vesical: { category: "medicos", basePrice: 2000, unitType: "sesion" },
-  sonda_nasogastrica: { category: "medicos", basePrice: 3000, unitType: "sesion" },
-  sonda_peg: { category: "medicos", basePrice: 4000, unitType: "sesion" },
-  curas: { category: "medicos", basePrice: 2000, unitType: "sesion" },
-};
-
-const CATEGORY_FACTOR = { hogar: 1.0, domicilio: 1.2, medicos: 1.5 };
-const DISTANCE_FACTORS: Record<string, number> = { local: 1.0, cercana: 1.1, media: 1.2, lejana: 1.3 };
-const COMPLEXITY_FACTORS: Record<string, number> = { estandar: 1.0, moderada: 1.1, alta: 1.2, critica: 1.3 };
-const SERVICE_LABELS: Record<string, string> = {
-  hogar_diario: "Hogar diario",
-  hogar_basico: "Hogar basico",
-  hogar_estandar: "Hogar estandar",
-  hogar_premium: "Hogar premium",
-  domicilio_dia_12h: "Domicilio dia 12h",
-  domicilio_noche_12h: "Domicilio noche 12h",
-  domicilio_24h: "Domicilio 24h",
-  suero: "Suero",
-  medicamentos: "Medicamentos",
-  sonda_vesical: "Sonda vesical",
-  sonda_nasogastrica: "Sonda nasogastrica",
-  sonda_peg: "Sonda PEG",
-  curas: "Curas",
-};
-const DISTANCE_OPTIONS = [
-  ["local", "Local"],
-  ["cercana", "Cercana"],
-  ["media", "Media"],
-  ["lejana", "Lejana"],
-] as const;
-const COMPLEXITY_OPTIONS = [
-  ["estandar", "Estandar"],
-  ["moderada", "Moderada"],
-  ["alta", "Alta"],
-  ["critica", "Critica"],
-] as const;
-
-function volumeDiscountPercent(existingCount: number): number {
-  if (existingCount >= 50) return 20;
-  if (existingCount >= 20) return 15;
-  if (existingCount >= 10) return 10;
-  if (existingCount >= 5) return 5;
-  if (existingCount >= 1) return 0;
-  return 0;
-}
+import { estimateCareRequestPricingFromCatalog } from "@/src/utils/pricingFromCatalogOptions";
 
 export default function CreateCareRequestScreen() {
   const { isAuthenticated, isReady, token, userId, roles } = useAuth();
@@ -82,7 +26,7 @@ export default function CreateCareRequestScreen() {
     careRequestDescription: "",
     suggestedNurse: "",
     careRequestDate: undefined,
-    careRequestType: "domicilio_24h",
+    careRequestType: "",
     unit: 1,
     distanceFactor: "local",
     complexityLevel: "estandar",
@@ -92,44 +36,71 @@ export default function CreateCareRequestScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [existingSameUnitTypeCount, setExistingSameUnitTypeCount] = useState<number>(0);
+  const [catalogOptions, setCatalogOptions] = useState<CatalogOptionsResponse | null>(null);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
 
-  const selectedService = SERVICE_TYPES[form.careRequestType] ?? SERVICE_TYPES.domicilio_24h;
-  const selectedCategory = selectedService.category;
-  const derivedUnitType = selectedService.unitType;
+  const selectedType = catalogOptions?.careRequestTypes.find((t) => t.code === form.careRequestType);
+  const selectedCategory = selectedType?.careRequestCategoryCode ?? "";
+  const derivedUnitType = selectedType?.unitTypeCode ?? "";
+  const isDomicilio = selectedCategory === "domicilio";
+  const isHogarOrDomicilio = selectedCategory === "hogar" || isDomicilio;
+  const isMedicos = selectedCategory === "medicos";
 
-  const basePrice =
-    typeof form.clientBasePriceOverride === "number" && form.clientBasePriceOverride > 0
-      ? form.clientBasePriceOverride
-      : selectedService.basePrice;
+  const categoryDisplayName =
+    catalogOptions?.careRequestCategories.find((c) => c.code === selectedCategory)?.displayName ??
+    selectedCategory;
 
-  const categoryFactor = CATEGORY_FACTOR[selectedCategory];
-  const distanceFactorValue =
-    selectedCategory === "domicilio" ? DISTANCE_FACTORS[form.distanceFactor ?? "local"] ?? 1.0 : 1.0;
-  const complexityFactor =
-    selectedCategory === "hogar" || selectedCategory === "domicilio"
-      ? COMPLEXITY_FACTORS[form.complexityLevel ?? "estandar"] ?? 1.0
-      : 1.0;
+  const pricingEstimate = useMemo(() => {
+    if (!catalogOptions || !form.careRequestType) {
+      return null;
+    }
 
-  const volumeDiscount = volumeDiscountPercent(existingSameUnitTypeCount);
-  const unitPrice =
-    basePrice * categoryFactor * distanceFactorValue * complexityFactor * (1 - volumeDiscount / 100);
+    try {
+      return estimateCareRequestPricingFromCatalog(catalogOptions, {
+        careRequestTypeCode: form.careRequestType,
+        unit: form.unit ?? 1,
+        clientBasePriceOverride: form.clientBasePriceOverride,
+        distanceFactorCode: isDomicilio ? form.distanceFactor : undefined,
+        complexityLevelCode: isHogarOrDomicilio ? form.complexityLevel : undefined,
+        medicalSuppliesCost:
+          isMedicos && typeof form.medicalSuppliesCost === "number" ? form.medicalSuppliesCost : undefined,
+        existingSameUnitTypeCount,
+      });
+    } catch {
+      return null;
+    }
+  }, [
+    catalogOptions,
+    form.careRequestType,
+    form.unit,
+    form.clientBasePriceOverride,
+    form.distanceFactor,
+    form.complexityLevel,
+    form.medicalSuppliesCost,
+    isDomicilio,
+    isHogarOrDomicilio,
+    isMedicos,
+    existingSameUnitTypeCount,
+  ]);
+
+  const unitPrice = pricingEstimate?.unitPriceAfterVolumeDiscount ?? 0;
   const medicalSupplies =
-    selectedCategory === "medicos" &&
-    typeof form.medicalSuppliesCost === "number" &&
-    form.medicalSuppliesCost >= 0
+    isMedicos && typeof form.medicalSuppliesCost === "number" && form.medicalSuppliesCost >= 0
       ? form.medicalSuppliesCost
       : 0;
-  const estimatedTotal = unitPrice * (form.unit ?? 1) + medicalSupplies;
+  const estimatedTotal = pricingEstimate?.grandTotal ?? 0;
 
   const resetForm = () => {
+    const firstType = catalogOptions?.careRequestTypes[0]?.code ?? "";
     setForm({
       careRequestDescription: "",
       suggestedNurse: "",
       careRequestDate: undefined,
-      careRequestType: "domicilio_24h",
+      careRequestType: firstType,
       unit: 1,
-      distanceFactor: "local",
-      complexityLevel: "estandar",
+      distanceFactor: catalogOptions?.distanceFactors[0]?.code ?? "local",
+      complexityLevel: catalogOptions?.complexityLevels[0]?.code ?? "estandar",
       clientBasePriceOverride: undefined,
       medicalSuppliesCost: undefined,
     });
@@ -235,6 +206,36 @@ export default function CreateCareRequestScreen() {
   }, [canCreateRequest, isAuthenticated, isReady]);
 
   useEffect(() => {
+    if (!token) {
+      setCatalogLoading(false);
+      return;
+    }
+
+    setCatalogLoading(true);
+    setCatalogError(null);
+    void getCareRequestOptions(token)
+      .then((options) => {
+        setCatalogOptions(options);
+        setForm((prev) => {
+          const nextType =
+            prev.careRequestType && options.careRequestTypes.some((t) => t.code === prev.careRequestType)
+              ? prev.careRequestType
+              : options.careRequestTypes[0]?.code ?? "";
+          return {
+            ...prev,
+            careRequestType: nextType,
+            distanceFactor: options.distanceFactors[0]?.code ?? "local",
+            complexityLevel: options.complexityLevels[0]?.code ?? "estandar",
+          };
+        });
+      })
+      .catch((e: unknown) => {
+        setCatalogError(e instanceof Error ? e.message : "No fue posible cargar el catalogo.");
+      })
+      .finally(() => setCatalogLoading(false));
+  }, [token]);
+
+  useEffect(() => {
     if (!isReady || !isAuthenticated || !userId || !form.careRequestType) {
       setExistingSameUnitTypeCount(0);
       return;
@@ -305,6 +306,19 @@ export default function CreateCareRequestScreen() {
             </Text>
           </View>
 
+            {catalogError ? (
+              <View style={styles.warningBox}>
+                <Text style={styles.warningText}>{catalogError}</Text>
+              </View>
+            ) : null}
+
+            {catalogLoading ? (
+              <View style={styles.warningBox}>
+                <ActivityIndicator color="#132d75" />
+                <Text style={styles.warningText}>Cargando catalogo de precios...</Text>
+              </View>
+            ) : null}
+
             {!canCreateRequest && (
               <View style={styles.warningBox}>
                 <Text style={styles.warningText}>
@@ -363,13 +377,13 @@ export default function CreateCareRequestScreen() {
 
             <Text style={styles.label}>Servicio</Text>
             <View style={styles.optionGrid}>
-              {Object.entries(SERVICE_LABELS).map(([value, label]) => {
-                const selected = form.careRequestType === value;
+              {(catalogOptions?.careRequestTypes ?? []).map((row) => {
+                const selected = form.careRequestType === row.code;
 
                 return (
                   <Pressable
-                    key={value}
-                    onPress={() => setForm((prev) => ({ ...prev, careRequestType: value }))}
+                    key={row.code}
+                    onPress={() => setForm((prev) => ({ ...prev, careRequestType: row.code }))}
                     style={({ pressed }) => [
                       styles.optionButton,
                       selected && styles.optionButtonSelected,
@@ -377,7 +391,7 @@ export default function CreateCareRequestScreen() {
                     ]}
                   >
                     <Text style={[styles.optionLabel, selected && styles.optionLabelSelected]}>
-                      {label}
+                      {row.displayName}
                     </Text>
                   </Pressable>
                 );
@@ -390,10 +404,10 @@ export default function CreateCareRequestScreen() {
                 Total estimado: {Number.isFinite(estimatedTotal) ? estimatedTotal.toFixed(2) : "0.00"}
               </Text>
               <Text style={styles.checkItem}>
-                Servicio: {SERVICE_LABELS[form.careRequestType] ?? form.careRequestType}
+                Servicio: {selectedType?.displayName ?? form.careRequestType}
               </Text>
               <Text style={styles.checkItem}>
-                Tipo de unidad: {derivedUnitType} • Categoria: {selectedCategory}
+                Tipo de unidad: {derivedUnitType} • Categoria: {categoryDisplayName}
               </Text>
             </View>
 
@@ -411,17 +425,17 @@ export default function CreateCareRequestScreen() {
               style={[styles.input, isLoading && styles.inputDisabled]}
             />
 
-            {selectedCategory === "domicilio" && (
+            {isDomicilio && (
               <>
                 <Text style={styles.label}>Zona de desplazamiento</Text>
                 <View style={styles.inlineOptions}>
-                  {DISTANCE_OPTIONS.map(([value, label]) => {
-                    const selected = (form.distanceFactor ?? "local") === value;
+                  {(catalogOptions?.distanceFactors ?? []).map((row) => {
+                    const selected = (form.distanceFactor ?? "local") === row.code;
 
                     return (
                       <Pressable
-                        key={value}
-                        onPress={() => setForm((prev) => ({ ...prev, distanceFactor: value }))}
+                        key={row.code}
+                        onPress={() => setForm((prev) => ({ ...prev, distanceFactor: row.code }))}
                         style={({ pressed }) => [
                           styles.inlineOption,
                           selected && styles.inlineOptionSelected,
@@ -434,7 +448,7 @@ export default function CreateCareRequestScreen() {
                             selected && styles.inlineOptionTextSelected,
                           ]}
                         >
-                          {label}
+                          {row.displayName}
                         </Text>
                       </Pressable>
                     );
@@ -443,17 +457,17 @@ export default function CreateCareRequestScreen() {
               </>
             )}
 
-            {(selectedCategory === "hogar" || selectedCategory === "domicilio") && (
+            {isHogarOrDomicilio && (
               <>
                 <Text style={styles.label}>Nivel de complejidad</Text>
                 <View style={styles.inlineOptions}>
-                  {COMPLEXITY_OPTIONS.map(([value, label]) => {
-                    const selected = (form.complexityLevel ?? "estandar") === value;
+                  {(catalogOptions?.complexityLevels ?? []).map((row) => {
+                    const selected = (form.complexityLevel ?? "estandar") === row.code;
 
                     return (
                       <Pressable
-                        key={value}
-                        onPress={() => setForm((prev) => ({ ...prev, complexityLevel: value }))}
+                        key={row.code}
+                        onPress={() => setForm((prev) => ({ ...prev, complexityLevel: row.code }))}
                         style={({ pressed }) => [
                           styles.inlineOption,
                           selected && styles.inlineOptionSelected,
@@ -466,7 +480,7 @@ export default function CreateCareRequestScreen() {
                             selected && styles.inlineOptionTextSelected,
                           ]}
                         >
-                          {label}
+                          {row.displayName}
                         </Text>
                       </Pressable>
                     );
@@ -495,7 +509,7 @@ export default function CreateCareRequestScreen() {
               style={[styles.input, isLoading && styles.inputDisabled]}
             />
 
-            {selectedCategory === "medicos" && (
+            {isMedicos && (
               <>
                 <Text style={styles.label}>Costo de insumos medicos (opcional)</Text>
                 <TextInput

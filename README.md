@@ -88,9 +88,9 @@ For physical devices, use your machine LAN IP and make sure the device trusts th
 
 Environment mapping:
 
-- `local` and `docker`: `EXPO_PUBLIC_API_BASE_URL=https://<lan-ip>:5050`
-- `staging`: `EXPO_PUBLIC_API_BASE_URL=https://api-staging.<your-domain>`
-- `production`: `EXPO_PUBLIC_API_BASE_URL=https://api.<your-domain>`
+- `local` and `docker`: `EXPO_PUBLIC_API_BASE_URL=<https://<lan-ip>>:5050`
+- `staging`: `EXPO_PUBLIC_API_BASE_URL=<https://api-staging.<your-domain>>`
+- `production`: `EXPO_PUBLIC_API_BASE_URL=<https://api.<your-domain>>`
 
 ## Current Behavior
 
