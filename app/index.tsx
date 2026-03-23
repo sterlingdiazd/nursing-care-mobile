@@ -8,6 +8,11 @@ import { formatRoleLabels } from "@/src/utils/roleLabels";
 
 const authenticatedQuickSections = [
   {
+    title: "Panel admin",
+    body: "Accede a indicadores, cola administrativa y notificaciones del portal de administracion.",
+    path: "/admin",
+  },
+  {
     title: "Solicitudes",
     body: "Revisa la cola viva, abre el detalle y recorre el ciclo completo de cada solicitud.",
     path: "/care-requests",
@@ -63,9 +68,15 @@ export default function HomeScreen() {
     : authenticatedQuickSections.filter(
       (section) => !isNurseUnderReview || (section.path !== "/care-requests" && section.path !== "/create-care-request"),
     );
-  const quickSectionsToShow = quickSectionsSource.filter(
-    (section) => section.path !== "/create-care-request" || roles.includes("Client") || roles.includes("Admin"),
-  );
+  const quickSectionsToShow = quickSectionsSource.filter((section) => {
+    if (section.path === "/create-care-request") {
+      return roles.includes("Client") || roles.includes("Admin");
+    }
+    if (section.path === "/admin") {
+      return roles.includes("Admin");
+    }
+    return true;
+  });
   const heroEyebrow = hasOperationalAccess ? "Resumen operativo" : isAnonymous ? "Acceso y cuenta" : "Estado de cuenta";
   const heroTitle = hasOperationalAccess
     ? "Una consola mobile clara para navegar, capturar y supervisar."

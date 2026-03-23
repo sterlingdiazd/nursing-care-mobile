@@ -94,6 +94,18 @@ function RootLayoutNav() {
           name="care-requests/[id]"
           options={{ title: "Detalle de solicitud", headerShown: false }}
         />
+        <Stack.Screen
+          name="admin/index"
+          options={{ title: "Panel administrativo", headerShown: false }}
+        />
+        <Stack.Screen
+          name="admin/action-items"
+          options={{ title: "Cola administrativa", headerShown: false }}
+        />
+        <Stack.Screen
+          name="admin/notifications"
+          options={{ title: "Notificaciones administrativas", headerShown: false }}
+        />
         <Stack.Screen name="modal" options={{ presentation: "modal" }} />
       </Stack>
     </AuthProvider>
