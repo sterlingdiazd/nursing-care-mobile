@@ -46,6 +46,9 @@ export default function AdminDashboardScreen() {
           <Pressable style={styles.button} onPress={() => router.push("/admin/notifications")}>
             <Text style={styles.buttonText}>Abrir notificaciones</Text>
           </Pressable>
+          <Pressable style={styles.button} onPress={() => router.push("/admin/audit-logs")}>
+            <Text style={styles.buttonText}>Abrir auditoria</Text>
+          </Pressable>
         </>
       }
     >
