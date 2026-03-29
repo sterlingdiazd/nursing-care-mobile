@@ -1,123 +1,106 @@
 # Nursing Care Mobile
 
-React Native mobile app (Expo + Expo Router) for nursing care workflows.
-Current focus: authenticated care-request creation with device-friendly backend diagnostics.
+A cross-platform React Native mobile application built with Expo representing an enterprise of on-demand nursing care services and home residential care.
+
+---
+
+## Overview
+
+The Nursing Care Mobile app provides on-the-go access to nursing and residential care management features for both medical personnel and admins.
+
+### Key Features
+- **Service Request Management**: Create, list, and view detailed nursing and residential care requests.
+- **Admin Dashboard**: Real-time stats and service monitoring on mobile devices.
+- **Audit Logs & Notifications**: Real-time tracking and enterprise alert views.
+- **Nurse Profiles**: Full support for creating, viewing, and reviewing nurse profiles.
+- **Catalog Management**: View and manage system-wide pricing catalogs for all care services.
+- **Client & User Management**: Operational tools for managing system users and clients.
+- **Diagnostics & Tools**: Built-in backend connectivity tests and client log inspection.
+
+---
+
+## Key Screens & Navigation
+
+### Authentication
+- **Login / Register**: Secure authentication with JWT and Google OAuth2 support.
+- **Account Tracking**: Profile views and session management.
+
+### Service Requests
+- **Create Service Request**: Mobile-optimized form with validation for nursing or residential care.
+- **Service List**: Filterable care delivery history.
+- **Service Details**: Comprehensive detail views and status transitions.
+
+### Admin Portal (Mobile)
+- **Admin Index**: Unified dashboard for mobile admins.
+- **Care Requests & Clients**: Mobile-friendly list and management views.
+- **Nurse Profiles**: Screens for creating, viewing, and reviewing staff profiles.
+- **Audit Logs & Action Items**: Operational monitoring on the go.
+- **Pricing Catalog**: View and manage service prices and residential options.
+- **Notifications**: Real-time admin alerts.
+
+---
 
 ## Tech Stack
 
-- Expo SDK 54
-- React Native 0.81
-- React 19
-- Expo Router (file-based routing)
-- TypeScript (strict mode)
+- **Framework**: React Native + Expo
+- **Routing**: Expo Router (File-based)
+- **State Management**: React Context, Custom Hooks
+- **Testing**: Vitest + React Testing Library
+- **Type Safety**: TypeScript (Strict Mode)
 
-## Project Structure
-
-```text
-app/
-  _layout.tsx                 Root stack layout + auth provider
-  create-care-request.tsx     Care request form screen
-  modal.tsx                   Expo template modal screen
-  (tabs)/
-    index.tsx                 Home tab
-    three.tsx                 Auth + logs tab
-src/
-  config/api.ts               API base URL configuration
-  context/AuthContext.tsx     In-memory auth session state
-  logging/clientLogger.ts     Mobile UI + request log store
-  services/                   Auth, HTTP, and care-request clients
-  types/                      Shared DTOs
-components/                   Shared UI and theme components
-constants/                    Theme constants
-assets/                       Fonts and images
-```
+---
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js 18+
-- npm
+- npm 9+
 - Expo Go app (for device testing) or iOS Simulator / Android Emulator
 
-### Install
+### Installation
 
-```bash
-npm install
-```
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-### Run
+2. **Configure environment**:
+   Copy .env.example to .env.local and set EXPO_PUBLIC_API_BASE_URL to your backend instance (e.g., http://<LAN_IP>:5050).
 
-```bash
-npm run start
-```
+3. **Start the development server**:
+   ```bash
+   npm start
+   ```
 
-Then choose:
+### Execution
+- Press i for iOS simulator.
+- Press a for Android emulator.
+- Scan the QR code with Expo Go for physical device testing.
 
-- `i` for iOS simulator
-- `a` for Android emulator
-- `w` for web
-- or scan the QR code with Expo Go
+---
 
 ## Available Scripts
 
-- `npm run start` - Start Expo dev server
-- `npm run ios` - Start Expo and open iOS
-- `npm run android` - Start Expo and open Android
-- `npm run web` - Start Expo for web
-- `npm test` - Run the mobile Vitest suite
-- `npm run typecheck` - Run TypeScript checks
+- **npm run start**: Run the Expo development server.
+- **npm test**: Run the Vitest test suite. **Mandatory: Must pass before commit.**
+- **npm run typecheck**: Run TypeScript checks. **Mandatory: Must pass after tests and before commit.**
 
-## API Configuration
+---
 
-API base URL is defined in:
+## Project Structure
 
-- `src/config/api.ts`
-- `.env.local` for local overrides
-- `.env.example` as the committed template
+- **app/**: Screen components and file-based routing structure.
+- **src/**: Shared business logic, services, and local configuration.
+- **components/**: Mobile-optimized UI components and theme constants.
+- **assets/**: Fonts and images.
+- **scripts/**: Utility scripts (e.g., port release).
 
-Shared cross-project source of truth:
+---
 
-- [Environment Matrix](https://github.com/sterlingdiazd/NursingCare/blob/main/ENVIRONMENT_MATRIX.md)
+## Security & Privacy Note
 
-```ts
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || "https://10.0.0.33:5050";
-```
-
-For physical devices, use your machine LAN IP and make sure the device trusts the local development certificate.
-
-Environment mapping:
-
-- `local` and `docker`: `EXPO_PUBLIC_API_BASE_URL=<https://<lan-ip>>:5050`
-- `staging`: `EXPO_PUBLIC_API_BASE_URL=<https://api-staging.<your-domain>>`
-- `production`: `EXPO_PUBLIC_API_BASE_URL=<https://api.<your-domain>>`
-
-## Current Behavior
-
-- `CreateCareRequestScreen` collects:
-  - `residentId` (string GUID)
-  - `description` (string)
-- Basic required-field validation is implemented.
-- The screen submits authenticated requests to `/api/care-requests`.
-- The `Info` tab supports:
-  - email/password login
-  - manual JWT token paste
-  - backend connectivity test
-  - client log inspection with correlation IDs
-
-## Logging
-
-The mobile client logs:
-
-- UI actions
-- auth operations
-- HTTP request lifecycle events
-- correlation IDs for every log row
-
-These are visible in the `Info` tab and can be matched with backend request logs.
-
-## Additional Documentation
-
-- [Project Architecture](./docs/architecture.md)
-- [Development Notes](./docs/development-notes.md)
-- [Run and Test Guide](./docs/run-and-test-guide.md)
+- **No Secrets in Repo**: Ensure .env.local is listed in .gitignore.
+- **No Icons/Emojis**: Documentation files must not contain emojis or icons.
+- **Anonymized Examples**: All screenshots and documentation use placeholder data.
+- **Public Visibility**: This repository is designed for public transparency; do NOT commit real user data or private information.

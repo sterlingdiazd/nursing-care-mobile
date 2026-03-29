@@ -46,7 +46,7 @@ The API base URL is configured in:
 Default value:
 
 ```ts
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || "https://10.0.0.33:5050";
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || "https://<LAN_IP>:5050";
 ```
 
 If you test on a physical device:
