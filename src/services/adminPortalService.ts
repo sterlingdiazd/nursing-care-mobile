@@ -1178,7 +1178,114 @@ export async function updateNurseCategory(
   return requestJson<void>({
     path: `/api/admin/catalog/nurse-categories/${id}`,
     method: "PUT",
-    body,
+    body: request,
     auth: true,
   });
 }
+
+// Admin Reports types and functions
+export interface CareRequestPipelineReportDto {
+  pendingCount: number;
+  approvedCount: number;
+  completedCount: number;
+  rejectedCount: number;
+  unassignedCount: number;
+  overdueCount: number;
+}
+
+export interface AssignmentApprovalBacklogReportDto {
+  pendingUnassignedCount: number;
+  pendingAssignedAwaitingApprovalCount: number;
+  averageDaysPending: number;
+}
+
+export interface NurseOnboardingReportDto {
+  totalRegisteredCount: number;
+  pendingReviewCount: number;
+  activeCount: number;
+  inactiveCount: number;
+  completedThisPeriodCount: number;
+}
+
+export interface ActiveInactiveUsersReportDto {
+  adminActiveCount: number;
+  adminInactiveCount: number;
+  clientActiveCount: number;
+  clientInactiveCount: number;
+  nurseActiveCount: number;
+  nurseInactiveCount: number;
+}
+
+export interface NurseUtilizationRowDto {
+  nurseId: string;
+  nurseName: string;
+  totalAssigned: number;
+  completed: number;
+  pending: number;
+  completionRate: number;
+}
+
+export interface NurseUtilizationReportDto {
+  rows: NurseUtilizationRowDto[];
+  totalNurses: number;
+}
+
+export interface CareRequestCompletionReportDto {
+  totalCompletedCount: number;
+  averageDaysToComplete: number;
+  completionsByRange: Record<string, number>;
+}
+
+export interface PriceUsageRequestTypeRowDto {
+  requestType: string;
+  count: number;
+  averageTotal: number;
+  totalRevenue: number;
+}
+
+export interface PriceUsageSummaryReportDto {
+  topRequestTypes: PriceUsageRequestTypeRowDto[];
+  topDistanceFactors: string[];
+  topComplexityLevels: string[];
+}
+
+export interface NotificationVolumeReportDto {
+  totalNotificationsCount: number;
+  unreadNotificationsCount: number;
+  pendingActionItemsCount: number;
+  notificationsByCategory: Record<string, number>;
+}
+
+export type AdminReportResponseDto =
+  | CareRequestPipelineReportDto
+  | AssignmentApprovalBacklogReportDto
+  | NurseOnboardingReportDto
+  | ActiveInactiveUsersReportDto
+  | NurseUtilizationReportDto
+  | CareRequestCompletionReportDto
+  | PriceUsageSummaryReportDto
+  | NotificationVolumeReportDto;
+
+export async function getAdminReport(key: string, params?: { from?: string; to?: string }) {
+  const searchParams = new URLSearchParams();
+  if (params?.from) searchParams.append("from", params.from);
+  if (params?.to) searchParams.append("to", params.to);
+  
+  const suffix = searchParams.toString();
+  return requestJson<AdminReportResponseDto>({
+    path: `/api/admin/reports/${key}${suffix ? `?${suffix}` : ""}`,
+    method: "GET",
+    auth: true,
+  });
+}
+
+export function getAdminReportExportUrl(key: string, params?: { from?: string; to?: string }) {
+  const searchParams = new URLSearchParams();
+  if (params?.from) searchParams.append("from", params.from);
+  if (params?.to) searchParams.append("to", params.to);
+  
+  const baseUrl = process.env.EXPO_PUBLIC_API_URL || "";
+  const suffix = searchParams.toString();
+  return `${baseUrl}/api/admin/reports/${key}/export${suffix ? `?${suffix}` : ""}`;
+}
+

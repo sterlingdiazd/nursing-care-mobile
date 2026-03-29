@@ -49,6 +49,9 @@ export default function AdminDashboardScreen() {
           <Pressable style={styles.button} onPress={() => router.push("/admin/audit-logs" as any)}>
             <Text style={styles.buttonText}>Abrir auditoria</Text>
           </Pressable>
+          <Pressable style={styles.button} onPress={() => router.push("/admin/reports" as any)}>
+            <Text style={styles.buttonText}>Abrir reportes</Text>
+          </Pressable>
         </>
       }
     >
