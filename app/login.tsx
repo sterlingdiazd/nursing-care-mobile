@@ -229,6 +229,14 @@ export default function LoginScreen() {
         {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
       </View>
 
+      <TouchableOpacity
+        onPress={() => router.push("/forgot-password" as any)}
+        style={styles.forgotPasswordContainer}
+        disabled={isLoading}
+      >
+        <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
+      </TouchableOpacity>
+
       {/* Login Button */}
       <TouchableOpacity
         style={[styles.button, isLoading ? styles.buttonDisabled : null]}
@@ -261,7 +269,7 @@ export default function LoginScreen() {
       {/* Register Link */}
       <View style={styles.registerLinkContainer}>
         <Text style={styles.registerLinkText}>¿No tienes cuenta? </Text>
-        <TouchableOpacity onPress={() => router.push("/register")} disabled={isLoading}>
+        <TouchableOpacity onPress={() => router.push("/register" as any)} disabled={isLoading}>
           <Text style={styles.registerLink}>Registrate</Text>
         </TouchableOpacity>
       </View>
@@ -313,6 +321,16 @@ const styles = StyleSheet.create({
     color: "#d32f2f",
     fontSize: 12,
     marginTop: 4,
+  },
+  forgotPasswordContainer: {
+    alignSelf: "flex-end",
+    marginBottom: 20,
+    marginTop: -10,
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    color: "#0066cc",
+    fontWeight: "600",
   },
   button: {
     backgroundColor: "#0066cc",

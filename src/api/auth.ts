@@ -26,6 +26,7 @@ export interface LoginRequest {
 
 export interface AuthResponse {
   token: string;
+  refreshToken: string;
   email: string;
   roles: string[];
 }
@@ -97,6 +98,55 @@ export async function loginUser(email: string, password: string): Promise<AuthRe
       error.response?.data?.title ||
       error.message ||
       "No fue posible iniciar sesion";
+
+    throw new Error(errorMessage);
+  }
+}
+
+/**
+ * Request a password reset code
+ */
+export async function forgotPassword(email: string): Promise<{ message: string }> {
+  try {
+    const response = await httpClient.post<{ message: string }>(
+      "/auth/forgot-password",
+      { email }
+    );
+    return response.data;
+  } catch (error: any) {
+    const errorMessage =
+      error.response?.data?.detail ||
+      error.response?.data?.message ||
+      error.response?.data?.title ||
+      error.message ||
+      "No fue posible solicitar el restablecimiento";
+
+    throw new Error(errorMessage);
+  }
+}
+
+/**
+ * Reset password using verification code
+ */
+export async function resetPassword(
+  email: string,
+  code: string,
+  newPassword: string
+): Promise<AuthResponse> {
+  try {
+    const response = await httpClient.post<AuthResponse>("/auth/reset-password", {
+      email,
+      code,
+      newPassword,
+    });
+    return response.data;
+  } catch (error: any) {
+    const errorMessage =
+      error.response?.data?.detail ||
+      error.response?.data?.message ||
+      error.response?.data?.title ||
+      error.message ||
+      "No fue posible restablecer la contrasena";
 
     throw new Error(errorMessage);
   }
