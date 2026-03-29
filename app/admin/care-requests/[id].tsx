@@ -49,9 +49,9 @@ export default function AdminCareRequestDetailScreen() {
 
   useEffect(() => {
     if (!isReady) return;
-    if (!isAuthenticated) return void router.replace("/login");
-    if (requiresProfileCompletion) return void router.replace("/register");
-    if (!roles.includes("Admin")) return void router.replace("/");
+    if (!isAuthenticated) return void router.replace("/login" as any);
+    if (requiresProfileCompletion) return void router.replace("/register" as any);
+    if (!roles.includes("Admin")) return void router.replace("/" as any);
     void load();
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles, id]);
 
@@ -86,7 +86,7 @@ export default function AdminCareRequestDetailScreen() {
             <Text style={styles.cardTitle}>Información del Cliente</Text>
             <View style={styles.field}>
               <Text style={styles.fieldLabel}>Nombre</Text>
-              <Pressable onPress={() => router.push(`/admin/clients/${detail.clientUserId}`)}>
+              <Pressable onPress={() => router.push(`/admin/clients/${detail.clientUserId}` as any)}>
                 <Text style={styles.fieldValueLink}>{detail.clientDisplayName}</Text>
               </Pressable>
             </View>
@@ -109,7 +109,7 @@ export default function AdminCareRequestDetailScreen() {
               <>
                 <View style={styles.field}>
                   <Text style={styles.fieldLabel}>Enfermera</Text>
-                  <Pressable onPress={() => router.push(`/admin/nurse-profiles/${detail.assignedNurseUserId}`)}>
+                  <Pressable onPress={() => router.push(`/admin/nurse-profiles/${detail.assignedNurseUserId}` as any)}>
                     <Text style={styles.fieldValueLink}>{detail.assignedNurseDisplayName}</Text>
                   </Pressable>
                 </View>

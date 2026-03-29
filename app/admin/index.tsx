@@ -14,15 +14,15 @@ export default function AdminDashboardScreen() {
   useEffect(() => {
     if (!isReady) return;
     if (!isAuthenticated) {
-      router.replace("/login");
+      router.replace("/login" as any);
       return;
     }
     if (requiresProfileCompletion) {
-      router.replace("/register");
+      router.replace("/register" as any);
       return;
     }
     if (!roles.includes("Admin")) {
-      router.replace("/");
+      router.replace("/" as any);
       return;
     }
 
@@ -40,13 +40,13 @@ export default function AdminDashboardScreen() {
       description="Replica la visibilidad ejecutiva del portal web para seguimiento rapido de pendientes operativos."
       actions={
         <>
-          <Pressable style={styles.button} onPress={() => router.push("/admin/action-items")}>
+          <Pressable style={styles.button} onPress={() => router.push("/admin/action-items" as any)}>
             <Text style={styles.buttonText}>Abrir cola de acciones</Text>
           </Pressable>
-          <Pressable style={styles.button} onPress={() => router.push("/admin/notifications")}>
+          <Pressable style={styles.button} onPress={() => router.push("/admin/notifications" as any)}>
             <Text style={styles.buttonText}>Abrir notificaciones</Text>
           </Pressable>
-          <Pressable style={styles.button} onPress={() => router.push("/admin/audit-logs")}>
+          <Pressable style={styles.button} onPress={() => router.push("/admin/audit-logs" as any)}>
             <Text style={styles.buttonText}>Abrir auditoria</Text>
           </Pressable>
         </>

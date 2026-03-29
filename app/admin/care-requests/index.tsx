@@ -55,9 +55,9 @@ export default function AdminCareRequestsScreen() {
 
   useEffect(() => {
     if (!isReady) return;
-    if (!isAuthenticated) return void router.replace("/login");
-    if (requiresProfileCompletion) return void router.replace("/register");
-    if (!roles.includes("Admin")) return void router.replace("/");
+    if (!isAuthenticated) return void router.replace("/login" as any);
+    if (requiresProfileCompletion) return void router.replace("/register" as any);
+    if (!roles.includes("Admin")) return void router.replace("/" as any);
     void load();
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles, viewFilter]);
 
@@ -85,7 +85,7 @@ export default function AdminCareRequestsScreen() {
           <Pressable style={styles.button} onPress={() => setShowFilters(!showFilters)}>
             <Text style={styles.buttonText}>{showFilters ? "Ocultar filtros" : "Filtros"}</Text>
           </Pressable>
-          <Pressable style={styles.buttonPrimary} onPress={() => router.push("/admin/care-requests/create")}>
+          <Pressable style={styles.buttonPrimary} onPress={() => router.push("/admin/care-requests/create" as any)}>
             <Text style={styles.buttonPrimaryText}>Crear</Text>
           </Pressable>
         </View>
@@ -143,7 +143,7 @@ export default function AdminCareRequestsScreen() {
         {items.map((item) => (
           <Pressable
             key={item.id}
-            onPress={() => router.push(`/admin/care-requests/${item.id}`)}
+            onPress={() => router.push(`/admin/care-requests/${item.id}` as any)}
             style={[styles.card, item.isOverdueOrStale && styles.cardOverdue]}
           >
             {item.isOverdueOrStale && (

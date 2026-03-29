@@ -493,7 +493,7 @@ export interface UpdateAdminClientRequest {
 
 // User types and functions
 export type AdminUserRoleName = "Admin" | "Client" | "Nurse";
-export type AdminUserProfileType = "Client" | "Nurse";
+export type AdminUserProfileType = "Client" | "Nurse" | "None";
 export type AdminUserAccountStatus =
   | "Active"
   | "Inactive"

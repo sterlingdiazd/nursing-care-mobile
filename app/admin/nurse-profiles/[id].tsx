@@ -39,9 +39,9 @@ export default function AdminNurseProfileDetailScreen() {
 
   useEffect(() => {
     if (!isReady) return;
-    if (!isAuthenticated) return void router.replace("/login");
-    if (requiresProfileCompletion) return void router.replace("/register");
-    if (!roles.includes("Admin")) return void router.replace("/");
+    if (!isAuthenticated) return void router.replace("/login" as any);
+    if (requiresProfileCompletion) return void router.replace("/register" as any);
+    if (!roles.includes("Admin")) return void router.replace("/" as any);
     void load();
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles, id]);
 
@@ -74,7 +74,7 @@ export default function AdminNurseProfileDetailScreen() {
             <Text style={styles.buttonText}>Actualizar</Text>
           </Pressable>
           {detail && (
-            <Pressable style={styles.buttonPrimary} onPress={() => router.push(`/admin/nurse-profiles/${id}/edit`)}>
+            <Pressable style={styles.buttonPrimary} onPress={() => router.push(`/admin/nurse-profiles/${id}/edit` as any)}>
               <Text style={styles.buttonPrimaryText}>Editar</Text>
             </Pressable>
           )}
@@ -240,7 +240,7 @@ export default function AdminNurseProfileDetailScreen() {
             {detail.isPendingReview && (
               <Pressable
                 style={styles.reviewButton}
-                onPress={() => router.push(`/admin/nurse-profiles/${id}/review`)}
+                onPress={() => router.push(`/admin/nurse-profiles/${id}/review` as any)}
               >
                 <Text style={styles.reviewButtonText}>Revisar y Completar Perfil</Text>
               </Pressable>

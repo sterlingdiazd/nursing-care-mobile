@@ -212,42 +212,42 @@ export default function AdminCatalogScreen() {
   const createItem = async (tabKey: TabKey, data: Record<string, any>, authToken: string) => {
     switch (tabKey) {
       case "categories":
-        return createCareRequestCategory(data as any, authToken);
+        return createCareRequestCategory(data as any);
       case "types":
-        return createCareRequestType(data as any, authToken);
+        return createCareRequestType(data as any);
       case "units":
-        return createUnitType(data as any, authToken);
+        return createUnitType(data as any);
       case "distance":
-        return createDistanceFactor(data as any, authToken);
+        return createDistanceFactor(data as any);
       case "complexity":
-        return createComplexityLevel(data as any, authToken);
+        return createComplexityLevel(data as any);
       case "volume":
-        return createVolumeDiscountRule(data as any, authToken);
+        return createVolumeDiscountRule(data as any);
       case "specialties":
-        return createNurseSpecialty(data as any, authToken);
+        return createNurseSpecialty(data as any);
       case "nurseCategories":
-        return createNurseCategory(data as any, authToken);
+        return createNurseCategory(data as any);
     }
   };
 
   const updateItem = async (tabKey: TabKey, id: string, data: Record<string, any>, authToken: string) => {
     switch (tabKey) {
       case "categories":
-        return updateCareRequestCategory(id, data as any, authToken);
+        return updateCareRequestCategory(id, data as any);
       case "types":
-        return updateCareRequestType(id, data as any, authToken);
+        return updateCareRequestType(id, data as any);
       case "units":
-        return updateUnitType(id, data as any, authToken);
+        return updateUnitType(id, data as any);
       case "distance":
-        return updateDistanceFactor(id, data as any, authToken);
+        return updateDistanceFactor(id, data as any);
       case "complexity":
-        return updateComplexityLevel(id, data as any, authToken);
+        return updateComplexityLevel(id, data as any);
       case "volume":
-        return updateVolumeDiscountRule(id, data as any, authToken);
+        return updateVolumeDiscountRule(id, data as any);
       case "specialties":
-        return updateNurseSpecialty(id, data as any, authToken);
+        return updateNurseSpecialty(id, data as any);
       case "nurseCategories":
-        return updateNurseCategory(id, data as any, authToken);
+        return updateNurseCategory(id, data as any);
     }
   };
 

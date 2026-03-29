@@ -47,9 +47,9 @@ export default function AdminNurseProfilesScreen() {
 
   useEffect(() => {
     if (!isReady) return;
-    if (!isAuthenticated) return void router.replace("/login");
-    if (requiresProfileCompletion) return void router.replace("/register");
-    if (!roles.includes("Admin")) return void router.replace("/");
+    if (!isAuthenticated) return void router.replace("/login" as any);
+    if (requiresProfileCompletion) return void router.replace("/register" as any);
+    if (!roles.includes("Admin")) return void router.replace("/" as any);
     void load();
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles, tab]);
 
@@ -65,7 +65,7 @@ export default function AdminNurseProfilesScreen() {
       title="Gestión de enfermeras"
       description="Administrar perfiles de enfermeras y su estado operacional."
       actions={(
-        <Pressable style={styles.buttonPrimary} onPress={() => router.push("/admin/nurse-profiles/create")}>
+        <Pressable style={styles.buttonPrimary} onPress={() => router.push("/admin/nurse-profiles/create" as any)}>
           <Text style={styles.buttonPrimaryText}>Crear</Text>
         </Pressable>
       )}
@@ -114,7 +114,7 @@ export default function AdminNurseProfilesScreen() {
         {tab === "pending" && pendingItems.map((item) => (
           <Pressable
             key={item.userId}
-            onPress={() => router.push(`/admin/nurse-profiles/${item.userId}`)}
+            onPress={() => router.push(`/admin/nurse-profiles/${item.userId}` as any)}
             style={[styles.card, styles.cardPending]}
           >
             <View style={styles.pendingBadge}>
@@ -133,7 +133,7 @@ export default function AdminNurseProfilesScreen() {
             )}
             <Pressable
               style={styles.reviewButton}
-              onPress={() => router.push(`/admin/nurse-profiles/${item.userId}/review`)}
+              onPress={() => router.push(`/admin/nurse-profiles/${item.userId}/review` as any)}
             >
               <Text style={styles.reviewButtonText}>Revisar Perfil</Text>
             </Pressable>
@@ -143,7 +143,7 @@ export default function AdminNurseProfilesScreen() {
         {(tab === "active" || tab === "inactive") && (tab === "active" ? activeItems : inactiveItems).map((item) => (
           <Pressable
             key={item.userId}
-            onPress={() => router.push(`/admin/nurse-profiles/${item.userId}`)}
+            onPress={() => router.push(`/admin/nurse-profiles/${item.userId}` as any)}
             style={styles.card}
           >
             <Text style={styles.cardTitle}>{item.name} {item.lastName}</Text>

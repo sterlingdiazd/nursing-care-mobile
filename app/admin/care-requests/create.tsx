@@ -42,9 +42,9 @@ export default function CreateAdminCareRequestScreen() {
 
   useEffect(() => {
     if (!isReady) return;
-    if (!isAuthenticated) return void router.replace("/login");
-    if (requiresProfileCompletion) return void router.replace("/register");
-    if (!roles.includes("Admin")) return void router.replace("/");
+    if (!isAuthenticated) return void router.replace("/login" as any);
+    if (requiresProfileCompletion) return void router.replace("/register" as any);
+    if (!roles.includes("Admin")) return void router.replace("/" as any);
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles]);
 
   // Load clients when search changes
@@ -100,7 +100,7 @@ export default function CreateAdminCareRequestScreen() {
       setError(null);
       setSubmitting(true);
       const result = await createAdminCareRequest(form);
-      router.push(`/admin/care-requests/${result.id}`);
+      router.push(`/admin/care-requests/${result.id}` as any);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible crear la solicitud");
     } finally {
