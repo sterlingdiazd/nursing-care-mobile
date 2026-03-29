@@ -21,7 +21,7 @@ import { estimateCareRequestPricingFromCatalog } from "@/src/utils/pricingFromCa
 
 export default function CreateCareRequestScreen() {
   const { isAuthenticated, isReady, token, userId, roles } = useAuth();
-  const canCreateRequest = roles.includes("Client") || roles.includes("Admin");
+  const canCreateRequest = roles.includes("CLIENT") || roles.includes("ADMIN");
   const [form, setForm] = useState<CreateCareRequestDto>({
     careRequestDescription: "",
     suggestedNurse: "",

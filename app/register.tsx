@@ -54,14 +54,14 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [profileType, setProfileType] = useState<UserProfileType>(UserProfileType.Client);
+  const [profileType, setProfileType] = useState<UserProfileType>(UserProfileType.CLIENT);
   const [hireDate, setHireDate] = useState("");
   const [specialty, setSpecialty] = useState("");
   const [licenseId, setLicenseId] = useState("");
   const [bankName, setBankName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const isProfileCompletionMode = isAuthenticated && requiresProfileCompletion;
-  const isNurseRegistration = !isProfileCompletionMode && profileType === UserProfileType.Nurse;
+  const isNurseRegistration = !isProfileCompletionMode && profileType === UserProfileType.NURSE;
   const effectiveEmail = isProfileCompletionMode ? authEmail ?? "" : email;
 
   // Validation errors
@@ -214,7 +214,7 @@ export default function RegisterScreen() {
         );
 
         // Show success message based on profile type
-        if (profileType === UserProfileType.Nurse) {
+        if (profileType === UserProfileType.NURSE) {
           Alert.alert(
             "Registro exitoso",
             "Tu cuenta ya puede iniciar sesion, pero el panel mostrara que administracion debe completar tu perfil de enfermeria antes de habilitar el acceso operativo.",
@@ -411,13 +411,13 @@ export default function RegisterScreen() {
           <View style={styles.radioGroup}>
             <TouchableOpacity
               style={styles.radioOption}
-              onPress={() => setProfileType(UserProfileType.Client)}
+              onPress={() => setProfileType(UserProfileType.CLIENT)}
               disabled={isLoading}
             >
               <View
                 style={[
                   styles.radioButton,
-                  profileType === UserProfileType.Client ? styles.radioButtonSelected : null,
+                  profileType === UserProfileType.CLIENT ? styles.radioButtonSelected : null,
                 ]}
               />
               <Text style={styles.radioLabel}>Cliente</Text>
@@ -425,13 +425,13 @@ export default function RegisterScreen() {
 
             <TouchableOpacity
               style={styles.radioOption}
-              onPress={() => setProfileType(UserProfileType.Nurse)}
+              onPress={() => setProfileType(UserProfileType.NURSE)}
               disabled={isLoading}
             >
               <View
                 style={[
                   styles.radioButton,
-                  profileType === UserProfileType.Nurse ? styles.radioButtonSelected : null,
+                  profileType === UserProfileType.NURSE ? styles.radioButtonSelected : null,
                 ]}
               />
               <Text style={styles.radioLabel}>Enfermeria (requiere completacion administrativa)</Text>
@@ -444,14 +444,14 @@ export default function RegisterScreen() {
         <View
           style={[
             styles.profileInfoBox,
-            profileType === UserProfileType.Nurse ? styles.nurseInfoBox : styles.clientInfoBox,
+            profileType === UserProfileType.NURSE ? styles.nurseInfoBox : styles.clientInfoBox,
           ]}
         >
           <Text style={styles.profileInfoTitle}>
-            {profileType === UserProfileType.Nurse ? "Perfil de enfermeria" : "Perfil de cliente"}
+            {profileType === UserProfileType.NURSE ? "Perfil de enfermeria" : "Perfil de cliente"}
           </Text>
           <Text style={styles.profileInfoText}>
-            {profileType === UserProfileType.Nurse ? nurseProfileCopy : clientProfileCopy}
+            {profileType === UserProfileType.NURSE ? nurseProfileCopy : clientProfileCopy}
           </Text>
         </View>
       )}
@@ -561,7 +561,7 @@ export default function RegisterScreen() {
       ) : null}
 
       {/* Info Alert */}
-      {!isProfileCompletionMode && profileType === UserProfileType.Nurse ? (
+      {!isProfileCompletionMode && profileType === UserProfileType.NURSE ? (
         <View style={styles.infoBox}>
           <Text style={styles.infoText}>
             Despues del registro veras un panel autenticado que indica que administracion debe completar tu perfil antes de habilitar las acciones clinicas.

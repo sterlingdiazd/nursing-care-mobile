@@ -194,10 +194,10 @@ describe("Admin Portal Service - Query Parameter Construction", () => {
       const mockRequestJson = vi.mocked(httpClient.requestJson);
       mockRequestJson.mockResolvedValue([]);
 
-      await getAdminUsers({ role: "Admin" });
+      await getAdminUsers({ role: "ADMIN" });
 
       expect(mockRequestJson).toHaveBeenCalledWith({
-        path: "/api/admin/users?role=Admin",
+        path: "/api/admin/users?role=ADMIN",
         method: "GET",
         auth: true,
       });
@@ -207,10 +207,10 @@ describe("Admin Portal Service - Query Parameter Construction", () => {
       const mockRequestJson = vi.mocked(httpClient.requestJson);
       mockRequestJson.mockResolvedValue([]);
 
-      await getAdminUsers({ profileType: "Nurse" });
+      await getAdminUsers({ profileType: "NURSE" });
 
       expect(mockRequestJson).toHaveBeenCalledWith({
-        path: "/api/admin/users?profileType=Nurse",
+        path: "/api/admin/users?profileType=NURSE",
         method: "GET",
         auth: true,
       });
@@ -235,13 +235,13 @@ describe("Admin Portal Service - Query Parameter Construction", () => {
 
       await getAdminUsers({
         search: "test",
-        role: "Nurse",
-        profileType: "Nurse",
+        role: "NURSE",
+        profileType: "NURSE",
         status: "Active",
       });
 
       expect(mockRequestJson).toHaveBeenCalledWith({
-        path: "/api/admin/users?search=test&role=Nurse&profileType=Nurse&status=Active",
+        path: "/api/admin/users?search=test&role=NURSE&profileType=NURSE&status=Active",
         method: "GET",
         auth: true,
       });
@@ -337,7 +337,7 @@ describe("Admin Portal Service - Error Handling with Spanish Messages", () => {
     mockRequestJson.mockRejectedValue(forbiddenError);
 
     await expect(createAdminAccount({
-      name: "Admin",
+      name: "ADMIN",
       lastName: "User",
       identificationNumber: "123",
       phone: "555-1234",
@@ -414,7 +414,7 @@ describe("Admin Portal Service - Auth: true Requirement", () => {
 
       await createNurseProfileForAdmin({
         name: "Test",
-        lastName: "Nurse",
+        lastName: "NURSE",
         identificationNumber: "123",
         phone: "555-1234",
         email: "nurse@example.com",
@@ -438,7 +438,7 @@ describe("Admin Portal Service - Auth: true Requirement", () => {
 
       await updateNurseProfileForAdmin("user-123", {
         name: "Test",
-        lastName: "Nurse",
+        lastName: "NURSE",
         identificationNumber: "123",
         phone: "555-1234",
         email: "nurse@example.com",
@@ -459,7 +459,7 @@ describe("Admin Portal Service - Auth: true Requirement", () => {
 
       await completeNurseProfileForAdmin("user-123", {
         name: "Test",
-        lastName: "Nurse",
+        lastName: "NURSE",
         identificationNumber: "123",
         phone: "555-1234",
         email: "nurse@example.com",
@@ -515,7 +515,7 @@ describe("Admin Portal Service - Auth: true Requirement", () => {
 
       await createAdminClient({
         name: "Test",
-        lastName: "Client",
+        lastName: "CLIENT",
         identificationNumber: "123",
         phone: "555-1234",
         email: "client@example.com",
@@ -534,7 +534,7 @@ describe("Admin Portal Service - Auth: true Requirement", () => {
 
       await updateAdminClient("client-123", {
         name: "Test",
-        lastName: "Client",
+        lastName: "CLIENT",
         identificationNumber: "123",
         phone: "555-1234",
         email: "client@example.com",
@@ -601,7 +601,7 @@ describe("Admin Portal Service - Auth: true Requirement", () => {
       const mockRequestJson = vi.mocked(httpClient.requestJson);
       mockRequestJson.mockResolvedValue({});
 
-      await updateAdminUserRoles("user-123", ["Admin", "Client"]);
+      await updateAdminUserRoles("user-123", ["ADMIN", "CLIENT"]);
 
       expect(mockRequestJson).toHaveBeenCalledWith(
         expect.objectContaining({ auth: true }),
@@ -637,7 +637,7 @@ describe("Admin Portal Service - Auth: true Requirement", () => {
       mockRequestJson.mockResolvedValue({});
 
       await createAdminAccount({
-        name: "Admin",
+        name: "ADMIN",
         lastName: "User",
         identificationNumber: "123",
         phone: "555-1234",
@@ -744,7 +744,7 @@ describe("Admin Portal Service - Request Method Verification", () => {
 
     await createAdminClient({
       name: "Test",
-      lastName: "Client",
+      lastName: "CLIENT",
       identificationNumber: "123",
       phone: "555-1234",
       email: "client@example.com",
@@ -753,7 +753,7 @@ describe("Admin Portal Service - Request Method Verification", () => {
     });
 
     await createAdminAccount({
-      name: "Admin",
+      name: "ADMIN",
       lastName: "User",
       identificationNumber: "123",
       phone: "555-1234",
@@ -774,7 +774,7 @@ describe("Admin Portal Service - Request Method Verification", () => {
 
     await updateAdminClient("client-123", {
       name: "Test",
-      lastName: "Client",
+      lastName: "CLIENT",
       identificationNumber: "123",
       phone: "555-1234",
       email: "client@example.com",

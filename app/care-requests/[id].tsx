@@ -87,7 +87,7 @@ export default function CareRequestDetailScreen() {
   }, [id]);
 
   useEffect(() => {
-    if (!roles.includes("Admin")) {
+    if (!roles.includes("ADMIN")) {
       setActiveNurses([]);
       return;
     }
@@ -139,12 +139,12 @@ export default function CareRequestDetailScreen() {
   const assignedNurseLabel = assignedNurseRecord
     ? [assignedNurseRecord.name, assignedNurseRecord.lastName].filter(Boolean).join(" ") || assignedNurseRecord.email
     : careRequest?.assignedNurse ?? "Sin asignar";
-  const canManageAssignment = roles.includes("Admin");
+  const canManageAssignment = roles.includes("ADMIN");
   const canApproveOrReject =
-    roles.includes("Admin") && careRequest?.status === "Pending";
+    roles.includes("ADMIN") && careRequest?.status === "Pending";
   const canApprove = canApproveOrReject && Boolean(careRequest?.assignedNurse ?? assignedNurseId);
   const canComplete =
-    roles.includes("Nurse") &&
+    roles.includes("NURSE") &&
     Boolean(userId) &&
     careRequest?.status === "Approved" &&
     careRequest.assignedNurse === userId;

@@ -38,7 +38,7 @@ export default function AdminCreateNurseProfileScreen() {
     if (!isReady) return;
     if (!isAuthenticated) return void router.replace("/login");
     if (requiresProfileCompletion) return void router.replace("/register");
-    if (!roles.includes("Admin")) return void router.replace("/");
+    if (!roles.includes("ADMIN")) return void router.replace("/");
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles]);
 
   const validateStep1 = () => {
@@ -98,7 +98,7 @@ export default function AdminCreateNurseProfileScreen() {
     }
   };
 
-  if (!isReady || !isAuthenticated || !roles.includes("Admin")) {
+  if (!isReady || !isAuthenticated || !roles.includes("ADMIN")) {
     return null;
   }
 

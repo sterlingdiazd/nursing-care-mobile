@@ -38,24 +38,24 @@ describe("adminNurseProfilesScreen", () => {
 
   it("should redirect to / when authenticated but not Admin", () => {
     const mockReplace = vi.fn();
-    const authState = { isReady: true, isAuthenticated: true, requiresProfileCompletion: false, roles: ["Client"] };
+    const authState = { isReady: true, isAuthenticated: true, requiresProfileCompletion: false, roles: ["CLIENT"] };
 
     if (!authState.isReady) return;
     if (!authState.isAuthenticated) mockReplace("/login");
     else if (authState.requiresProfileCompletion) mockReplace("/register");
-    else if (!authState.roles.includes("Admin")) mockReplace("/");
+    else if (!authState.roles.includes("ADMIN")) mockReplace("/");
 
     expect(mockReplace).toHaveBeenCalledWith("/");
   });
 
   it("should not redirect when authenticated as Admin", () => {
     const mockReplace = vi.fn();
-    const authState = { isReady: true, isAuthenticated: true, requiresProfileCompletion: false, roles: ["Admin"] };
+    const authState = { isReady: true, isAuthenticated: true, requiresProfileCompletion: false, roles: ["ADMIN"] };
 
     if (!authState.isReady) return;
     if (!authState.isAuthenticated) mockReplace("/login");
     else if (authState.requiresProfileCompletion) mockReplace("/register");
-    else if (!authState.roles.includes("Admin")) mockReplace("/");
+    else if (!authState.roles.includes("ADMIN")) mockReplace("/");
 
     expect(mockReplace).not.toHaveBeenCalled();
   });

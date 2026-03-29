@@ -47,9 +47,9 @@ function makeMockDetail(overrides?: Partial<AdminUserDetailDto>): AdminUserDetai
     lastName: "López",
     identificationNumber: "001-1234567-8",
     phone: "809-555-0001",
-    profileType: "Nurse",
-    roleNames: ["Nurse"],
-    allowedRoleNames: ["Admin", "Client", "Nurse"],
+    profileType: "NURSE",
+    roleNames: ["NURSE"],
+    allowedRoleNames: ["ADMIN", "CLIENT", "NURSE"],
     isActive: true,
     accountStatus: "Active",
     requiresProfileCompletion: false,
@@ -90,24 +90,24 @@ describe("adminUserDetailScreen", () => {
 
   it("should redirect to / when authenticated but not Admin", () => {
     const mockReplace = vi.fn();
-    const authState = { isReady: true, isAuthenticated: true, requiresProfileCompletion: false, roles: ["Client"] };
+    const authState = { isReady: true, isAuthenticated: true, requiresProfileCompletion: false, roles: ["CLIENT"] };
 
     if (!authState.isReady) return;
     if (!authState.isAuthenticated) mockReplace("/login");
     else if (authState.requiresProfileCompletion) mockReplace("/register");
-    else if (!authState.roles.includes("Admin")) mockReplace("/");
+    else if (!authState.roles.includes("ADMIN")) mockReplace("/");
 
     expect(mockReplace).toHaveBeenCalledWith("/");
   });
 
   it("should not redirect when authenticated as Admin", () => {
     const mockReplace = vi.fn();
-    const authState = { isReady: true, isAuthenticated: true, requiresProfileCompletion: false, roles: ["Admin"] };
+    const authState = { isReady: true, isAuthenticated: true, requiresProfileCompletion: false, roles: ["ADMIN"] };
 
     if (!authState.isReady) return;
     if (!authState.isAuthenticated) mockReplace("/login");
     else if (authState.requiresProfileCompletion) mockReplace("/register");
-    else if (!authState.roles.includes("Admin")) mockReplace("/");
+    else if (!authState.roles.includes("ADMIN")) mockReplace("/");
 
     expect(mockReplace).not.toHaveBeenCalled();
   });
@@ -305,7 +305,7 @@ describe("Admin User Detail Screen - Client Profile Fields", () => {
   it("should include client-specific fields when user has client profile", async () => {
     const clientProfile = makeMockClientProfile();
     vi.mocked(httpClient.requestJson).mockResolvedValue(
-      makeMockDetail({ profileType: "Client", nurseProfile: null, clientProfile }),
+      makeMockDetail({ profileType: "CLIENT", nurseProfile: null, clientProfile }),
     );
     const result = await getAdminUserDetail("user-abc-123");
 
@@ -426,7 +426,7 @@ describe("Admin User Detail Screen - Manage Roles", () => {
   });
 
   it("should call updateAdminUserRoles with correct id and roles", async () => {
-    const roles: AdminUserRoleName[] = ["Admin", "Nurse"];
+    const roles: AdminUserRoleName[] = ["ADMIN", "NURSE"];
     vi.mocked(httpClient.requestJson).mockResolvedValue(makeMockDetail({ roleNames: roles }));
 
     await updateAdminUserRoles("user-abc-123", roles);
@@ -442,7 +442,7 @@ describe("Admin User Detail Screen - Manage Roles", () => {
   });
 
   it("should return updated user detail after role update", async () => {
-    const updatedRoles: AdminUserRoleName[] = ["Admin"];
+    const updatedRoles: AdminUserRoleName[] = ["ADMIN"];
     const updatedDetail = makeMockDetail({ roleNames: updatedRoles });
     vi.mocked(httpClient.requestJson).mockResolvedValue(updatedDetail);
 
@@ -453,7 +453,7 @@ describe("Admin User Detail Screen - Manage Roles", () => {
 
   it("should propagate errors from update roles API call", async () => {
     vi.mocked(httpClient.requestJson).mockRejectedValue(new Error("No fue posible actualizar los roles del usuario."));
-    await expect(updateAdminUserRoles("user-abc-123", ["Admin"])).rejects.toThrow(
+    await expect(updateAdminUserRoles("user-abc-123", ["ADMIN"])).rejects.toThrow(
       "No fue posible actualizar los roles del usuario.",
     );
   });
@@ -471,12 +471,12 @@ describe("Admin User Detail Screen - Manage Roles", () => {
   });
 
   it("should only show allowed roles for selection", () => {
-    const detail = makeMockDetail({ allowedRoleNames: ["Client", "Nurse"] });
-    const allRoles: AdminUserRoleName[] = ["Admin", "Client", "Nurse"];
+    const detail = makeMockDetail({ allowedRoleNames: ["CLIENT", "NURSE"] });
+    const allRoles: AdminUserRoleName[] = ["ADMIN", "CLIENT", "NURSE"];
     const allowedForSelection = allRoles.filter((r) => detail.allowedRoleNames.includes(r));
 
-    expect(allowedForSelection).toEqual(["Client", "Nurse"]);
-    expect(allowedForSelection).not.toContain("Admin");
+    expect(allowedForSelection).toEqual(["CLIENT", "NURSE"]);
+    expect(allowedForSelection).not.toContain("ADMIN");
   });
 });
 
@@ -485,26 +485,26 @@ describe("Admin User Detail Screen - Manage Roles", () => {
 describe("Admin User Detail Screen - Spanish Labels", () => {
   function translateRole(role: AdminUserRoleName): string {
     switch (role) {
-      case "Admin": return "Administrador";
-      case "Client": return "Cliente";
-      case "Nurse": return "Enfermera";
+      case "ADMIN": return "Administrador";
+      case "CLIENT": return "Cliente";
+      case "NURSE": return "Enfermera";
     }
   }
 
   it("should translate Admin role to Administrador", () => {
-    expect(translateRole("Admin")).toBe("Administrador");
+    expect(translateRole("ADMIN")).toBe("Administrador");
   });
 
   it("should translate Client role to Cliente", () => {
-    expect(translateRole("Client")).toBe("Cliente");
+    expect(translateRole("CLIENT")).toBe("Cliente");
   });
 
   it("should translate Nurse role to Enfermera", () => {
-    expect(translateRole("Nurse")).toBe("Enfermera");
+    expect(translateRole("NURSE")).toBe("Enfermera");
   });
 
   it("should display comma-separated translated roles for a user with multiple roles", () => {
-    const roleNames: AdminUserRoleName[] = ["Admin", "Nurse"];
+    const roleNames: AdminUserRoleName[] = ["ADMIN", "NURSE"];
     const translated = roleNames.map(translateRole).join(", ");
     expect(translated).toBe("Administrador, Enfermera");
   });

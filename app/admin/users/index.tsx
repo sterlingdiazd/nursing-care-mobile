@@ -14,16 +14,17 @@ import {
 
 function translateRole(role: AdminUserRoleName): string {
   switch (role) {
-    case "Admin": return "Administrador";
-    case "Client": return "Cliente";
-    case "Nurse": return "Enfermera";
+    case "ADMIN": return "Administrador";
+    case "CLIENT": return "Cliente";
+    case "NURSE": return "Enfermera";
   }
 }
 
 function translateProfileType(profileType: AdminUserProfileType | null | undefined): string {
   switch (profileType) {
-    case "Client": return "Cliente";
-    case "Nurse": return "Enfermera";
+    case "ADMIN": return "Administrador";
+    case "CLIENT": return "Cliente";
+    case "NURSE": return "Enfermera";
     default: return "Sin perfil";
   }
 }
@@ -81,7 +82,7 @@ export default function AdminUsersScreen() {
     if (!isReady) return;
     if (!isAuthenticated) return void router.replace("/login");
     if (requiresProfileCompletion) return void router.replace("/register");
-    if (!roles.includes("Admin")) return void router.replace("/");
+    if (!roles.includes("ADMIN")) return void router.replace("/");
     void load();
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles, roleFilter, profileTypeFilter, statusFilter]);
 
@@ -95,7 +96,7 @@ export default function AdminUsersScreen() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  if (!isReady || !isAuthenticated || !roles.includes("Admin")) {
+  if (!isReady || !isAuthenticated || !roles.includes("ADMIN")) {
     return null;
   }
 
@@ -120,7 +121,7 @@ export default function AdminUsersScreen() {
 
           <Text style={styles.filterLabel}>Rol</Text>
           <View style={styles.filterChips}>
-            {(["all", "Admin", "Client", "Nurse"] as const).map((role) => (
+            {(["all", "ADMIN", "CLIENT", "NURSE"] as const).map((role) => (
               <Pressable
                 key={role}
                 style={[styles.chip, roleFilter === role && styles.chipActive]}
@@ -135,7 +136,7 @@ export default function AdminUsersScreen() {
 
           <Text style={styles.filterLabel}>Tipo de perfil</Text>
           <View style={styles.filterChips}>
-            {(["all", "Client", "Nurse"] as const).map((pt) => (
+            {(["all", "ADMIN", "CLIENT", "NURSE"] as const).map((pt) => (
               <Pressable
                 key={pt}
                 style={[styles.chip, profileTypeFilter === pt && styles.chipActive]}

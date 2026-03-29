@@ -57,7 +57,7 @@ export default function AdminCareRequestsScreen() {
     if (!isReady) return;
     if (!isAuthenticated) return void router.replace("/login" as any);
     if (requiresProfileCompletion) return void router.replace("/register" as any);
-    if (!roles.includes("Admin")) return void router.replace("/" as any);
+    if (!roles.includes("ADMIN")) return void router.replace("/" as any);
     void load();
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles, viewFilter]);
 

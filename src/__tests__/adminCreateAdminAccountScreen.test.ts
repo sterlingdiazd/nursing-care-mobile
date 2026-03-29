@@ -35,9 +35,9 @@ function makeMockUserDetail(overrides?: Partial<AdminUserDetailDto>): AdminUserD
     identificationNumber: "001-9876543-2",
     phone: "809-555-0099",
     isActive: true,
-    roleNames: ["Admin"],
-    allowedRoleNames: ["Admin"],
-    profileType: "None",
+    roleNames: ["ADMIN"],
+    allowedRoleNames: ["ADMIN"],
+    profileType: "ADMIN",
     accountStatus: "Active",
     requiresProfileCompletion: false,
     requiresAdminReview: false,
@@ -77,24 +77,24 @@ describe("adminCreateAdminAccountScreen", () => {
 
   it("should redirect to / when authenticated but not Admin", () => {
     const mockReplace = vi.fn();
-    const authState = { isReady: true, isAuthenticated: true, requiresProfileCompletion: false, roles: ["Client"] };
+    const authState = { isReady: true, isAuthenticated: true, requiresProfileCompletion: false, roles: ["CLIENT"] };
 
     if (!authState.isReady) return;
     if (!authState.isAuthenticated) mockReplace("/login");
     else if (authState.requiresProfileCompletion) mockReplace("/register");
-    else if (!authState.roles.includes("Admin")) mockReplace("/");
+    else if (!authState.roles.includes("ADMIN")) mockReplace("/");
 
     expect(mockReplace).toHaveBeenCalledWith("/");
   });
 
   it("should not redirect when authenticated as Admin", () => {
     const mockReplace = vi.fn();
-    const authState = { isReady: true, isAuthenticated: true, requiresProfileCompletion: false, roles: ["Admin"] };
+    const authState = { isReady: true, isAuthenticated: true, requiresProfileCompletion: false, roles: ["ADMIN"] };
 
     if (!authState.isReady) return;
     if (!authState.isAuthenticated) mockReplace("/login");
     else if (authState.requiresProfileCompletion) mockReplace("/register");
-    else if (!authState.roles.includes("Admin")) mockReplace("/");
+    else if (!authState.roles.includes("ADMIN")) mockReplace("/");
 
     expect(mockReplace).not.toHaveBeenCalled();
   });
@@ -274,12 +274,12 @@ describe("Admin Create Admin Account Screen - Form Submission", () => {
 
   it("should return the created user with id and Admin role on success", async () => {
     const form = makeForm();
-    const mockDetail = makeMockUserDetail({ id: "admin-new-001", roleNames: ["Admin"] });
+    const mockDetail = makeMockUserDetail({ id: "admin-new-001", roleNames: ["ADMIN"] });
     vi.mocked(httpClient.requestJson).mockResolvedValue(mockDetail);
 
     const result = await createAdminAccount(form);
 
     expect(result.id).toBe("admin-new-001");
-    expect(result.roleNames).toContain("Admin");
+    expect(result.roleNames).toContain("ADMIN");
   });
 });

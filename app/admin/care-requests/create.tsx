@@ -44,7 +44,7 @@ export default function CreateAdminCareRequestScreen() {
     if (!isReady) return;
     if (!isAuthenticated) return void router.replace("/login" as any);
     if (requiresProfileCompletion) return void router.replace("/register" as any);
-    if (!roles.includes("Admin")) return void router.replace("/" as any);
+    if (!roles.includes("ADMIN")) return void router.replace("/" as any);
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles]);
 
   // Load clients when search changes
@@ -115,7 +115,7 @@ export default function CreateAdminCareRequestScreen() {
     setClientSearch("");
   };
 
-  if (!isReady || !isAuthenticated || !roles.includes("Admin")) {
+  if (!isReady || !isAuthenticated || !roles.includes("ADMIN")) {
     return null;
   }
 

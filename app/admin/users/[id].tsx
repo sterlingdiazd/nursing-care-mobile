@@ -17,16 +17,17 @@ import {
 
 function translateRole(role: AdminUserRoleName): string {
   switch (role) {
-    case "Admin": return "Administrador";
-    case "Client": return "Cliente";
-    case "Nurse": return "Enfermera";
+    case "ADMIN": return "Administrador";
+    case "CLIENT": return "Cliente";
+    case "NURSE": return "Enfermera";
   }
 }
 
 function translateProfileType(profileType: AdminUserProfileType): string {
   switch (profileType) {
-    case "Client": return "Cliente";
-    case "Nurse": return "Enfermera";
+    case "ADMIN": return "Administrador";
+    case "CLIENT": return "Cliente";
+    case "NURSE": return "Enfermera";
     default: return "Sin perfil";
   }
 }
@@ -54,7 +55,7 @@ function formatTimestamp(value: string | null) {
   return new Intl.DateTimeFormat("es-DO", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 }
 
-const ALL_ROLES: AdminUserRoleName[] = ["Admin", "Client", "Nurse"];
+const ALL_ROLES: AdminUserRoleName[] = ["ADMIN", "CLIENT", "NURSE"];
 
 export default function AdminUserDetailScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
@@ -88,7 +89,7 @@ export default function AdminUserDetailScreen() {
     if (!isReady) return;
     if (!isAuthenticated) return void router.replace("/login");
     if (requiresProfileCompletion) return void router.replace("/register");
-    if (!roles.includes("Admin")) return void router.replace("/");
+    if (!roles.includes("ADMIN")) return void router.replace("/");
     void load();
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles, id]);
 
@@ -144,7 +145,7 @@ export default function AdminUserDetailScreen() {
     );
   };
 
-  if (!isReady || !isAuthenticated || !roles.includes("Admin")) {
+  if (!isReady || !isAuthenticated || !roles.includes("ADMIN")) {
     return null;
   }
 

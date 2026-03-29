@@ -30,7 +30,7 @@ export default function AdminActionItemsScreen() {
     if (!isReady) return;
     if (!isAuthenticated) return void router.replace("/login");
     if (requiresProfileCompletion) return void router.replace("/register");
-    if (!roles.includes("Admin")) return void router.replace("/");
+    if (!roles.includes("ADMIN")) return void router.replace("/");
 
     void getAdminActionItems()
       .then(setItems)

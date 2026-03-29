@@ -68,7 +68,7 @@ export default function AdminEditNurseProfileScreen() {
     if (!isReady) return;
     if (!isAuthenticated) return void router.replace("/login");
     if (requiresProfileCompletion) return void router.replace("/register");
-    if (!roles.includes("Admin")) return void router.replace("/");
+    if (!roles.includes("ADMIN")) return void router.replace("/");
     void load();
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles, id]);
 
@@ -126,7 +126,7 @@ export default function AdminEditNurseProfileScreen() {
     }
   };
 
-  if (!isReady || !isAuthenticated || !roles.includes("Admin")) {
+  if (!isReady || !isAuthenticated || !roles.includes("ADMIN")) {
     return null;
   }
 

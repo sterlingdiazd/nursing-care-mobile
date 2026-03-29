@@ -3,8 +3,9 @@ import { API_BASE_URL } from "../config/env";
 
 // Types
 export enum UserProfileType {
-  Client = 0,
-  Nurse = 1,
+  ADMIN = 0,
+  NURSE = 1,
+  CLIENT = 2,
 }
 
 export interface RegisterRequest {

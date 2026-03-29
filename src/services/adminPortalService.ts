@@ -381,7 +381,7 @@ export interface NurseProfileAdminRecordDto {
   lastName: string | null;
   identificationNumber: string | null;
   phone: string | null;
-  profileType: number;
+  profileType: AdminUserProfileType;
   userIsActive: boolean;
   nurseProfileIsActive: boolean;
   isProfileComplete?: boolean;
@@ -492,8 +492,8 @@ export interface UpdateAdminClientRequest {
 }
 
 // User types and functions
-export type AdminUserRoleName = "Admin" | "Client" | "Nurse";
-export type AdminUserProfileType = "Client" | "Nurse" | "None";
+export type AdminUserRoleName = "ADMIN" | "CLIENT" | "NURSE";
+export type AdminUserProfileType = "ADMIN" | "CLIENT" | "NURSE";
 export type AdminUserAccountStatus =
   | "Active"
   | "Inactive"

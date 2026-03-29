@@ -21,7 +21,7 @@ export default function AdminDashboardScreen() {
       router.replace("/register" as any);
       return;
     }
-    if (!roles.includes("Admin")) {
+    if (!roles.includes("ADMIN")) {
       router.replace("/" as any);
       return;
     }

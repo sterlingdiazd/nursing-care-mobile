@@ -16,9 +16,9 @@ function formatTimestamp(value: string) {
 }
 
 function roleLabel(role: string) {
-  if (role === "Admin") return "Administrador";
-  if (role === "Client") return "Cliente";
-  if (role === "Nurse") return "Enfermera";
+  if (role === "ADMIN") return "Administrador";
+  if (role === "CLIENT") return "Cliente";
+  if (role === "NURSE") return "Enfermera";
   return role;
 }
 
@@ -58,7 +58,7 @@ export default function AdminAuditLogsScreen() {
     if (!isReady) return;
     if (!isAuthenticated) return void router.replace("/login");
     if (requiresProfileCompletion) return void router.replace("/register");
-    if (!roles.includes("Admin")) return void router.replace("/");
+    if (!roles.includes("ADMIN")) return void router.replace("/");
     void load();
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles, pageNumber]);
 

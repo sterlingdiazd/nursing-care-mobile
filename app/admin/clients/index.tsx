@@ -45,7 +45,7 @@ export default function AdminClientsScreen() {
     if (!isReady) return;
     if (!isAuthenticated) return void router.replace("/login");
     if (requiresProfileCompletion) return void router.replace("/register");
-    if (!roles.includes("Admin")) return void router.replace("/");
+    if (!roles.includes("ADMIN")) return void router.replace("/");
     void load();
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles, statusFilter]);
 
@@ -59,7 +59,7 @@ export default function AdminClientsScreen() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  if (!isReady || !isAuthenticated || !roles.includes("Admin")) {
+  if (!isReady || !isAuthenticated || !roles.includes("ADMIN")) {
     return null;
   }
 

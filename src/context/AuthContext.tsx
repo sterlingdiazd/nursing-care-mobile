@@ -16,8 +16,9 @@ import {
 } from "@/src/services/authSession";
 
 export enum UserProfileType {
-  Client = 0,
-  Nurse = 1,
+  ADMIN = 0,
+  NURSE = 1,
+  CLIENT = 2,
 }
 
 interface AuthContextValue {
@@ -142,8 +143,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const resolveProfileType = (response: AuthResponse, fallbackProfileType?: UserProfileType | null) =>
-    response.roles?.includes("Nurse") ? UserProfileType.Nurse : (fallbackProfileType ?? UserProfileType.Client);
+  const resolveProfileType = (response: AuthResponse, fallbackProfileType?: UserProfileType | null) => {
+    if (response.roles?.includes("ADMIN")) return UserProfileType.ADMIN;
+    if (response.roles?.includes("NURSE")) return UserProfileType.NURSE;
+    return fallbackProfileType ?? UserProfileType.CLIENT;
+  };
 
   const persistSession = async (response: AuthResponse, fallbackProfileType?: UserProfileType | null) => {
     const detectedProfileType = resolveProfileType(response, fallbackProfileType);
@@ -241,7 +245,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       logClientEvent("mobile.auth", "Registration requested", {
         email: emailAddress,
-        profileType: profileTypeInput === UserProfileType.Nurse ? "Nurse" : "Client",
+        profileType: profileTypeInput === UserProfileType.NURSE ? "NURSE" : "CLIENT",
       });
 
       const response = await registerUserRequest(
@@ -293,7 +297,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         phone,
       });
 
-      await persistSession(response, UserProfileType.Client);
+      await persistSession(response, UserProfileType.CLIENT);
       return response;
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "No fue posible completar el perfil.";

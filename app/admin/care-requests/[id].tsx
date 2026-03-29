@@ -51,11 +51,11 @@ export default function AdminCareRequestDetailScreen() {
     if (!isReady) return;
     if (!isAuthenticated) return void router.replace("/login" as any);
     if (requiresProfileCompletion) return void router.replace("/register" as any);
-    if (!roles.includes("Admin")) return void router.replace("/" as any);
+    if (!roles.includes("ADMIN")) return void router.replace("/" as any);
     void load();
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles, id]);
 
-  if (!isReady || !isAuthenticated || !roles.includes("Admin")) {
+  if (!isReady || !isAuthenticated || !roles.includes("ADMIN")) {
     return null;
   }
 

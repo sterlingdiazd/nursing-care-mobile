@@ -62,7 +62,7 @@ export default function HomeScreen() {
   const isNurseUnderReview = requiresAdminReview && profileType === 1;
   const isAnonymous = !isAuthenticated;
   const hasOperationalAccess = isAuthenticated && !requiresProfileCompletion && !isNurseUnderReview;
-  const canCreateRequest = (roles.includes("Client") || roles.includes("Admin")) && !isNurseUnderReview;
+  const canCreateRequest = (roles.includes("CLIENT") || roles.includes("ADMIN")) && !isNurseUnderReview;
   const quickSectionsSource = isAnonymous
     ? publicQuickSections
     : authenticatedQuickSections.filter(
@@ -70,10 +70,10 @@ export default function HomeScreen() {
     );
   const quickSectionsToShow = quickSectionsSource.filter((section) => {
     if (section.path === "/create-care-request") {
-      return roles.includes("Client") || roles.includes("Admin");
+      return roles.includes("CLIENT") || roles.includes("ADMIN");
     }
     if (section.path === "/admin") {
-      return roles.includes("Admin");
+      return roles.includes("ADMIN");
     }
     return true;
   });

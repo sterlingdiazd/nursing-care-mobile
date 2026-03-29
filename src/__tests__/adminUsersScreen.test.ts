@@ -37,24 +37,24 @@ describe("adminUsersScreen", () => {
 
   it("should redirect to / when authenticated but not Admin", () => {
     const mockReplace = vi.fn();
-    const authState = { isReady: true, isAuthenticated: true, requiresProfileCompletion: false, roles: ["Client"] };
+    const authState = { isReady: true, isAuthenticated: true, requiresProfileCompletion: false, roles: ["CLIENT"] };
 
     if (!authState.isReady) return;
     if (!authState.isAuthenticated) mockReplace("/login");
     else if (authState.requiresProfileCompletion) mockReplace("/register");
-    else if (!authState.roles.includes("Admin")) mockReplace("/");
+    else if (!authState.roles.includes("ADMIN")) mockReplace("/");
 
     expect(mockReplace).toHaveBeenCalledWith("/");
   });
 
   it("should not redirect when authenticated as Admin", () => {
     const mockReplace = vi.fn();
-    const authState = { isReady: true, isAuthenticated: true, requiresProfileCompletion: false, roles: ["Admin"] };
+    const authState = { isReady: true, isAuthenticated: true, requiresProfileCompletion: false, roles: ["ADMIN"] };
 
     if (!authState.isReady) return;
     if (!authState.isAuthenticated) mockReplace("/login");
     else if (authState.requiresProfileCompletion) mockReplace("/register");
-    else if (!authState.roles.includes("Admin")) mockReplace("/");
+    else if (!authState.roles.includes("ADMIN")) mockReplace("/");
 
     expect(mockReplace).not.toHaveBeenCalled();
   });
@@ -95,8 +95,8 @@ describe("Admin Users Screen - Data Loading", () => {
         lastName: "López",
         identificationNumber: "001-1234567-8",
         phone: "809-555-0001",
-        profileType: "Nurse",
-        roleNames: ["Nurse"],
+        profileType: "NURSE",
+        roleNames: ["NURSE"],
         isActive: true,
         accountStatus: "Active",
         requiresProfileCompletion: false,
@@ -132,8 +132,8 @@ describe("Admin Users Screen - Data Loading", () => {
         lastName: "Ruiz",
         identificationNumber: "002-9876543-1",
         phone: "809-555-0002",
-        profileType: "Client",
-        roleNames: ["Client"],
+        profileType: "CLIENT",
+        roleNames: ["CLIENT"],
         isActive: false,
         accountStatus: "Inactive",
         requiresProfileCompletion: false,
@@ -165,17 +165,17 @@ describe("Admin Users Screen - Filtering and Search", () => {
 
   it("should pass role filter to API call", async () => {
     vi.mocked(httpClient.requestJson).mockResolvedValue([]);
-    await getAdminUsers({ role: "Nurse" });
+    await getAdminUsers({ role: "NURSE" });
     expect(httpClient.requestJson).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/admin/users?role=Nurse" }),
+      expect.objectContaining({ path: "/api/admin/users?role=NURSE" }),
     );
   });
 
   it("should pass profileType filter to API call", async () => {
     vi.mocked(httpClient.requestJson).mockResolvedValue([]);
-    await getAdminUsers({ profileType: "Client" });
+    await getAdminUsers({ profileType: "CLIENT" });
     expect(httpClient.requestJson).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/admin/users?profileType=Client" }),
+      expect.objectContaining({ path: "/api/admin/users?profileType=CLIENT" }),
     );
   });
 
@@ -197,9 +197,9 @@ describe("Admin Users Screen - Filtering and Search", () => {
 
   it("should pass multiple filters to API call", async () => {
     vi.mocked(httpClient.requestJson).mockResolvedValue([]);
-    await getAdminUsers({ role: "Admin", status: "Active", search: "Carlos" });
+    await getAdminUsers({ role: "ADMIN", status: "Active", search: "Carlos" });
     expect(httpClient.requestJson).toHaveBeenCalledWith(
-      expect.objectContaining({ path: expect.stringContaining("role=Admin") }),
+      expect.objectContaining({ path: expect.stringContaining("role=ADMIN") }),
     );
     expect(httpClient.requestJson).toHaveBeenCalledWith(
       expect.objectContaining({ path: expect.stringContaining("status=Active") }),
@@ -218,7 +218,7 @@ describe("Admin Users Screen - Filtering and Search", () => {
   });
 
   it("should support all valid role filter values", async () => {
-    const roles: AdminUserRoleName[] = ["Admin", "Client", "Nurse"];
+    const roles: AdminUserRoleName[] = ["ADMIN", "CLIENT", "NURSE"];
     vi.mocked(httpClient.requestJson).mockResolvedValue([]);
 
     for (const role of roles) {
@@ -271,9 +271,9 @@ describe("Admin Users Screen - Navigation", () => {
 describe("Admin Users Screen - Spanish Labels", () => {
   function translateRole(role: AdminUserRoleName): string {
     switch (role) {
-      case "Admin": return "Administrador";
-      case "Client": return "Cliente";
-      case "Nurse": return "Enfermera";
+      case "ADMIN": return "Administrador";
+      case "CLIENT": return "Cliente";
+      case "NURSE": return "Enfermera";
     }
   }
 
@@ -288,15 +288,15 @@ describe("Admin Users Screen - Spanish Labels", () => {
   }
 
   it("should translate Admin role to Administrador", () => {
-    expect(translateRole("Admin")).toBe("Administrador");
+    expect(translateRole("ADMIN")).toBe("Administrador");
   });
 
   it("should translate Client role to Cliente", () => {
-    expect(translateRole("Client")).toBe("Cliente");
+    expect(translateRole("CLIENT")).toBe("Cliente");
   });
 
   it("should translate Nurse role to Enfermera", () => {
-    expect(translateRole("Nurse")).toBe("Enfermera");
+    expect(translateRole("NURSE")).toBe("Enfermera");
   });
 
   it("should translate Active status to Activo", () => {
@@ -320,7 +320,7 @@ describe("Admin Users Screen - Spanish Labels", () => {
   });
 
   it("should display comma-separated translated roles for a user with multiple roles", async () => {
-    const roleNames: AdminUserRoleName[] = ["Admin", "Nurse"];
+    const roleNames: AdminUserRoleName[] = ["ADMIN", "NURSE"];
     const translated = roleNames.map(translateRole).join(", ");
     expect(translated).toBe("Administrador, Enfermera");
   });
