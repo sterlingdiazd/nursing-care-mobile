@@ -22,7 +22,7 @@ vi.mock("@/src/services/authSession", () => ({
   clearAuthSession: vi.fn(),
 }));
 
-describe("httpClient helpers", () => {
+describe("httpClient", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

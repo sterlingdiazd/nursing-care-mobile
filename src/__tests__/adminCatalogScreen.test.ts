@@ -19,7 +19,7 @@ vi.mock("../services/httpClient", () => ({
 
 // ─── Access Control Logic ────────────────────────────────────────────────────
 
-describe("Admin Catalog Screen - Access Control Logic", () => {
+describe("adminCatalogScreen", () => {
   it("should redirect to /login when not authenticated", () => {
     const mockReplace = vi.fn();
     const authState = { isReady: true, isAuthenticated: false, requiresProfileCompletion: false, roles: [] as string[] };

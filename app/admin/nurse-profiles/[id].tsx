@@ -1,0 +1,294 @@
+import { useEffect, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+
+import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { useAuth } from "@/src/context/AuthContext";
+import {
+  getNurseProfileForAdmin,
+  setNurseOperationalAccessForAdmin,
+  type NurseProfileAdminRecordDto,
+} from "@/src/services/adminPortalService";
+
+function formatTimestamp(value: string | null) {
+  if (!value) return "N/A";
+  return new Intl.DateTimeFormat("es-DO", { dateStyle: "medium" }).format(new Date(value));
+}
+
+export default function AdminNurseProfileDetailScreen() {
+  const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [detail, setDetail] = useState<NurseProfileAdminRecordDto | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [toggling, setToggling] = useState(false);
+
+  const load = async () => {
+    if (!id) return;
+    try {
+      setError(null);
+      setLoading(true);
+      const response = await getNurseProfileForAdmin(id);
+      setDetail(response);
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : "No fue posible cargar el perfil de la enfermera.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isReady) return;
+    if (!isAuthenticated) return void router.replace("/login");
+    if (requiresProfileCompletion) return void router.replace("/register");
+    if (!roles.includes("Admin")) return void router.replace("/");
+    void load();
+  }, [isReady, isAuthenticated, requiresProfileCompletion, roles, id]);
+
+  const handleToggleOperationalAccess = async () => {
+    if (!detail) return;
+    try {
+      setToggling(true);
+      const newStatus = !detail.nurseProfileIsActive;
+      await setNurseOperationalAccessForAdmin(detail.userId, newStatus);
+      setDetail({ ...detail, nurseProfileIsActive: newStatus });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible cambiar el acceso operacional");
+    } finally {
+      setToggling(false);
+    }
+  };
+
+  if (!isReady || !isAuthenticated || !roles.includes("Admin")) {
+    return null;
+  }
+
+  return (
+    <MobileWorkspaceShell
+      eyebrow="Perfil de Enfermera"
+      title={detail ? `${detail.name} ${detail.lastName}` : "Cargando..."}
+      description="Información completa del perfil de enfermera."
+      actions={(
+        <View style={styles.headerActions}>
+          <Pressable style={styles.button} onPress={() => void load()}>
+            <Text style={styles.buttonText}>Actualizar</Text>
+          </Pressable>
+          {detail && (
+            <Pressable style={styles.buttonPrimary} onPress={() => router.push(`/admin/nurse-profiles/${id}/edit`)}>
+              <Text style={styles.buttonPrimaryText}>Editar</Text>
+            </Pressable>
+          )}
+        </View>
+      )}
+    >
+      {!!error && <Text style={styles.error}>{error}</Text>}
+      {loading && <Text style={styles.loading}>Cargando...</Text>}
+
+      {detail && (
+        <ScrollView>
+          {/* Status Indicators */}
+          <View style={styles.statusCard}>
+            <View style={styles.statusRow}>
+              {detail.isProfileComplete && (
+                <View style={styles.badgeSuccess}>
+                  <Text style={styles.badgeTextSuccess}>✓ Perfil completo</Text>
+                </View>
+              )}
+              {detail.isPendingReview && (
+                <View style={styles.badgeWarning}>
+                  <Text style={styles.badgeTextWarning}>⚠️ Pendiente de revisión</Text>
+                </View>
+              )}
+              {detail.isAssignmentReady && (
+                <View style={styles.badgeSuccess}>
+                  <Text style={styles.badgeTextSuccess}>✓ Lista para asignación</Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Personal Info */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Información Personal</Text>
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>Nombre completo</Text>
+              <Text style={styles.fieldValue}>{detail.name} {detail.lastName}</Text>
+            </View>
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>Correo electrónico</Text>
+              <Text style={styles.fieldValue}>{detail.email}</Text>
+            </View>
+            {detail.identificationNumber && (
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>Cédula</Text>
+                <Text style={styles.fieldValue}>{detail.identificationNumber}</Text>
+              </View>
+            )}
+            {detail.phone && (
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>Teléfono</Text>
+                <Text style={styles.fieldValue}>{detail.phone}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Professional Info */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Información Profesional</Text>
+            {detail.hireDate && (
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>Fecha de contratación</Text>
+                <Text style={styles.fieldValue}>{formatTimestamp(detail.hireDate)}</Text>
+              </View>
+            )}
+            {detail.specialty && (
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>Especialidad</Text>
+                <Text style={styles.fieldValue}>{detail.specialty}</Text>
+              </View>
+            )}
+            {detail.licenseId && (
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>Licencia</Text>
+                <Text style={styles.fieldValue}>{detail.licenseId}</Text>
+              </View>
+            )}
+            {detail.category && (
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>Categoría</Text>
+                <Text style={styles.fieldValue}>{detail.category}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Banking Info */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Información Bancaria</Text>
+            {detail.bankName ? (
+              <>
+                <View style={styles.field}>
+                  <Text style={styles.fieldLabel}>Banco</Text>
+                  <Text style={styles.fieldValue}>{detail.bankName}</Text>
+                </View>
+                {detail.accountNumber && (
+                  <View style={styles.field}>
+                    <Text style={styles.fieldLabel}>Número de cuenta</Text>
+                    <Text style={styles.fieldValue}>{detail.accountNumber}</Text>
+                  </View>
+                )}
+              </>
+            ) : (
+              <Text style={styles.emptyText}>No se ha proporcionado información bancaria.</Text>
+            )}
+          </View>
+
+          {/* Workload Summary */}
+          {detail.workload && (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Carga de Trabajo</Text>
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>Total de solicitudes asignadas</Text>
+                <Text style={styles.fieldValue}>{detail.workload.totalAssignedCareRequests || 0}</Text>
+              </View>
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>Pendientes</Text>
+                <Text style={styles.fieldValue}>{detail.workload.pendingAssignedCareRequests || 0}</Text>
+              </View>
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>Aprobadas</Text>
+                <Text style={styles.fieldValue}>{detail.workload.approvedAssignedCareRequests || 0}</Text>
+              </View>
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>Rechazadas</Text>
+                <Text style={styles.fieldValue}>{detail.workload.rejectedAssignedCareRequests || 0}</Text>
+              </View>
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>Completadas</Text>
+                <Text style={styles.fieldValue}>{detail.workload.completedAssignedCareRequests || 0}</Text>
+              </View>
+              {detail.workload.lastCareRequestAtUtc && (
+                <View style={styles.field}>
+                  <Text style={styles.fieldLabel}>Última solicitud</Text>
+                  <Text style={styles.fieldValue}>{formatTimestamp(detail.workload.lastCareRequestAtUtc)}</Text>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Status and Actions */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Estado y Acciones</Text>
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>Usuario activo</Text>
+              <Text style={styles.fieldValue}>{detail.userIsActive ? "Sí" : "No"}</Text>
+            </View>
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>Acceso operacional</Text>
+              <Text style={styles.fieldValue}>{detail.nurseProfileIsActive ? "Activo" : "Inactivo"}</Text>
+            </View>
+            
+            <Pressable
+              style={[styles.toggleButton, toggling && styles.toggleButtonDisabled]}
+              onPress={handleToggleOperationalAccess}
+              disabled={toggling}
+            >
+              <Text style={styles.toggleButtonText}>
+                {toggling ? "Cambiando..." : detail.nurseProfileIsActive ? "Desactivar acceso operacional" : "Activar acceso operacional"}
+              </Text>
+            </Pressable>
+
+            {detail.isPendingReview && (
+              <Pressable
+                style={styles.reviewButton}
+                onPress={() => router.push(`/admin/nurse-profiles/${id}/review`)}
+              >
+                <Text style={styles.reviewButtonText}>Revisar y Completar Perfil</Text>
+              </Pressable>
+            )}
+          </View>
+
+          {/* Metadata */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Información del Sistema</Text>
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>ID de usuario</Text>
+              <Text style={styles.fieldValueMono}>{detail.userId}</Text>
+            </View>
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>Fecha de creación</Text>
+              <Text style={styles.fieldValue}>{formatTimestamp(detail.createdAtUtc)}</Text>
+            </View>
+          </View>
+        </ScrollView>
+      )}
+    </MobileWorkspaceShell>
+  );
+}
+
+const styles = StyleSheet.create({
+  headerActions: { flexDirection: "row", gap: 8 },
+  button: { backgroundColor: "#f0f4f8", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },
+  buttonText: { color: "#102a43", fontWeight: "700", fontSize: 14 },
+  buttonPrimary: { backgroundColor: "#3b82f6", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },
+  buttonPrimaryText: { color: "#ffffff", fontWeight: "700", fontSize: 14 },
+  error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
+  loading: { color: "#52637a", fontSize: 14, textAlign: "center", padding: 20 },
+  statusCard: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
+  statusRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  badgeSuccess: { backgroundColor: "#d1fae5", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6 },
+  badgeTextSuccess: { color: "#065f46", fontSize: 12, fontWeight: "700" },
+  badgeWarning: { backgroundColor: "#fef3c7", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6 },
+  badgeTextWarning: { color: "#92400e", fontSize: 12, fontWeight: "700" },
+  card: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
+  cardTitle: { fontSize: 16, fontWeight: "800", color: "#102a43", marginBottom: 12 },
+  field: { marginBottom: 8 },
+  fieldLabel: { color: "#7c2d12", fontSize: 12, fontWeight: "800", textTransform: "uppercase", marginBottom: 2 },
+  fieldValue: { color: "#102a43", fontSize: 15 },
+  fieldValueMono: { color: "#102a43", fontSize: 13, fontFamily: "monospace" },
+  emptyText: { color: "#52637a", fontSize: 14, fontStyle: "italic" },
+  toggleButton: { backgroundColor: "#f59e0b", borderRadius: 12, paddingVertical: 12, marginTop: 12 },
+  toggleButtonDisabled: { opacity: 0.5 },
+  toggleButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 14, textAlign: "center" },
+  reviewButton: { backgroundColor: "#3b82f6", borderRadius: 12, paddingVertical: 12, marginTop: 8 },
+  reviewButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 14, textAlign: "center" },
+});
