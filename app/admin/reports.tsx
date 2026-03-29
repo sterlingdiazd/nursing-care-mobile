@@ -133,9 +133,9 @@ export default function AdminReportsScreen() {
       if (!token) throw new Error("No hay sesion activa para exportar.");
 
       const filename = `reporte-${selectedReportKey}-${Date.now()}.csv`;
-      const fileUri = FileSystem.documentDirectory + filename;
+      const fileUri = (FileSystem as any).documentDirectory + filename;
 
-      const downloadRes = await FileSystem.downloadAsync(url, fileUri, {
+      const downloadRes = await (FileSystem as any).downloadAsync(url, fileUri, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

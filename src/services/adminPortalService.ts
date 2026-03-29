@@ -1178,7 +1178,7 @@ export async function updateNurseCategory(
   return requestJson<void>({
     path: `/api/admin/catalog/nurse-categories/${id}`,
     method: "PUT",
-    body: request,
+    body,
     auth: true,
   });
 }
