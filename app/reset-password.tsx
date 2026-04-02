@@ -12,6 +12,7 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { resetPassword, validateEmail, validatePassword } from "@/src/api/auth";
 import { useAuth } from "@/src/context/AuthContext";
+import { resolvePostAuthRoute } from "@/src/utils/authRedirect";
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
@@ -76,7 +77,7 @@ export default function ResetPasswordScreen() {
             onPress: async () => {
               // Sign in with the response
               await completeOAuthLogin(response as any);
-              router.replace("/care-requests");
+              router.replace(resolvePostAuthRoute(response as any));
             },
           },
         ]

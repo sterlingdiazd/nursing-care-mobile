@@ -17,6 +17,7 @@ import * as Linking from "expo-linking";
 import { useAuth } from "@/src/context/AuthContext";
 import { validateEmail } from "@/src/api/auth";
 import { AuthResponse } from "@/src/types/auth";
+import { resolvePostAuthRoute } from "@/src/utils/authRedirect";
 import { hapticFeedback } from "@/src/utils/haptics";
 import {
   getGoogleOAuthStartUrl,
@@ -86,10 +87,8 @@ export default function LoginScreen() {
     }
 
     try {
-      await login(email.trim(), password);
-
-      // Navigate immediately while the success haptic reinforces the outcome
-      router.replace("/care-requests");
+      const response = await login(email.trim(), password);
+      router.replace(resolvePostAuthRoute(response));
 
       // Clear form
       setEmail("");
@@ -150,7 +149,7 @@ export default function LoginScreen() {
       };
 
       await completeOAuthLogin(response);
-      const destination = response.requiresProfileCompletion ? "/register" : "/care-requests";
+      const destination = resolvePostAuthRoute(response);
 
       if (Platform.OS === "web") {
         router.replace(destination);
