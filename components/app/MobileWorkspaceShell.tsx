@@ -33,10 +33,46 @@ interface NavigationItem {
   description: string;
   hideWhenAuthenticated?: boolean;
   hideWhenAnonymous?: boolean;
+  adminOnly?: boolean;
 }
 
 const navigationItems: NavigationItem[] = [
   { label: "Resumen", path: "/", description: "Pantalla principal" },
+  {
+    label: "Panel admin",
+    path: "/admin",
+    description: "Resumen ejecutivo",
+    hideWhenAnonymous: true,
+    adminOnly: true,
+  },
+  {
+    label: "Enfermeras",
+    path: "/admin/nurse-profiles",
+    description: "Perfiles y revision",
+    hideWhenAnonymous: true,
+    adminOnly: true,
+  },
+  {
+    label: "Usuarios",
+    path: "/admin/users",
+    description: "Cuentas y roles",
+    hideWhenAnonymous: true,
+    adminOnly: true,
+  },
+  {
+    label: "Clientes",
+    path: "/admin/clients",
+    description: "Cartera de clientes",
+    hideWhenAnonymous: true,
+    adminOnly: true,
+  },
+  {
+    label: "Solicitudes admin",
+    path: "/admin/care-requests",
+    description: "Cola administrativa",
+    hideWhenAnonymous: true,
+    adminOnly: true,
+  },
   {
     label: "Solicitudes",
     path: "/care-requests",
@@ -67,6 +103,26 @@ const navigationItems: NavigationItem[] = [
 ];
 
 function getActivePath(pathname: string) {
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    if (pathname.startsWith("/admin/nurse-profiles")) {
+      return "/admin/nurse-profiles";
+    }
+
+    if (pathname.startsWith("/admin/users")) {
+      return "/admin/users";
+    }
+
+    if (pathname.startsWith("/admin/clients")) {
+      return "/admin/clients";
+    }
+
+    if (pathname.startsWith("/admin/care-requests")) {
+      return "/admin/care-requests";
+    }
+
+    return "/admin";
+  }
+
   if (pathname.startsWith("/care-requests")) {
     return "/care-requests";
   }
@@ -156,6 +212,10 @@ export default function MobileWorkspaceShell({
         }
 
         if (item.hideWhenAnonymous && !isAuthenticated) {
+          return false;
+        }
+
+        if (item.adminOnly && !roles.includes("ADMIN")) {
           return false;
         }
 

@@ -40,6 +40,18 @@ export default function AdminDashboardScreen() {
       description="Replica la visibilidad ejecutiva del portal web para seguimiento rapido de pendientes operativos."
       actions={
         <>
+          <Pressable style={styles.button} onPress={() => router.push("/admin/users" as any)}>
+            <Text style={styles.buttonText}>Usuarios</Text>
+          </Pressable>
+          <Pressable style={styles.button} onPress={() => router.push("/admin/nurse-profiles" as any)}>
+            <Text style={styles.buttonText}>Enfermeras</Text>
+          </Pressable>
+          <Pressable style={styles.button} onPress={() => router.push("/admin/clients" as any)}>
+            <Text style={styles.buttonText}>Clientes</Text>
+          </Pressable>
+          <Pressable style={styles.button} onPress={() => router.push("/admin/care-requests" as any)}>
+            <Text style={styles.buttonText}>Solicitudes</Text>
+          </Pressable>
           <Pressable style={styles.button} onPress={() => router.push("/admin/action-items" as any)}>
             <Text style={styles.buttonText}>Abrir cola de acciones</Text>
           </Pressable>
