@@ -1,4 +1,6 @@
-import { Redirect, useLocalSearchParams } from "expo-router";
+import { useEffect } from "react";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
 
 function toSearchParamValue(value: string | string[] | undefined) {
   if (Array.isArray(value)) {
@@ -10,15 +12,34 @@ function toSearchParamValue(value: string | string[] | undefined) {
 
 export default function LoginHtmlRedirectScreen() {
   const params = useLocalSearchParams();
-  const redirectParams: Record<string, string> = {};
+  useEffect(() => {
+    const redirectParams: Record<string, string> = {};
 
-  Object.entries(params).forEach(([key, value]) => {
-    const normalizedValue = toSearchParamValue(value);
+    Object.entries(params).forEach(([key, value]) => {
+      const normalizedValue = toSearchParamValue(value);
 
-    if (typeof normalizedValue === "string" && normalizedValue.length > 0) {
-      redirectParams[key] = normalizedValue;
-    }
-  });
+      if (typeof normalizedValue === "string" && normalizedValue.length > 0) {
+        redirectParams[key] = normalizedValue;
+      }
+    });
 
-  return <Redirect href={{ pathname: "/login", params: redirectParams }} />;
+    router.replace({
+      pathname: "/login",
+      params: redirectParams,
+    });
+  }, [params]);
+
+  return (
+    <View style={styles.container}>
+      <ActivityIndicator size="small" />
+    </View>
+  );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});
