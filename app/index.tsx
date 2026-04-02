@@ -5,6 +5,7 @@ import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { logClientEvent } from "@/src/logging/clientLogger";
 import { formatRoleLabels } from "@/src/utils/roleLabels";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 const authenticatedQuickSections = [
   {
@@ -201,15 +202,36 @@ export default function HomeScreen() {
         </>
       }
     >
+      <View style={styles.recommendedCard}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardEyebrow}>Flujo recomendado</Text>
+        </View>
+        <Text style={styles.cardTitle}>
+          {hasOperationalAccess ? "Recorrido profesional" : isAnonymous ? "Acceso inicial" : "Estado de validación"}
+        </Text>
+        <View style={styles.stepsList}>
+          {recommendedSteps.map((step, idx) => (
+            <View key={idx} style={styles.stepItem}>
+              <View style={styles.stepBullet} />
+              <Text style={styles.cardBody}>{step}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
       <View style={styles.grid}>
         <View style={styles.sessionCard}>
-          <Text style={styles.sessionEyebrow}>Sesion actual</Text>
+          <Text style={styles.sessionEyebrow}>Sesión actual</Text>
           <Text style={styles.sessionTitle}>{sessionTitle}</Text>
-          <Text style={styles.sessionBody}>{sessionBody}</Text>
+          <View style={styles.sessionMeta}>
+             <Text style={styles.sessionBody}>{sessionBody}</Text>
+          </View>
           {isNurseUnderReview ? (
-            <Text style={styles.reviewNote}>
-              Tu cuenta de enfermeria espera que administracion complete el perfil. El acceso operativo se habilitara despues de esa completacion.
-            </Text>
+            <View style={styles.reviewBadge}>
+              <Text style={styles.reviewNote}>
+                Revisión administrativa pendiente.
+              </Text>
+            </View>
           ) : null}
         </View>
 
@@ -217,6 +239,7 @@ export default function HomeScreen() {
           <Pressable
             key={section.path}
             onPress={() => {
+              hapticFeedback.light();
               logClientEvent("mobile.ui", "Home quick section opened", {
                 section: section.path,
               });
@@ -227,20 +250,10 @@ export default function HomeScreen() {
               pressed && styles.buttonPressed,
             ]}
           >
-            <Text style={styles.cardEyebrow}>Seccion</Text>
-            <Text style={styles.cardTitle}>{section.title}</Text>
-            <Text style={styles.cardBody}>{section.body}</Text>
+            <View style={styles.cardIconPlaceholder} />
+            <Text style={styles.cardTitleSmall}>{section.title}</Text>
+            <Text style={styles.cardBodySmall} numberOfLines={2}>{section.body}</Text>
           </Pressable>
-        ))}
-      </View>
-
-      <View style={styles.recommendedCard}>
-        <Text style={styles.cardEyebrow}>Flujo recomendado</Text>
-        <Text style={styles.cardTitle}>
-          {hasOperationalAccess ? "Un recorrido simple y profesional." : isAnonymous ? "Primero acceso, despues operacion." : "Estado claro mientras esperas aprobacion."}
-        </Text>
-        {recommendedSteps.map((step) => (
-          <Text key={step} style={styles.cardBody}>{step}</Text>
         ))}
       </View>
     </MobileWorkspaceShell>
@@ -249,104 +262,181 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   grid: {
-    gap: 14,
+    gap: 16,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
   },
   sessionCard: {
-    backgroundColor: "#123047",
-    borderRadius: 24,
-    padding: 18,
+    width: "100%",
+    backgroundColor: "#102a43",
+    borderRadius: 28,
+    padding: 24,
+    shadowColor: "#102a43",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 10,
   },
   sessionEyebrow: {
     fontSize: 12,
     fontWeight: "800",
     textTransform: "uppercase",
-    letterSpacing: 1.3,
-    color: "#bde0dd",
-    marginBottom: 8,
+    letterSpacing: 1.5,
+    color: "#9fb3c8",
+    marginBottom: 12,
   },
   sessionTitle: {
-    fontSize: 23,
-    lineHeight: 29,
+    fontSize: 26,
     fontWeight: "800",
-    color: "#fffef8",
-    marginBottom: 8,
+    color: "#f8fafc",
+    marginBottom: 12,
+    letterSpacing: -0.5,
+  },
+  sessionMeta: {
+    backgroundColor: "rgba(255,255,255,0.08)",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 16,
   },
   sessionBody: {
     fontSize: 15,
-    lineHeight: 22,
-    color: "rgba(232, 241, 247, 0.78)",
+    color: "#cbd5e1",
+    fontWeight: "600",
   },
   card: {
-    backgroundColor: "#fffdf9",
+    width: "47.5%",
+    backgroundColor: "#ffffff",
     borderRadius: 24,
-    padding: 18,
+    padding: 20,
     borderWidth: 1,
-    borderColor: "#dbe5f3",
+    borderColor: "#f1f5f9",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
+    marginBottom: 8,
   },
   recommendedCard: {
-    backgroundColor: "#f3ede0",
-    borderRadius: 24,
-    padding: 18,
+    backgroundColor: "#fffbeb",
+    borderRadius: 28,
+    padding: 24,
     borderWidth: 1,
-    borderColor: "#e7d4b8",
+    borderColor: "#fde68a",
+    marginBottom: 8,
+    shadowColor: "#f59e0b",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 16,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
   },
   cardEyebrow: {
     fontSize: 12,
     fontWeight: "800",
     textTransform: "uppercase",
-    letterSpacing: 1.3,
-    color: "#2563eb",
-    marginBottom: 8,
+    letterSpacing: 1.5,
+    color: "#b45309",
   },
   cardTitle: {
-    fontSize: 23,
-    lineHeight: 29,
+    fontSize: 24,
     fontWeight: "800",
-    color: "#102a43",
-    marginBottom: 8,
+    color: "#78350f",
+    marginBottom: 16,
+    letterSpacing: -0.5,
+  },
+  cardTitleSmall: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#1e293b",
+    marginBottom: 6,
+    letterSpacing: -0.3,
+  },
+  stepsList: {
+    gap: 10,
+  },
+  stepItem: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  stepBullet: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#f59e0b",
+    marginRight: 10,
   },
   cardBody: {
     fontSize: 15,
+    color: "#92400e",
     lineHeight: 22,
-    color: "#52637a",
-    marginBottom: 4,
+    fontWeight: "500",
+  },
+  cardBodySmall: {
+    fontSize: 13,
+    color: "#64748b",
+    lineHeight: 18,
   },
   primaryButton: {
-    backgroundColor: "#fef3c7",
-    borderRadius: 18,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
+    backgroundColor: "#fbbf24",
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
     alignItems: "center",
+    shadowColor: "#fbbf24",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
   },
   secondaryButton: {
-    borderRadius: 18,
-    paddingVertical: 15,
-    paddingHorizontal: 18,
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
     alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.1)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.18)",
-    backgroundColor: "rgba(255,255,255,0.08)",
+    borderColor: "rgba(255,255,255,0.2)",
   },
   primaryButtonText: {
-    color: "#132d75",
-    fontSize: 16,
+    color: "#451a03",
+    fontSize: 17,
     fontWeight: "800",
   },
   secondaryButtonText: {
-    color: "#f8fafc",
-    fontSize: 15,
+    color: "#ffffff",
+    fontSize: 16,
     fontWeight: "700",
   },
   buttonPressed: {
-    opacity: 0.92,
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
   },
   disabledButton: {
-    opacity: 0.55,
+    opacity: 0.4,
+  },
+  reviewBadge: {
+    marginTop: 16,
+    backgroundColor: "#fef3c7",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    alignSelf: "flex-start",
   },
   reviewNote: {
-    marginTop: 10,
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#fde68a",
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#92400e",
+  },
+  cardIconPlaceholder: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: "#f1f5f9",
+    marginBottom: 12,
   },
 });

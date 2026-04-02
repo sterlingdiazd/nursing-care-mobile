@@ -32,7 +32,10 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (loaded) {
-      SplashScreen.hideAsync();
+      // Give a minimum duration to the splash screen for better branding feel
+      setTimeout(() => {
+        SplashScreen.hideAsync();
+      }, 1500);
     }
   }, [loaded]);
 

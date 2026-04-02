@@ -14,6 +14,7 @@ import {
   saveAuthSession,
   subscribeToAuthSession,
 } from "@/src/services/authSession";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 export enum UserProfileType {
   ADMIN = 0,
@@ -213,12 +214,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
       });
 
-      await persistSession(response);
+      // Atomic session update: update memory FIRST so UI reacts instantly
+      setSession({
+        ...response,
+        userId: resolveResponseUserId(response, null) || "",
+      });
+      setProfileType(resolveProfileType(response, null));
+      setToken(response.token);
 
+      // Persist to disk in the background to avoid blocking the main thread
+      void saveAuthSession({
+        token: response.token,
+        refreshToken: response.refreshToken,
+        expiresAtUtc: response.expiresAtUtc,
+        userId: resolveResponseUserId(response, null) || "",
+        email: response.email,
+        roles: response.roles ?? [],
+        profileType: resolveProfileType(response, null),
+        requiresProfileCompletion: response.requiresProfileCompletion,
+        requiresAdminReview: response.requiresAdminReview,
+      });
+
+      hapticFeedback.success();
       return response;
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "No fue posible iniciar sesion.";
       setError(errorMsg);
+      hapticFeedback.error();
       throw err;
     } finally {
       setIsLoading(false);
@@ -271,10 +293,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         requiresAdminReview: response.requiresAdminReview,
       });
 
+      hapticFeedback.success();
       return response;
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "No fue posible completar el registro.";
       setError(errorMsg);
+      hapticFeedback.error();
       throw err;
     } finally {
       setIsLoading(false);
@@ -298,6 +322,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       await persistSession(response, UserProfileType.CLIENT);
+      hapticFeedback.success();
       return response;
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "No fue posible completar el perfil.";
@@ -311,6 +336,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const completeOAuthLogin = async (response: AuthResponse) => {
     setError(null);
     await persistSession(response);
+    hapticFeedback.success();
 
     logClientEvent("mobile.auth", "Google OAuth login successful", {
       email: response.email,

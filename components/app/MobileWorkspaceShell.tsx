@@ -11,6 +11,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { BlurView } from "expo-blur";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 import { useAuth } from "@/src/context/AuthContext";
 import { logClientEvent } from "@/src/logging/clientLogger";
@@ -183,6 +185,7 @@ export default function MobileWorkspaceShell({
     ?? navigationItems[0];
 
   const navigateTo = (path: string) => {
+    hapticFeedback.light();
     setDrawerOpen(false);
     if (path === activePath) {
       return;
@@ -238,6 +241,7 @@ export default function MobileWorkspaceShell({
         {isAuthenticated && (
           <Pressable
             onPress={() => {
+              hapticFeedback.light();
               logClientEvent("mobile.ui", "Sidebar logout tapped");
               void logout();
               setDrawerOpen(false);
@@ -265,8 +269,13 @@ export default function MobileWorkspaceShell({
           onRequestClose={() => setDrawerOpen(false)}
         >
           <View style={styles.drawerOverlay}>
-            <Pressable style={styles.drawerScrim} onPress={() => setDrawerOpen(false)} />
-            <View style={styles.drawerPanel}>{renderSidebar()}</View>
+            <Pressable style={styles.drawerScrim} onPress={() => {
+              hapticFeedback.light();
+              setDrawerOpen(false);
+            }} />
+            <SafeAreaView style={styles.drawerPanel} edges={["left", "bottom", "top"]}>
+              {renderSidebar()}
+            </SafeAreaView>
           </View>
         </Modal>
       )}
@@ -279,10 +288,13 @@ export default function MobileWorkspaceShell({
           behavior={isWideLayout ? undefined : "padding"}
           keyboardVerticalOffset={isWideLayout ? 0 : 88}
         >
-          <View style={styles.topBar}>
+          <BlurView intensity={80} tint="light" style={styles.topBar}>
             {!isWideLayout && (
               <Pressable
-                onPress={() => setDrawerOpen(true)}
+                onPress={() => {
+                  hapticFeedback.light();
+                  setDrawerOpen(true);
+                }}
                 style={({ pressed }) => [
                   styles.menuButton,
                   pressed && styles.buttonPressed,
@@ -300,7 +312,7 @@ export default function MobileWorkspaceShell({
             <View style={styles.topBarChip}>
               <Text style={styles.topBarChipText}>{isAuthenticated ? "Sesion activa" : "Sesion requerida"}</Text>
             </View>
-          </View>
+          </BlurView>
 
           <ScrollView
             style={styles.scroll}

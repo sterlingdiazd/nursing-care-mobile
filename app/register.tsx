@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   StyleSheet,
+  SafeAreaView,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth, UserProfileType } from "@/src/context/AuthContext";
@@ -28,6 +29,7 @@ import {
 } from "@/src/utils/identityValidation";
 import { getNurseProfileOptions } from "@/src/services/catalogOptionsService";
 import type { CatalogCodeNameOption } from "@/src/types/catalog";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 const clientProfileCopy =
   "Perfil de cliente seleccionado. No hay campos adicionales por completar en esta etapa y el acceso operativo queda disponible cuando termine el registro.";
@@ -276,7 +278,8 @@ export default function RegisterScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.contentContainer}>
       {/* Title */}
       <Text style={styles.title}>{isProfileCompletionMode ? "Completar registro" : "Crear cuenta"}</Text>
 
@@ -411,7 +414,10 @@ export default function RegisterScreen() {
           <View style={styles.radioGroup}>
             <TouchableOpacity
               style={styles.radioOption}
-              onPress={() => setProfileType(UserProfileType.CLIENT)}
+              onPress={() => {
+                hapticFeedback.light();
+                setProfileType(UserProfileType.CLIENT);
+              }}
               disabled={isLoading}
             >
               <View
@@ -425,7 +431,10 @@ export default function RegisterScreen() {
 
             <TouchableOpacity
               style={styles.radioOption}
-              onPress={() => setProfileType(UserProfileType.NURSE)}
+              onPress={() => {
+                hapticFeedback.light();
+                setProfileType(UserProfileType.NURSE);
+              }}
               disabled={isLoading}
             >
               <View
@@ -488,7 +497,10 @@ export default function RegisterScreen() {
                     styles.specialtyChip,
                     specialty === option.code ? styles.specialtyChipSelected : null,
                   ]}
-                  onPress={() => setSpecialty(option.code)}
+                  onPress={() => {
+                    hapticFeedback.light();
+                    setSpecialty(option.code);
+                  }}
                   disabled={isLoading}
                 >
                   <Text
@@ -572,7 +584,10 @@ export default function RegisterScreen() {
       {/* Submit Button */}
       <TouchableOpacity
         style={[styles.button, isLoading ? styles.buttonDisabled : null]}
-        onPress={handleSubmit}
+        onPress={() => {
+          hapticFeedback.light();
+          void handleSubmit();
+        }}
         disabled={isLoading}
       >
         {isLoading ? (
@@ -593,6 +608,7 @@ export default function RegisterScreen() {
           <TouchableOpacity
             style={[styles.secondaryButton, isLoading ? styles.buttonDisabled : null]}
             onPress={() => {
+              hapticFeedback.light();
               void handleGoogleSignIn();
             }}
             disabled={isLoading}
@@ -610,12 +626,19 @@ export default function RegisterScreen() {
       {!isProfileCompletionMode && (
         <View style={styles.loginLinkContainer}>
           <Text style={styles.loginLinkText}>¿Ya tienes cuenta? </Text>
-          <TouchableOpacity onPress={() => router.push("/login")} disabled={isLoading}>
+          <TouchableOpacity 
+            onPress={() => {
+              hapticFeedback.light();
+              router.push("/login");
+            }} 
+            disabled={isLoading}
+          >
             <Text style={styles.loginLink}>Inicia sesion</Text>
           </TouchableOpacity>
         </View>
       )}
     </ScrollView>
+  </SafeAreaView>
   );
 }
 

@@ -11,6 +11,7 @@ import {
   getMobileApiBaseUrl,
 } from "@/src/services/authService";
 import { formatRoleLabels } from "@/src/utils/roleLabels";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 export default function AccountScreen() {
   const { email, isAuthenticated, logout, roles, token } = useAuth();
@@ -24,6 +25,7 @@ export default function AccountScreen() {
     }
 
     try {
+      hapticFeedback.light();
       const authUrl = getGoogleOAuthStartUrl("mobile");
       logClientEvent("mobile.ui", "Google OAuth started from account screen", {
         authUrl,
@@ -68,7 +70,9 @@ export default function AccountScreen() {
         </Text>
 
         <Pressable
-          onPress={onGoogleLogin}
+          onPress={() => {
+            void onGoogleLogin();
+          }}
           style={({ pressed }) => [
             styles.primaryButton,
             pressed && styles.buttonPressed,
@@ -82,7 +86,10 @@ export default function AccountScreen() {
         {!isAuthenticated && (
           <>
             <Pressable
-              onPress={() => router.push("/login")}
+              onPress={() => {
+                hapticFeedback.light();
+                router.push("/login");
+              }}
               style={({ pressed }) => [
                 styles.secondaryButton,
                 pressed && styles.buttonPressed,
@@ -92,7 +99,10 @@ export default function AccountScreen() {
             </Pressable>
 
             <Pressable
-              onPress={() => router.push("/register")}
+              onPress={() => {
+                hapticFeedback.light();
+                router.push("/register");
+              }}
               style={({ pressed }) => [
                 styles.secondaryButton,
                 pressed && styles.buttonPressed,
@@ -106,6 +116,7 @@ export default function AccountScreen() {
         {isAuthenticated && (
           <Pressable
             onPress={() => {
+              hapticFeedback.light();
               logClientEvent("mobile.ui", "Account screen logout tapped");
               void logout();
               router.replace("/");

@@ -8,12 +8,15 @@ import {
   ActivityIndicator,
   Alert,
   StyleSheet,
+  Image,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import * as Linking from "expo-linking";
 import { useAuth } from "@/src/context/AuthContext";
 import { validateEmail } from "@/src/api/auth";
 import { AuthResponse } from "@/src/types/auth";
+import { hapticFeedback } from "@/src/utils/haptics";
 import {
   getGoogleOAuthStartUrl,
   getLocalHttpsCertificateWarning,
@@ -82,12 +85,8 @@ export default function LoginScreen() {
     try {
       await login(email.trim(), password);
 
-      Alert.alert("Inicio de sesion exitoso", "Redirigiendo al panel...", [
-        {
-          text: "Aceptar",
-          onPress: () => router.push("/care-requests"),
-        },
-      ]);
+      // Navigate immediately while the success haptic reinforces the outcome
+      router.replace("/care-requests");
 
       // Clear form
       setEmail("");
@@ -192,9 +191,19 @@ export default function LoginScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.contentContainer}>
+      <View style={styles.logoHost}>
+        <Image 
+          source={require("@/assets/images/logo.png")} 
+          style={styles.logo}
+          resizeMode="contain"
+        />
+      </View>
+
       {/* Title */}
-      <Text style={styles.title}>Iniciar sesion</Text>
+      <Text style={styles.title}>Sol y Luna</Text>
+      <Text style={styles.subtitle}>Cuidado profesional, calidad humana.</Text>
 
       {/* Email Input */}
       <View style={styles.formGroup}>
@@ -230,7 +239,10 @@ export default function LoginScreen() {
       </View>
 
       <TouchableOpacity
-        onPress={() => router.push("/forgot-password" as any)}
+        onPress={() => {
+          hapticFeedback.light();
+          router.push("/forgot-password" as any);
+        }}
         style={styles.forgotPasswordContainer}
         disabled={isLoading}
       >
@@ -240,7 +252,10 @@ export default function LoginScreen() {
       {/* Login Button */}
       <TouchableOpacity
         style={[styles.button, isLoading ? styles.buttonDisabled : null]}
-        onPress={handleSubmit}
+        onPress={() => {
+          hapticFeedback.light();
+          void handleSubmit();
+        }}
         disabled={isLoading}
       >
         {isLoading ? (
@@ -259,6 +274,7 @@ export default function LoginScreen() {
       <TouchableOpacity
         style={[styles.secondaryButton, isLoading ? styles.buttonDisabled : null]}
         onPress={() => {
+          hapticFeedback.light();
           void handleGoogleSignIn();
         }}
         disabled={isLoading}
@@ -269,85 +285,153 @@ export default function LoginScreen() {
       {/* Register Link */}
       <View style={styles.registerLinkContainer}>
         <Text style={styles.registerLinkText}>¿No tienes cuenta? </Text>
-        <TouchableOpacity onPress={() => router.push("/register" as any)} disabled={isLoading}>
+        <TouchableOpacity
+          onPress={() => {
+            hapticFeedback.light();
+            router.push("/register" as any);
+          }}
+          disabled={isLoading}
+        >
           <Text style={styles.registerLink}>Registrate</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
-  );
+  </SafeAreaView>
+);
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#f8f9fa",
   },
   contentContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingVertical: 60,
+    flexGrow: 1,
     justifyContent: "center",
   },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
-    marginBottom: 30,
+    fontSize: 32,
+    fontWeight: "800",
+    marginBottom: 8,
     textAlign: "center",
-    color: "#000",
+    color: "#1a1a1a",
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#6c757d",
+    textAlign: "center",
+    marginBottom: 40,
+    fontWeight: "500",
+  },
+  logoHost: {
+    alignItems: "center",
+    marginTop: 40,
+    marginBottom: 20,
+  },
+  logo: {
+    width: 120,
+    height: 120,
+    borderRadius: 28,
   },
   formGroup: {
     marginBottom: 20,
   },
   label: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "700",
     marginBottom: 8,
-    color: "#333",
+    color: "#4a4a4a",
+    marginLeft: 4,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: "#000",
-    backgroundColor: "#f9f9f9",
+    borderColor: "#e1e4e8",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: "#1a1a1a",
+    backgroundColor: "#ffffff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   inputError: {
-    borderColor: "#d32f2f",
-    backgroundColor: "#ffebee",
+    borderColor: "#ff3b30",
+    backgroundColor: "#fff5f5",
   },
   errorText: {
-    color: "#d32f2f",
+    color: "#ff3b30",
     fontSize: 12,
-    marginTop: 4,
+    marginTop: 6,
+    marginLeft: 4,
   },
   forgotPasswordContainer: {
     alignSelf: "flex-end",
-    marginBottom: 20,
-    marginTop: -10,
+    marginBottom: 24,
+    marginTop: -8,
   },
   forgotPasswordText: {
     fontSize: 14,
-    color: "#0066cc",
+    color: "#007aff",
     fontWeight: "600",
   },
   button: {
-    backgroundColor: "#0066cc",
-    paddingVertical: 14,
-    borderRadius: 8,
+    backgroundColor: "#007aff",
+    paddingVertical: 16,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 20,
-    marginBottom: 16,
+    shadowColor: "#007aff",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonDisabled: {
-    opacity: 0.6,
+    backgroundColor: "#b2d7ff",
+    shadowOpacity: 0,
   },
   buttonText: {
-    color: "white",
+    color: "#ffffff",
+    fontSize: 17,
+    fontWeight: "700",
+  },
+  dividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 32,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#e1e4e8",
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    color: "#8e8e93",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  secondaryButton: {
+    borderWidth: 1.5,
+    borderColor: "#007aff",
+    paddingVertical: 15,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "transparent",
+    marginBottom: 32,
+  },
+  secondaryButtonText: {
+    color: "#007aff",
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   registerLinkContainer: {
     flexDirection: "row",
@@ -355,44 +439,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   registerLinkText: {
-    fontSize: 14,
+    fontSize: 15,
     color: "#666",
   },
   registerLink: {
-    fontSize: 14,
-    color: "#0066cc",
-    fontWeight: "600",
-  },
-  dividerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "#ddd",
-  },
-  dividerText: {
-    marginHorizontal: 12,
-    color: "#777",
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  secondaryButton: {
-    borderWidth: 1,
-    borderColor: "#0066cc",
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 20,
-    backgroundColor: "#f5f9ff",
-  },
-  secondaryButtonText: {
-    color: "#0066cc",
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 15,
+    color: "#007aff",
+    fontWeight: "700",
   },
 });
 
