@@ -13,6 +13,7 @@ import { useAuth } from "@/src/context/AuthContext";
 import { logClientEvent } from "@/src/logging/clientLogger";
 import { getCareRequests } from "@/src/services/careRequestService";
 import { CareRequestDto } from "@/src/types/careRequest";
+import { canAccessCareRequests } from "@/src/utils/authRedirect";
 
 function getStatusColors(status: CareRequestDto["status"]) {
   switch (status) {
@@ -41,15 +42,27 @@ function getStatusLabel(status: CareRequestDto["status"]) {
 }
 
 export default function CareRequestsScreen() {
-  const { isAuthenticated, isReady, roles } = useAuth();
+  const { isAuthenticated, isReady, roles, requiresProfileCompletion, requiresAdminReview } = useAuth();
   const [careRequests, setCareRequests] = useState<CareRequestDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const canOpenCareRequests = canAccessCareRequests({
+    roles,
+    requiresProfileCompletion,
+    requiresAdminReview,
+  });
 
   const loadCareRequests = async () => {
     if (!isAuthenticated) {
       setCareRequests([]);
       setError("Inicia sesion para cargar tus solicitudes.");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!canOpenCareRequests) {
+      setCareRequests([]);
+      setError("Tu cuenta no tiene acceso operativo a esta cola en este momento.");
       setIsLoading(false);
       return;
     }
@@ -79,8 +92,18 @@ export default function CareRequestsScreen() {
       return;
     }
 
+    if (!isAuthenticated) {
+      router.replace("/login");
+      return;
+    }
+
+    if (!canOpenCareRequests) {
+      router.replace("/");
+      return;
+    }
+
     void loadCareRequests();
-  }, [isAuthenticated, isReady]);
+  }, [canOpenCareRequests, isAuthenticated, isReady]);
 
   return (
     <MobileWorkspaceShell

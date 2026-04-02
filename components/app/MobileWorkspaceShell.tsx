@@ -16,6 +16,7 @@ import { hapticFeedback } from "@/src/utils/haptics";
 
 import { useAuth } from "@/src/context/AuthContext";
 import { logClientEvent } from "@/src/logging/clientLogger";
+import { canAccessCareRequests, canCreateCareRequests } from "@/src/utils/authRedirect";
 import { formatRoleLabels } from "@/src/utils/roleLabels";
 
 interface MobileWorkspaceShellProps {
@@ -104,6 +105,13 @@ export default function MobileWorkspaceShell({
   const activePath = getActivePath(pathname);
   const operationalPath = isOperationalPath(pathname);
   const isWideLayout = hasMounted && width >= 1024;
+  const accessState = {
+    roles,
+    requiresProfileCompletion,
+    requiresAdminReview,
+  };
+  const canOpenCareRequests = canAccessCareRequests(accessState);
+  const canOpenCreateCareRequest = canCreateCareRequests(accessState);
 
   useEffect(() => {
     setHasMounted(true);
@@ -122,22 +130,22 @@ export default function MobileWorkspaceShell({
   }, [isAuthenticated, isReady, operationalPath]);
 
   useEffect(() => {
-    if (requiresAdminReview && profileType === 1 && operationalPath) {
+    if (!canOpenCareRequests && pathname === "/care-requests") {
       router.replace("/");
     }
-  }, [operationalPath, profileType, requiresAdminReview]);
+  }, [canOpenCareRequests, pathname]);
 
   useEffect(() => {
-    if (
-      isReady
-      && pathname === "/create-care-request"
-      && isAuthenticated
-      && !roles.includes("Client")
-      && !roles.includes("Admin")
-    ) {
-      router.replace("/care-requests");
+    if (!canOpenCareRequests && pathname.startsWith("/care-requests/")) {
+      router.replace("/");
     }
-  }, [isAuthenticated, isReady, pathname, roles]);
+  }, [canOpenCareRequests, pathname]);
+
+  useEffect(() => {
+    if (isReady && pathname === "/create-care-request" && isAuthenticated && !canOpenCreateCareRequest) {
+      router.replace(canOpenCareRequests ? "/care-requests" : "/");
+    }
+  }, [canOpenCareRequests, canOpenCreateCareRequest, isAuthenticated, isReady, pathname]);
 
   const isNurseUnderReview = requiresAdminReview && profileType === 1;
   const visibleItems = useMemo(
@@ -151,30 +159,28 @@ export default function MobileWorkspaceShell({
           return false;
         }
 
-        if (isNurseUnderReview && item.path !== "/" && item.path !== "/account") {
+        if (item.path === "/care-requests" && !canOpenCareRequests) {
           return false;
         }
 
-        if (item.path === "/create-care-request" && !roles.includes("Client") && !roles.includes("Admin")) {
+        if (item.path === "/create-care-request" && !canOpenCreateCareRequest) {
+          return false;
+        }
+
+        if (isNurseUnderReview && item.path !== "/" && item.path !== "/account") {
           return false;
         }
 
         return true;
       }),
-    [isAuthenticated, isNurseUnderReview, roles],
+    [canOpenCareRequests, canOpenCreateCareRequest, isAuthenticated, isNurseUnderReview],
   );
 
   if (
     (requiresProfileCompletion && pathname !== "/register")
     || (isReady && operationalPath && !isAuthenticated)
-    || (isNurseUnderReview && operationalPath)
-    || (
-      isReady
-      && pathname === "/create-care-request"
-      && isAuthenticated
-      && !roles.includes("Client")
-      && !roles.includes("Admin")
-    )
+    || (!canOpenCareRequests && pathname.startsWith("/care-requests"))
+    || (isReady && pathname === "/create-care-request" && isAuthenticated && !canOpenCreateCareRequest)
   ) {
     return null;
   }
