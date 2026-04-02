@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,17 +6,41 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Alert,
   StyleSheet,
+  SafeAreaView,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { forgotPassword, validateEmail } from "@/src/api/auth";
+import { hapticFeedback } from "@/src/utils/haptics";
+import {
+  FORGOT_PASSWORD_SUCCESS_BODY,
+  FORGOT_PASSWORD_SUCCESS_INFO,
+  FORGOT_PASSWORD_SUCCESS_TITLE,
+  PASSWORD_RECOVERY_RESEND_COOLDOWN_SECONDS,
+  getForgotPasswordResendInfo,
+  getForgotPasswordResendLabel,
+} from "@/src/utils/passwordRecovery";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [emailError, setEmailError] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [requestError, setRequestError] = useState("");
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
+
+  useEffect(() => {
+    if (cooldownRemaining <= 0) {
+      return undefined;
+    }
+
+    const timer = setInterval(() => {
+      setCooldownRemaining((current) => (current <= 1 ? 0 : current - 1));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [cooldownRemaining]);
 
   const validateEmailField = (value: string) => {
     if (!value) {
@@ -28,7 +52,8 @@ export default function ForgotPasswordScreen() {
     }
   };
 
-  const handleSubmit = async () => {
+  const requestRecoveryCode = async () => {
+    setRequestError("");
     validateEmailField(email);
     if (!email || !validateEmail(email)) {
       return;
@@ -37,32 +62,25 @@ export default function ForgotPasswordScreen() {
     setIsLoading(true);
     try {
       await forgotPassword(email.trim());
-      Alert.alert(
-        "Código enviado",
-        "Si el correo está registrado, recibirás un código de 6 dígitos para restablecer tu contraseña.",
-        [
-          {
-            text: "Ir a ingresar código",
-            onPress: () => router.push({
-              pathname: "/reset-password",
-              params: { email: email.trim() }
-            }),
-          },
-        ]
-      );
+      setIsSuccess(true);
+      setCooldownRemaining(PASSWORD_RECOVERY_RESEND_COOLDOWN_SECONDS);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "No fue posible procesar la solicitud";
-      Alert.alert("Error", errorMsg);
+      setRequestError(errorMsg);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.contentContainer}>
       <TouchableOpacity 
         style={styles.backButton} 
-        onPress={() => router.back()}
+        onPress={() => {
+          hapticFeedback.light();
+          router.back();
+        }}
       >
         <Text style={styles.backButtonText}>← Volver</Text>
       </TouchableOpacity>
@@ -72,45 +90,92 @@ export default function ForgotPasswordScreen() {
         Ingresa tu correo electrónico y te enviaremos un código para restablecer tu acceso.
       </Text>
 
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Correo electrónico</Text>
-        <TextInput
-          style={[styles.input, emailError ? styles.inputError : null]}
-          placeholder="tu@correo.com"
-          value={email}
-          onChangeText={setEmail}
-          onBlur={() => validateEmailField(email)}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          editable={!isLoading}
-          placeholderTextColor="#999"
-        />
-        {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
-      </View>
+      {requestError ? <Text style={styles.errorBanner}>{requestError}</Text> : null}
 
-      <TouchableOpacity
-        style={[styles.button, isLoading ? styles.buttonDisabled : null]}
-        onPress={handleSubmit}
-        disabled={isLoading}
-      >
-        {isLoading ? (
-          <ActivityIndicator color="white" size="small" />
-        ) : (
-          <Text style={styles.buttonText}>Enviar código</Text>
-        )}
-      </TouchableOpacity>
-      
-      <TouchableOpacity 
-        onPress={() => router.push({
-          pathname: "/reset-password",
-          params: { email: email.trim() }
-        })}
-        style={styles.linkContainer}
-      >
-        <Text style={styles.linkText}>¿Ya tienes un código? </Text>
-        <Text style={styles.link}>Ingrésalo aquí</Text>
-      </TouchableOpacity>
+      {isSuccess ? (
+        <View style={styles.successCard}>
+          <Text style={styles.successTitle}>{FORGOT_PASSWORD_SUCCESS_TITLE}</Text>
+          <Text style={styles.successBody}>{FORGOT_PASSWORD_SUCCESS_BODY}</Text>
+          <Text style={styles.infoText}>{FORGOT_PASSWORD_SUCCESS_INFO}</Text>
+
+          <TouchableOpacity
+            style={[styles.button, isLoading ? styles.buttonDisabled : null]}
+            onPress={() => router.push({
+              pathname: "/reset-password",
+              params: { email: email.trim() }
+            })}
+            disabled={isLoading}
+          >
+            <Text style={styles.buttonText}>Ingresar código</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.secondaryButton, (isLoading || cooldownRemaining > 0) ? styles.buttonDisabled : null]}
+            onPress={() => {
+              hapticFeedback.light();
+              void requestRecoveryCode();
+            }}
+            disabled={isLoading || cooldownRemaining > 0}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#0066cc" size="small" />
+            ) : (
+              <Text style={styles.secondaryButtonText}>{getForgotPasswordResendLabel(cooldownRemaining)}</Text>
+            )}
+          </TouchableOpacity>
+
+          <Text style={styles.infoText}>{getForgotPasswordResendInfo(cooldownRemaining)}</Text>
+        </View>
+      ) : (
+        <>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Correo electrónico</Text>
+            <TextInput
+              style={[styles.input, emailError ? styles.inputError : null]}
+              placeholder="tu@correo.com"
+              value={email}
+              onChangeText={setEmail}
+              onBlur={() => validateEmailField(email)}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              editable={!isLoading}
+              placeholderTextColor="#999"
+            />
+            {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+          </View>
+
+          <TouchableOpacity
+            style={[styles.button, isLoading ? styles.buttonDisabled : null]}
+            onPress={() => {
+              hapticFeedback.light();
+              void requestRecoveryCode();
+            }}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="white" size="small" />
+            ) : (
+              <Text style={styles.buttonText}>Enviar código</Text>
+            )}
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            onPress={() => {
+              hapticFeedback.light();
+              router.push({
+                pathname: "/reset-password",
+                params: { email: email.trim() }
+              });
+            }}
+            style={styles.linkContainer}
+          >
+            <Text style={styles.linkText}>¿Ya tienes un código? </Text>
+            <Text style={styles.link}>Ingrésalo aquí</Text>
+          </TouchableOpacity>
+        </>
+      )}
     </ScrollView>
+  </SafeAreaView>
   );
 }
 
@@ -171,6 +236,41 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
   },
+  errorBanner: {
+    color: "#b00020",
+    backgroundColor: "#fdecea",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 18,
+    lineHeight: 20,
+  },
+  successCard: {
+    backgroundColor: "#f4f8fc",
+    borderRadius: 12,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: "#c9dff5",
+  },
+  successTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#0f3a5d",
+    marginBottom: 10,
+  },
+  successBody: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: "#29465b",
+    marginBottom: 12,
+  },
+  infoText: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: "#4c6478",
+    marginTop: 6,
+    marginBottom: 6,
+  },
   button: {
     backgroundColor: "#0066cc",
     paddingVertical: 14,
@@ -186,6 +286,20 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "white",
     fontSize: 16,
+    fontWeight: "600",
+  },
+  secondaryButton: {
+    borderWidth: 1,
+    borderColor: "#0066cc",
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    marginTop: 6,
+  },
+  secondaryButtonText: {
+    color: "#0066cc",
+    fontSize: 15,
     fontWeight: "600",
   },
   linkContainer: {

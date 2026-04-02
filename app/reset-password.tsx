@@ -11,14 +11,14 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { resetPassword, validateEmail, validatePassword } from "@/src/api/auth";
-import { useAuth } from "@/src/context/AuthContext";
-import { resolvePostAuthRoute } from "@/src/utils/authRedirect";
+import {
+  RESET_PASSWORD_HELP_TEXT,
+  buildPasswordResetSuccessAlert,
+} from "@/src/utils/passwordRecovery";
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
   const { email: initialEmail } = useLocalSearchParams<{ email: string }>();
-  const { completeOAuthLogin } = useAuth();
-
   const [email, setEmail] = useState(initialEmail || "");
   const [code, setCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -67,21 +67,16 @@ export default function ResetPasswordScreen() {
     setIsLoading(true);
     try {
       const response = await resetPassword(email.trim(), code.trim(), newPassword);
-      
-      Alert.alert(
-        "Éxito",
-        "Tu contraseña ha sido restablecida. Iniciando sesión...",
-        [
-          {
-            text: "Aceptar",
-            onPress: async () => {
-              // Sign in with the response
-              await completeOAuthLogin(response as any);
-              router.replace(resolvePostAuthRoute(response as any));
-            },
+      const successAlert = buildPasswordResetSuccessAlert(response.message);
+
+      Alert.alert(successAlert.title, successAlert.message, [
+        {
+          text: successAlert.actionLabel,
+          onPress: () => {
+            router.replace(successAlert.redirectPath);
           },
-        ]
-      );
+        },
+      ]);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "No fue posible restablecer la contraseña";
       Alert.alert("Error", errorMsg);
@@ -102,6 +97,9 @@ export default function ResetPasswordScreen() {
       <Text style={styles.title}>Restablecer contraseña</Text>
       <Text style={styles.subtitle}>
         Ingresa el código que recibiste y tu nueva contraseña.
+      </Text>
+      <Text style={styles.helperText}>
+        {RESET_PASSWORD_HELP_TEXT}
       </Text>
 
       <View style={styles.formGroup}>
@@ -206,6 +204,12 @@ const styles = StyleSheet.create({
   },
   formGroup: {
     marginBottom: 20,
+  },
+  helperText: {
+    fontSize: 13,
+    color: "#63788a",
+    marginBottom: 24,
+    lineHeight: 20,
   },
   label: {
     fontSize: 14,

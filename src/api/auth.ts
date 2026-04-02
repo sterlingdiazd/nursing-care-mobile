@@ -31,6 +31,10 @@ export interface AuthResponse {
   roles: string[];
 }
 
+export interface PasswordResetResponse {
+  message: string;
+}
+
 // HTTP Client
 const httpClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -132,9 +136,9 @@ export async function resetPassword(
   email: string,
   code: string,
   newPassword: string
-): Promise<AuthResponse> {
+): Promise<PasswordResetResponse> {
   try {
-    const response = await httpClient.post<AuthResponse>("/auth/reset-password", {
+    const response = await httpClient.post<PasswordResetResponse>("/auth/reset-password", {
       email,
       code,
       newPassword,
