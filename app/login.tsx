@@ -9,9 +9,10 @@ import {
   Alert,
   StyleSheet,
   Image,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Linking from "expo-linking";
 import { useAuth } from "@/src/context/AuthContext";
 import { validateEmail } from "@/src/api/auth";
@@ -44,8 +45,10 @@ function readOauthParams(url: string) {
 
 export default function LoginScreen() {
   const router = useRouter();
+  const searchParams = useLocalSearchParams();
   const { login, completeOAuthLogin, isLoading } = useAuth();
   const lastHandledUrlRef = useRef<string | null>(null);
+  const lastHandledOauthPayloadRef = useRef<string | null>(null);
 
   // Form state
   const [email, setEmail] = useState("");
@@ -98,32 +101,34 @@ export default function LoginScreen() {
   };
 
   useEffect(() => {
-    const handleOAuthUrl = async (url: string | null) => {
-      if (!url || lastHandledUrlRef.current === url) {
+    const handleOAuthParams = async (
+      rawParams: Record<string, string | string[] | undefined>,
+      sourceKey: string,
+    ) => {
+      if (lastHandledOauthPayloadRef.current === sourceKey) {
         return;
       }
 
-      const queryParams = readOauthParams(url);
-      const oauthStatus = getParamValue(queryParams.oauth);
+      const oauthStatus = getParamValue(rawParams.oauth);
 
       if (!oauthStatus) {
         return;
       }
 
-      lastHandledUrlRef.current = url;
+      lastHandledOauthPayloadRef.current = sourceKey;
 
       if (oauthStatus === "error") {
         Alert.alert(
           "Error con Google",
-          getParamValue(queryParams.message) || "No fue posible iniciar sesion con Google."
+          getParamValue(rawParams.message) || "No fue posible iniciar sesion con Google."
         );
         return;
       }
 
-      const token = getParamValue(queryParams.token);
-      const refreshToken = getParamValue(queryParams.refreshToken);
-      const emailFromRedirect = getParamValue(queryParams.email);
-      const roles = (getParamValue(queryParams.roles) || "")
+      const token = getParamValue(rawParams.token);
+      const refreshToken = getParamValue(rawParams.refreshToken);
+      const emailFromRedirect = getParamValue(rawParams.email);
+      const roles = (getParamValue(rawParams.roles) || "")
         .split(",")
         .map((role) => role.trim())
         .filter(Boolean);
@@ -136,33 +141,61 @@ export default function LoginScreen() {
       const response: AuthResponse = {
         token,
         refreshToken,
-        expiresAtUtc: getParamValue(queryParams.expiresAtUtc) ?? null,
-        userId: getParamValue(queryParams.userId) ?? "",
+        expiresAtUtc: getParamValue(rawParams.expiresAtUtc) ?? null,
+        userId: getParamValue(rawParams.userId) ?? "",
         email: emailFromRedirect,
         roles,
-        requiresProfileCompletion: getParamValue(queryParams.requiresProfileCompletion) === "true",
-        requiresAdminReview: getParamValue(queryParams.requiresAdminReview) === "true",
+        requiresProfileCompletion: getParamValue(rawParams.requiresProfileCompletion) === "true",
+        requiresAdminReview: getParamValue(rawParams.requiresAdminReview) === "true",
       };
 
       await completeOAuthLogin(response);
+      const destination = response.requiresProfileCompletion ? "/register" : "/care-requests";
+
+      if (Platform.OS === "web") {
+        router.replace(destination);
+        return;
+      }
+
       Alert.alert(
         response.requiresProfileCompletion ? "Completa tu registro" : "Inicio de sesion exitoso",
         response.requiresProfileCompletion
           ? "Tu cuenta de Google quedo creada, pero debes completar el registro antes de usar la app."
           : "Redirigiendo al panel...",
         [
-        {
-          text: "Aceptar",
-          onPress: () => router.replace(response.requiresProfileCompletion ? "/register" : "/care-requests"),
-        },
-      ]);
+          {
+            text: "Aceptar",
+            onPress: () => router.replace(destination),
+          },
+        ],
+      );
     };
 
-    Linking.getInitialURL()
-      .then((url) => handleOAuthUrl(url))
-      .catch((error) => {
-        console.error("Failed to process initial OAuth URL:", error);
-      });
+    const handleOAuthUrl = async (url: string | null) => {
+      if (!url || lastHandledUrlRef.current === url) {
+        return;
+      }
+
+      lastHandledUrlRef.current = url;
+      const queryParams = readOauthParams(url);
+      const sourceKey = url;
+      await handleOAuthParams(queryParams, sourceKey);
+    };
+
+    const hasQueryOauth = Boolean(getParamValue(searchParams.oauth));
+    if (hasQueryOauth) {
+      const normalizedParams = Object.fromEntries(
+        Object.entries(searchParams).map(([key, value]) => [key, value]),
+      );
+      const sourceKey = JSON.stringify(normalizedParams);
+      void handleOAuthParams(normalizedParams, sourceKey);
+    } else {
+      Linking.getInitialURL()
+        .then((url) => handleOAuthUrl(url))
+        .catch((error) => {
+          console.error("Failed to process initial OAuth URL:", error);
+        });
+    }
 
     const subscription = Linking.addEventListener("url", ({ url }) => {
       void handleOAuthUrl(url);
@@ -171,7 +204,7 @@ export default function LoginScreen() {
     return () => {
       subscription.remove();
     };
-  }, [completeOAuthLogin, router]);
+  }, [completeOAuthLogin, router, searchParams]);
 
   const handleGoogleSignIn = async () => {
     const certificateWarning = getLocalHttpsCertificateWarning();

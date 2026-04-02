@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Platform } from "react-native";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 
@@ -13,6 +14,13 @@ function toSearchParamValue(value: string | string[] | undefined) {
 export default function LoginHtmlRedirectScreen() {
   const params = useLocalSearchParams();
   useEffect(() => {
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      const search = window.location.search || "";
+      const hash = window.location.hash || "";
+      window.location.replace(`/login${search}${hash}`);
+      return;
+    }
+
     const redirectParams: Record<string, string> = {};
 
     Object.entries(params).forEach(([key, value]) => {
