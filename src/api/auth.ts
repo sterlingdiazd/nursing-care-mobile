@@ -37,7 +37,7 @@ export interface PasswordResetResponse {
 
 // HTTP Client
 const httpClient: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: `${API_BASE_URL.replace(/\/$/, "")}/api`,
   headers: {
     "Content-Type": "application/json",
   },

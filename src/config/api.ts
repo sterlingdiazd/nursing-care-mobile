@@ -2,10 +2,10 @@ import Constants from "expo-constants";
 import * as Linking from "expo-linking";
 
 const getApiBaseUrl = () => {
-  // Priority 1: User-set environment variable (e.g. for Azure)
+  // Priority 1: User-set environment variable
   const envUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
-  if (envUrl && (envUrl.includes("azurewebsites.net") || envUrl.includes("sslip.io"))) {
-    return envUrl;
+  if (envUrl?.trim()) {
+    return envUrl.trim();
   }
 
   // Priority 2: Dynamic detection of the Metro Host

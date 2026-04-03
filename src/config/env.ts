@@ -3,7 +3,10 @@
  */
 
 // API Base URL - adjust based on environment
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:5254";
+export const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_BASE_URL ||
+  process.env.EXPO_PUBLIC_API_URL ||
+  "http://localhost:5254";
 
 // App Configuration
 export const APP_CONFIG = {
