@@ -19,6 +19,7 @@ import { validateEmail } from "@/src/api/auth";
 import { AuthResponse } from "@/src/types/auth";
 import { resolvePostAuthRoute } from "@/src/utils/authRedirect";
 import { hapticFeedback } from "@/src/utils/haptics";
+import { authTestIds, testProps } from "@/src/testing/authTestIds";
 import {
   getGoogleOAuthStartUrl,
   getLocalHttpsCertificateWarning,
@@ -223,7 +224,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} {...testProps(authTestIds.login.screen)}>
       <ScrollView contentContainerStyle={styles.contentContainer}>
       <View style={styles.logoHost}>
         <Image 
@@ -241,6 +242,7 @@ export default function LoginScreen() {
       <View style={styles.formGroup}>
         <Text style={styles.label}>Correo</Text>
         <TextInput
+          {...testProps(authTestIds.login.emailInput)}
           style={[styles.input, emailError ? styles.inputError : null]}
           placeholder="tu@correo.com"
           value={email}
@@ -251,13 +253,14 @@ export default function LoginScreen() {
           editable={!isLoading}
           placeholderTextColor="#999"
         />
-        {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+        {emailError ? <Text style={styles.errorText} {...testProps(authTestIds.login.emailError)}>{emailError}</Text> : null}
       </View>
 
       {/* Password Input */}
       <View style={styles.formGroup}>
         <Text style={styles.label}>Contrasena</Text>
         <TextInput
+          {...testProps(authTestIds.login.passwordInput)}
           style={[styles.input, passwordError ? styles.inputError : null]}
           placeholder="Ingresa tu contrasena"
           value={password}
@@ -267,10 +270,11 @@ export default function LoginScreen() {
           editable={!isLoading}
           placeholderTextColor="#999"
         />
-        {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+        {passwordError ? <Text style={styles.errorText} {...testProps(authTestIds.login.passwordError)}>{passwordError}</Text> : null}
       </View>
 
       <TouchableOpacity
+        {...testProps(authTestIds.login.forgotPasswordLink)}
         onPress={() => {
           hapticFeedback.light();
           router.push("/forgot-password" as any);
@@ -283,6 +287,7 @@ export default function LoginScreen() {
 
       {/* Login Button */}
       <TouchableOpacity
+        {...testProps(authTestIds.login.submitButton)}
         style={[styles.button, isLoading ? styles.buttonDisabled : null]}
         onPress={() => {
           hapticFeedback.light();
@@ -304,6 +309,7 @@ export default function LoginScreen() {
       </View>
 
       <TouchableOpacity
+        {...testProps(authTestIds.login.googleButton)}
         style={[styles.secondaryButton, isLoading ? styles.buttonDisabled : null]}
         onPress={() => {
           hapticFeedback.light();
@@ -318,6 +324,7 @@ export default function LoginScreen() {
       <View style={styles.registerLinkContainer}>
         <Text style={styles.registerLinkText}>¿No tienes cuenta? </Text>
         <TouchableOpacity
+          {...testProps(authTestIds.login.registerLink)}
           onPress={() => {
             hapticFeedback.light();
             router.push("/register" as any);

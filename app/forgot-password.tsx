@@ -20,6 +20,7 @@ import {
   getForgotPasswordResendInfo,
   getForgotPasswordResendLabel,
 } from "@/src/utils/passwordRecovery";
+import { authTestIds, testProps } from "@/src/testing/authTestIds";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -73,7 +74,7 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} {...testProps(authTestIds.forgotPassword.screen)}>
       <ScrollView contentContainerStyle={styles.contentContainer}>
       <TouchableOpacity 
         style={styles.backButton} 
@@ -90,15 +91,16 @@ export default function ForgotPasswordScreen() {
         Ingresa tu correo electrónico y te enviaremos un código para restablecer tu acceso.
       </Text>
 
-      {requestError ? <Text style={styles.errorBanner}>{requestError}</Text> : null}
+      {requestError ? <Text style={styles.errorBanner} {...testProps(authTestIds.forgotPassword.errorBanner)}>{requestError}</Text> : null}
 
       {isSuccess ? (
-        <View style={styles.successCard}>
+        <View style={styles.successCard} {...testProps(authTestIds.forgotPassword.successCard)}>
           <Text style={styles.successTitle}>{FORGOT_PASSWORD_SUCCESS_TITLE}</Text>
           <Text style={styles.successBody}>{FORGOT_PASSWORD_SUCCESS_BODY}</Text>
           <Text style={styles.infoText}>{FORGOT_PASSWORD_SUCCESS_INFO}</Text>
 
           <TouchableOpacity
+            {...testProps(authTestIds.forgotPassword.enterCodeButton)}
             style={[styles.button, isLoading ? styles.buttonDisabled : null]}
             onPress={() => router.push({
               pathname: "/reset-password",
@@ -110,6 +112,7 @@ export default function ForgotPasswordScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
+            {...testProps(authTestIds.forgotPassword.resendButton)}
             style={[styles.secondaryButton, (isLoading || cooldownRemaining > 0) ? styles.buttonDisabled : null]}
             onPress={() => {
               hapticFeedback.light();
@@ -131,6 +134,7 @@ export default function ForgotPasswordScreen() {
           <View style={styles.formGroup}>
             <Text style={styles.label}>Correo electrónico</Text>
             <TextInput
+              {...testProps(authTestIds.forgotPassword.emailInput)}
               style={[styles.input, emailError ? styles.inputError : null]}
               placeholder="tu@correo.com"
               value={email}
@@ -141,10 +145,11 @@ export default function ForgotPasswordScreen() {
               editable={!isLoading}
               placeholderTextColor="#999"
             />
-            {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+            {emailError ? <Text style={styles.errorText} {...testProps(authTestIds.forgotPassword.emailError)}>{emailError}</Text> : null}
           </View>
 
           <TouchableOpacity
+            {...testProps(authTestIds.forgotPassword.submitButton)}
             style={[styles.button, isLoading ? styles.buttonDisabled : null]}
             onPress={() => {
               hapticFeedback.light();
