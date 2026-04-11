@@ -30,6 +30,7 @@ import {
 import { getNurseProfileOptions } from "@/src/services/catalogOptionsService";
 import type { CatalogCodeNameOption } from "@/src/types/catalog";
 import { hapticFeedback } from "@/src/utils/haptics";
+import { authTestIds, testProps } from "@/src/testing/authTestIds";
 
 const clientProfileCopy =
   "Perfil de cliente seleccionado. No hay campos adicionales por completar en esta etapa y el acceso operativo queda disponible cuando termine el registro.";
@@ -278,7 +279,7 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} {...testProps(authTestIds.register.screen)}>
       <ScrollView contentContainerStyle={styles.contentContainer}>
       {/* Title */}
       <Text style={styles.title}>{isProfileCompletionMode ? "Completar registro" : "Crear cuenta"}</Text>

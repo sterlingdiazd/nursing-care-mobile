@@ -10,6 +10,9 @@ export const authTestIds = {
     emailError: "auth-login-email-error",
     passwordError: "auth-login-password-error",
   },
+  register: {
+    screen: "auth-register-screen",
+  },
   forgotPassword: {
     screen: "auth-forgot-password-screen",
     emailInput: "auth-forgot-password-email-input",
