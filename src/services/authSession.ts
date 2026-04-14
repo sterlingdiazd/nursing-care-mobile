@@ -15,8 +15,35 @@ export interface StoredAuthSession {
 }
 
 const STORAGE_KEY = "authSession";
+const WEB_AUTOMATION_SEED_KEY = "automationAuthSessionSeed";
 let cachedSession: StoredAuthSession | null = null;
 const listeners = new Set<() => void>();
+
+function readWebSeedSession() {
+  if (typeof window === "undefined" || !window.localStorage) {
+    return null;
+  }
+
+  const candidateKeys = [WEB_AUTOMATION_SEED_KEY, STORAGE_KEY];
+
+  for (const key of candidateKeys) {
+    const rawSeed = window.localStorage.getItem(key);
+    if (!rawSeed) {
+      continue;
+    }
+
+    try {
+      return {
+        key,
+        session: JSON.parse(rawSeed) as Partial<StoredAuthSession> & { token?: string },
+      };
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
+}
 
 function decodeBase64Url(input: string) {
   const normalized = input.replace(/-/g, "+").replace(/_/g, "/");
@@ -53,7 +80,15 @@ export async function loadAuthSession() {
     return cachedSession;
   }
 
-  const raw = await AsyncStorage.getItem(STORAGE_KEY);
+  let raw = await AsyncStorage.getItem(STORAGE_KEY);
+  const webSeed = readWebSeedSession();
+  if (webSeed) {
+    raw = JSON.stringify(webSeed.session);
+    await AsyncStorage.setItem(STORAGE_KEY, raw);
+    if (typeof window !== "undefined" && window.localStorage) {
+      window.localStorage.removeItem(webSeed.key);
+    }
+  }
 
   if (!raw) {
     return null;

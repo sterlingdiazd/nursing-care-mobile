@@ -121,8 +121,10 @@ export default function AccountScreen() {
             onPress={() => {
               hapticFeedback.light();
               logClientEvent("mobile.ui", "Account screen logout tapped");
-              void logout();
-              router.replace("/");
+              void (async () => {
+                await logout();
+                router.replace("/");
+              })();
             }}
             style={({ pressed }) => [
               styles.dangerButton,
