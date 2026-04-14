@@ -10,6 +10,7 @@ import {
   getLocalHttpsCertificateWarning,
   getMobileApiBaseUrl,
 } from "@/src/services/authService";
+import { authTestIds, testProps } from "@/src/testing/authTestIds";
 import { formatRoleLabels } from "@/src/utils/roleLabels";
 import { hapticFeedback } from "@/src/utils/haptics";
 
@@ -70,6 +71,7 @@ export default function AccountScreen() {
         </Text>
 
         <Pressable
+          {...testProps(authTestIds.account.googleButton)}
           onPress={() => {
             void onGoogleLogin();
           }}
@@ -115,6 +117,7 @@ export default function AccountScreen() {
 
         {isAuthenticated && (
           <Pressable
+            {...testProps(authTestIds.account.logoutButton)}
             onPress={() => {
               hapticFeedback.light();
               logClientEvent("mobile.ui", "Account screen logout tapped");

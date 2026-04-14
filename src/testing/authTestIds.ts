@@ -54,6 +54,11 @@ export const authTestIds = {
     codeError: "auth-reset-password-code-error",
     passwordError: "auth-reset-password-password-error",
   },
+  account: {
+    screen: "account-screen",
+    googleButton: "account-google-oauth-button",
+    logoutButton: "account-logout-button",
+  },
 } as const;
 
 export function testProps(testId: string) {
