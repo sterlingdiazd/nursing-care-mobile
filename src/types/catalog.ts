@@ -43,3 +43,10 @@ export interface NurseProfileOptionsResponse {
   specialties: CatalogCodeNameOption[];
   categories: CatalogCodeNameOption[];
 }
+
+export interface AvailableNurseOption {
+  userId: string;
+  displayName: string;
+  specialty: string;
+  category: string;
+}

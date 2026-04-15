@@ -1,5 +1,9 @@
 import { requestJson } from "@/src/services/httpClient";
-import type { CatalogOptionsResponse, NurseProfileOptionsResponse } from "@/src/types/catalog";
+import type {
+  AvailableNurseOption,
+  CatalogOptionsResponse,
+  NurseProfileOptionsResponse,
+} from "@/src/types/catalog";
 
 export async function getCareRequestOptions(token: string) {
   return requestJson<CatalogOptionsResponse>({
@@ -15,5 +19,13 @@ export async function getNurseProfileOptions() {
     path: "/api/catalog/nurse-profile-options",
     method: "GET",
     auth: false,
+  });
+}
+
+export async function getAvailableNurses() {
+  return requestJson<AvailableNurseOption[]>({
+    path: "/api/catalog/available-nurses",
+    method: "GET",
+    auth: true,
   });
 }
