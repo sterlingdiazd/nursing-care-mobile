@@ -1,4 +1,4 @@
-import { createElement, useEffect, useMemo, useState } from "react";
+import { createElement, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -38,7 +38,9 @@ export default function CreateCareRequestScreen() {
     medicalSuppliesCost: undefined,
   });
   const [isLoading, setIsLoading] = useState(false);
+  const isSubmittingRef = useRef(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [existingSameUnitTypeCount, setExistingSameUnitTypeCount] = useState<number>(0);
   const [catalogOptions, setCatalogOptions] = useState<CatalogOptionsResponse | null>(null);
   const [catalogLoading, setCatalogLoading] = useState(true);
@@ -165,6 +167,7 @@ export default function CreateCareRequestScreen() {
     setShowSuggestedNurseOptions(false);
     setDraftCareRequestType(firstType);
     setSuccessMessage(null);
+    setFormError(null);
   };
 
   const openDatePicker = () => {
@@ -199,53 +202,66 @@ export default function CreateCareRequestScreen() {
     }
   };
 
+  const showAlert = (title: string, message: string, onOk?: () => void) => {
+    if (Platform.OS === "web") {
+      // On web, Alert.alert is a no-op; use window.alert as fallback for blocking feedback
+      if (typeof window !== "undefined" && window.alert) {
+        window.alert(`${title}\n${message}`);
+      }
+      onOk?.();
+    } else {
+      Alert.alert(title, message, onOk ? [{ text: "Aceptar", onPress: onOk }] : undefined);
+    }
+  };
+
   const onSubmit = async () => {
+    // Synchronous guard to prevent duplicate submissions
+    if (isSubmittingRef.current) return;
+
     if (!form.careRequestDescription.trim() || !form.careRequestType) {
       logClientEvent("mobile.ui", "Solicitud bloqueada por validacion", {
         descriptionPresent: Boolean(form.careRequestDescription.trim()),
         careRequestTypePresent: Boolean(form.careRequestType),
       });
-      Alert.alert(
-        "Validacion",
-        "La descripcion de la solicitud y el tipo de servicio son obligatorios.",
-      );
+      const msg = "La descripcion de la solicitud y el tipo de servicio son obligatorios.";
+      setFormError(msg);
+
+      showAlert("Validacion", msg);
       return;
     }
 
     if (!canCreateRequest) {
-      Alert.alert(
-        "Accion no permitida",
-        "Solo los perfiles de cliente o administracion pueden crear solicitudes de cuidado.",
-      );
+      const msg = "Solo los perfiles de cliente o administracion pueden crear solicitudes de cuidado.";
+      setFormError(msg);
+
+      showAlert("Accion no permitida", msg);
       return;
     }
 
     if (!isReady) {
       logClientEvent("mobile.ui", "Solicitud bloqueada mientras la sesion termina de cargar");
-      Alert.alert(
-        "Sesion cargando",
-        "La sesion todavia se esta preparando. Espera un momento e intenta de nuevo.",
-      );
+      const msg = "La sesion todavia se esta preparando. Espera un momento e intenta de nuevo.";
+      setFormError(msg);
+
+      showAlert("Sesion cargando", msg);
       return;
     }
 
     if (!token || !userId) {
       logClientEvent("mobile.ui", "Solicitud bloqueada por sesion incompleta");
-      Alert.alert(
-        "Autenticacion requerida",
-        "Inicia sesion nuevamente antes de crear una solicitud.",
-      );
-      return;
-    }
+      const msg = "Inicia sesion nuevamente antes de crear una solicitud.";
+      setFormError(msg);
 
-    if (isLoading) {
+      showAlert("Autenticacion requerida", msg);
       return;
     }
 
     const correlationId = createCorrelationId();
 
+    isSubmittingRef.current = true;
     setIsLoading(true);
     setSuccessMessage(null);
+    setFormError(null);
     logClientEvent("mobile.ui", "Formulario de solicitud enviado", {
       correlationId,
       userId,
@@ -266,19 +282,10 @@ export default function CreateCareRequestScreen() {
         userId,
         createdId: response.id,
       });
-      setSuccessMessage(`Solicitud creada correctamente: ${response.id}`);
-      Alert.alert("Solicitud creada", `ID: ${response.id}`, [
-        {
-          text: "Aceptar",
-          onPress: () => {
-            resetForm();
-            router.push({
-              pathname: "/care-requests/[id]",
-              params: { id: response.id },
-            } as never);
-          },
-        },
-      ]);
+
+      // Reset form and redirect immediately (don't depend on Alert callback)
+      resetForm();
+      router.push("/care-requests" as any);
     } catch (error: any) {
       const errorMessage = error.message || "No fue posible crear la solicitud";
       logClientEvent(
@@ -291,8 +298,11 @@ export default function CreateCareRequestScreen() {
         },
         "error",
       );
-      Alert.alert("Error", errorMessage);
+      setFormError(errorMessage);
+
+      showAlert("Error", errorMessage);
     } finally {
+      isSubmittingRef.current = false;
       setIsLoading(false);
     }
   };
@@ -382,6 +392,19 @@ export default function CreateCareRequestScreen() {
       actions={null}
     >
       <View style={styles.flow}>
+          {!!formError && (
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorBannerText}>{formError}</Text>
+              <Pressable onPress={() => setFormError(null)}>
+                <Text style={styles.errorBannerDismiss}>✕</Text>
+              </Pressable>
+            </View>
+          )}
+          {!!successMessage && (
+            <View style={styles.successBanner}>
+              <Text style={styles.successBannerText}>{successMessage}</Text>
+            </View>
+          )}
           <View style={styles.card}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Datos de la solicitud</Text>
@@ -952,5 +975,42 @@ const styles = StyleSheet.create({
   },
   buttonPressed: {
     opacity: 0.88,
+  },
+  errorBanner: {
+    backgroundColor: "#fef2f2",
+    borderWidth: 1,
+    borderColor: "#fca5a5",
+    borderRadius: 12,
+    padding: 14,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  errorBannerText: {
+    color: "#991b1b",
+    fontWeight: "700",
+    fontSize: 14,
+    lineHeight: 20,
+    flex: 1,
+  },
+  errorBannerDismiss: {
+    color: "#991b1b",
+    fontSize: 18,
+    fontWeight: "800",
+    paddingHorizontal: 4,
+  },
+  successBanner: {
+    backgroundColor: "#f0fdf4",
+    borderWidth: 1,
+    borderColor: "#86efac",
+    borderRadius: 12,
+    padding: 14,
+  },
+  successBannerText: {
+    color: "#166534",
+    fontWeight: "700",
+    fontSize: 14,
+    lineHeight: 20,
   },
 });
