@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
@@ -10,6 +10,8 @@ import {
   type CreateAdminCareRequestDto,
   type AdminCareRequestClientOptionDto,
 } from "@/src/services/adminPortalService";
+import { getAvailableNurses } from "@/src/services/catalogOptionsService";
+import type { AvailableNurseOption } from "@/src/types/catalog";
 
 export default function CreateAdminCareRequestScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
@@ -39,6 +41,9 @@ export default function CreateAdminCareRequestScreen() {
   const [clients, setClients] = useState<AdminCareRequestClientOptionDto[]>([]);
   const [showClientPicker, setShowClientPicker] = useState(false);
   const [selectedClient, setSelectedClient] = useState<AdminCareRequestClientOptionDto | null>(null);
+  const [nurses, setNurses] = useState<AvailableNurseOption[]>([]);
+  const [nurseLookupLoading, setNurseLookupLoading] = useState(false);
+  const [showNursePicker, setShowNursePicker] = useState(false);
 
   useEffect(() => {
     if (!isReady) return;
@@ -63,6 +68,29 @@ export default function CreateAdminCareRequestScreen() {
     }, 300);
     return () => clearTimeout(timer);
   }, [clientSearch]);
+
+  useEffect(() => {
+    setNurseLookupLoading(true);
+    void getAvailableNurses()
+      .then((result) => setNurses(result))
+      .catch(() => setNurses([]))
+      .finally(() => setNurseLookupLoading(false));
+  }, []);
+
+  const filteredNurses = useMemo(() => {
+    const query = form.suggestedNurse.trim().toLocaleLowerCase();
+    if (!query) {
+      return nurses.slice(0, 8);
+    }
+
+    return nurses
+      .filter((nurse) =>
+        [nurse.displayName, nurse.specialty, nurse.category]
+          .filter(Boolean)
+          .some((value) => value.toLocaleLowerCase().includes(query)),
+      )
+      .slice(0, 8);
+  }, [form.suggestedNurse, nurses]);
 
   const validateStep1 = () => {
     const newErrors: Record<string, string> = {};
@@ -218,8 +246,42 @@ export default function CreateAdminCareRequestScreen() {
               style={styles.input}
               placeholder="Nombre de la enfermera (opcional)"
               value={form.suggestedNurse}
-              onChangeText={(text) => setForm({ ...form, suggestedNurse: text })}
+              onChangeText={(text) => {
+                setForm({ ...form, suggestedNurse: text });
+                setShowNursePicker(true);
+              }}
+              onFocus={() => setShowNursePicker(true)}
             />
+            {showNursePicker && (
+              <View style={styles.clientPicker}>
+                {nurseLookupLoading ? (
+                  <View style={styles.autocompleteLoadingRow}>
+                    <ActivityIndicator color="#3b82f6" />
+                    <Text style={styles.autocompleteHelperText}>Cargando enfermeras activas...</Text>
+                  </View>
+                ) : filteredNurses.length > 0 ? (
+                  filteredNurses.map((nurse) => (
+                    <Pressable
+                      key={nurse.userId}
+                      style={styles.clientOption}
+                      onPress={() => {
+                        setForm({ ...form, suggestedNurse: nurse.displayName });
+                        setShowNursePicker(false);
+                      }}
+                    >
+                      <Text style={styles.clientOptionName}>{nurse.displayName}</Text>
+                      <Text style={styles.clientOptionEmail}>
+                        {[nurse.specialty, nurse.category].filter(Boolean).join(" • ")}
+                      </Text>
+                    </Pressable>
+                  ))
+                ) : (
+                  <View style={styles.autocompleteLoadingRow}>
+                    <Text style={styles.autocompleteHelperText}>No hay coincidencias</Text>
+                  </View>
+                )}
+              </View>
+            )}
 
             <Text style={styles.label}>Fecha programada</Text>
             <TextInput
@@ -315,6 +377,8 @@ const styles = StyleSheet.create({
   clientOptionName: { fontSize: 15, fontWeight: "700", color: "#102a43" },
   clientOptionEmail: { fontSize: 13, color: "#52637a", marginTop: 2 },
   clientOptionId: { fontSize: 12, color: "#7c2d12", marginTop: 2 },
+  autocompleteLoadingRow: { flexDirection: "row", alignItems: "center", gap: 8, padding: 12 },
+  autocompleteHelperText: { fontSize: 13, color: "#52637a" },
   actions: { flexDirection: "row", gap: 8, marginTop: 16 },
   button: { flex: 1, backgroundColor: "#f0f4f8", borderRadius: 12, paddingVertical: 14, alignItems: "center" },
   buttonText: { color: "#102a43", fontWeight: "700", fontSize: 16 },
