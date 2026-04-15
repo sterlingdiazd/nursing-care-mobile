@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
@@ -92,7 +92,10 @@ export default function AdminCreateClientScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!validate()) return;
+    if (!validate()) {
+      setError("Por favor revise los campos en rojo.");
+      return;
+    }
 
     try {
       setError(null);
@@ -134,32 +137,38 @@ export default function AdminCreateClientScreen() {
     >
       {!!error && <Text style={styles.error}>{error}</Text>}
 
-      <ScrollView>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Información Personal</Text>
 
-          <Text style={styles.label}>Nombre *</Text>
-          <TextInput
-            style={[styles.input, errors.name ? styles.inputError : undefined]}
-            placeholder="Nombre del cliente"
-            value={form.name}
-            onChangeText={(text) => setForm({ ...form, name: sanitizeTextOnlyInput(text) })}
-          />
-          {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
-
-          <Text style={styles.label}>Apellido *</Text>
-          <TextInput
-            style={[styles.input, errors.lastName ? styles.inputError : undefined]}
-            placeholder="Apellido del cliente"
-            value={form.lastName}
-            onChangeText={(text) => setForm({ ...form, lastName: sanitizeTextOnlyInput(text) })}
-          />
-          {errors.lastName && <Text style={styles.errorText}>{errors.lastName}</Text>}
+          <View style={styles.row}>
+            <View style={styles.col}>
+              <Text style={styles.label}>Nombre *</Text>
+              <TextInput
+                style={[styles.input, errors.name ? styles.inputError : undefined]}
+                placeholder="Nombre"
+                value={form.name}
+                onChangeText={(text) => setForm({ ...form, name: sanitizeTextOnlyInput(text) })}
+              />
+            </View>
+            <View style={styles.col}>
+              <Text style={styles.label}>Apellido *</Text>
+              <TextInput
+                style={[styles.input, errors.lastName ? styles.inputError : undefined]}
+                placeholder="Apellido"
+                value={form.lastName}
+                onChangeText={(text) => setForm({ ...form, lastName: sanitizeTextOnlyInput(text) })}
+              />
+            </View>
+          </View>
+          {(errors.name || errors.lastName) && (
+            <Text style={styles.errorText}>Tanto el nombre como el apellido son obligatorios y deben ser válidos.</Text>
+          )}
 
           <Text style={styles.label}>Número de identificación *</Text>
           <TextInput
             style={[styles.input, errors.identificationNumber ? styles.inputError : undefined]}
-            placeholder="Número de identificación"
+            placeholder="Número de cédula/pasaporte"
             value={form.identificationNumber}
             onChangeText={(text) => setForm({ ...form, identificationNumber: sanitizeDigitsOnlyInput(text, 11) })}
             keyboardType="number-pad"
@@ -170,7 +179,7 @@ export default function AdminCreateClientScreen() {
           <Text style={styles.label}>Teléfono *</Text>
           <TextInput
             style={[styles.input, errors.phone ? styles.inputError : undefined]}
-            placeholder="Número de teléfono"
+            placeholder="Ej: 8091234567"
             value={form.phone}
             onChangeText={(text) => setForm({ ...form, phone: sanitizeDigitsOnlyInput(text, 10) })}
             keyboardType="phone-pad"
@@ -190,31 +199,42 @@ export default function AdminCreateClientScreen() {
           />
           {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
 
-          <Text style={styles.label}>Contraseña *</Text>
-          <TextInput
-            style={[styles.input, errors.password ? styles.inputError : undefined]}
-            placeholder="Mínimo 8 caracteres"
-            value={form.password}
-            onChangeText={(text) => setForm({ ...form, password: text })}
-            secureTextEntry
-          />
-          {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+          <View style={styles.row}>
+             <View style={styles.col}>
+                <Text style={styles.label}>Contraseña *</Text>
+                <TextInput
+                  style={[styles.input, errors.password ? styles.inputError : undefined]}
+                  placeholder="Mínimo 8"
+                  value={form.password}
+                  onChangeText={(text) => setForm({ ...form, password: text })}
+                  secureTextEntry
+                />
+             </View>
+             <View style={styles.col}>
+                <Text style={styles.label}>Confirmar *</Text>
+                <TextInput
+                  style={[styles.input, errors.confirmPassword ? styles.inputError : undefined]}
+                  placeholder="Confirmar"
+                  value={form.confirmPassword}
+                  onChangeText={(text) => setForm({ ...form, confirmPassword: text })}
+                  secureTextEntry
+                />
+             </View>
+          </View>
+          {(errors.password || errors.confirmPassword) && (
+            <Text style={styles.errorText}>Revise que las contraseñas coincidan y tengan mínimo 8 caracteres.</Text>
+          )}
 
-          <Text style={styles.label}>Confirmar contraseña *</Text>
-          <TextInput
-            style={[styles.input, errors.confirmPassword ? styles.inputError : undefined]}
-            placeholder="Repetir contraseña"
-            value={form.confirmPassword}
-            onChangeText={(text) => setForm({ ...form, confirmPassword: text })}
-            secureTextEntry
-          />
-          {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
         </View>
+
+        {/* Spacer for sticky footer */}
+        <View style={{height: 80}} />
       </ScrollView>
 
-      <View style={styles.actions}>
+      {/* STICKY FOOTER */}
+      <View style={styles.stickyFooter}>
         <Pressable style={styles.buttonPrimary} onPress={handleSubmit} disabled={submitting}>
-          <Text style={styles.buttonPrimaryText}>{submitting ? "Creando..." : "Crear cliente"}</Text>
+          <Text style={styles.buttonPrimaryText}>{submitting ? "Procesando..." : "Registrar Cliente"}</Text>
         </Pressable>
       </View>
     </MobileWorkspaceShell>
@@ -223,13 +243,18 @@ export default function AdminCreateClientScreen() {
 
 const styles = StyleSheet.create({
   error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
+  scrollContent: { paddingBottom: 24 },
   card: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
-  cardTitle: { fontSize: 18, fontWeight: "800", color: "#102a43", marginBottom: 8 },
+  cardTitle: { fontSize: 18, fontWeight: "800", color: "#102a43", marginBottom: 6 },
   label: { fontSize: 14, fontWeight: "700", color: "#7c2d12", marginTop: 12, marginBottom: 6 },
   input: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#cbd5e0", borderRadius: 12, padding: 12, fontSize: 15 },
   inputError: { borderColor: "#c00" },
   errorText: { color: "#dc2626", fontSize: 12, marginTop: 4 },
-  actions: { marginTop: 16 },
-  buttonPrimary: { backgroundColor: "#3b82f6", borderRadius: 12, paddingVertical: 14, alignItems: "center" },
-  buttonPrimaryText: { color: "#ffffff", fontWeight: "700", fontSize: 16 },
+  
+  row: { flexDirection: "row", gap: 8 },
+  col: { flex: 1 },
+
+  stickyFooter: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingTop: 12, paddingBottom: Platform.OS === "ios" ? 32 : 16, backgroundColor: "#ffffff", borderTopWidth: 1, borderTopColor: "#e2e8f0", shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 12 },
+  buttonPrimary: { backgroundColor: "#3b82f6", borderRadius: 12, paddingVertical: 16, alignItems: "center" },
+  buttonPrimaryText: { color: "#ffffff", fontWeight: "800", fontSize: 16 },
 });

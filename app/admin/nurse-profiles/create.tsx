@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
@@ -9,9 +9,10 @@ import {
   type CreateNurseProfileRequest,
 } from "@/src/services/adminPortalService";
 
+const CATEGORIES = ["Auxiliar", "Técnico", "Profesional", "Especialista"];
+
 export default function AdminCreateNurseProfileScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
-  const [step, setStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -23,16 +24,20 @@ export default function AdminCreateNurseProfileScreen() {
     email: "",
     password: "",
     confirmPassword: "",
-    hireDate: "",
+    hireDate: new Date().toISOString().split("T")[0],
     specialty: "",
     licenseId: "",
     bankName: "",
     accountNumber: "",
-    category: "",
-    isOperationallyActive: false,
+    category: CATEGORIES[0],
+    isOperationallyActive: true,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // UI States
+  const [showBankingInfo, setShowBankingInfo] = useState(false);
+  const [customCategory, setCustomCategory] = useState("");
 
   useEffect(() => {
     if (!isReady) return;
@@ -41,50 +46,40 @@ export default function AdminCreateNurseProfileScreen() {
     if (!roles.includes("ADMIN")) return void router.replace("/");
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles]);
 
-  const validateStep1 = () => {
+  const validateAll = () => {
     const newErrors: Record<string, string> = {};
     if (!form.name.trim()) newErrors.name = "El nombre es obligatorio";
     if (!form.lastName.trim()) newErrors.lastName = "El apellido es obligatorio";
     if (!form.identificationNumber.trim()) newErrors.identificationNumber = "La cédula es obligatoria";
     if (!form.phone.trim()) newErrors.phone = "El teléfono es obligatorio";
+    
     if (!form.email.trim()) newErrors.email = "El correo electrónico es obligatorio";
     else if (!form.email.includes("@")) newErrors.email = "El correo debe ser válido";
+    
     if (!form.password.trim()) newErrors.password = "La contraseña es obligatoria";
     else if (form.password.length < 8) newErrors.password = "La contraseña debe tener al menos 8 caracteres";
+    
     if (form.password && form.confirmPassword !== form.password) newErrors.confirmPassword = "Las contraseñas no coinciden";
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const validateStep2 = () => {
-    const newErrors: Record<string, string> = {};
+    
     if (!form.hireDate.trim()) newErrors.hireDate = "La fecha de contratación es obligatoria";
     if (!form.specialty.trim()) newErrors.specialty = "La especialidad es obligatoria";
     if (!form.category.trim()) newErrors.category = "La categoría es obligatoria";
+    
+    if (!form.bankName.trim() && form.accountNumber?.trim()) {
+      newErrors.bankName = "El banco es obligatorio si se ingresa cuenta";
+      // Auto expand to show error
+      setShowBankingInfo(true);
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-
-  const validateStep3 = () => {
-    const newErrors: Record<string, string> = {};
-    if (!form.bankName.trim()) newErrors.bankName = "El banco es obligatorio";
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleNext = () => {
-    if (step === 1 && !validateStep1()) return;
-    if (step === 2 && !validateStep2()) return;
-    setStep((s) => Math.min(3, s + 1));
-  };
-
-  const handlePrevious = () => {
-    setErrors({});
-    setStep((s) => Math.max(1, s - 1));
   };
 
   const handleSubmit = async () => {
-    if (!validateStep3()) return;
+    if (!validateAll()) {
+      setError("Por favor revise los campos en rojo.");
+      return;
+    }
 
     try {
       setError(null);
@@ -98,192 +93,144 @@ export default function AdminCreateNurseProfileScreen() {
     }
   };
 
-  if (!isReady || !isAuthenticated || !roles.includes("ADMIN")) {
-    return null;
-  }
+  const activeCategoryIsCustom = !CATEGORIES.includes(form.category);
+
+  if (!isReady || !isAuthenticated || !roles.includes("ADMIN")) return null;
 
   return (
     <MobileWorkspaceShell
       eyebrow="Crear Perfil"
       title="Nueva enfermera"
-      description="Crear una cuenta de enfermera con todos los datos requeridos."
+      description="Crear perfil rápido y configuraciones base."
     >
       {!!error && <Text style={styles.error}>{error}</Text>}
 
-      <View style={styles.stepIndicator}>
-        <Text style={styles.stepText}>Paso {step} de 3</Text>
-      </View>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* === SECTION: PERSONAL === */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Datos Básicos</Text>
 
-      <ScrollView>
-        {/* Step 1: Personal Info */}
-        {step === 1 && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Información Personal</Text>
-
-            <Text style={styles.label}>Nombre *</Text>
-            <TextInput
-              style={[styles.input, errors.name ? styles.inputError : undefined]}
-              placeholder="Nombre de la enfermera"
-              value={form.name}
-              onChangeText={(text) => setForm({ ...form, name: text })}
-            />
-            {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
-
-            <Text style={styles.label}>Apellido *</Text>
-            <TextInput
-              style={[styles.input, errors.lastName ? styles.inputError : undefined]}
-              placeholder="Apellido de la enfermera"
-              value={form.lastName}
-              onChangeText={(text) => setForm({ ...form, lastName: text })}
-            />
-            {errors.lastName && <Text style={styles.errorText}>{errors.lastName}</Text>}
-
-            <Text style={styles.label}>Cédula *</Text>
-            <TextInput
-              style={[styles.input, errors.identificationNumber ? styles.inputError : undefined]}
-              placeholder="Número de cédula"
-              value={form.identificationNumber}
-              onChangeText={(text) => setForm({ ...form, identificationNumber: text })}
-            />
-            {errors.identificationNumber && <Text style={styles.errorText}>{errors.identificationNumber}</Text>}
-
-            <Text style={styles.label}>Teléfono *</Text>
-            <TextInput
-              style={[styles.input, errors.phone ? styles.inputError : undefined]}
-              placeholder="Número de teléfono"
-              value={form.phone}
-              onChangeText={(text) => setForm({ ...form, phone: text })}
-              keyboardType="phone-pad"
-            />
-            {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
-
-            <Text style={styles.label}>Correo electrónico *</Text>
-            <TextInput
-              style={[styles.input, errors.email ? styles.inputError : undefined]}
-              placeholder="correo@ejemplo.com"
-              value={form.email}
-              onChangeText={(text) => setForm({ ...form, email: text })}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
-
-            <Text style={styles.label}>Contraseña *</Text>
-            <TextInput
-              style={[styles.input, errors.password ? styles.inputError : undefined]}
-              placeholder="Mínimo 8 caracteres"
-              value={form.password}
-              onChangeText={(text) => setForm({ ...form, password: text })}
-              secureTextEntry
-            />
-            {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
-
-            <Text style={styles.label}>Confirmar contraseña *</Text>
-            <TextInput
-              style={[styles.input, errors.confirmPassword ? styles.inputError : undefined]}
-              placeholder="Repetir contraseña"
-              value={form.confirmPassword}
-              onChangeText={(text) => setForm({ ...form, confirmPassword: text })}
-              secureTextEntry
-            />
-            {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
+          <View style={styles.row}>
+            <View style={styles.col}>
+              <Text style={styles.label}>Nombre *</Text>
+              <TextInput style={[styles.input, errors.name ? styles.inputError : undefined]} placeholder="Nombre" value={form.name} onChangeText={(text) => setForm({ ...form, name: text })} />
+            </View>
+            <View style={styles.col}>
+              <Text style={styles.label}>Apellido *</Text>
+              <TextInput style={[styles.input, errors.lastName ? styles.inputError : undefined]} placeholder="Apellido" value={form.lastName} onChangeText={(text) => setForm({ ...form, lastName: text })} />
+            </View>
           </View>
-        )}
 
-        {/* Step 2: Professional Info */}
-        {step === 2 && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Información Profesional</Text>
+          <Text style={styles.label}>Cédula *</Text>
+          <TextInput style={[styles.input, errors.identificationNumber ? styles.inputError : undefined]} placeholder="Número de identificación" value={form.identificationNumber} onChangeText={(text) => setForm({ ...form, identificationNumber: text })} keyboardType="numeric" />
 
-            <Text style={styles.label}>Fecha de contratación *</Text>
-            <TextInput
-              style={[styles.input, errors.hireDate ? styles.inputError : undefined]}
-              placeholder="YYYY-MM-DD"
-              value={form.hireDate}
-              onChangeText={(text) => setForm({ ...form, hireDate: text })}
-            />
-            {errors.hireDate && <Text style={styles.errorText}>{errors.hireDate}</Text>}
+          <Text style={styles.label}>Teléfono *</Text>
+          <TextInput style={[styles.input, errors.phone ? styles.inputError : undefined]} placeholder="Ej: 8091234567" value={form.phone} onChangeText={(text) => setForm({ ...form, phone: text })} keyboardType="phone-pad" />
 
-            <Text style={styles.label}>Especialidad *</Text>
-            <TextInput
-              style={[styles.input, errors.specialty ? styles.inputError : undefined]}
-              placeholder="Especialidad de la enfermera"
-              value={form.specialty}
-              onChangeText={(text) => setForm({ ...form, specialty: text })}
-            />
-            {errors.specialty && <Text style={styles.errorText}>{errors.specialty}</Text>}
+          <Text style={styles.label}>Correo electrónico *</Text>
+          <TextInput style={[styles.input, errors.email ? styles.inputError : undefined]} placeholder="Enfermera@correo.com" value={form.email} onChangeText={(text) => setForm({ ...form, email: text })} keyboardType="email-address" autoCapitalize="none" />
 
-            <Text style={styles.label}>Número de licencia</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Número de licencia profesional (opcional)"
-              value={form.licenseId ?? ""}
-              onChangeText={(text) => setForm({ ...form, licenseId: text })}
-            />
+          <View style={styles.row}>
+            <View style={styles.col}>
+              <Text style={styles.label}>Contraseña *</Text>
+              <TextInput style={[styles.input, errors.password ? styles.inputError : undefined]} placeholder="****" value={form.password} onChangeText={(text) => setForm({ ...form, password: text })} secureTextEntry />
+            </View>
+            <View style={styles.col}>
+              <Text style={styles.label}>Confirmar *</Text>
+              <TextInput style={[styles.input, errors.confirmPassword ? styles.inputError : undefined]} placeholder="****" value={form.confirmPassword} onChangeText={(text) => setForm({ ...form, confirmPassword: text })} secureTextEntry />
+            </View>
+          </View>
+          {(errors.password || errors.confirmPassword) && <Text style={styles.errorText}>Revise que las contraseñas coincidan y tengan mínimo 8 caracteres.</Text>}
+        </View>
 
-            <Text style={styles.label}>Categoría *</Text>
-            <TextInput
-              style={[styles.input, errors.category ? styles.inputError : undefined]}
-              placeholder="Categoría profesional"
-              value={form.category}
-              onChangeText={(text) => setForm({ ...form, category: text })}
-            />
-            {errors.category && <Text style={styles.errorText}>{errors.category}</Text>}
-
-            <Text style={styles.label}>Estado operacional</Text>
-            <Pressable
-              style={[styles.toggleButton, form.isOperationallyActive ? styles.toggleActive : styles.toggleInactive]}
-              onPress={() => setForm({ ...form, isOperationallyActive: !form.isOperationallyActive })}
+        {/* === SECTION: PROFESSIONAL === */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Perfil Profesional</Text>
+          
+          <Text style={styles.label}>Estado operacional</Text>
+          <View style={styles.chipsContainer}>
+            <Pressable 
+              style={[styles.chip, form.isOperationallyActive && styles.chipSuccess]} 
+              onPress={() => setForm({ ...form, isOperationallyActive: true })}
             >
-              <Text style={[styles.toggleText, form.isOperationallyActive ? styles.toggleTextActive : styles.toggleTextInactive]}>
-                {form.isOperationallyActive ? "Activo" : "Inactivo"}
-              </Text>
+              <Text style={[styles.chipText, form.isOperationallyActive && styles.chipTextSuccess]}>✓ Activa</Text>
+            </Pressable>
+            <Pressable 
+              style={[styles.chip, !form.isOperationallyActive && styles.chipDanger]} 
+              onPress={() => setForm({ ...form, isOperationallyActive: false })}
+            >
+              <Text style={[styles.chipText, !form.isOperationallyActive && styles.chipTextDanger]}>× Inactiva</Text>
             </Pressable>
           </View>
-        )}
 
-        {/* Step 3: Banking Info */}
-        {step === 3 && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Información Bancaria</Text>
-
-            <Text style={styles.label}>Banco *</Text>
-            <TextInput
-              style={[styles.input, errors.bankName ? styles.inputError : undefined]}
-              placeholder="Nombre del banco"
-              value={form.bankName}
-              onChangeText={(text) => setForm({ ...form, bankName: text })}
-            />
-            {errors.bankName && <Text style={styles.errorText}>{errors.bankName}</Text>}
-
-            <Text style={styles.label}>Número de cuenta</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Número de cuenta bancaria (opcional)"
-              value={form.accountNumber ?? ""}
-              onChangeText={(text) => setForm({ ...form, accountNumber: text })}
-              keyboardType="numeric"
-            />
+          <Text style={styles.label}>Categoría *</Text>
+          <View style={styles.chipsContainer}>
+            {CATEGORIES.map((cat) => (
+              <Pressable
+                key={cat}
+                style={[styles.chip, form.category === cat && styles.chipActive]}
+                onPress={() => { setForm({ ...form, category: cat }); setCustomCategory(""); }}
+              >
+                <Text style={[styles.chipText, form.category === cat && styles.chipTextActive]}>{cat}</Text>
+              </Pressable>
+            ))}
           </View>
-        )}
+          <TextInput
+            style={[styles.input, activeCategoryIsCustom ? styles.inputActive : undefined, errors.category ? styles.inputError : undefined]}
+            placeholder="Otra categoría"
+            value={activeCategoryIsCustom ? form.category : customCategory}
+            onChangeText={(text) => {
+              setCustomCategory(text);
+              setForm({ ...form, category: text || CATEGORIES[0] });
+            }}
+            onFocus={() => { if (!activeCategoryIsCustom) setForm({ ...form, category: "" }); }}
+          />
+
+          <View style={styles.row}>
+            <View style={styles.col}>
+              <Text style={styles.label}>Especialidad *</Text>
+              <TextInput style={[styles.input, errors.specialty ? styles.inputError : undefined]} placeholder="Ej: Pediatría" value={form.specialty} onChangeText={(text) => setForm({ ...form, specialty: text })} />
+            </View>
+            <View style={styles.col}>
+              <Text style={styles.label}>Licencia / Exequátur</Text>
+              <TextInput style={styles.input} placeholder="(Opcional)" value={form.licenseId ?? ""} onChangeText={(text) => setForm({ ...form, licenseId: text })} />
+            </View>
+          </View>
+
+          <Text style={styles.label}>Fecha de contratación *</Text>
+          {Platform.OS === "web" ? (
+             <TextInput style={[styles.input, errors.hireDate ? styles.inputError : undefined]} value={form.hireDate} onChangeText={(text) => setForm({ ...form, hireDate: text })} {...({ type: "date" } as any)} />
+          ) : (
+            <TextInput style={[styles.input, errors.hireDate ? styles.inputError : undefined]} placeholder="YYYY-MM-DD" value={form.hireDate} onChangeText={(text) => setForm({ ...form, hireDate: text })} />
+          )}
+        </View>
+
+        {/* === SECTION: BANKING === */}
+        <View style={styles.accordionWrap}>
+          <Pressable style={styles.accordionHeader} onPress={() => setShowBankingInfo(!showBankingInfo)}>
+            <Text style={styles.accordionTitle}>Información Bancaria (Opcional)</Text>
+            <Text style={styles.accordionIcon}>{showBankingInfo ? "▲" : "▼"}</Text>
+          </Pressable>
+          {showBankingInfo && (
+            <View style={styles.accordionContent}>
+              <Text style={styles.label}>Nombre del Banco</Text>
+              <TextInput style={[styles.input, errors.bankName ? styles.inputError : undefined]} placeholder="Ej: Banreservas" value={form.bankName} onChangeText={(text) => setForm({ ...form, bankName: text })} />
+              {errors.bankName && <Text style={styles.errorText}>{errors.bankName}</Text>}
+              
+              <Text style={styles.label}>Número de Cuenta</Text>
+              <TextInput style={styles.input} placeholder="Número de cuenta bancaria" value={form.accountNumber ?? ""} onChangeText={(text) => setForm({ ...form, accountNumber: text })} keyboardType="numeric" />
+            </View>
+          )}
+        </View>
+
+        <View style={{height: 80}} />
       </ScrollView>
 
-      <View style={styles.actions}>
-        {step > 1 && (
-          <Pressable style={styles.button} onPress={handlePrevious}>
-            <Text style={styles.buttonText}>Anterior</Text>
-          </Pressable>
-        )}
-        {step < 3 && (
-          <Pressable style={styles.buttonPrimary} onPress={handleNext}>
-            <Text style={styles.buttonPrimaryText}>Siguiente</Text>
-          </Pressable>
-        )}
-        {step === 3 && (
-          <Pressable style={styles.buttonPrimary} onPress={handleSubmit} disabled={submitting}>
-            <Text style={styles.buttonPrimaryText}>{submitting ? "Creando..." : "Crear"}</Text>
-          </Pressable>
-        )}
+      {/* STICKY FOOTER */}
+      <View style={styles.stickyFooter}>
+        <Pressable style={styles.buttonPrimary} onPress={handleSubmit} disabled={submitting}>
+          <Text style={styles.buttonPrimaryText}>{submitting ? "Procesando..." : "Registrar Enfermera"}</Text>
+        </Pressable>
       </View>
     </MobileWorkspaceShell>
   );
@@ -291,23 +238,35 @@ export default function AdminCreateNurseProfileScreen() {
 
 const styles = StyleSheet.create({
   error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
-  stepIndicator: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 12, padding: 12, marginBottom: 12 },
-  stepText: { color: "#102a43", fontSize: 14, fontWeight: "700", textAlign: "center" },
+  scrollContent: { paddingBottom: 24 },
   card: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
-  cardTitle: { fontSize: 18, fontWeight: "800", color: "#102a43", marginBottom: 8 },
+  cardTitle: { fontSize: 18, fontWeight: "800", color: "#102a43", marginBottom: 6 },
   label: { fontSize: 14, fontWeight: "700", color: "#7c2d12", marginTop: 12, marginBottom: 6 },
   input: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#cbd5e0", borderRadius: 12, padding: 12, fontSize: 15 },
-  inputError: { borderColor: "#c00" },
+  inputActive: { borderColor: "#3b82f6", borderWidth: 2 },
+  inputError: { borderColor: "#dc2626" },
   errorText: { color: "#dc2626", fontSize: 12, marginTop: 4 },
-  toggleButton: { borderRadius: 12, paddingVertical: 12, paddingHorizontal: 20, alignSelf: "flex-start", marginTop: 4 },
-  toggleActive: { backgroundColor: "#3b82f6" },
-  toggleInactive: { backgroundColor: "#f0f4f8" },
-  toggleText: { fontWeight: "700", fontSize: 15 },
-  toggleTextActive: { color: "#ffffff" },
-  toggleTextInactive: { color: "#102a43" },
-  actions: { flexDirection: "row", gap: 8, marginTop: 16 },
-  button: { flex: 1, backgroundColor: "#f0f4f8", borderRadius: 12, paddingVertical: 14, alignItems: "center" },
-  buttonText: { color: "#102a43", fontWeight: "700", fontSize: 16 },
-  buttonPrimary: { flex: 1, backgroundColor: "#3b82f6", borderRadius: 12, paddingVertical: 14, alignItems: "center" },
-  buttonPrimaryText: { color: "#ffffff", fontWeight: "700", fontSize: 16 },
+  
+  row: { flexDirection: "row", gap: 8 },
+  col: { flex: 1 },
+
+  chipsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 },
+  chip: { backgroundColor: "#f0f4f8", paddingVertical: 10, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: "#dbe5f3" },
+  chipActive: { backgroundColor: "#3b82f6", borderColor: "#2563eb" },
+  chipSuccess: { backgroundColor: "#10b981", borderColor: "#059669" },
+  chipDanger: { backgroundColor: "#ef4444", borderColor: "#dc2626" },
+  chipText: { color: "#52637a", fontWeight: "600", fontSize: 14 },
+  chipTextActive: { color: "#ffffff" },
+  chipTextSuccess: { color: "#ffffff" },
+  chipTextDanger: { color: "#ffffff" },
+
+  accordionWrap: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, overflow: "hidden", marginBottom: 12 },
+  accordionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, backgroundColor: "#f8fafc" },
+  accordionTitle: { fontSize: 15, fontWeight: "700", color: "#52637a" },
+  accordionIcon: { fontSize: 14, color: "#52637a", fontWeight: "700" },
+  accordionContent: { padding: 16, borderTopWidth: 1, borderTopColor: "#e2e8f0" },
+
+  stickyFooter: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingTop: 12, paddingBottom: Platform.OS === "ios" ? 32 : 16, backgroundColor: "#ffffff", borderTopWidth: 1, borderTopColor: "#e2e8f0", shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 12 },
+  buttonPrimary: { backgroundColor: "#3b82f6", borderRadius: 12, paddingVertical: 16, alignItems: "center" },
+  buttonPrimaryText: { color: "#ffffff", fontWeight: "800", fontSize: 16 },
 });
