@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,6 +12,8 @@ import {
   View,
 } from "react-native";
 import { router } from "expo-router";
+import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import { Picker } from "@react-native-picker/picker";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
@@ -43,9 +47,30 @@ export default function CreateCareRequestScreen() {
   const [availableNurses, setAvailableNurses] = useState<AvailableNurseOption[]>([]);
   const [nurseLookupLoading, setNurseLookupLoading] = useState(false);
   const [showSuggestedNurseOptions, setShowSuggestedNurseOptions] = useState(false);
+  const [isServicePickerVisible, setIsServicePickerVisible] = useState(false);
   const [selectedNurse, setSelectedNurse] = useState<AvailableNurseOption | null>(null);
+  const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
+  const [draftServiceDate, setDraftServiceDate] = useState<Date>(new Date());
+  const [draftCareRequestType, setDraftCareRequestType] = useState("");
 
   const normalizeSearchValue = (value: string) => value.trim().toLocaleLowerCase();
+  const formatDateToIso = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+  const parseIsoDate = (value?: string) => {
+    if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return null;
+    }
+
+    const parsedDate = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return null;
+    }
+    return parsedDate;
+  };
 
   const buildNurseDisplayName = (nurse: AvailableNurseOption) => nurse.displayName;
 
@@ -134,7 +159,57 @@ export default function CreateCareRequestScreen() {
     });
     setSelectedNurse(null);
     setShowSuggestedNurseOptions(false);
+    setIsServicePickerVisible(false);
+    setDraftCareRequestType(firstType);
     setSuccessMessage(null);
+  };
+
+  const openDatePicker = () => {
+    setDraftServiceDate(parseIsoDate(form.careRequestDate) ?? new Date());
+    setIsDatePickerVisible(true);
+  };
+
+  const confirmDateSelection = () => {
+    setForm((prev) => ({ ...prev, careRequestDate: formatDateToIso(draftServiceDate) }));
+    setIsDatePickerVisible(false);
+  };
+
+  const closeDatePicker = () => {
+    setIsDatePickerVisible(false);
+  };
+
+  const clearSelectedDate = () => {
+    setForm((prev) => ({ ...prev, careRequestDate: undefined }));
+  };
+
+  const openServicePicker = () => {
+    setDraftCareRequestType(form.careRequestType || catalogOptions?.careRequestTypes[0]?.code || "");
+    setIsServicePickerVisible(true);
+  };
+
+  const closeServicePicker = () => {
+    setIsServicePickerVisible(false);
+  };
+
+  const confirmServiceSelection = () => {
+    if (draftCareRequestType) {
+      setForm((prev) => ({ ...prev, careRequestType: draftCareRequestType }));
+    }
+    setIsServicePickerVisible(false);
+  };
+
+  const handleNativeDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (Platform.OS === "android") {
+      if (event.type === "set" && selectedDate) {
+        setForm((prev) => ({ ...prev, careRequestDate: formatDateToIso(selectedDate) }));
+      }
+      setIsDatePickerVisible(false);
+      return;
+    }
+
+    if (selectedDate) {
+      setDraftServiceDate(selectedDate);
+    }
   };
 
   const onSubmit = async () => {
@@ -461,39 +536,67 @@ export default function CreateCareRequestScreen() {
             </Text>
 
             <Text style={styles.label}>Fecha del servicio (opcional)</Text>
-            <TextInput
-              value={form.careRequestDate ?? ""}
-              onChangeText={(text) => setForm((prev) => ({ ...prev, careRequestDate: text }))}
-              placeholder="YYYY-MM-DD"
-              editable={!isLoading}
-              style={[styles.input, isLoading && styles.inputDisabled]}
-            />
+            <Pressable
+              onPress={openDatePicker}
+              disabled={isLoading}
+              style={({ pressed }) => [
+                styles.input,
+                styles.datePickerTrigger,
+                isLoading && styles.inputDisabled,
+                pressed && !isLoading && styles.buttonPressed,
+              ]}
+            >
+              <Text style={form.careRequestDate ? styles.dateValue : styles.datePlaceholder}>
+                {form.careRequestDate ?? "Selecciona una fecha"}
+              </Text>
+            </Pressable>
+            <View style={styles.dateActionsRow}>
+              <Pressable
+                onPress={openDatePicker}
+                disabled={isLoading}
+                style={({ pressed }) => [
+                  styles.dateActionButton,
+                  styles.datePrimaryAction,
+                  isLoading && styles.buttonDisabled,
+                  pressed && !isLoading && styles.buttonPressed,
+                ]}
+              >
+                <Text style={styles.datePrimaryActionText}>Elegir fecha</Text>
+              </Pressable>
+              <Pressable
+                onPress={clearSelectedDate}
+                disabled={isLoading || !form.careRequestDate}
+                style={({ pressed }) => [
+                  styles.dateActionButton,
+                  styles.dateSecondaryAction,
+                  (isLoading || !form.careRequestDate) && styles.buttonDisabled,
+                  pressed && !isLoading && styles.buttonPressed,
+                ]}
+              >
+                <Text style={styles.dateSecondaryActionText}>Limpiar fecha</Text>
+              </Pressable>
+            </View>
             <Text style={styles.helperText}>
               La enfermera asignada no podra completar la solicitud antes de la fecha indicada.
             </Text>
 
             <Text style={styles.label}>Servicio</Text>
-            <View style={styles.optionGrid}>
-              {(catalogOptions?.careRequestTypes ?? []).map((row) => {
-                const selected = form.careRequestType === row.code;
-
-                return (
-                  <Pressable
-                    key={row.code}
-                    onPress={() => setForm((prev) => ({ ...prev, careRequestType: row.code }))}
-                    style={({ pressed }) => [
-                      styles.optionButton,
-                      selected && styles.optionButtonSelected,
-                      pressed && styles.buttonPressed,
-                    ]}
-                  >
-                    <Text style={[styles.optionLabel, selected && styles.optionLabelSelected]}>
-                      {row.displayName}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            <Pressable
+              onPress={openServicePicker}
+              disabled={isLoading || catalogLoading || (catalogOptions?.careRequestTypes.length ?? 0) === 0}
+              style={({ pressed }) => [
+                styles.input,
+                styles.serviceDropdownTrigger,
+                (isLoading || catalogLoading || (catalogOptions?.careRequestTypes.length ?? 0) === 0) &&
+                  styles.buttonDisabled,
+                pressed && !isLoading && styles.buttonPressed,
+              ]}
+            >
+              <Text style={selectedType ? styles.serviceDropdownValue : styles.serviceDropdownPlaceholder}>
+                {selectedType?.displayName ?? "Selecciona un servicio"}
+              </Text>
+              <Text style={styles.serviceDropdownChevron}>▼</Text>
+            </Pressable>
 
             <View style={styles.checklist}>
               <Text style={styles.checklistTitle}>Estimacion de servicio</Text>
@@ -677,6 +780,69 @@ export default function CreateCareRequestScreen() {
             {successMessage && <Text style={styles.successMessage}>{successMessage}</Text>}
           </View>
       </View>
+      {isDatePickerVisible ? (
+        Platform.OS === "ios" ? (
+          <Modal transparent animationType="slide" visible={isDatePickerVisible} onRequestClose={closeDatePicker}>
+            <View style={styles.dateModalBackdrop}>
+              <View style={styles.dateModalContent}>
+                <Text style={styles.dateModalTitle}>Selecciona la fecha del servicio</Text>
+                <DateTimePicker
+                  value={draftServiceDate}
+                  mode="date"
+                  display="spinner"
+                  onChange={handleNativeDateChange}
+                />
+                <View style={styles.dateModalActions}>
+                  <Pressable style={styles.dateModalCancelButton} onPress={closeDatePicker}>
+                    <Text style={styles.dateModalCancelText}>Cancelar</Text>
+                  </Pressable>
+                  <Pressable style={styles.dateModalConfirmButton} onPress={confirmDateSelection}>
+                    <Text style={styles.dateModalConfirmText}>Guardar</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          </Modal>
+        ) : (
+          <DateTimePicker
+            value={parseIsoDate(form.careRequestDate) ?? new Date()}
+            mode="date"
+            display="default"
+            onChange={handleNativeDateChange}
+          />
+        )
+      ) : null}
+      {isServicePickerVisible ? (
+        <Modal
+          transparent
+          animationType="slide"
+          visible={isServicePickerVisible}
+          onRequestClose={closeServicePicker}
+        >
+          <View style={styles.dateModalBackdrop}>
+            <View style={styles.dateModalContent}>
+              <Text style={styles.dateModalTitle}>Selecciona el tipo de servicio</Text>
+              <Picker
+                selectedValue={draftCareRequestType}
+                onValueChange={(value) => setDraftCareRequestType(String(value))}
+                enabled={!isLoading}
+              >
+                {(catalogOptions?.careRequestTypes ?? []).map((row) => (
+                  <Picker.Item key={row.code} label={row.displayName} value={row.code} />
+                ))}
+              </Picker>
+              <View style={styles.dateModalActions}>
+                <Pressable style={styles.dateModalCancelButton} onPress={closeServicePicker}>
+                  <Text style={styles.dateModalCancelText}>Cancelar</Text>
+                </Pressable>
+                <Pressable style={styles.dateModalConfirmButton} onPress={confirmServiceSelection}>
+                  <Text style={styles.dateModalConfirmText}>Guardar</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      ) : null}
     </MobileWorkspaceShell>
   );
 }
@@ -744,11 +910,116 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 160,
   },
-  optionGrid: {
+  datePickerTrigger: {
+    justifyContent: "center",
+  },
+  dateValue: {
+    fontSize: 16,
+    color: "#111827",
+  },
+  datePlaceholder: {
+    fontSize: 16,
+    color: "#9ca3af",
+  },
+  dateActionsRow: {
+    flexDirection: "row",
     gap: 10,
-    marginBottom: 18,
+    marginTop: -8,
+    marginBottom: 16,
+  },
+  dateActionButton: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 11,
+    alignItems: "center",
+    borderWidth: 1,
+  },
+  datePrimaryAction: {
+    borderColor: "#bfdbfe",
+    backgroundColor: "#eff6ff",
+  },
+  dateSecondaryAction: {
+    borderColor: "#d1d5db",
+    backgroundColor: "#ffffff",
+  },
+  datePrimaryActionText: {
+    color: "#1d4ed8",
+    fontWeight: "700",
+  },
+  dateSecondaryActionText: {
+    color: "#4b5563",
+    fontWeight: "700",
+  },
+  dateModalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(17, 24, 39, 0.35)",
+    justifyContent: "flex-end",
+  },
+  dateModalContent: {
+    backgroundColor: "#ffffff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 18,
+    paddingTop: 16,
+    paddingBottom: 26,
+    gap: 12,
+  },
+  dateModalTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+    textAlign: "center",
+  },
+  dateModalActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 4,
+  },
+  dateModalCancelButton: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  dateModalCancelText: {
+    color: "#4b5563",
+    fontWeight: "700",
+  },
+  dateModalConfirmButton: {
+    flex: 1,
+    borderRadius: 12,
+    backgroundColor: "#007aff",
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  dateModalConfirmText: {
+    color: "#ffffff",
+    fontWeight: "800",
+  },
+  serviceDropdownTrigger: {
+    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  serviceDropdownValue: {
+    color: "#111827",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  serviceDropdownPlaceholder: {
+    color: "#9ca3af",
+    fontSize: 16,
+  },
+  serviceDropdownChevron: {
+    color: "#4b5563",
+    fontSize: 12,
+    fontWeight: "800",
   },
   optionButton: {
+    margin: 10,
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 14,
