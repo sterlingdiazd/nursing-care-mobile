@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { createElement, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -247,13 +247,43 @@ export default function CreateAdminCareRequestScreen() {
 
           <Text style={styles.label}>Fecha programada *</Text>
           {Platform.OS === "web" ? (
-            <TextInput
-              value={form.careRequestDate}
-              onChangeText={(text) => setForm({ ...form, careRequestDate: text })}
-              style={[styles.input, styles.datePickerTrigger, errors.careRequestDate ? styles.inputError : undefined]}
-              placeholder="YYYY-MM-DD"
-              {...({ type: "date" } as any)}
-            />
+            <View>
+              {createElement("input", {
+                type: "date",
+                value: form.careRequestDate,
+                onChange: (e: any) => setForm({ ...form, careRequestDate: e.target.value }),
+                placeholder: "YYYY-MM-DD",
+                style: {
+                  padding: "12px",
+                  borderRadius: "12px",
+                  border: errors.careRequestDate ? "1px solid #dc2626" : "1px solid #cbd5e0",
+                  backgroundColor: "#ffffff",
+                  fontSize: "15px",
+                  minHeight: "48px",
+                  width: "100%",
+                  fontFamily: "inherit",
+                  outline: "none",
+                  boxSizing: "border-box"
+                }
+              })}
+              <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+                <Pressable 
+                  style={{ flex: 1, backgroundColor: "#f0f4f8", padding: 8, borderRadius: 8, alignItems: "center" }}
+                  onPress={() => setForm({ ...form, careRequestDate: formatDateToIso(new Date()) })}
+                >
+                  <Text style={{ fontSize: 13, color: "#102a43", fontWeight: "600" }}>Hoy</Text>
+                </Pressable>
+                <Pressable 
+                  style={{ flex: 1, backgroundColor: "#f0f4f8", padding: 8, borderRadius: 8, alignItems: "center" }}
+                  onPress={() => {
+                    const d = new Date(); d.setDate(d.getDate() + 1);
+                    setForm({ ...form, careRequestDate: formatDateToIso(d) });
+                  }}
+                >
+                  <Text style={{ fontSize: 13, color: "#102a43", fontWeight: "600" }}>Mañana</Text>
+                </Pressable>
+              </View>
+            </View>
           ) : (
             <Pressable onPress={openDatePicker} style={({ pressed }) => [styles.input, styles.datePickerTrigger, pressed && styles.buttonPressed, errors.careRequestDate ? styles.inputError : undefined]}>
               <Text style={form.careRequestDate ? styles.dateValue : styles.datePlaceholder}>
