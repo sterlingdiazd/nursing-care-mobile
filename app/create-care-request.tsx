@@ -13,7 +13,6 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
-import { Picker } from "@react-native-picker/picker";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
@@ -48,11 +47,17 @@ export default function CreateCareRequestScreen() {
   const [nurseLookupLoading, setNurseLookupLoading] = useState(false);
   const [nurseLookupError, setNurseLookupError] = useState<string | null>(null);
   const [showSuggestedNurseOptions, setShowSuggestedNurseOptions] = useState(false);
-  const [isServicePickerVisible, setIsServicePickerVisible] = useState(false);
   const [selectedNurse, setSelectedNurse] = useState<AvailableNurseOption | null>(null);
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
   const [draftServiceDate, setDraftServiceDate] = useState<Date>(new Date());
+  
+  // UX States
+  const [showAdvancedPricing, setShowAdvancedPricing] = useState(false);
+  const [customCareType, setCustomCareType] = useState("");
   const [draftCareRequestType, setDraftCareRequestType] = useState("");
+
+  const incrementUnit = () => setForm((prev) => ({ ...prev, unit: (prev.unit || 0) + 1 }));
+  const decrementUnit = () => setForm((prev) => ({ ...prev, unit: Math.max(1, (prev.unit || 0) - 1) }));
 
   const normalizeSearchValue = (value: string) => value.trim().toLocaleLowerCase();
   const formatDateToIso = (date: Date) => {
@@ -181,22 +186,6 @@ export default function CreateCareRequestScreen() {
 
   const clearSelectedDate = () => {
     setForm((prev) => ({ ...prev, careRequestDate: undefined }));
-  };
-
-  const openServicePicker = () => {
-    setDraftCareRequestType(form.careRequestType || catalogOptions?.careRequestTypes[0]?.code || "");
-    setIsServicePickerVisible(true);
-  };
-
-  const closeServicePicker = () => {
-    setIsServicePickerVisible(false);
-  };
-
-  const confirmServiceSelection = () => {
-    if (draftCareRequestType) {
-      setForm((prev) => ({ ...prev, careRequestType: draftCareRequestType }));
-    }
-    setIsServicePickerVisible(false);
   };
 
   const handleNativeDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
@@ -393,36 +382,7 @@ export default function CreateCareRequestScreen() {
       eyebrow="Nueva solicitud"
       title="Crea una solicitud clara con un flujo guiado."
       description="La captura ahora se organiza como una experiencia de trabajo: contexto principal primero, opciones guiadas despues y ajustes opcionales al final."
-      actions={
-        <>
-          <Pressable
-            onPress={onSubmit}
-            disabled={isLoading || !canCreateRequest}
-            style={({ pressed }) => [
-              styles.heroPrimaryButton,
-              (isLoading || !canCreateRequest) && styles.buttonDisabled,
-              pressed && !isLoading && canCreateRequest && styles.buttonPressed,
-            ]}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#132d75" />
-            ) : (
-              <Text style={styles.heroPrimaryButtonText}>Crear solicitud</Text>
-            )}
-          </Pressable>
-
-          <Pressable
-            onPress={resetForm}
-            disabled={isLoading}
-            style={({ pressed }) => [
-              styles.heroSecondaryButton,
-              pressed && !isLoading && styles.buttonPressed,
-            ]}
-          >
-            <Text style={styles.heroSecondaryButtonText}>Limpiar formulario</Text>
-          </Pressable>
-        </>
-      }
+      actions={null}
     >
       <View style={styles.flow}>
           <View style={styles.card}>
@@ -643,23 +603,24 @@ export default function CreateCareRequestScreen() {
               La enfermera asignada no podra completar la solicitud antes de la fecha indicada.
             </Text>
 
-            <Text style={styles.label}>Servicio</Text>
-            <Pressable
-              onPress={openServicePicker}
-              disabled={isLoading || catalogLoading || (catalogOptions?.careRequestTypes.length ?? 0) === 0}
-              style={({ pressed }) => [
-                styles.input,
-                styles.serviceDropdownTrigger,
-                (isLoading || catalogLoading || (catalogOptions?.careRequestTypes.length ?? 0) === 0) &&
-                  styles.buttonDisabled,
-                pressed && !isLoading && styles.buttonPressed,
-              ]}
-            >
-              <Text style={selectedType ? styles.serviceDropdownValue : styles.serviceDropdownPlaceholder}>
-                {selectedType?.displayName ?? "Selecciona un servicio"}
-              </Text>
-              <Text style={styles.serviceDropdownChevron}>▼</Text>
-            </Pressable>
+            <Text style={styles.label}>Servicio *</Text>
+            {catalogLoading ? (
+               <ActivityIndicator color="#132d75" style={{ alignSelf: "flex-start", marginVertical: 8 }} />
+            ) : (
+              <View style={styles.chipsContainer}>
+                {(catalogOptions?.careRequestTypes ?? []).map(row => (
+                  <Pressable 
+                    key={row.code}
+                    onPress={() => setForm({ ...form, careRequestType: row.code })}
+                    style={[styles.chip, form.careRequestType === row.code && styles.chipActive]}
+                  >
+                    <Text style={[styles.chipText, form.careRequestType === row.code && styles.chipTextActive]}>
+                      {row.displayName}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
 
             <View style={styles.checklist}>
               <Text style={styles.checklistTitle}>Estimacion de servicio</Text>
@@ -674,127 +635,110 @@ export default function CreateCareRequestScreen() {
               </Text>
             </View>
 
-            <Text style={styles.label}>Cantidad</Text>
-            <TextInput
-              value={String(form.unit ?? 1)}
-              onChangeText={(text) => {
-                const value = Number(text);
-                setForm((prev) => ({ ...prev, unit: Number.isFinite(value) && value > 0 ? value : 1 }));
-              }}
-              placeholder="1"
-              keyboardType="numeric"
-              editable={!isLoading}
-              returnKeyType="done"
-              style={[styles.input, isLoading && styles.inputDisabled]}
-            />
+            <Text style={styles.label}>Cantidad *</Text>
+            <View style={styles.stepperContainer}>
+              <Pressable onPress={decrementUnit} style={styles.stepperBtn}><Text style={styles.stepperBtnText}>-</Text></Pressable>
+              <Text style={styles.stepperValue}>{form.unit}</Text>
+              <Pressable onPress={incrementUnit} style={styles.stepperBtn}><Text style={styles.stepperBtnText}>+</Text></Pressable>
+            </View>
 
-            {isDomicilio && (
-              <>
-                <Text style={styles.label}>Zona de desplazamiento</Text>
-                <View style={styles.inlineOptions}>
-                  {(catalogOptions?.distanceFactors ?? []).map((row) => {
-                    const selected = (form.distanceFactor ?? "local") === row.code;
+            {/* === SECTION: ADVANCED PRICING (Accordion) === */}
+            <View style={styles.accordionWrap}>
+              <Pressable style={styles.accordionHeader} onPress={() => setShowAdvancedPricing(!showAdvancedPricing)}>
+                <Text style={styles.accordionTitle}>Mostrar configuraciones de precio</Text>
+                <Text style={styles.accordionIcon}>{showAdvancedPricing ? "▲" : "▼"}</Text>
+              </Pressable>
 
-                    return (
-                      <Pressable
-                        key={row.code}
-                        onPress={() => setForm((prev) => ({ ...prev, distanceFactor: row.code }))}
-                        style={({ pressed }) => [
-                          styles.inlineOption,
-                          selected && styles.inlineOptionSelected,
-                          pressed && styles.buttonPressed,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.inlineOptionText,
-                            selected && styles.inlineOptionTextSelected,
-                          ]}
-                        >
-                          {row.displayName}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
+              {showAdvancedPricing && (
+                <View style={styles.accordionContent}>
+                  <Text style={styles.subtitle}>Estos valores ajustan o sobreescriben la tarifación base.</Text>
+
+                  {isDomicilio && (
+                    <>
+                      <Text style={styles.label}>Zona de desplazamiento</Text>
+                      <View style={styles.inlineOptions}>
+                        {(catalogOptions?.distanceFactors ?? []).map((row) => {
+                          const selected = (form.distanceFactor ?? "local") === row.code;
+                          return (
+                            <Pressable
+                              key={row.code}
+                              onPress={() => setForm((prev) => ({ ...prev, distanceFactor: row.code }))}
+                              style={({ pressed }) => [
+                                styles.inlineOption,
+                                selected && styles.inlineOptionSelected,
+                                pressed && styles.buttonPressed,
+                              ]}
+                            >
+                              <Text style={[styles.inlineOptionText, selected && styles.inlineOptionTextSelected]}>
+                                {row.displayName}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    </>
+                  )}
+
+                  {isHogarOrDomicilio && (
+                    <>
+                      <Text style={styles.label}>Nivel de complejidad</Text>
+                      <View style={styles.inlineOptions}>
+                        {(catalogOptions?.complexityLevels ?? []).map((row) => {
+                          const selected = (form.complexityLevel ?? "estandar") === row.code;
+                          return (
+                            <Pressable
+                              key={row.code}
+                              onPress={() => setForm((prev) => ({ ...prev, complexityLevel: row.code }))}
+                              style={({ pressed }) => [
+                                styles.inlineOption,
+                                selected && styles.inlineOptionSelected,
+                                pressed && styles.buttonPressed,
+                              ]}
+                            >
+                              <Text style={[styles.inlineOptionText, selected && styles.inlineOptionTextSelected]}>
+                                {row.displayName}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    </>
+                  )}
+
+                  <Text style={styles.label}>Ajuste de precio base para cliente (opcional)</Text>
+                  <TextInput
+                    value={form.clientBasePriceOverride == null ? "" : String(form.clientBasePriceOverride)}
+                    onChangeText={(text) => {
+                      if (text.trim() === "") return setForm((prev) => ({ ...prev, clientBasePriceOverride: undefined }));
+                      const value = Number(text);
+                      setForm((prev) => ({ ...prev, clientBasePriceOverride: Number.isFinite(value) ? value : undefined }));
+                    }}
+                    placeholder="Ejemplo: 3000"
+                    keyboardType="numeric"
+                    editable={!isLoading}
+                    style={[styles.input, { backgroundColor: "#ffffff" }, isLoading && styles.inputDisabled]}
+                  />
+
+                  {isMedicos && (
+                    <>
+                      <Text style={styles.label}>Costo de insumos medicos (opcional)</Text>
+                      <TextInput
+                        value={form.medicalSuppliesCost == null ? "" : String(form.medicalSuppliesCost)}
+                        onChangeText={(text) => {
+                          if (text.trim() === "") return setForm((prev) => ({ ...prev, medicalSuppliesCost: undefined }));
+                          const value = Number(text);
+                          setForm((prev) => ({ ...prev, medicalSuppliesCost: Number.isFinite(value) ? value : undefined }));
+                        }}
+                        placeholder="Ejemplo: 800"
+                        keyboardType="numeric"
+                        editable={!isLoading}
+                        style={[styles.input, { backgroundColor: "#ffffff" }, isLoading && styles.inputDisabled]}
+                      />
+                    </>
+                  )}
                 </View>
-              </>
-            )}
-
-            {isHogarOrDomicilio && (
-              <>
-                <Text style={styles.label}>Nivel de complejidad</Text>
-                <View style={styles.inlineOptions}>
-                  {(catalogOptions?.complexityLevels ?? []).map((row) => {
-                    const selected = (form.complexityLevel ?? "estandar") === row.code;
-
-                    return (
-                      <Pressable
-                        key={row.code}
-                        onPress={() => setForm((prev) => ({ ...prev, complexityLevel: row.code }))}
-                        style={({ pressed }) => [
-                          styles.inlineOption,
-                          selected && styles.inlineOptionSelected,
-                          pressed && styles.buttonPressed,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.inlineOptionText,
-                            selected && styles.inlineOptionTextSelected,
-                          ]}
-                        >
-                          {row.displayName}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </>
-            )}
-
-            <Text style={styles.label}>Ajuste de precio base para cliente (opcional)</Text>
-            <TextInput
-              value={form.clientBasePriceOverride == null ? "" : String(form.clientBasePriceOverride)}
-              onChangeText={(text) => {
-                if (text.trim() === "") {
-                  setForm((prev) => ({ ...prev, clientBasePriceOverride: undefined }));
-                  return;
-                }
-                const value = Number(text);
-                setForm((prev) => ({
-                  ...prev,
-                  clientBasePriceOverride: Number.isFinite(value) ? value : undefined,
-                }));
-              }}
-              placeholder="Ejemplo: 3000"
-              keyboardType="numeric"
-              editable={!isLoading}
-              style={[styles.input, isLoading && styles.inputDisabled]}
-            />
-
-            {isMedicos && (
-              <>
-                <Text style={styles.label}>Costo de insumos medicos (opcional)</Text>
-                <TextInput
-                  value={form.medicalSuppliesCost == null ? "" : String(form.medicalSuppliesCost)}
-                  onChangeText={(text) => {
-                    if (text.trim() === "") {
-                      setForm((prev) => ({ ...prev, medicalSuppliesCost: undefined }));
-                      return;
-                    }
-                    const value = Number(text);
-                    setForm((prev) => ({
-                      ...prev,
-                      medicalSuppliesCost: Number.isFinite(value) ? value : undefined,
-                    }));
-                  }}
-                  placeholder="Ejemplo: 800"
-                  keyboardType="numeric"
-                  editable={!isLoading}
-                  style={[styles.input, isLoading && styles.inputDisabled]}
-                />
-              </>
-            )}
+              )}
+            </View>
 
             <View style={styles.checklist}>
               <Text style={styles.checklistTitle}>Checklist de envio</Text>
@@ -811,37 +755,13 @@ export default function CreateCareRequestScreen() {
               </Text>
             </View>
 
-            <View style={styles.buttonRow}>
-              <Pressable
-                onPress={onSubmit}
-                disabled={isLoading || !canCreateRequest}
-                style={({ pressed }) => [
-                  styles.button,
-                  (isLoading || !canCreateRequest) && styles.buttonDisabled,
-                  pressed && !isLoading && canCreateRequest && styles.buttonPressed,
-                ]}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.buttonText}>Crear solicitud</Text>
-                )}
-              </Pressable>
-
-              <Pressable
-                onPress={resetForm}
-                disabled={isLoading}
-                style={({ pressed }) => [
-                  styles.secondaryButton,
-                  pressed && !isLoading && styles.buttonPressed,
-                ]}
-              >
-                <Text style={styles.secondaryButtonText}>Limpiar</Text>
-              </Pressable>
-            </View>
-
-            {successMessage && <Text style={styles.successMessage}>{successMessage}</Text>}
+            <View style={{height: 80}} />
           </View>
+      </View>
+      <View style={styles.stickyFooter}>
+        <Pressable style={styles.buttonPrimary} onPress={onSubmit} disabled={isLoading || !canCreateRequest}>
+          <Text style={styles.buttonPrimaryText}>{isLoading ? "Creando Solicitud..." : "Generar Solicitud de Cuidado"}</Text>
+        </Pressable>
       </View>
       {isDatePickerVisible && Platform.OS !== "web" ? (
         Platform.OS === "ios" ? (
@@ -875,37 +795,6 @@ export default function CreateCareRequestScreen() {
           />
         )
       ) : null}
-      {isServicePickerVisible ? (
-        <Modal
-          transparent
-          animationType="slide"
-          visible={isServicePickerVisible}
-          onRequestClose={closeServicePicker}
-        >
-          <View style={styles.dateModalBackdrop}>
-            <View style={styles.dateModalContent}>
-              <Text style={styles.dateModalTitle}>Selecciona el tipo de servicio</Text>
-              <Picker
-                selectedValue={draftCareRequestType}
-                onValueChange={(value) => setDraftCareRequestType(String(value))}
-                enabled={!isLoading}
-              >
-                {(catalogOptions?.careRequestTypes ?? []).map((row) => (
-                  <Picker.Item key={row.code} label={row.displayName} value={row.code} />
-                ))}
-              </Picker>
-              <View style={styles.dateModalActions}>
-                <Pressable style={styles.dateModalCancelButton} onPress={closeServicePicker}>
-                  <Text style={styles.dateModalCancelText}>Cancelar</Text>
-                </Pressable>
-                <Pressable style={styles.dateModalConfirmButton} onPress={confirmServiceSelection}>
-                  <Text style={styles.dateModalConfirmText}>Guardar</Text>
-                </Pressable>
-              </View>
-            </View>
-          </View>
-        </Modal>
-      ) : null}
     </MobileWorkspaceShell>
   );
 }
@@ -914,6 +803,27 @@ const styles = StyleSheet.create({
   flow: {
     gap: 18,
   },
+  subtitle: { fontSize: 13, color: "#52637a", marginBottom: 12 },
+  chipsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 },
+  chip: { backgroundColor: "#f0f4f8", paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: "#dbe5f3" },
+  chipActive: { backgroundColor: "#3b82f6", borderColor: "#2563eb" },
+  chipText: { color: "#52637a", fontWeight: "600", fontSize: 14 },
+  chipTextActive: { color: "#ffffff" },
+  
+  stepperContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "#f0f4f8", borderRadius: 12, alignSelf: "flex-start", borderWidth: 1, borderColor: "#cbd5e0", marginBottom: 18 },
+  stepperBtn: { paddingHorizontal: 20, paddingVertical: 12 },
+  stepperBtnText: { fontSize: 20, fontWeight: "700", color: "#102a43" },
+  stepperValue: { fontSize: 16, fontWeight: "800", color: "#102a43", minWidth: 40, textAlign: "center" },
+
+  accordionWrap: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#cbd5e0", borderRadius: 18, overflow: "hidden", marginBottom: 12 },
+  accordionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, backgroundColor: "#f8fafc" },
+  accordionTitle: { fontSize: 15, fontWeight: "700", color: "#52637a" },
+  accordionIcon: { fontSize: 14, color: "#52637a", fontWeight: "700" },
+  accordionContent: { padding: 16, borderTopWidth: 1, borderTopColor: "#e2e8f0" },
+
+  stickyFooter: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingTop: 12, paddingBottom: Platform.OS === "ios" ? 32 : 16, backgroundColor: "#ffffff", borderTopWidth: 1, borderTopColor: "#e2e8f0", shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 12 },
+  buttonPrimary: { backgroundColor: "#3b82f6", borderRadius: 12, paddingVertical: 16, alignItems: "center" },
+  buttonPrimaryText: { color: "#ffffff", fontWeight: "800", fontSize: 16 },
   card: {
     backgroundColor: "#ffffff",
     borderRadius: 20,
