@@ -52,8 +52,6 @@ export default function CreateCareRequestScreen() {
   const [draftServiceDate, setDraftServiceDate] = useState<Date>(new Date());
   
   // UX States
-  const [showAdvancedPricing, setShowAdvancedPricing] = useState(false);
-  const [customCareType, setCustomCareType] = useState("");
   const [draftCareRequestType, setDraftCareRequestType] = useState("");
 
   const incrementUnit = () => setForm((prev) => ({ ...prev, unit: (prev.unit || 0) + 1 }));
@@ -635,103 +633,7 @@ export default function CreateCareRequestScreen() {
             </Text>
           </View>
 
-          {/* === SECTION: ADVANCED PRICING (Accordion) === */}
-          <View style={styles.accordionWrap}>
-            <Pressable style={styles.accordionHeader} onPress={() => setShowAdvancedPricing(!showAdvancedPricing)}>
-              <Text style={styles.accordionTitle}>Mostrar configuraciones de precio</Text>
-              <Text style={styles.accordionIcon}>{showAdvancedPricing ? "▲" : "▼"}</Text>
-            </Pressable>
-
-            {showAdvancedPricing && (
-              <View style={styles.accordionContent}>
-                <Text style={styles.subtitle}>Estos valores ajustan o sobreescriben la tarifación base.</Text>
-
-                {isDomicilio && (
-                  <>
-                    <Text style={styles.label}>Zona de desplazamiento</Text>
-                    <View style={styles.inlineOptions}>
-                      {(catalogOptions?.distanceFactors ?? []).map((row) => {
-                        const selected = (form.distanceFactor ?? "local") === row.code;
-                        return (
-                          <Pressable
-                            key={row.code}
-                            onPress={() => setForm((prev) => ({ ...prev, distanceFactor: row.code }))}
-                            style={({ pressed }) => [
-                              styles.inlineOption,
-                              selected && styles.inlineOptionSelected,
-                              pressed && styles.buttonPressed,
-                            ]}
-                          >
-                            <Text style={[styles.inlineOptionText, selected && styles.inlineOptionTextSelected]}>
-                              {row.displayName}
-                            </Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
-                  </>
-                )}
-
-                {isHogarOrDomicilio && (
-                  <>
-                    <Text style={styles.label}>Nivel de complejidad</Text>
-                    <View style={styles.inlineOptions}>
-                      {(catalogOptions?.complexityLevels ?? []).map((row) => {
-                        const selected = (form.complexityLevel ?? "estandar") === row.code;
-                        return (
-                          <Pressable
-                            key={row.code}
-                            onPress={() => setForm((prev) => ({ ...prev, complexityLevel: row.code }))}
-                            style={({ pressed }) => [
-                              styles.inlineOption,
-                              selected && styles.inlineOptionSelected,
-                              pressed && styles.buttonPressed,
-                            ]}
-                          >
-                            <Text style={[styles.inlineOptionText, selected && styles.inlineOptionTextSelected]}>
-                              {row.displayName}
-                            </Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
-                  </>
-                )}
-
-                <Text style={styles.label}>Ajuste de precio base para cliente (opcional)</Text>
-                <TextInput
-                  value={form.clientBasePriceOverride == null ? "" : String(form.clientBasePriceOverride)}
-                  onChangeText={(text) => {
-                    if (text.trim() === "") return setForm((prev) => ({ ...prev, clientBasePriceOverride: undefined }));
-                    const value = Number(text);
-                    setForm((prev) => ({ ...prev, clientBasePriceOverride: Number.isFinite(value) ? value : undefined }));
-                  }}
-                  placeholder="Ejemplo: 3000"
-                  keyboardType="numeric"
-                  editable={!isLoading}
-                  style={[styles.input, { backgroundColor: "#ffffff" }, isLoading && styles.inputDisabled]}
-                />
-
-                {isMedicos && (
-                  <>
-                    <Text style={styles.label}>Costo de insumos medicos (opcional)</Text>
-                    <TextInput
-                      value={form.medicalSuppliesCost == null ? "" : String(form.medicalSuppliesCost)}
-                      onChangeText={(text) => {
-                        if (text.trim() === "") return setForm((prev) => ({ ...prev, medicalSuppliesCost: undefined }));
-                        const value = Number(text);
-                        setForm((prev) => ({ ...prev, medicalSuppliesCost: Number.isFinite(value) ? value : undefined }));
-                      }}
-                      placeholder="Ejemplo: 800"
-                      keyboardType="numeric"
-                      editable={!isLoading}
-                      style={[styles.input, { backgroundColor: "#ffffff" }, isLoading && styles.inputDisabled]}
-                    />
-                  </>
-                )}
-              </View>
-            )}
-          </View>
+          {/* ADVANCED PRICING REMOVED FOR CLIENT APP */}
 
           {/* === CARD 3: CHECKLIST AND ESTIMATION === */}
           <View style={styles.card}>
@@ -809,58 +711,52 @@ export default function CreateCareRequestScreen() {
 
 const styles = StyleSheet.create({
   flow: {
-    gap: 18,
+    gap: 16,
   },
-  subtitle: { fontSize: 13, color: "#52637a", marginBottom: 12 },
+  subtitle: { fontSize: 13, color: "#5f7280", marginBottom: 12 },
   chipsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 },
-  chip: { backgroundColor: "#f0f4f8", paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: "#dbe5f3" },
-  chipActive: { backgroundColor: "#3b82f6", borderColor: "#2563eb" },
-  chipText: { color: "#52637a", fontWeight: "600", fontSize: 14 },
+  chip: { backgroundColor: "#f4f2ec", paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: "rgba(23, 48, 66, 0.15)" },
+  chipActive: { backgroundColor: "#1f4b6e", borderColor: "#173042" },
+  chipText: { color: "#5f7280", fontWeight: "600", fontSize: 14 },
   chipTextActive: { color: "#ffffff" },
   
-  stepperContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "#f0f4f8", borderRadius: 12, alignSelf: "flex-start", borderWidth: 1, borderColor: "#cbd5e0", marginBottom: 18 },
+  stepperContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "#f4f2ec", borderRadius: 12, alignSelf: "flex-start", borderWidth: 1, borderColor: "rgba(23, 48, 66, 0.15)", marginBottom: 18 },
   stepperBtn: { paddingHorizontal: 20, paddingVertical: 12 },
-  stepperBtnText: { fontSize: 20, fontWeight: "700", color: "#102a43" },
-  stepperValue: { fontSize: 16, fontWeight: "800", color: "#102a43", minWidth: 40, textAlign: "center" },
+  stepperBtnText: { fontSize: 20, fontWeight: "700", color: "#173042" },
+  stepperValue: { fontSize: 16, fontWeight: "800", color: "#173042", minWidth: 40, textAlign: "center" },
 
-  accordionWrap: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#cbd5e0", borderRadius: 18, overflow: "hidden", marginBottom: 12 },
-  accordionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, backgroundColor: "#f8fafc" },
-  accordionTitle: { fontSize: 15, fontWeight: "700", color: "#52637a" },
-  accordionIcon: { fontSize: 14, color: "#52637a", fontWeight: "700" },
-  accordionContent: { padding: 16, borderTopWidth: 1, borderTopColor: "#e2e8f0" },
-
-  stickyFooter: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingTop: 12, paddingBottom: Platform.OS === "ios" ? 32 : 16, backgroundColor: "#ffffff", borderTopWidth: 1, borderTopColor: "#e2e8f0", shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 12 },
-  buttonPrimary: { backgroundColor: "#3b82f6", borderRadius: 12, paddingVertical: 16, alignItems: "center" },
+  stickyFooter: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingTop: 12, paddingBottom: Platform.OS === "ios" ? 32 : 16, backgroundColor: "#ffffff", borderTopWidth: 1, borderTopColor: "#e2e8f0", shadowColor: "#152230", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 12 },
+  buttonPrimary: { backgroundColor: "#1f4b6e", borderRadius: 12, paddingVertical: 16, alignItems: "center" },
   buttonPrimaryText: { color: "#ffffff", fontWeight: "800", fontSize: 16 },
   card: {
-    backgroundColor: "#ffffff",
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 8 },
-    shadowRadius: 18,
-    elevation: 4,
+    backgroundColor: "#fffdf8",
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: "#152230",
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 8,
+    elevation: 2,
     borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.06)",
+    borderColor: "rgba(23, 48, 66, 0.08)",
   },
   sectionHeader: {
     marginBottom: 18,
   },
   sectionTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "800",
-    color: "#111827",
+    color: "#173042",
     marginBottom: 6,
   },
   sectionCopy: {
-    fontSize: 15,
+    fontSize: 14,
     lineHeight: 22,
-    color: "#4b5563",
+    color: "#5f7280",
   },
   warningBox: {
     backgroundColor: "#fff5f5",
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 14,
     marginBottom: 18,
     borderWidth: 1,
@@ -874,33 +770,33 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#111827",
+    color: "#173042",
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 14,
+    borderColor: "rgba(23, 48, 66, 0.15)",
+    borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     marginBottom: 18,
     fontSize: 16,
-    color: "#111827",
+    color: "#173042",
     backgroundColor: "#ffffff",
   },
   textArea: {
-    minHeight: 160,
+    minHeight: 120,
   },
   datePickerTrigger: {
     justifyContent: "center",
   },
   dateValue: {
     fontSize: 16,
-    color: "#111827",
+    color: "#173042",
   },
   datePlaceholder: {
     fontSize: 16,
-    color: "#9ca3af",
+    color: "#5f7280",
   },
   dateActionsRow: {
     flexDirection: "row",
@@ -910,36 +806,36 @@ const styles = StyleSheet.create({
   },
   dateActionButton: {
     flex: 1,
-    borderRadius: 12,
-    paddingVertical: 11,
+    borderRadius: 10,
+    paddingVertical: 10,
     alignItems: "center",
     borderWidth: 1,
   },
   datePrimaryAction: {
-    borderColor: "#bfdbfe",
-    backgroundColor: "#eff6ff",
+    borderColor: "rgba(31, 75, 110, 0.2)",
+    backgroundColor: "#f4f2ec",
   },
   dateSecondaryAction: {
-    borderColor: "#d1d5db",
+    borderColor: "rgba(23, 48, 66, 0.15)",
     backgroundColor: "#ffffff",
   },
   datePrimaryActionText: {
-    color: "#1d4ed8",
+    color: "#1f4b6e",
     fontWeight: "700",
   },
   dateSecondaryActionText: {
-    color: "#4b5563",
+    color: "#5f7280",
     fontWeight: "700",
   },
   dateModalBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(17, 24, 39, 0.35)",
+    backgroundColor: "rgba(23, 48, 66, 0.4)",
     justifyContent: "flex-end",
   },
   dateModalContent: {
     backgroundColor: "#ffffff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
     paddingHorizontal: 18,
     paddingTop: 16,
     paddingBottom: 26,
@@ -948,7 +844,7 @@ const styles = StyleSheet.create({
   dateModalTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#111827",
+    color: "#173042",
     textAlign: "center",
   },
   dateModalActions: {
@@ -958,20 +854,20 @@ const styles = StyleSheet.create({
   },
   dateModalCancelButton: {
     flex: 1,
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#d1d5db",
+    borderColor: "rgba(23, 48, 66, 0.15)",
     paddingVertical: 12,
     alignItems: "center",
   },
   dateModalCancelText: {
-    color: "#4b5563",
+    color: "#5f7280",
     fontWeight: "700",
   },
   dateModalConfirmButton: {
     flex: 1,
-    borderRadius: 12,
-    backgroundColor: "#007aff",
+    borderRadius: 10,
+    backgroundColor: "#1f4b6e",
     paddingVertical: 12,
     alignItems: "center",
   },
@@ -979,78 +875,11 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontWeight: "800",
   },
-  serviceDropdownTrigger: {
-    marginBottom: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  serviceDropdownValue: {
-    color: "#111827",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  serviceDropdownPlaceholder: {
-    color: "#9ca3af",
-    fontSize: 16,
-  },
-  serviceDropdownChevron: {
-    color: "#4b5563",
-    fontSize: 12,
-    fontWeight: "800",
-  },
-  optionButton: {
-    margin: 10,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-  },
-  optionButtonSelected: {
-    backgroundColor: "#eff6ff",
-    borderColor: "#bfdbfe",
-  },
-  optionLabel: {
-    color: "#111827",
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  optionLabelSelected: {
-    color: "#1d4ed8",
-  },
-  inlineOptions: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    marginBottom: 18,
-  },
-  inlineOption: {
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-  },
-  inlineOptionSelected: {
-    backgroundColor: "#eff6ff",
-    borderColor: "#bfdbfe",
-  },
-  inlineOptionText: {
-    color: "#111827",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  inlineOptionTextSelected: {
-    color: "#1d4ed8",
-  },
   helperText: {
     marginTop: -10,
     marginBottom: 16,
     fontSize: 13,
-    color: "#6b7280",
+    color: "#5f7280",
   },
   inputDisabled: {
     opacity: 0.65,
@@ -1059,8 +888,8 @@ const styles = StyleSheet.create({
     marginTop: -8,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 14,
+    borderColor: "rgba(23, 48, 66, 0.15)",
+    borderRadius: 12,
     backgroundColor: "#ffffff",
     overflow: "hidden",
     zIndex: 20,
@@ -1080,111 +909,48 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#eef2f7",
+    borderBottomColor: "#f4f2ec",
   },
   autocompletePrimaryText: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#111827",
+    color: "#173042",
   },
   autocompleteSecondaryText: {
     marginTop: 4,
     fontSize: 13,
-    color: "#4b5563",
-  },
-  autocompleteMetaText: {
-    marginTop: 4,
-    fontSize: 12,
-    color: "#6b7280",
+    color: "#5f7280",
   },
   autocompleteHelperText: {
     fontSize: 13,
-    color: "#4b5563",
+    color: "#5f7280",
   },
   checklist: {
-    backgroundColor: "#f8fafc",
-    borderRadius: 16,
+    backgroundColor: "#f4f2ec",
+    borderRadius: 10,
     padding: 16,
-    marginBottom: 18,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.06)",
+    borderColor: "rgba(23, 48, 66, 0.08)",
   },
   checklistTitle: {
     fontSize: 13,
     fontWeight: "800",
-    color: "#1d4ed8",
+    color: "#1f4b6e",
     textTransform: "uppercase",
     letterSpacing: 1,
     marginBottom: 10,
   },
   checkItem: {
-    fontSize: 15,
+    fontSize: 14,
     lineHeight: 22,
-    color: "#111827",
+    color: "#173042",
     marginBottom: 6,
-  },
-  buttonRow: {
-    gap: 12,
-  },
-  button: {
-    backgroundColor: "#007aff",
-    borderRadius: 16,
-    paddingVertical: 15,
-    alignItems: "center",
-  },
-  secondaryButton: {
-    borderRadius: 16,
-    paddingVertical: 15,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    backgroundColor: "#ffffff",
   },
   buttonDisabled: {
     opacity: 0.5,
   },
   buttonPressed: {
     opacity: 0.88,
-  },
-  buttonText: {
-    color: "#ffffff",
-    fontWeight: "800",
-    fontSize: 16,
-  },
-  secondaryButtonText: {
-    color: "#007aff",
-    fontWeight: "700",
-    fontSize: 15,
-  },
-  heroPrimaryButton: {
-    backgroundColor: "#007aff",
-    borderRadius: 18,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    alignItems: "center",
-  },
-  heroSecondaryButton: {
-    borderRadius: 18,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    backgroundColor: "#ffffff",
-  },
-  heroPrimaryButtonText: {
-    color: "#ffffff",
-    fontWeight: "800",
-    fontSize: 16,
-  },
-  heroSecondaryButtonText: {
-    color: "#007aff",
-    fontWeight: "700",
-    fontSize: 15,
-  },
-  successMessage: {
-    marginTop: 14,
-    color: "#047857",
-    fontWeight: "700",
   },
 });
