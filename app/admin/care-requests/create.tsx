@@ -1,6 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { router } from "expo-router";
+import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
@@ -44,6 +55,8 @@ export default function CreateAdminCareRequestScreen() {
   const [nurses, setNurses] = useState<AvailableNurseOption[]>([]);
   const [nurseLookupLoading, setNurseLookupLoading] = useState(false);
   const [showNursePicker, setShowNursePicker] = useState(false);
+  const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
+  const [draftServiceDate, setDraftServiceDate] = useState<Date>(new Date());
 
   useEffect(() => {
     if (!isReady) return;
@@ -78,7 +91,7 @@ export default function CreateAdminCareRequestScreen() {
   }, []);
 
   const filteredNurses = useMemo(() => {
-    const query = form.suggestedNurse.trim().toLocaleLowerCase();
+    const query = (form.suggestedNurse ?? "").trim().toLocaleLowerCase();
     if (!query) {
       return nurses.slice(0, 8);
     }
@@ -91,6 +104,58 @@ export default function CreateAdminCareRequestScreen() {
       )
       .slice(0, 8);
   }, [form.suggestedNurse, nurses]);
+
+  const formatDateToIso = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const parseIsoDate = (value?: string) => {
+    if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return null;
+    }
+
+    const parsedDate = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return null;
+    }
+
+    return parsedDate;
+  };
+
+  const openDatePicker = () => {
+    setDraftServiceDate(parseIsoDate(form.careRequestDate ?? undefined) ?? new Date());
+    setIsDatePickerVisible(true);
+  };
+
+  const closeDatePicker = () => {
+    setIsDatePickerVisible(false);
+  };
+
+  const confirmDateSelection = () => {
+    setForm((prev) => ({ ...prev, careRequestDate: formatDateToIso(draftServiceDate) }));
+    setIsDatePickerVisible(false);
+  };
+
+  const clearSelectedDate = () => {
+    setForm((prev) => ({ ...prev, careRequestDate: "" }));
+  };
+
+  const handleNativeDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (Platform.OS === "android") {
+      if (event.type === "set" && selectedDate) {
+        setForm((prev) => ({ ...prev, careRequestDate: formatDateToIso(selectedDate) }));
+      }
+      setIsDatePickerVisible(false);
+      return;
+    }
+
+    if (selectedDate) {
+      setDraftServiceDate(selectedDate);
+    }
+  };
 
   const validateStep1 = () => {
     const newErrors: Record<string, string> = {};
@@ -245,7 +310,7 @@ export default function CreateAdminCareRequestScreen() {
             <TextInput
               style={styles.input}
               placeholder="Nombre de la enfermera (opcional)"
-              value={form.suggestedNurse}
+              value={form.suggestedNurse ?? ""}
               onChangeText={(text) => {
                 setForm({ ...form, suggestedNurse: text });
                 setShowNursePicker(true);
@@ -284,12 +349,38 @@ export default function CreateAdminCareRequestScreen() {
             )}
 
             <Text style={styles.label}>Fecha programada</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="YYYY-MM-DD (opcional)"
-              value={form.careRequestDate}
-              onChangeText={(text) => setForm({ ...form, careRequestDate: text })}
-            />
+            <Pressable
+              onPress={openDatePicker}
+              style={({ pressed }) => [styles.input, styles.datePickerTrigger, pressed && styles.buttonPressed]}
+            >
+              <Text style={form.careRequestDate ? styles.dateValue : styles.datePlaceholder}>
+                {form.careRequestDate || "Selecciona una fecha"}
+              </Text>
+            </Pressable>
+            <View style={styles.dateActionsRow}>
+              <Pressable
+                onPress={openDatePicker}
+                style={({ pressed }) => [
+                  styles.dateActionButton,
+                  styles.datePrimaryAction,
+                  pressed && styles.buttonPressed,
+                ]}
+              >
+                <Text style={styles.datePrimaryActionText}>Elegir fecha</Text>
+              </Pressable>
+              <Pressable
+                onPress={clearSelectedDate}
+                disabled={!form.careRequestDate}
+                style={({ pressed }) => [
+                  styles.dateActionButton,
+                  styles.dateSecondaryAction,
+                  !form.careRequestDate && styles.buttonDisabled,
+                  pressed && styles.buttonPressed,
+                ]}
+              >
+                <Text style={styles.dateSecondaryActionText}>Limpiar fecha</Text>
+              </Pressable>
+            </View>
           </View>
         )}
 
@@ -353,6 +444,38 @@ export default function CreateAdminCareRequestScreen() {
           </Pressable>
         )}
       </View>
+      {isDatePickerVisible ? (
+        Platform.OS === "ios" ? (
+          <Modal transparent animationType="slide" visible={isDatePickerVisible} onRequestClose={closeDatePicker}>
+            <View style={styles.dateModalBackdrop}>
+              <View style={styles.dateModalContent}>
+                <Text style={styles.dateModalTitle}>Selecciona la fecha del servicio</Text>
+                <DateTimePicker
+                  value={draftServiceDate}
+                  mode="date"
+                  display="spinner"
+                  onChange={handleNativeDateChange}
+                />
+                <View style={styles.dateModalActions}>
+                  <Pressable style={styles.dateModalCancelButton} onPress={closeDatePicker}>
+                    <Text style={styles.dateModalCancelText}>Cancelar</Text>
+                  </Pressable>
+                  <Pressable style={styles.dateModalConfirmButton} onPress={confirmDateSelection}>
+                    <Text style={styles.dateModalConfirmText}>Guardar</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          </Modal>
+        ) : (
+          <DateTimePicker
+            value={parseIsoDate(form.careRequestDate ?? undefined) ?? new Date()}
+            mode="date"
+            display="default"
+            onChange={handleNativeDateChange}
+          />
+        )
+      ) : null}
     </MobileWorkspaceShell>
   );
 }
@@ -379,7 +502,94 @@ const styles = StyleSheet.create({
   clientOptionId: { fontSize: 12, color: "#7c2d12", marginTop: 2 },
   autocompleteLoadingRow: { flexDirection: "row", alignItems: "center", gap: 8, padding: 12 },
   autocompleteHelperText: { fontSize: 13, color: "#52637a" },
+  datePickerTrigger: {
+    minHeight: 48,
+    justifyContent: "center",
+  },
+  dateValue: {
+    color: "#102a43",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  datePlaceholder: {
+    color: "#64748b",
+    fontSize: 15,
+  },
+  dateActionsRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 8,
+  },
+  dateActionButton: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: "center",
+  },
+  datePrimaryAction: {
+    backgroundColor: "#3b82f6",
+  },
+  dateSecondaryAction: {
+    borderWidth: 1,
+    borderColor: "#cbd5e0",
+    backgroundColor: "#ffffff",
+  },
+  datePrimaryActionText: {
+    color: "#ffffff",
+    fontWeight: "700",
+  },
+  dateSecondaryActionText: {
+    color: "#102a43",
+    fontWeight: "700",
+  },
+  dateModalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.45)",
+    justifyContent: "flex-end",
+  },
+  dateModalContent: {
+    backgroundColor: "#ffffff",
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    padding: 16,
+  },
+  dateModalTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#102a43",
+    marginBottom: 8,
+  },
+  dateModalActions: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 8,
+  },
+  dateModalCancelButton: {
+    flex: 1,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#cbd5e0",
+    alignItems: "center",
+    paddingVertical: 10,
+  },
+  dateModalCancelText: {
+    color: "#102a43",
+    fontWeight: "700",
+  },
+  dateModalConfirmButton: {
+    flex: 1,
+    borderRadius: 10,
+    backgroundColor: "#3b82f6",
+    alignItems: "center",
+    paddingVertical: 10,
+  },
+  dateModalConfirmText: {
+    color: "#ffffff",
+    fontWeight: "700",
+  },
   actions: { flexDirection: "row", gap: 8, marginTop: 16 },
+  buttonDisabled: { opacity: 0.5 },
+  buttonPressed: { opacity: 0.88 },
   button: { flex: 1, backgroundColor: "#f0f4f8", borderRadius: 12, paddingVertical: 14, alignItems: "center" },
   buttonText: { color: "#102a43", fontWeight: "700", fontSize: 16 },
   buttonPrimary: { flex: 1, backgroundColor: "#3b82f6", borderRadius: 12, paddingVertical: 14, alignItems: "center" },
