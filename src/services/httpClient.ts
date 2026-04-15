@@ -7,6 +7,7 @@ import {
   loadAuthSession,
   saveAuthSession,
 } from "@/src/services/authSession";
+import { Platform } from "react-native";
 
 interface JsonRequestOptions {
   path: string;
@@ -23,8 +24,34 @@ let refreshPromise: Promise<string | null> | null = null;
 
 export function getNetworkErrorMessage(url: string, error: unknown) {
   const message = error instanceof Error ? error.message : "Error de red desconocido";
+  const browserHint = "Verifica que el backend local esté corriendo y que la URL del API responda en el navegador.";
 
-  return `No fue posible conectarse a ${url}. ${message}. Si estas en iPhone, confirma que el dispositivo confia en el certificado local y puede abrir la URL del API en Safari.`;
+  try {
+    const parsedUrl = new URL(url);
+    const hostname = parsedUrl.hostname;
+    const usesLocalHttps = parsedUrl.protocol === "https:" && (
+      hostname === "localhost"
+      || hostname === "127.0.0.1"
+      || hostname.endsWith(".sslip.io")
+      || hostname.startsWith("10.")
+      || hostname.startsWith("192.168.")
+      || /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname)
+    );
+
+    if (Platform.OS === "web") {
+      return `No fue posible conectarse a ${url}. ${message}. ${browserHint}`;
+    }
+
+    if (usesLocalHttps) {
+      return `No fue posible conectarse a ${url}. ${message}. Si estas en iPhone, confirma que el dispositivo confia en el certificado local y puede abrir la URL del API en Safari.`;
+    }
+  } catch {
+    if (Platform.OS === "web") {
+      return `No fue posible conectarse a ${url}. ${message}. ${browserHint}`;
+    }
+  }
+
+  return `No fue posible conectarse a ${url}. ${message}. Revisa la conectividad del API y vuelve a intentarlo.`;
 }
 
 export function getDisplayErrorMessage(responseText: string, status: number) {
@@ -83,6 +110,10 @@ export async function requestJson<T>({
   let response: Response;
 
   try {
+    // Create AbortController for timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
     response = await fetch(url, {
       method,
       headers: {
@@ -93,8 +124,30 @@ export async function requestJson<T>({
         ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       },
       body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
   } catch (error) {
+    // Handle timeout specifically
+    if (error instanceof Error && error.name === 'AbortError') {
+      const message = `La solicitud tardó demasiado tiempo en responder. Verifica tu conexión a internet y que el servidor esté funcionando. URL: ${url}`;
+
+      logClientEvent(
+        "mobile.http",
+        "Request timeout",
+        {
+          correlationId,
+          method,
+          url,
+          timeoutMs: 30000,
+        },
+        "error",
+      );
+
+      throw new Error(message);
+    }
+
     const message = getNetworkErrorMessage(url, error);
 
     logClientEvent(
@@ -173,16 +226,24 @@ async function refreshAccessToken() {
   }
 
   if (!refreshPromise) {
-    refreshPromise = fetch(`${API_BASE_URL}/api/auth/refresh`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Client-App": "nursing-care-mobile",
-        "X-Client-Platform": "expo-go",
-      },
-      body: JSON.stringify({ refreshToken: session.refreshToken }),
-    })
-      .then(async (response) => {
+    refreshPromise = (async () => {
+      try {
+        // Create AbortController for timeout handling
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+        const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Client-App": "nursing-care-mobile",
+            "X-Client-Platform": "expo-go",
+          },
+          body: JSON.stringify({ refreshToken: session.refreshToken }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
         const responseText = await response.text();
 
         if (!response.ok) {
@@ -204,14 +265,24 @@ async function refreshAccessToken() {
         });
 
         return payload.token;
-      })
-      .catch(async () => {
+      } catch (error) {
+        // Handle timeout specifically
+        if (error instanceof Error && error.name === 'AbortError') {
+          logClientEvent(
+            "mobile.http",
+            "Refresh token timeout",
+            {
+              timeoutMs: 30000,
+            },
+            "error",
+          );
+        }
         await clearAuthSession();
         return null;
-      })
-      .finally(() => {
+      } finally {
         refreshPromise = null;
-      });
+      }
+    })();
   }
 
   return refreshPromise;
