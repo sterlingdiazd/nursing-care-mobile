@@ -467,6 +467,29 @@ export default function CreateAdminCareRequestScreen() {
               </View>
             </View>
           </Modal>
+        ) : Platform.OS === "web" ? (
+          <Modal transparent animationType="slide" visible={isDatePickerVisible} onRequestClose={closeDatePicker}>
+            <View style={styles.dateModalBackdrop}>
+              <View style={styles.dateModalContent}>
+                <Text style={styles.dateModalTitle}>Selecciona la fecha del servicio</Text>
+                <TextInput
+                  value={form.careRequestDate || formatDateToIso(draftServiceDate)}
+                  onChangeText={(text) => {
+                    setForm({ ...form, careRequestDate: text });
+                    setDraftServiceDate(parseIsoDate(text) || new Date());
+                  }}
+                  placeholder="YYYY-MM-DD"
+                  style={[styles.input, { marginTop: 16, marginBottom: 0 }]}
+                  {...({ type: "date" } as any)}
+                />
+                <View style={styles.dateModalActions}>
+                  <Pressable style={styles.dateModalConfirmButton} onPress={closeDatePicker}>
+                    <Text style={styles.dateModalConfirmText}>Aceptar</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          </Modal>
         ) : (
           <DateTimePicker
             value={parseIsoDate(form.careRequestDate ?? undefined) ?? new Date()}
