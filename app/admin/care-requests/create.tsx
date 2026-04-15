@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import { useRef } from "react";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
@@ -42,6 +43,7 @@ export default function CreateAdminCareRequestScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   // Form state
   const [form, setForm] = useState<CreateAdminCareRequestDto>({
@@ -166,18 +168,33 @@ export default function CreateAdminCareRequestScreen() {
   };
 
   const handleSubmit = async () => {
+    if (submitting) return;
     if (!validateAll()) {
       setError("Por favor complete todos los campos obligatorios");
+      setTimeout(() => scrollViewRef.current?.scrollTo({ y: 0, animated: true }), 100);
       return;
     }
 
     try {
       setError(null);
       setSubmitting(true);
-      const result = await createAdminCareRequest(form);
-      router.push(`/admin/care-requests/${result.id}` as any);
+      
+      const payload: CreateAdminCareRequestDto = {
+        ...form,
+        distanceFactor: form.distanceFactor?.trim() || undefined,
+        complexityLevel: form.complexityLevel?.trim() || undefined,
+        suggestedNurse: form.suggestedNurse?.trim() || undefined,
+      };
+
+      const result = await createAdminCareRequest(payload);
+      if (result && result.id) {
+        router.push(`/admin/care-requests/${result.id}` as any);
+      } else {
+        router.push(`/admin/care-requests` as any);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible crear la solicitud");
+      setTimeout(() => scrollViewRef.current?.scrollTo({ y: 0, animated: true }), 100);
     } finally {
       setSubmitting(false);
     }
@@ -206,7 +223,7 @@ export default function CreateAdminCareRequestScreen() {
     >
       {!!error && <Text style={styles.error}>{error}</Text>}
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scrollContent}>
         
         {/* === SECTION: CLIENT & BASIC INFO === */}
         <View style={styles.card}>
