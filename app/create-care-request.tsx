@@ -553,33 +553,48 @@ export default function CreateCareRequestScreen() {
             </Text>
 
             <Text style={styles.label}>Fecha del servicio (opcional)</Text>
-            <Pressable
-              onPress={openDatePicker}
-              disabled={isLoading}
-              style={({ pressed }) => [
-                styles.input,
-                styles.datePickerTrigger,
-                isLoading && styles.inputDisabled,
-                pressed && !isLoading && styles.buttonPressed,
-              ]}
-            >
-              <Text style={form.careRequestDate ? styles.dateValue : styles.datePlaceholder}>
-                {form.careRequestDate ?? "Selecciona una fecha"}
-              </Text>
-            </Pressable>
-            <View style={styles.dateActionsRow}>
+            {Platform.OS === "web" ? (
+              <TextInput
+                value={form.careRequestDate || ""}
+                onChangeText={(text) => {
+                  setForm((prev) => ({ ...prev, careRequestDate: text || undefined }));
+                }}
+                editable={!isLoading}
+                style={[styles.input, styles.datePickerTrigger, isLoading && styles.inputDisabled]}
+                placeholder="YYYY-MM-DD"
+                {...({ type: "date" } as any)}
+              />
+            ) : (
               <Pressable
                 onPress={openDatePicker}
                 disabled={isLoading}
                 style={({ pressed }) => [
-                  styles.dateActionButton,
-                  styles.datePrimaryAction,
-                  isLoading && styles.buttonDisabled,
+                  styles.input,
+                  styles.datePickerTrigger,
+                  isLoading && styles.inputDisabled,
                   pressed && !isLoading && styles.buttonPressed,
                 ]}
               >
-                <Text style={styles.datePrimaryActionText}>Elegir fecha</Text>
+                <Text style={form.careRequestDate ? styles.dateValue : styles.datePlaceholder}>
+                  {form.careRequestDate ?? "Selecciona una fecha"}
+                </Text>
               </Pressable>
+            )}
+            <View style={styles.dateActionsRow}>
+              {Platform.OS !== "web" && (
+                <Pressable
+                  onPress={openDatePicker}
+                  disabled={isLoading}
+                  style={({ pressed }) => [
+                    styles.dateActionButton,
+                    styles.datePrimaryAction,
+                    isLoading && styles.buttonDisabled,
+                    pressed && !isLoading && styles.buttonPressed,
+                  ]}
+                >
+                  <Text style={styles.datePrimaryActionText}>Elegir fecha</Text>
+                </Pressable>
+              )}
               <Pressable
                 onPress={clearSelectedDate}
                 disabled={isLoading || !form.careRequestDate}
@@ -797,7 +812,7 @@ export default function CreateCareRequestScreen() {
             {successMessage && <Text style={styles.successMessage}>{successMessage}</Text>}
           </View>
       </View>
-      {isDatePickerVisible ? (
+      {isDatePickerVisible && Platform.OS !== "web" ? (
         Platform.OS === "ios" ? (
           <Modal transparent animationType="slide" visible={isDatePickerVisible} onRequestClose={closeDatePicker}>
             <View style={styles.dateModalBackdrop}>
@@ -815,29 +830,6 @@ export default function CreateCareRequestScreen() {
                   </Pressable>
                   <Pressable style={styles.dateModalConfirmButton} onPress={confirmDateSelection}>
                     <Text style={styles.dateModalConfirmText}>Guardar</Text>
-                  </Pressable>
-                </View>
-              </View>
-            </View>
-          </Modal>
-        ) : Platform.OS === "web" ? (
-          <Modal transparent animationType="slide" visible={isDatePickerVisible} onRequestClose={closeDatePicker}>
-            <View style={styles.dateModalBackdrop}>
-              <View style={styles.dateModalContent}>
-                <Text style={styles.dateModalTitle}>Selecciona la fecha del servicio</Text>
-                <TextInput
-                  value={form.careRequestDate || formatDateToIso(draftServiceDate)}
-                  onChangeText={(text) => {
-                    setForm((prev) => ({ ...prev, careRequestDate: text }));
-                    setDraftServiceDate(parseIsoDate(text) || new Date());
-                  }}
-                  placeholder="YYYY-MM-DD"
-                  style={[styles.input, { marginTop: 16, marginBottom: 0 }]}
-                  {...({ type: "date" } as any)}
-                />
-                <View style={styles.dateModalActions}>
-                  <Pressable style={styles.dateModalConfirmButton} onPress={closeDatePicker}>
-                    <Text style={styles.dateModalConfirmText}>Aceptar</Text>
                   </Pressable>
                 </View>
               </View>
