@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Linking from "expo-linking";
+import * as WebBrowser from "expo-web-browser";
 import { useAuth } from "@/src/context/AuthContext";
 import { validateEmail } from "@/src/api/auth";
 import { AuthResponse } from "@/src/types/auth";
@@ -24,6 +25,8 @@ import {
   getGoogleOAuthStartUrl,
   getLocalHttpsCertificateWarning,
 } from "@/src/services/authService";
+
+WebBrowser.maybeCompleteAuthSession();
 
 function readOauthParams(url: string) {
   const parsed = Linking.parse(url);
@@ -48,7 +51,7 @@ function readOauthParams(url: string) {
 export default function LoginScreen() {
   const router = useRouter();
   const searchParams = useLocalSearchParams();
-  const { login, completeOAuthLogin, isLoading } = useAuth();
+  const { login, completeOAuthLogin, isLoading, error, clearError } = useAuth();
   const lastHandledUrlRef = useRef<string | null>(null);
   const lastHandledOauthPayloadRef = useRef<string | null>(null);
 
@@ -81,6 +84,7 @@ export default function LoginScreen() {
 
   // Handle login submission
   const handleSubmit = async () => {
+    clearError();
     // Validate all fields
     if (emailError || passwordError || !email || !password) {
       Alert.alert("Validacion", "Ingresa un correo valido y tu contrasena.");
@@ -214,7 +218,26 @@ export default function LoginScreen() {
     }
 
     try {
-      await Linking.openURL(getGoogleOAuthStartUrl("mobile"));
+      const redirectUrl = Linking.createURL("/login");
+      const startUrl = getGoogleOAuthStartUrl("mobile", redirectUrl);
+
+      if (Platform.OS === "web") {
+        await Linking.openURL(startUrl);
+        return;
+      }
+
+      const result = await WebBrowser.openAuthSessionAsync(startUrl, redirectUrl);
+
+      if (result.type === "success" && result.url) {
+        await Linking.openURL(result.url);
+        return;
+      }
+
+      if (result.type === "cancel" || result.type === "dismiss") {
+        return;
+      }
+
+      Alert.alert("Error con Google", "No fue posible completar el inicio de sesion en el navegador integrado.");
     } catch (error) {
       Alert.alert(
         "Error con Google",
@@ -238,6 +261,13 @@ export default function LoginScreen() {
       <Text style={styles.title}>Sol y Luna</Text>
       <Text style={styles.subtitle}>Cuidado profesional, calidad humana.</Text>
 
+      {/* Error Message */}
+      {error ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorMessage}>{error}</Text>
+        </View>
+      ) : null}
+
       {/* Email Input */}
       <View style={styles.formGroup}>
         <Text style={styles.label}>Correo</Text>
@@ -246,7 +276,10 @@ export default function LoginScreen() {
           style={[styles.input, emailError ? styles.inputError : null]}
           placeholder="tu@correo.com"
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(text) => {
+            setEmail(text);
+            if (error) clearError();
+          }}
           onBlur={() => validateEmailField(email)}
           keyboardType="email-address"
           autoCapitalize="none"
@@ -264,7 +297,10 @@ export default function LoginScreen() {
           style={[styles.input, passwordError ? styles.inputError : null]}
           placeholder="Ingresa tu contrasena"
           value={password}
-          onChangeText={setPassword}
+          onChangeText={(text) => {
+            setPassword(text);
+            if (error) clearError();
+          }}
           onBlur={() => validatePasswordField(password)}
           secureTextEntry
           editable={!isLoading}
@@ -485,6 +521,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#007aff",
     fontWeight: "700",
+  },
+  errorContainer: {
+    backgroundColor: "#fee",
+    borderColor: "#fcc",
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 20,
+  },
+  errorMessage: {
+    color: "#c33",
+    fontSize: 14,
+    textAlign: "center",
+    fontWeight: "500",
   },
 });
 

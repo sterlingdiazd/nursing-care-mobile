@@ -185,8 +185,17 @@ export function getLocalHttpsCertificateWarning(): string | null {
   }
 }
 
-export function getGoogleOAuthStartUrl(target: "web" | "mobile" = "mobile") {
-  return `${API_BASE_URL.replace(/\/$/, "")}/api/auth/google/start?target=${target}`;
+export function getGoogleOAuthStartUrl(
+  target: "web" | "mobile" = "mobile",
+  mobileRedirectUrl?: string,
+) {
+  const params = new URLSearchParams({ target });
+
+  if (target === "mobile" && mobileRedirectUrl?.trim()) {
+    params.set("mobileRedirectUrl", mobileRedirectUrl.trim());
+  }
+
+  return `${API_BASE_URL.replace(/\/$/, "")}/api/auth/google/start?${params.toString()}`;
 }
 
 export async function checkBackendHealth(): Promise<HealthResponse> {

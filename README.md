@@ -66,7 +66,8 @@ The Nursing Care Mobile app provides on-the-go access to nursing and residential
    ```
 
 2. **Configure environment**:
-   Copy .env.example to .env.local and set EXPO_PUBLIC_API_BASE_URL to your backend instance (e.g., http://<LAN_IP>:5050).
+   Create `.env.local` and set `EXPO_PUBLIC_API_BASE_URL` to a backend URL the phone can reach on the same network, preferably using the HTTPS `sslip.io` host exposed by the app config.
+   Example: `EXPO_PUBLIC_API_BASE_URL=https://192-168-1-50.sslip.io:5050`
 
 3. **Start the development server**:
    ```bash
@@ -77,6 +78,7 @@ The Nursing Care Mobile app provides on-the-go access to nursing and residential
 - Press i for iOS simulator.
 - Press a for Android emulator.
 - Scan the QR code with Expo Go for physical device testing.
+- Google login on native devices uses the in-app browser and returns to the app automatically. If the backend uses a local HTTPS certificate, trust that certificate on the phone before testing Google login.
 
 ---
 

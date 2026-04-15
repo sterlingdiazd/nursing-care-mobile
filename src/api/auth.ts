@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from "axios";
-import { API_BASE_URL } from "../config/env";
+import { API_BASE_URL } from "@/src/config/api";
 
 // Types
 export enum UserProfileType {
