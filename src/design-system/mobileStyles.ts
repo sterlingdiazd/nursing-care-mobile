@@ -37,6 +37,21 @@ export const mobileSecondaryButton = {
   alignItems: "center" as const,
 } as const;
 
+export const mobileAdminActionButton = {
+  backgroundColor: mobileTheme.colors.surface.secondary,
+  borderRadius: mobileTheme.radius.md,
+  borderWidth: 1,
+  borderColor: mobileTheme.colors.border.strong,
+  alignItems: "center" as const,
+} as const;
+
+export const mobileAdminActionButtonText = {
+  color: mobileTheme.colors.ink.secondary,
+  fontWeight: "700" as const,
+  fontSize: 14,
+  textAlign: "center" as const,
+} as const;
+
 export const mobilePill = {
   borderRadius: mobileTheme.radius.pill,
 } as const;

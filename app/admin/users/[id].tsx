@@ -14,6 +14,7 @@ import {
   type AdminUserAccountStatus,
   type AdminUserProfileType,
 } from "@/src/services/adminPortalService";
+import { mobileAdminActionButton, mobileAdminActionButtonText, mobileTheme } from "@/src/design-system/mobileStyles";
 
 function translateRole(role: AdminUserRoleName): string {
   switch (role) {
@@ -417,15 +418,15 @@ const styles = StyleSheet.create({
   headerActions: { flexDirection: "row", gap: 8 },
   button: { backgroundColor: "#f0f4f8", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },
   buttonText: { color: "#102a43", fontWeight: "700", fontSize: 14 },
-  buttonPrimary: { backgroundColor: "#3b82f6", borderRadius: 12, paddingVertical: 12, marginTop: 8 },
-  buttonPrimaryText: { color: "#ffffff", fontWeight: "700", fontSize: 14, textAlign: "center" },
-  buttonSecondary: { backgroundColor: "#f0f4f8", borderRadius: 12, paddingVertical: 12, marginTop: 4 },
-  buttonSecondaryText: { color: "#102a43", fontWeight: "700", fontSize: 14, textAlign: "center" },
-  buttonDanger: { backgroundColor: "#ef4444", borderRadius: 12, paddingVertical: 12, marginTop: 8 },
-  buttonDangerText: { color: "#ffffff", fontWeight: "700", fontSize: 14, textAlign: "center" },
+  buttonPrimary: { ...mobileAdminActionButton, paddingVertical: 12, marginTop: 8 },
+  buttonPrimaryText: { ...mobileAdminActionButtonText },
+  buttonSecondary: { ...mobileAdminActionButton, paddingVertical: 12, marginTop: 4 },
+  buttonSecondaryText: { ...mobileAdminActionButtonText },
+  buttonDanger: { ...mobileAdminActionButton, paddingVertical: 12, marginTop: 8 },
+  buttonDangerText: { ...mobileAdminActionButtonText },
   buttonDisabled: { opacity: 0.5 },
-  toggleButton: { backgroundColor: "#f59e0b", borderRadius: 12, paddingVertical: 12, marginTop: 8 },
-  toggleButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 14, textAlign: "center" },
+  toggleButton: { ...mobileAdminActionButton, paddingVertical: 12, marginTop: 8 },
+  toggleButtonText: { ...mobileAdminActionButtonText },
   errorCard: { backgroundColor: "#fee", borderRadius: 12, padding: 12, marginBottom: 12 },
   errorText: { color: "#c00", fontSize: 14, marginBottom: 8 },
   retryButton: { backgroundColor: "#c00", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12, alignSelf: "flex-start" },
@@ -451,8 +452,8 @@ const styles = StyleSheet.create({
   modalActions: { flexDirection: "row", gap: 8, marginTop: 16 },
   roleRow: { flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#f0f4f8" },
   roleRowDisabled: { opacity: 0.4 },
-  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: "#3b82f6", marginRight: 12, alignItems: "center", justifyContent: "center" },
-  checkboxSelected: { backgroundColor: "#3b82f6" },
+  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: mobileTheme.colors.border.accent, marginRight: 12, alignItems: "center", justifyContent: "center" },
+  checkboxSelected: { backgroundColor: mobileTheme.colors.ink.accent },
   checkboxCheck: { color: "#ffffff", fontSize: 13, fontWeight: "800" },
   roleLabel: { color: "#102a43", fontSize: 15, fontWeight: "600" },
   roleLabelDisabled: { color: "#94a3b8" },

@@ -10,6 +10,7 @@ import {
   type AdminClientDetailDto,
   type AdminCareRequestStatus,
 } from "@/src/services/adminPortalService";
+import { mobileAdminActionButton, mobileAdminActionButtonText } from "@/src/design-system/mobileStyles";
 
 function formatTimestamp(value: string | null) {
   if (!value) return "N/A";
@@ -284,13 +285,13 @@ const styles = StyleSheet.create({
   headerActions: { flexDirection: "row", gap: 8 },
   button: { backgroundColor: "#f0f4f8", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },
   buttonText: { color: "#102a43", fontWeight: "700", fontSize: 14 },
-  buttonPrimary: { backgroundColor: "#3b82f6", borderRadius: 12, paddingVertical: 12, marginTop: 8 },
-  buttonPrimaryText: { color: "#ffffff", fontWeight: "700", fontSize: 14, textAlign: "center" },
-  buttonSecondary: { backgroundColor: "#f0f4f8", borderRadius: 12, paddingVertical: 12, marginTop: 4 },
-  buttonSecondaryText: { color: "#102a43", fontWeight: "700", fontSize: 14, textAlign: "center" },
+  buttonPrimary: { ...mobileAdminActionButton, paddingVertical: 12, marginTop: 8 },
+  buttonPrimaryText: { ...mobileAdminActionButtonText },
+  buttonSecondary: { ...mobileAdminActionButton, paddingVertical: 12, marginTop: 4 },
+  buttonSecondaryText: { ...mobileAdminActionButtonText },
   buttonDisabled: { opacity: 0.5 },
-  toggleButton: { backgroundColor: "#f59e0b", borderRadius: 12, paddingVertical: 12, marginTop: 8 },
-  toggleButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 14, textAlign: "center" },
+  toggleButton: { ...mobileAdminActionButton, paddingVertical: 12, marginTop: 8 },
+  toggleButtonText: { ...mobileAdminActionButtonText },
   errorCard: { backgroundColor: "#fee", borderRadius: 12, padding: 12, marginBottom: 12 },
   errorText: { color: "#c00", fontSize: 14, marginBottom: 8 },
   retryButton: { backgroundColor: "#c00", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12, alignSelf: "flex-start" },

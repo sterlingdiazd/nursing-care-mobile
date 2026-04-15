@@ -9,6 +9,7 @@ import {
   setNurseOperationalAccessForAdmin,
   type NurseProfileAdminRecordDto,
 } from "@/src/services/adminPortalService";
+import { mobileAdminActionButton, mobileAdminActionButtonText } from "@/src/design-system/mobileStyles";
 
 function formatTimestamp(value: string | null) {
   if (!value) return "N/A";
@@ -269,8 +270,8 @@ const styles = StyleSheet.create({
   headerActions: { flexDirection: "row", gap: 8 },
   button: { backgroundColor: "#f0f4f8", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },
   buttonText: { color: "#102a43", fontWeight: "700", fontSize: 14 },
-  buttonPrimary: { backgroundColor: "#3b82f6", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },
-  buttonPrimaryText: { color: "#ffffff", fontWeight: "700", fontSize: 14 },
+  buttonPrimary: { ...mobileAdminActionButton, paddingHorizontal: 16, paddingVertical: 10 },
+  buttonPrimaryText: { ...mobileAdminActionButtonText },
   error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
   loading: { color: "#52637a", fontSize: 14, textAlign: "center", padding: 20 },
   statusCard: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
@@ -286,9 +287,9 @@ const styles = StyleSheet.create({
   fieldValue: { color: "#102a43", fontSize: 15 },
   fieldValueMono: { color: "#102a43", fontSize: 13, fontFamily: "monospace" },
   emptyText: { color: "#52637a", fontSize: 14, fontStyle: "italic" },
-  toggleButton: { backgroundColor: "#f59e0b", borderRadius: 12, paddingVertical: 12, marginTop: 12 },
+  toggleButton: { ...mobileAdminActionButton, paddingVertical: 12, marginTop: 12 },
   toggleButtonDisabled: { opacity: 0.5 },
-  toggleButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 14, textAlign: "center" },
-  reviewButton: { backgroundColor: "#3b82f6", borderRadius: 12, paddingVertical: 12, marginTop: 8 },
-  reviewButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 14, textAlign: "center" },
+  toggleButtonText: { ...mobileAdminActionButtonText },
+  reviewButton: { ...mobileAdminActionButton, paddingVertical: 12, marginTop: 8 },
+  reviewButtonText: { ...mobileAdminActionButtonText },
 });
