@@ -22,6 +22,12 @@ vi.mock("@/src/services/authSession", () => ({
   clearAuthSession: vi.fn(),
 }));
 
+vi.mock("react-native", () => ({
+  Platform: {
+    OS: "ios",
+  },
+}));
+
 describe("httpClient", () => {
   beforeEach(() => {
     vi.clearAllMocks();

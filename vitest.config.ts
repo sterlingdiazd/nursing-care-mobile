@@ -18,6 +18,7 @@ export default defineConfig({
           "expo",
           "expo-router",
           "expo-constants",
+          "expo-linking",
           "react-native-safe-area-context",
         ],
       },
