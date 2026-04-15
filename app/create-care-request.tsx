@@ -46,6 +46,7 @@ export default function CreateCareRequestScreen() {
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [availableNurses, setAvailableNurses] = useState<AvailableNurseOption[]>([]);
   const [nurseLookupLoading, setNurseLookupLoading] = useState(false);
+  const [nurseLookupError, setNurseLookupError] = useState<string | null>(null);
   const [showSuggestedNurseOptions, setShowSuggestedNurseOptions] = useState(false);
   const [isServicePickerVisible, setIsServicePickerVisible] = useState(false);
   const [selectedNurse, setSelectedNurse] = useState<AvailableNurseOption | null>(null);
@@ -351,13 +352,23 @@ export default function CreateCareRequestScreen() {
       setAvailableNurses([]);
       setSelectedNurse(null);
       setNurseLookupLoading(false);
+      setNurseLookupError(null);
       return;
     }
 
     setNurseLookupLoading(true);
+    setNurseLookupError(null);
     void getAvailableNurses()
-      .then((nurses) => setAvailableNurses(nurses))
-      .catch(() => setAvailableNurses([]))
+      .then((nurses) => {
+        setAvailableNurses(nurses);
+        setNurseLookupError(null);
+      })
+      .catch((error: unknown) => {
+        setAvailableNurses([]);
+        setNurseLookupError(
+          error instanceof Error ? error.message : "No fue posible cargar la lista de enfermeras.",
+        );
+      })
       .finally(() => setNurseLookupLoading(false));
   }, [canCreateRequest, token]);
 
@@ -484,9 +495,7 @@ export default function CreateCareRequestScreen() {
               nativeID="create-care-request-suggested-nurse-input"
               style={[styles.input, isLoading && styles.inputDisabled]}
             />
-            {showSuggestedNurseOptions &&
-              !isLoading &&
-              (nurseLookupLoading || filteredNurseSuggestions.length > 0) && (
+            {showSuggestedNurseOptions && !isLoading && (
                 <View
                   style={styles.autocompletePanel}
                   testID="create-care-request-suggested-nurse-options"
@@ -496,6 +505,14 @@ export default function CreateCareRequestScreen() {
                     <View style={styles.autocompleteLoadingRow}>
                       <ActivityIndicator color="#132d75" />
                       <Text style={styles.autocompleteHelperText}>Buscando enfermeras activas...</Text>
+                    </View>
+                  ) : nurseLookupError ? (
+                    <View style={styles.autocompleteLoadingRow}>
+                      <Text style={styles.autocompleteHelperText}>{nurseLookupError}</Text>
+                    </View>
+                  ) : filteredNurseSuggestions.length === 0 ? (
+                    <View style={styles.autocompleteLoadingRow}>
+                      <Text style={styles.autocompleteHelperText}>No se encontraron enfermeras.</Text>
                     </View>
                   ) : (
                     <ScrollView
@@ -1082,6 +1099,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: "#ffffff",
     overflow: "hidden",
+    zIndex: 20,
+    elevation: 6,
   },
   autocompleteList: {
     maxHeight: 220,
