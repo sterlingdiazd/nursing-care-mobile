@@ -65,6 +65,17 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+function normalizeRoles(roles: string[]) {
+  return Array.from(
+    new Set(
+      roles
+        .filter((role): role is string => typeof role === "string")
+        .map((role) => role.trim().toUpperCase())
+        .filter((role) => role.length > 0),
+    ),
+  );
+}
+
 function resolveResponseUserId(response: AuthResponse, currentUserId?: string | null) {
   if (response.userId?.trim().length) {
     return response.userId;
@@ -131,22 +142,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const setSession = (response: AuthResponse) => {
     const resolvedUserId = resolveResponseUserId(response, userId);
+    const normalizedRoles = normalizeRoles(response.roles ?? []);
 
     setToken(response.token);
     setUserId(resolvedUserId);
     setEmail(response.email);
-    setRoles(response.roles ?? []);
+    setRoles(normalizedRoles);
     setRequiresProfileCompletion(response.requiresProfileCompletion);
     setRequiresAdminReview(response.requiresAdminReview);
     logClientEvent("mobile.auth", "Session loaded", {
       email: response.email,
-      roles: response.roles,
+      roles: normalizedRoles,
     });
   };
 
   const resolveProfileType = (response: AuthResponse, fallbackProfileType?: UserProfileType | null) => {
-    if (response.roles?.includes("ADMIN")) return UserProfileType.ADMIN;
-    if (response.roles?.includes("NURSE")) return UserProfileType.NURSE;
+    const normalizedRoles = normalizeRoles(response.roles ?? []);
+    if (normalizedRoles.includes("ADMIN")) return UserProfileType.ADMIN;
+    if (normalizedRoles.includes("NURSE")) return UserProfileType.NURSE;
     return fallbackProfileType ?? UserProfileType.CLIENT;
   };
 
@@ -170,7 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       expiresAtUtc: response.expiresAtUtc,
       userId: resolvedUserId,
       email: response.email,
-      roles: response.roles ?? [],
+      roles: normalizeRoles(response.roles ?? []),
       profileType: detectedProfileType,
       requiresProfileCompletion: response.requiresProfileCompletion,
       requiresAdminReview: response.requiresAdminReview,
@@ -229,7 +242,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         expiresAtUtc: response.expiresAtUtc,
         userId: resolveResponseUserId(response, null) || "",
         email: response.email,
-        roles: response.roles ?? [],
+        roles: normalizeRoles(response.roles ?? []),
         profileType: resolveProfileType(response, null),
         requiresProfileCompletion: response.requiresProfileCompletion,
         requiresAdminReview: response.requiresAdminReview,

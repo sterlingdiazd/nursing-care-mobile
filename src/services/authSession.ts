@@ -19,6 +19,17 @@ const WEB_AUTOMATION_SEED_KEY = "automationAuthSessionSeed";
 let cachedSession: StoredAuthSession | null = null;
 const listeners = new Set<() => void>();
 
+function normalizeRoles(roles: string[]) {
+  return Array.from(
+    new Set(
+      roles
+        .filter((role): role is string => typeof role === "string")
+        .map((role) => role.trim().toUpperCase())
+        .filter((role) => role.length > 0),
+    ),
+  );
+}
+
 function readWebSeedSession() {
   if (typeof window === "undefined" || !window.localStorage) {
     return null;
@@ -116,7 +127,7 @@ export async function loadAuthSession() {
       expiresAtUtc: parsed.expiresAtUtc ?? null,
       userId,
       email: parsed.email,
-      roles: parsed.roles,
+      roles: normalizeRoles(parsed.roles),
       profileType: parsed.profileType ?? null,
       requiresProfileCompletion: parsed.requiresProfileCompletion ?? false,
       requiresAdminReview: parsed.requiresAdminReview ?? false,
@@ -138,8 +149,12 @@ export function getCachedAuthSession() {
 }
 
 export async function saveAuthSession(session: StoredAuthSession) {
-  cachedSession = session;
-  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+  const normalizedSession: StoredAuthSession = {
+    ...session,
+    roles: normalizeRoles(session.roles),
+  };
+  cachedSession = normalizedSession;
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedSession));
   notifyListeners();
 }
 
