@@ -43,6 +43,7 @@ export default function CreateAdminCareRequestScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Form state
@@ -168,7 +169,8 @@ export default function CreateAdminCareRequestScreen() {
   };
 
   const handleSubmit = async () => {
-    if (submitting) return;
+    if (isSubmittingRef.current) return;
+    
     if (!validateAll()) {
       setError("Por favor complete todos los campos obligatorios");
       setTimeout(() => scrollViewRef.current?.scrollTo({ y: 0, animated: true }), 100);
@@ -176,8 +178,9 @@ export default function CreateAdminCareRequestScreen() {
     }
 
     try {
-      setError(null);
+      isSubmittingRef.current = true;
       setSubmitting(true);
+      setError(null);
       
       const payload: CreateAdminCareRequestDto = {
         ...form,
@@ -186,16 +189,34 @@ export default function CreateAdminCareRequestScreen() {
         suggestedNurse: form.suggestedNurse?.trim() || undefined,
       };
 
-      const result = await createAdminCareRequest(payload);
-      if (result && result.id) {
-        router.push(`/admin/care-requests/${result.id}` as any);
-      } else {
-        router.push(`/admin/care-requests` as any);
-      }
+      await createAdminCareRequest(payload);
+      
+      // Limpiar formulario al completar
+      setForm({
+        clientUserId: "",
+        careRequestDescription: "",
+        careRequestType: CARE_TYPES[0],
+        unit: 1,
+        suggestedNurse: "",
+        price: undefined,
+        clientBasePriceOverride: undefined,
+        distanceFactor: "",
+        complexityLevel: "",
+        medicalSuppliesCost: undefined,
+        careRequestDate: formatDateToIso(new Date()),
+      });
+      setSelectedClient(null);
+      setClientSearch("");
+      setCustomCareType("");
+      setShowAdvancedPricing(false);
+
+      // Redirigir a la lista en lugar del detalle
+      router.push(`/admin/care-requests` as any);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible crear la solicitud");
       setTimeout(() => scrollViewRef.current?.scrollTo({ y: 0, animated: true }), 100);
     } finally {
+      isSubmittingRef.current = false;
       setSubmitting(false);
     }
   };
