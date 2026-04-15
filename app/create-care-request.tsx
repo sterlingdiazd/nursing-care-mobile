@@ -165,7 +165,6 @@ export default function CreateCareRequestScreen() {
     });
     setSelectedNurse(null);
     setShowSuggestedNurseOptions(false);
-    setIsServicePickerVisible(false);
     setDraftCareRequestType(firstType);
     setSuccessMessage(null);
   };
