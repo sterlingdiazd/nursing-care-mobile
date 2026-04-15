@@ -10,7 +10,6 @@ import {
   canAccessSupportTools,
   canCreateCareRequests,
 } from "@/src/utils/authRedirect";
-import { formatRoleLabels } from "@/src/utils/roleLabels";
 import { hapticFeedback } from "@/src/utils/haptics";
 
 const adminQuickSections = [
@@ -96,12 +95,11 @@ const publicQuickSections = [
 ];
 
 export default function HomeScreen() {
-  const { email, isAuthenticated, roles, requiresAdminReview, requiresProfileCompletion, profileType } = useAuth();
+  const { isAuthenticated, roles, requiresAdminReview, requiresProfileCompletion, profileType } = useAuth();
   const isNurseUnderReview = requiresAdminReview && profileType === 1;
   const isAnonymous = !isAuthenticated;
   const isAdmin = roles.includes("ADMIN");
   const isClient = roles.includes("CLIENT");
-  const isNurse = roles.includes("NURSE");
   const accessState = {
     roles,
     requiresProfileCompletion,
@@ -168,15 +166,6 @@ export default function HomeScreen() {
       : canOpenSupportTools
         ? "Mientras termina la revision administrativa, solo veras accesos permitidos para tu perfil."
         : "Mientras termina la revision administrativa, no veras funciones operativas.";
-  const sessionTitle = hasOperationalAccess
-    ? "Sesion lista"
-    : isAnonymous
-      ? "Antes de comenzar"
-      : "Acceso limitado";
-  const sessionBody = isAuthenticated
-    ? `${email ?? "No hay cuenta cargada"} • ${formatRoleLabels(roles)}`
-    : "Accede con tu cuenta o registrate para usar la app.";
-
   return (
     <MobileWorkspaceShell
       eyebrow={heroEyebrow}
@@ -264,55 +253,6 @@ export default function HomeScreen() {
       }
     >
       <View style={styles.grid}>
-        <View style={styles.sessionCard}>
-          <Text style={styles.sessionEyebrow}>{isAnonymous ? "Bienvenida" : "Sesion"}</Text>
-          <Text style={styles.sessionTitle}>{sessionTitle}</Text>
-          <View style={styles.sessionMeta}>
-             <Text style={styles.sessionBody}>{sessionBody}</Text>
-          </View>
-          {isAnonymous ? (
-            <View style={styles.publicHighlights}>
-              <View style={styles.publicHighlight}>
-                <Text style={styles.publicHighlightTitle}>Solicita servicios</Text>
-                <Text style={styles.publicHighlightBody}>Completa una solicitud en minutos.</Text>
-              </View>
-              <View style={styles.publicHighlight}>
-                <Text style={styles.publicHighlightTitle}>Da seguimiento</Text>
-                <Text style={styles.publicHighlightBody}>Revisa estado y asignaciones desde tu cuenta.</Text>
-              </View>
-            </View>
-          ) : isClient ? (
-            <View style={styles.publicHighlights}>
-              <View style={styles.publicHighlight}>
-                <Text style={styles.publicHighlightTitle}>Nueva solicitud</Text>
-                <Text style={styles.publicHighlightBody}>Solicita un servicio cuando lo necesites.</Text>
-              </View>
-              <View style={styles.publicHighlight}>
-                <Text style={styles.publicHighlightTitle}>Seguimiento</Text>
-                <Text style={styles.publicHighlightBody}>Consulta el estado de tus solicitudes activas.</Text>
-              </View>
-            </View>
-          ) : isNurse && !isNurseUnderReview ? (
-            <View style={styles.publicHighlights}>
-              <View style={styles.publicHighlight}>
-                <Text style={styles.publicHighlightTitle}>Servicios asignados</Text>
-                <Text style={styles.publicHighlightBody}>Accede a la cola operativa disponible para ti.</Text>
-              </View>
-              <View style={styles.publicHighlight}>
-                <Text style={styles.publicHighlightTitle}>Cuenta</Text>
-                <Text style={styles.publicHighlightBody}>Revisa tu sesion y datos de acceso.</Text>
-              </View>
-            </View>
-          ) : null}
-          {isNurseUnderReview ? (
-            <View style={styles.reviewBadge}>
-              <Text style={styles.reviewNote}>
-                Revisión administrativa pendiente.
-              </Text>
-            </View>
-          ) : null}
-        </View>
-
         {quickSectionsToShow.map((section) => (
           <Pressable
             key={section.path}
@@ -345,44 +285,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   grid: {
     gap: 14,
-  },
-  sessionCard: {
-    width: "100%",
-    backgroundColor: "#ffffff",
-    borderRadius: 22,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.04,
-    shadowRadius: 16,
-    elevation: 3,
-  },
-  sessionEyebrow: {
-    fontSize: 12,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 1.2,
-    color: "#6b7280",
-    marginBottom: 8,
-  },
-  sessionTitle: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#111827",
-    marginBottom: 12,
-  },
-  sessionMeta: {
-    backgroundColor: "#f8fafc",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 14,
-  },
-  sessionBody: {
-    fontSize: 14,
-    color: "#4b5563",
-    fontWeight: "600",
   },
   card: {
     backgroundColor: "#ffffff",
@@ -449,42 +351,6 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.4,
-  },
-  reviewBadge: {
-    marginTop: 16,
-    backgroundColor: "#fff7ed",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    alignSelf: "flex-start",
-  },
-  reviewNote: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#92400e",
-  },
-  publicHighlights: {
-    marginTop: 16,
-    gap: 10,
-  },
-  publicHighlight: {
-    backgroundColor: "#f8fafc",
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-  },
-  publicHighlightTitle: {
-    color: "#111827",
-    fontSize: 14,
-    fontWeight: "700",
-    marginBottom: 3,
-  },
-  publicHighlightBody: {
-    color: "#4b5563",
-    fontSize: 13,
-    lineHeight: 18,
   },
   cardChevron: {
     fontSize: 24,

@@ -397,7 +397,6 @@ export default function MobileWorkspaceShell({
             )}
 
             <View style={styles.topBarText}>
-              <Text style={styles.topBarLabel}>{isAuthenticated ? "Seccion activa" : "Acceso"}</Text>
               <Text style={styles.topBarTitle}>{currentItem.label}</Text>
             </View>
 
@@ -581,14 +580,6 @@ const styles = StyleSheet.create({
   },
   topBarText: {
     flex: 1,
-  },
-  topBarLabel: {
-    color: "#6b7280",
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
-    marginBottom: 2,
   },
   topBarTitle: {
     color: "#111827",
