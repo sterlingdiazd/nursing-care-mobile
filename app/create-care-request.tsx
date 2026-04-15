@@ -387,10 +387,10 @@ export default function CreateCareRequestScreen() {
           <View style={styles.card}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Datos de la solicitud</Text>
-            <Text style={styles.sectionCopy}>
-              Esta solicitud se enviara al mismo backend protegido que usa la app web.
-            </Text>
-          </View>
+              <Text style={styles.sectionCopy}>
+                Esta solicitud se enviara al mismo backend protegido que usa la app web.
+              </Text>
+            </View>
 
             {catalogError ? (
               <View style={styles.warningBox}>
@@ -422,94 +422,6 @@ export default function CreateCareRequestScreen() {
                 </Text>
               </View>
             )}
-
-            <Text style={styles.label}>Descripcion de la solicitud</Text>
-            <TextInput
-              value={form.careRequestDescription}
-              onChangeText={(text) => setForm((prev) => ({ ...prev, careRequestDescription: text }))}
-              placeholder="Describe el cuidado requerido, urgencia, detalles clinicos y notas operativas."
-              multiline
-              textAlignVertical="top"
-              editable={!isLoading}
-              style={[styles.input, styles.textArea, isLoading && styles.inputDisabled]}
-            />
-            <Text style={styles.helperText}>
-              {form.careRequestDescription.trim().length} caracteres
-            </Text>
-
-            <Text style={styles.label}>Enfermera sugerida (opcional)</Text>
-            <TextInput
-              value={form.suggestedNurse ?? ""}
-              onChangeText={(text) => {
-                setForm((prev) => ({ ...prev, suggestedNurse: text }));
-                setSelectedNurse((prev) =>
-                  prev && normalizeSearchValue(prev.displayName) === normalizeSearchValue(text) ? prev : null,
-                );
-                setShowSuggestedNurseOptions(true);
-              }}
-              placeholder="Nombre de la enfermera preferida"
-              editable={!isLoading}
-              onFocus={() => setShowSuggestedNurseOptions(true)}
-              testID="create-care-request-suggested-nurse-input"
-              nativeID="create-care-request-suggested-nurse-input"
-              style={[styles.input, isLoading && styles.inputDisabled]}
-            />
-            {showSuggestedNurseOptions && !isLoading && (
-                <View
-                  style={styles.autocompletePanel}
-                  testID="create-care-request-suggested-nurse-options"
-                  nativeID="create-care-request-suggested-nurse-options"
-                >
-                  {nurseLookupLoading ? (
-                    <View style={styles.autocompleteLoadingRow}>
-                      <ActivityIndicator color="#132d75" />
-                      <Text style={styles.autocompleteHelperText}>Buscando enfermeras activas...</Text>
-                    </View>
-                  ) : nurseLookupError ? (
-                    <View style={styles.autocompleteLoadingRow}>
-                      <Text style={styles.autocompleteHelperText}>{nurseLookupError}</Text>
-                    </View>
-                  ) : filteredNurseSuggestions.length === 0 ? (
-                    <View style={styles.autocompleteLoadingRow}>
-                      <Text style={styles.autocompleteHelperText}>No se encontraron enfermeras.</Text>
-                    </View>
-                  ) : (
-                    <ScrollView
-                      keyboardShouldPersistTaps="handled"
-                      nestedScrollEnabled
-                      style={styles.autocompleteList}
-                    >
-                      {filteredNurseSuggestions.map((nurse) => {
-                        const displayName = buildNurseDisplayName(nurse);
-                        const meta = [nurse.specialty, nurse.category].filter(Boolean).join(" • ");
-
-                        return (
-                          <Pressable
-                            key={nurse.userId}
-                            onPress={() => {
-                              setSelectedNurse(nurse);
-                              setForm((prev) => ({ ...prev, suggestedNurse: displayName }));
-                              setShowSuggestedNurseOptions(false);
-                            }}
-                            style={({ pressed }) => [
-                              styles.autocompleteOption,
-                              pressed && styles.buttonPressed,
-                            ]}
-                            testID={`create-care-request-suggested-nurse-option-${nurse.userId}`}
-                            nativeID={`create-care-request-suggested-nurse-option-${nurse.userId}`}
-                          >
-                            <Text style={styles.autocompletePrimaryText}>{displayName}</Text>
-                            {meta ? <Text style={styles.autocompleteSecondaryText}>{meta}</Text> : null}
-                          </Pressable>
-                        );
-                      })}
-                    </ScrollView>
-                  )}
-                </View>
-              )}
-            <Text style={styles.helperText}>
-              Administracion decidira si asigna la enfermera sugerida u otra disponible.
-            </Text>
 
             <Text style={styles.label}>Fecha del servicio (opcional)</Text>
             {Platform.OS === "web" ? (
@@ -621,6 +533,208 @@ export default function CreateCareRequestScreen() {
               </View>
             )}
 
+            <Text style={styles.label}>Cantidad *</Text>
+            <View style={styles.stepperContainer}>
+              <Pressable onPress={decrementUnit} style={styles.stepperBtn}><Text style={styles.stepperBtnText}>-</Text></Pressable>
+              <Text style={styles.stepperValue}>{form.unit}</Text>
+              <Pressable onPress={incrementUnit} style={styles.stepperBtn}><Text style={styles.stepperBtnText}>+</Text></Pressable>
+            </View>
+
+            <Text style={styles.label}>Descripcion de la solicitud</Text>
+            <TextInput
+              value={form.careRequestDescription}
+              onChangeText={(text) => setForm((prev) => ({ ...prev, careRequestDescription: text }))}
+              placeholder="Describe el cuidado requerido, urgencia, detalles clinicos y notas operativas."
+              multiline
+              textAlignVertical="top"
+              editable={!isLoading}
+              style={[styles.input, styles.textArea, isLoading && styles.inputDisabled]}
+            />
+            <Text style={styles.helperText}>
+              {form.careRequestDescription.trim().length} caracteres
+            </Text>
+          </View>
+
+          {/* === CARD 2: NURSE === */}
+          <View style={styles.card}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Enfermera sugerida (opcional)</Text>
+            </View>
+
+            <TextInput
+              value={form.suggestedNurse ?? ""}
+              onChangeText={(text) => {
+                setForm((prev) => ({ ...prev, suggestedNurse: text }));
+                setSelectedNurse((prev) =>
+                  prev && normalizeSearchValue(prev.displayName) === normalizeSearchValue(text) ? prev : null,
+                );
+                setShowSuggestedNurseOptions(true);
+              }}
+              placeholder="Nombre de la enfermera preferida"
+              editable={!isLoading}
+              onFocus={() => setShowSuggestedNurseOptions(true)}
+              testID="create-care-request-suggested-nurse-input"
+              nativeID="create-care-request-suggested-nurse-input"
+              style={[styles.input, isLoading && styles.inputDisabled]}
+            />
+            {showSuggestedNurseOptions && !isLoading && (
+                <View
+                  style={styles.autocompletePanel}
+                  testID="create-care-request-suggested-nurse-options"
+                  nativeID="create-care-request-suggested-nurse-options"
+                >
+                  {nurseLookupLoading ? (
+                    <View style={styles.autocompleteLoadingRow}>
+                      <ActivityIndicator color="#132d75" />
+                      <Text style={styles.autocompleteHelperText}>Buscando enfermeras activas...</Text>
+                    </View>
+                  ) : nurseLookupError ? (
+                    <View style={styles.autocompleteLoadingRow}>
+                      <Text style={styles.autocompleteHelperText}>{nurseLookupError}</Text>
+                    </View>
+                  ) : filteredNurseSuggestions.length === 0 ? (
+                    <View style={styles.autocompleteLoadingRow}>
+                      <Text style={styles.autocompleteHelperText}>No se encontraron enfermeras.</Text>
+                    </View>
+                  ) : (
+                    <ScrollView
+                      keyboardShouldPersistTaps="handled"
+                      nestedScrollEnabled
+                      style={styles.autocompleteList}
+                    >
+                      {filteredNurseSuggestions.map((nurse) => {
+                        const displayName = buildNurseDisplayName(nurse);
+                        const meta = [nurse.specialty, nurse.category].filter(Boolean).join(" • ");
+
+                        return (
+                          <Pressable
+                            key={nurse.userId}
+                            onPress={() => {
+                              setSelectedNurse(nurse);
+                              setForm((prev) => ({ ...prev, suggestedNurse: displayName }));
+                              setShowSuggestedNurseOptions(false);
+                            }}
+                            style={({ pressed }) => [
+                              styles.autocompleteOption,
+                              pressed && styles.buttonPressed,
+                            ]}
+                            testID={`create-care-request-suggested-nurse-option-${nurse.userId}`}
+                            nativeID={`create-care-request-suggested-nurse-option-${nurse.userId}`}
+                          >
+                            <Text style={styles.autocompletePrimaryText}>{displayName}</Text>
+                            {meta ? <Text style={styles.autocompleteSecondaryText}>{meta}</Text> : null}
+                          </Pressable>
+                        );
+                      })}
+                    </ScrollView>
+                  )}
+                </View>
+              )}
+            <Text style={styles.helperText}>
+              Administracion decidira si asigna la enfermera sugerida u otra disponible.
+            </Text>
+          </View>
+
+          {/* === SECTION: ADVANCED PRICING (Accordion) === */}
+          <View style={styles.accordionWrap}>
+            <Pressable style={styles.accordionHeader} onPress={() => setShowAdvancedPricing(!showAdvancedPricing)}>
+              <Text style={styles.accordionTitle}>Mostrar configuraciones de precio</Text>
+              <Text style={styles.accordionIcon}>{showAdvancedPricing ? "▲" : "▼"}</Text>
+            </Pressable>
+
+            {showAdvancedPricing && (
+              <View style={styles.accordionContent}>
+                <Text style={styles.subtitle}>Estos valores ajustan o sobreescriben la tarifación base.</Text>
+
+                {isDomicilio && (
+                  <>
+                    <Text style={styles.label}>Zona de desplazamiento</Text>
+                    <View style={styles.inlineOptions}>
+                      {(catalogOptions?.distanceFactors ?? []).map((row) => {
+                        const selected = (form.distanceFactor ?? "local") === row.code;
+                        return (
+                          <Pressable
+                            key={row.code}
+                            onPress={() => setForm((prev) => ({ ...prev, distanceFactor: row.code }))}
+                            style={({ pressed }) => [
+                              styles.inlineOption,
+                              selected && styles.inlineOptionSelected,
+                              pressed && styles.buttonPressed,
+                            ]}
+                          >
+                            <Text style={[styles.inlineOptionText, selected && styles.inlineOptionTextSelected]}>
+                              {row.displayName}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </>
+                )}
+
+                {isHogarOrDomicilio && (
+                  <>
+                    <Text style={styles.label}>Nivel de complejidad</Text>
+                    <View style={styles.inlineOptions}>
+                      {(catalogOptions?.complexityLevels ?? []).map((row) => {
+                        const selected = (form.complexityLevel ?? "estandar") === row.code;
+                        return (
+                          <Pressable
+                            key={row.code}
+                            onPress={() => setForm((prev) => ({ ...prev, complexityLevel: row.code }))}
+                            style={({ pressed }) => [
+                              styles.inlineOption,
+                              selected && styles.inlineOptionSelected,
+                              pressed && styles.buttonPressed,
+                            ]}
+                          >
+                            <Text style={[styles.inlineOptionText, selected && styles.inlineOptionTextSelected]}>
+                              {row.displayName}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </>
+                )}
+
+                <Text style={styles.label}>Ajuste de precio base para cliente (opcional)</Text>
+                <TextInput
+                  value={form.clientBasePriceOverride == null ? "" : String(form.clientBasePriceOverride)}
+                  onChangeText={(text) => {
+                    if (text.trim() === "") return setForm((prev) => ({ ...prev, clientBasePriceOverride: undefined }));
+                    const value = Number(text);
+                    setForm((prev) => ({ ...prev, clientBasePriceOverride: Number.isFinite(value) ? value : undefined }));
+                  }}
+                  placeholder="Ejemplo: 3000"
+                  keyboardType="numeric"
+                  editable={!isLoading}
+                  style={[styles.input, { backgroundColor: "#ffffff" }, isLoading && styles.inputDisabled]}
+                />
+
+                {isMedicos && (
+                  <>
+                    <Text style={styles.label}>Costo de insumos medicos (opcional)</Text>
+                    <TextInput
+                      value={form.medicalSuppliesCost == null ? "" : String(form.medicalSuppliesCost)}
+                      onChangeText={(text) => {
+                        if (text.trim() === "") return setForm((prev) => ({ ...prev, medicalSuppliesCost: undefined }));
+                        const value = Number(text);
+                        setForm((prev) => ({ ...prev, medicalSuppliesCost: Number.isFinite(value) ? value : undefined }));
+                      }}
+                      placeholder="Ejemplo: 800"
+                      keyboardType="numeric"
+                      editable={!isLoading}
+                      style={[styles.input, { backgroundColor: "#ffffff" }, isLoading && styles.inputDisabled]}
+                    />
+                  </>
+                )}
+              </View>
+            )}
+          </View>
+
+          {/* === CARD 3: CHECKLIST AND ESTIMATION === */}
+          <View style={styles.card}>
             <View style={styles.checklist}>
               <Text style={styles.checklistTitle}>Estimacion de servicio</Text>
               <Text style={styles.checkItem}>
@@ -632,111 +746,6 @@ export default function CreateCareRequestScreen() {
               <Text style={styles.checkItem}>
                 Tipo de unidad: {derivedUnitType} • Categoria: {categoryDisplayName}
               </Text>
-            </View>
-
-            <Text style={styles.label}>Cantidad *</Text>
-            <View style={styles.stepperContainer}>
-              <Pressable onPress={decrementUnit} style={styles.stepperBtn}><Text style={styles.stepperBtnText}>-</Text></Pressable>
-              <Text style={styles.stepperValue}>{form.unit}</Text>
-              <Pressable onPress={incrementUnit} style={styles.stepperBtn}><Text style={styles.stepperBtnText}>+</Text></Pressable>
-            </View>
-
-            {/* === SECTION: ADVANCED PRICING (Accordion) === */}
-            <View style={styles.accordionWrap}>
-              <Pressable style={styles.accordionHeader} onPress={() => setShowAdvancedPricing(!showAdvancedPricing)}>
-                <Text style={styles.accordionTitle}>Mostrar configuraciones de precio</Text>
-                <Text style={styles.accordionIcon}>{showAdvancedPricing ? "▲" : "▼"}</Text>
-              </Pressable>
-
-              {showAdvancedPricing && (
-                <View style={styles.accordionContent}>
-                  <Text style={styles.subtitle}>Estos valores ajustan o sobreescriben la tarifación base.</Text>
-
-                  {isDomicilio && (
-                    <>
-                      <Text style={styles.label}>Zona de desplazamiento</Text>
-                      <View style={styles.inlineOptions}>
-                        {(catalogOptions?.distanceFactors ?? []).map((row) => {
-                          const selected = (form.distanceFactor ?? "local") === row.code;
-                          return (
-                            <Pressable
-                              key={row.code}
-                              onPress={() => setForm((prev) => ({ ...prev, distanceFactor: row.code }))}
-                              style={({ pressed }) => [
-                                styles.inlineOption,
-                                selected && styles.inlineOptionSelected,
-                                pressed && styles.buttonPressed,
-                              ]}
-                            >
-                              <Text style={[styles.inlineOptionText, selected && styles.inlineOptionTextSelected]}>
-                                {row.displayName}
-                              </Text>
-                            </Pressable>
-                          );
-                        })}
-                      </View>
-                    </>
-                  )}
-
-                  {isHogarOrDomicilio && (
-                    <>
-                      <Text style={styles.label}>Nivel de complejidad</Text>
-                      <View style={styles.inlineOptions}>
-                        {(catalogOptions?.complexityLevels ?? []).map((row) => {
-                          const selected = (form.complexityLevel ?? "estandar") === row.code;
-                          return (
-                            <Pressable
-                              key={row.code}
-                              onPress={() => setForm((prev) => ({ ...prev, complexityLevel: row.code }))}
-                              style={({ pressed }) => [
-                                styles.inlineOption,
-                                selected && styles.inlineOptionSelected,
-                                pressed && styles.buttonPressed,
-                              ]}
-                            >
-                              <Text style={[styles.inlineOptionText, selected && styles.inlineOptionTextSelected]}>
-                                {row.displayName}
-                              </Text>
-                            </Pressable>
-                          );
-                        })}
-                      </View>
-                    </>
-                  )}
-
-                  <Text style={styles.label}>Ajuste de precio base para cliente (opcional)</Text>
-                  <TextInput
-                    value={form.clientBasePriceOverride == null ? "" : String(form.clientBasePriceOverride)}
-                    onChangeText={(text) => {
-                      if (text.trim() === "") return setForm((prev) => ({ ...prev, clientBasePriceOverride: undefined }));
-                      const value = Number(text);
-                      setForm((prev) => ({ ...prev, clientBasePriceOverride: Number.isFinite(value) ? value : undefined }));
-                    }}
-                    placeholder="Ejemplo: 3000"
-                    keyboardType="numeric"
-                    editable={!isLoading}
-                    style={[styles.input, { backgroundColor: "#ffffff" }, isLoading && styles.inputDisabled]}
-                  />
-
-                  {isMedicos && (
-                    <>
-                      <Text style={styles.label}>Costo de insumos medicos (opcional)</Text>
-                      <TextInput
-                        value={form.medicalSuppliesCost == null ? "" : String(form.medicalSuppliesCost)}
-                        onChangeText={(text) => {
-                          if (text.trim() === "") return setForm((prev) => ({ ...prev, medicalSuppliesCost: undefined }));
-                          const value = Number(text);
-                          setForm((prev) => ({ ...prev, medicalSuppliesCost: Number.isFinite(value) ? value : undefined }));
-                        }}
-                        placeholder="Ejemplo: 800"
-                        keyboardType="numeric"
-                        editable={!isLoading}
-                        style={[styles.input, { backgroundColor: "#ffffff" }, isLoading && styles.inputDisabled]}
-                      />
-                    </>
-                  )}
-                </View>
-              )}
             </View>
 
             <View style={styles.checklist}>
