@@ -18,6 +18,14 @@ export function canAccessCareRequests(response: AuthAccessState): boolean {
     || response.roles.includes("ADMIN");
 }
 
+export function canAccessAdminPortal(response: AuthAccessState): boolean {
+  if (response.requiresProfileCompletion) {
+    return false;
+  }
+
+  return response.roles.includes("ADMIN");
+}
+
 export function canCreateCareRequests(response: AuthAccessState): boolean {
   if (response.requiresProfileCompletion) {
     return false;
@@ -28,6 +36,20 @@ export function canCreateCareRequests(response: AuthAccessState): boolean {
   }
 
   return response.roles.includes("CLIENT") || response.roles.includes("ADMIN");
+}
+
+export function canAccessAccount(response: AuthAccessState): boolean {
+  return response.roles.includes("CLIENT")
+    || response.roles.includes("NURSE")
+    || response.roles.includes("ADMIN");
+}
+
+export function canAccessSupportTools(response: AuthAccessState): boolean {
+  if (response.requiresProfileCompletion) {
+    return false;
+  }
+
+  return response.roles.includes("ADMIN");
 }
 
 export function resolvePostAuthRoute(

@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -13,9 +14,9 @@ import { router } from "expo-router";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { createCorrelationId, logClientEvent } from "@/src/logging/clientLogger";
-import { getCareRequestOptions } from "@/src/services/catalogOptionsService";
+import { getAvailableNurses, getCareRequestOptions } from "@/src/services/catalogOptionsService";
 import { createCareRequest, getCareRequests } from "@/src/services/careRequestService";
-import type { CatalogOptionsResponse } from "@/src/types/catalog";
+import type { AvailableNurseOption, CatalogOptionsResponse } from "@/src/types/catalog";
 import { CreateCareRequestDto } from "@/src/types/careRequest";
 import { estimateCareRequestPricingFromCatalog } from "@/src/utils/pricingFromCatalogOptions";
 
@@ -39,6 +40,14 @@ export default function CreateCareRequestScreen() {
   const [catalogOptions, setCatalogOptions] = useState<CatalogOptionsResponse | null>(null);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [availableNurses, setAvailableNurses] = useState<AvailableNurseOption[]>([]);
+  const [nurseLookupLoading, setNurseLookupLoading] = useState(false);
+  const [showSuggestedNurseOptions, setShowSuggestedNurseOptions] = useState(false);
+  const [selectedNurse, setSelectedNurse] = useState<AvailableNurseOption | null>(null);
+
+  const normalizeSearchValue = (value: string) => value.trim().toLocaleLowerCase();
+
+  const buildNurseDisplayName = (nurse: AvailableNurseOption) => nurse.displayName;
 
   const selectedType = catalogOptions?.careRequestTypes.find((t) => t.code === form.careRequestType);
   const selectedCategory = selectedType?.careRequestCategoryCode ?? "";
@@ -84,6 +93,25 @@ export default function CreateCareRequestScreen() {
     existingSameUnitTypeCount,
   ]);
 
+  const filteredNurseSuggestions = useMemo(() => {
+    const query = normalizeSearchValue(form.suggestedNurse ?? "");
+    if (!query) {
+      return availableNurses.slice(0, 8);
+    }
+
+    return availableNurses
+      .filter((nurse) => {
+        const displayName = buildNurseDisplayName(nurse);
+        const specialty = nurse.specialty ?? "";
+        const category = nurse.category ?? "";
+
+        return [displayName, specialty, category].some((value) =>
+          normalizeSearchValue(value).includes(query),
+        );
+      })
+      .slice(0, 8);
+  }, [availableNurses, form.suggestedNurse]);
+
   const unitPrice = pricingEstimate?.unitPriceAfterVolumeDiscount ?? 0;
   const medicalSupplies =
     isMedicos && typeof form.medicalSuppliesCost === "number" && form.medicalSuppliesCost >= 0
@@ -104,6 +132,8 @@ export default function CreateCareRequestScreen() {
       clientBasePriceOverride: undefined,
       medicalSuppliesCost: undefined,
     });
+    setSelectedNurse(null);
+    setShowSuggestedNurseOptions(false);
     setSuccessMessage(null);
   };
 
@@ -162,7 +192,13 @@ export default function CreateCareRequestScreen() {
     });
 
     try {
-      const response = await createCareRequest(form, correlationId);
+      const response = await createCareRequest(
+        {
+          ...form,
+          suggestedNurse: selectedNurse?.displayName,
+        },
+        correlationId,
+      );
       logClientEvent("mobile.ui", "Solicitud creada correctamente", {
         correlationId: response.correlationId ?? correlationId,
         userId,
@@ -236,6 +272,21 @@ export default function CreateCareRequestScreen() {
   }, [token]);
 
   useEffect(() => {
+    if (!token || !canCreateRequest) {
+      setAvailableNurses([]);
+      setSelectedNurse(null);
+      setNurseLookupLoading(false);
+      return;
+    }
+
+    setNurseLookupLoading(true);
+    void getAvailableNurses()
+      .then((nurses) => setAvailableNurses(nurses))
+      .catch(() => setAvailableNurses([]))
+      .finally(() => setNurseLookupLoading(false));
+  }, [canCreateRequest, token]);
+
+  useEffect(() => {
     if (!isReady || !isAuthenticated || !userId || !form.careRequestType) {
       setExistingSameUnitTypeCount(0);
       return;
@@ -288,16 +339,6 @@ export default function CreateCareRequestScreen() {
       }
     >
       <View style={styles.flow}>
-          <View style={styles.statusCard}>
-            <Text style={styles.statusEyebrow}>Estado de sesion</Text>
-            <Text style={styles.statusTitle}>
-              {isAuthenticated ? "Sesion autenticada" : "Sesion no autenticada"}
-            </Text>
-            <Text style={styles.statusCopy}>
-              La solicitud se asociara automaticamente al usuario autenticado actual.
-            </Text>
-          </View>
-
           <View style={styles.card}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Datos de la solicitud</Text>
@@ -354,11 +395,67 @@ export default function CreateCareRequestScreen() {
             <Text style={styles.label}>Enfermera sugerida (opcional)</Text>
             <TextInput
               value={form.suggestedNurse ?? ""}
-              onChangeText={(text) => setForm((prev) => ({ ...prev, suggestedNurse: text }))}
+              onChangeText={(text) => {
+                setForm((prev) => ({ ...prev, suggestedNurse: text }));
+                setSelectedNurse((prev) =>
+                  prev && normalizeSearchValue(prev.displayName) === normalizeSearchValue(text) ? prev : null,
+                );
+                setShowSuggestedNurseOptions(true);
+              }}
               placeholder="Nombre de la enfermera preferida"
               editable={!isLoading}
+              onFocus={() => setShowSuggestedNurseOptions(true)}
+              testID="create-care-request-suggested-nurse-input"
+              nativeID="create-care-request-suggested-nurse-input"
               style={[styles.input, isLoading && styles.inputDisabled]}
             />
+            {showSuggestedNurseOptions &&
+              !isLoading &&
+              (nurseLookupLoading || filteredNurseSuggestions.length > 0) && (
+                <View
+                  style={styles.autocompletePanel}
+                  testID="create-care-request-suggested-nurse-options"
+                  nativeID="create-care-request-suggested-nurse-options"
+                >
+                  {nurseLookupLoading ? (
+                    <View style={styles.autocompleteLoadingRow}>
+                      <ActivityIndicator color="#132d75" />
+                      <Text style={styles.autocompleteHelperText}>Buscando enfermeras activas...</Text>
+                    </View>
+                  ) : (
+                    <ScrollView
+                      keyboardShouldPersistTaps="handled"
+                      nestedScrollEnabled
+                      style={styles.autocompleteList}
+                    >
+                      {filteredNurseSuggestions.map((nurse) => {
+                        const displayName = buildNurseDisplayName(nurse);
+                        const meta = [nurse.specialty, nurse.category].filter(Boolean).join(" • ");
+
+                        return (
+                          <Pressable
+                            key={nurse.userId}
+                            onPress={() => {
+                              setSelectedNurse(nurse);
+                              setForm((prev) => ({ ...prev, suggestedNurse: displayName }));
+                              setShowSuggestedNurseOptions(false);
+                            }}
+                            style={({ pressed }) => [
+                              styles.autocompleteOption,
+                              pressed && styles.buttonPressed,
+                            ]}
+                            testID={`create-care-request-suggested-nurse-option-${nurse.userId}`}
+                            nativeID={`create-care-request-suggested-nurse-option-${nurse.userId}`}
+                          >
+                            <Text style={styles.autocompletePrimaryText}>{displayName}</Text>
+                            {meta ? <Text style={styles.autocompleteSecondaryText}>{meta}</Text> : null}
+                          </Pressable>
+                        );
+                      })}
+                    </ScrollView>
+                  )}
+                </View>
+              )}
             <Text style={styles.helperText}>
               Administracion decidira si asigna la enfermera sugerida u otra disponible.
             </Text>
@@ -588,42 +685,17 @@ const styles = StyleSheet.create({
   flow: {
     gap: 18,
   },
-  statusCard: {
-    backgroundColor: "#123047",
-    borderRadius: 24,
-    padding: 18,
-  },
-  statusEyebrow: {
-    fontSize: 12,
-    fontWeight: "800",
-    textTransform: "uppercase",
-    letterSpacing: 1.3,
-    color: "#bde0dd",
-    marginBottom: 8,
-  },
-  statusTitle: {
-    fontSize: 24,
-    lineHeight: 30,
-    fontWeight: "800",
-    color: "#fffef8",
-    marginBottom: 8,
-  },
-  statusCopy: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: "rgba(232, 241, 247, 0.78)",
-  },
   card: {
-    backgroundColor: "#fffdf9",
-    borderRadius: 24,
-    padding: 18,
-    shadowColor: "#0f172a",
-    shadowOpacity: 0.08,
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 8 },
     shadowRadius: 18,
-    elevation: 3,
+    elevation: 4,
     borderWidth: 1,
-    borderColor: "#dbe5f3",
+    borderColor: "rgba(0, 0, 0, 0.06)",
   },
   sectionHeader: {
     marginBottom: 18,
@@ -631,43 +703,43 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#102a43",
+    color: "#111827",
     marginBottom: 6,
   },
   sectionCopy: {
-    fontSize: 14,
-    lineHeight: 21,
-    color: "#52637a",
+    fontSize: 15,
+    lineHeight: 22,
+    color: "#4b5563",
   },
   warningBox: {
-    backgroundColor: "#fff7ed",
+    backgroundColor: "#fff5f5",
     borderRadius: 16,
     padding: 14,
     marginBottom: 18,
     borderWidth: 1,
-    borderColor: "#fdba74",
+    borderColor: "#fed7d7",
   },
   warningText: {
-    color: "#9a3412",
+    color: "#b91c1c",
     lineHeight: 20,
     fontWeight: "600",
   },
   label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#334155",
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#111827",
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#cbd5e1",
-    borderRadius: 12,
-    paddingHorizontal: 14,
+    borderColor: "#d1d5db",
+    borderRadius: 14,
+    paddingHorizontal: 16,
     paddingVertical: 14,
     marginBottom: 18,
     fontSize: 16,
-    color: "#0f172a",
-    backgroundColor: "#fff",
+    color: "#111827",
+    backgroundColor: "#ffffff",
   },
   textArea: {
     minHeight: 160,
@@ -678,18 +750,18 @@ const styles = StyleSheet.create({
   },
   optionButton: {
     borderRadius: 16,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: "#fff",
+    backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#dbe5f3",
+    borderColor: "#d1d5db",
   },
   optionButtonSelected: {
     backgroundColor: "#eff6ff",
-    borderColor: "#93c5fd",
+    borderColor: "#bfdbfe",
   },
   optionLabel: {
-    color: "#102a43",
+    color: "#111827",
     fontSize: 15,
     fontWeight: "700",
   },
@@ -706,16 +778,16 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    backgroundColor: "#fff",
+    backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#dbe5f3",
+    borderColor: "#d1d5db",
   },
   inlineOptionSelected: {
     backgroundColor: "#eff6ff",
-    borderColor: "#93c5fd",
+    borderColor: "#bfdbfe",
   },
   inlineOptionText: {
-    color: "#334155",
+    color: "#111827",
     fontSize: 14,
     fontWeight: "700",
   },
@@ -725,17 +797,63 @@ const styles = StyleSheet.create({
   helperText: {
     marginTop: -10,
     marginBottom: 16,
-    fontSize: 12,
-    color: "#64748b",
+    fontSize: 13,
+    color: "#6b7280",
   },
   inputDisabled: {
-    opacity: 0.6,
+    opacity: 0.65,
+  },
+  autocompletePanel: {
+    marginTop: -8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 14,
+    backgroundColor: "#ffffff",
+    overflow: "hidden",
+  },
+  autocompleteList: {
+    maxHeight: 220,
+  },
+  autocompleteLoadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  autocompleteOption: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eef2f7",
+  },
+  autocompletePrimaryText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  autocompleteSecondaryText: {
+    marginTop: 4,
+    fontSize: 13,
+    color: "#4b5563",
+  },
+  autocompleteMetaText: {
+    marginTop: 4,
+    fontSize: 12,
+    color: "#6b7280",
+  },
+  autocompleteHelperText: {
+    fontSize: 13,
+    color: "#4b5563",
   },
   checklist: {
-    backgroundColor: "#eff6ff",
+    backgroundColor: "#f8fafc",
     borderRadius: 16,
-    padding: 14,
+    padding: 16,
     marginBottom: 18,
+    borderWidth: 1,
+    borderColor: "rgba(0, 0, 0, 0.06)",
   },
   checklistTitle: {
     fontSize: 13,
@@ -743,49 +861,49 @@ const styles = StyleSheet.create({
     color: "#1d4ed8",
     textTransform: "uppercase",
     letterSpacing: 1,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   checkItem: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#1e3a5f",
-    marginBottom: 4,
+    fontSize: 15,
+    lineHeight: 22,
+    color: "#111827",
+    marginBottom: 6,
   },
   buttonRow: {
     gap: 12,
   },
   button: {
-    backgroundColor: "#1d4ed8",
+    backgroundColor: "#007aff",
     borderRadius: 16,
     paddingVertical: 15,
     alignItems: "center",
   },
   secondaryButton: {
     borderRadius: 16,
-    paddingVertical: 14,
+    paddingVertical: 15,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#cbd5e1",
-    backgroundColor: "#fff",
+    borderColor: "#d1d5db",
+    backgroundColor: "#ffffff",
   },
   buttonDisabled: {
-    opacity: 0.7,
+    opacity: 0.5,
   },
   buttonPressed: {
-    opacity: 0.92,
+    opacity: 0.88,
   },
   buttonText: {
-    color: "#fff",
+    color: "#ffffff",
     fontWeight: "800",
     fontSize: 16,
   },
   secondaryButtonText: {
-    color: "#334155",
+    color: "#007aff",
     fontWeight: "700",
     fontSize: 15,
   },
   heroPrimaryButton: {
-    backgroundColor: "#fef3c7",
+    backgroundColor: "#007aff",
     borderRadius: 18,
     paddingVertical: 16,
     paddingHorizontal: 18,
@@ -793,26 +911,26 @@ const styles = StyleSheet.create({
   },
   heroSecondaryButton: {
     borderRadius: 18,
-    paddingVertical: 15,
+    paddingVertical: 16,
     paddingHorizontal: 18,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.18)",
-    backgroundColor: "rgba(255,255,255,0.08)",
+    borderColor: "#d1d5db",
+    backgroundColor: "#ffffff",
   },
   heroPrimaryButtonText: {
-    color: "#132d75",
+    color: "#ffffff",
     fontWeight: "800",
     fontSize: 16,
   },
   heroSecondaryButtonText: {
-    color: "#f8fafc",
+    color: "#007aff",
     fontWeight: "700",
     fontSize: 15,
   },
   successMessage: {
     marginTop: 14,
-    color: "#166534",
+    color: "#047857",
     fontWeight: "700",
   },
 });

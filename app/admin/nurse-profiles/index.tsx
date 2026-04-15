@@ -62,8 +62,8 @@ export default function AdminNurseProfilesScreen() {
   return (
     <MobileWorkspaceShell
       eyebrow="Perfiles de Enfermeras"
-      title="Gestión de enfermeras"
-      description="Administrar perfiles de enfermeras y su estado operacional."
+      title="Gestion de enfermeras"
+      description="Administra perfiles y estado operativo del personal de enfermeria."
       actions={(
         <Pressable style={styles.buttonPrimary} onPress={() => router.push("/admin/nurse-profiles/create" as any)}>
           <Text style={styles.buttonPrimaryText}>Crear</Text>
@@ -194,36 +194,36 @@ export default function AdminNurseProfilesScreen() {
 }
 
 const styles = StyleSheet.create({
-  buttonPrimary: { backgroundColor: "#3b82f6", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },
+  buttonPrimary: { backgroundColor: "#007aff", borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10 },
   buttonPrimaryText: { color: "#ffffff", fontWeight: "700", fontSize: 14 },
   error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
   loading: { color: "#52637a", fontSize: 14, textAlign: "center", padding: 20 },
   tabs: { flexDirection: "row", gap: 8, marginBottom: 12 },
-  tab: { flex: 1, backgroundColor: "#f0f4f8", borderRadius: 12, paddingVertical: 12, alignItems: "center" },
-  tabActive: { backgroundColor: "#3b82f6" },
-  tabText: { color: "#102a43", fontSize: 14, fontWeight: "700" },
+  tab: { flex: 1, backgroundColor: "#ffffff", borderRadius: 14, paddingVertical: 12, alignItems: "center", borderWidth: 1, borderColor: "#d1d5db" },
+  tabActive: { backgroundColor: "#111827", borderColor: "#111827" },
+  tabText: { color: "#111827", fontSize: 14, fontWeight: "700" },
   tabTextActive: { color: "#ffffff" },
   emptyState: { padding: 40, alignItems: "center" },
   emptyStateText: { color: "#52637a", fontSize: 16, textAlign: "center" },
   list: { gap: 12 },
-  card: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
-  cardPending: { borderColor: "#f59e0b", borderWidth: 2 },
-  pendingBadge: { backgroundColor: "#fef3c7", borderRadius: 8, padding: 6, marginBottom: 8 },
+  card: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 18, padding: 16, marginBottom: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 2 },
+  cardPending: { borderColor: "#f59e0b", borderWidth: 1.5 },
+  pendingBadge: { backgroundColor: "#fff7ed", borderRadius: 10, padding: 8, marginBottom: 8, alignSelf: "flex-start" },
   pendingBadgeText: { color: "#92400e", fontSize: 12, fontWeight: "700", textAlign: "center" },
-  cardTitle: { color: "#102a43", fontWeight: "800", fontSize: 18, marginBottom: 4 },
-  cardMeta: { color: "#52637a", fontSize: 14, marginBottom: 8 },
-  cardDetail: { color: "#52637a", fontSize: 13, marginBottom: 4 },
+  cardTitle: { color: "#111827", fontWeight: "800", fontSize: 18, marginBottom: 4 },
+  cardMeta: { color: "#6b7280", fontSize: 14, marginBottom: 8 },
+  cardDetail: { color: "#4b5563", fontSize: 13, marginBottom: 4 },
   cardRow: { flexDirection: "row", marginBottom: 4 },
-  cardLabel: { color: "#7c2d12", fontSize: 13, fontWeight: "700", width: 100 },
-  cardValue: { color: "#102a43", fontSize: 13, flex: 1 },
-  workloadSection: { backgroundColor: "#f0f4f8", borderRadius: 8, padding: 8, marginTop: 8 },
-  workloadTitle: { color: "#7c2d12", fontSize: 12, fontWeight: "800", marginBottom: 4 },
-  workloadText: { color: "#102a43", fontSize: 12 },
+  cardLabel: { color: "#6b7280", fontSize: 13, fontWeight: "700", width: 100 },
+  cardValue: { color: "#111827", fontSize: 13, flex: 1 },
+  workloadSection: { backgroundColor: "#f8fafc", borderRadius: 10, padding: 10, marginTop: 8, borderWidth: 1, borderColor: "#e5e7eb" },
+  workloadTitle: { color: "#6b7280", fontSize: 12, fontWeight: "800", marginBottom: 4, textTransform: "uppercase" },
+  workloadText: { color: "#111827", fontSize: 12 },
   statusRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 8 },
   badge: { backgroundColor: "#dbeafe", borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
   badgeText: { color: "#1e40af", fontSize: 11, fontWeight: "700" },
   badgeSuccess: { backgroundColor: "#d1fae5", borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
   badgeTextSuccess: { color: "#065f46", fontSize: 11, fontWeight: "700" },
-  reviewButton: { backgroundColor: "#3b82f6", borderRadius: 12, paddingVertical: 10, marginTop: 12 },
+  reviewButton: { backgroundColor: "#007aff", borderRadius: 14, paddingVertical: 10, marginTop: 12 },
   reviewButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 14, textAlign: "center" },
 });

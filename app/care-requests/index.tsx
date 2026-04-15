@@ -108,8 +108,8 @@ export default function CareRequestsScreen() {
   return (
     <MobileWorkspaceShell
       eyebrow="Cola de solicitudes"
-      title="Supervisa captura, revision y cierre desde una sola cola."
-      description="La cola permite leer el estado de cada solicitud de un vistazo, abrir el detalle y refrescar la operacion sin perder el contexto."
+      title="Solicitudes"
+      description="Revisa el estado de cada servicio y abre el detalle cuando lo necesites."
       actions={
         <>
           <Pressable
@@ -189,33 +189,33 @@ export default function CareRequestsScreen() {
 
 const styles = StyleSheet.create({
   primaryButton: {
-    backgroundColor: "#fef3c7",
-    borderRadius: 18,
+    backgroundColor: "#007aff",
+    borderRadius: 16,
     paddingVertical: 15,
     paddingHorizontal: 18,
     alignItems: "center",
   },
   primaryButtonText: {
-    color: "#132d75",
+    color: "#ffffff",
     fontWeight: "800",
     fontSize: 16,
   },
   secondaryButton: {
-    borderRadius: 18,
+    borderRadius: 16,
     paddingVertical: 15,
     paddingHorizontal: 18,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.18)",
-    backgroundColor: "rgba(255,255,255,0.08)",
+    borderColor: "#d1d5db",
+    backgroundColor: "#ffffff",
   },
   secondaryButtonText: {
-    color: "#f8fafc",
+    color: "#007aff",
     fontWeight: "700",
     fontSize: 15,
   },
   buttonPressed: {
-    opacity: 0.92,
+    opacity: 0.88,
   },
   errorCard: {
     backgroundColor: "#fff1f2",
@@ -241,11 +241,16 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   card: {
-    backgroundColor: "#fffdf9",
-    borderRadius: 24,
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
     padding: 18,
     borderWidth: 1,
-    borderColor: "#dbe5f3",
+    borderColor: "#e5e7eb",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
   },
   cardHeader: {
     flexDirection: "row",
@@ -255,9 +260,9 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     flex: 1,
-    color: "#102a43",
-    fontSize: 19,
-    lineHeight: 25,
+    color: "#111827",
+    fontSize: 18,
+    lineHeight: 24,
     fontWeight: "800",
   },
   statusBadge: {
@@ -272,8 +277,8 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   cardMeta: {
-    color: "#52637a",
-    fontSize: 14,
-    lineHeight: 20,
+    color: "#4b5563",
+    fontSize: 13,
+    lineHeight: 19,
   },
 });

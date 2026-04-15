@@ -42,12 +42,15 @@ export default function AdminActionItemsScreen() {
   return (
     <MobileWorkspaceShell
       eyebrow="Cola administrativa"
-      title="Acciones que requieren intervencion"
-      description="Vista mobile de la cola prioritaria del portal administrativo web."
+      title="Acciones pendientes"
+      description="Elementos que requieren seguimiento administrativo."
       actions={<Pressable style={styles.button} onPress={() => router.push("/admin")}><Text style={styles.buttonText}>Volver al panel</Text></Pressable>}
     >
       {!!error && <Text style={styles.error}>{error}</Text>}
-      <Text style={styles.meta}>No leidas: {unreadCount}</Text>
+      <View style={styles.summaryCard}>
+        <Text style={styles.summaryLabel}>No leidas</Text>
+        <Text style={styles.summaryValue}>{unreadCount}</Text>
+      </View>
       <View style={styles.list}>
         {items.map((item) => (
           <View key={item.id} style={styles.card}>
@@ -66,14 +69,33 @@ export default function AdminActionItemsScreen() {
 
 const styles = StyleSheet.create({
   list: { gap: 12 },
-  card: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14 },
-  badge: { color: "#7c2d12", fontWeight: "800", marginBottom: 8 },
-  title: { color: "#102a43", fontWeight: "800", fontSize: 17, marginBottom: 6 },
-  body: { color: "#52637a", marginBottom: 10 },
-  link: { alignSelf: "flex-start", backgroundColor: "#e0e7ff", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },
-  linkText: { color: "#1e3a8a", fontWeight: "700" },
-  button: { backgroundColor: "#fef3c7", borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12 },
-  buttonText: { color: "#132d75", fontWeight: "800" },
+  summaryCard: {
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 18,
+    padding: 16,
+  },
+  summaryLabel: { color: "#6b7280", fontSize: 13, fontWeight: "600", marginBottom: 4 },
+  summaryValue: { color: "#111827", fontWeight: "800", fontSize: 28 },
+  card: {
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 18,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  badge: { color: "#92400e", fontWeight: "800", marginBottom: 8, fontSize: 12, textTransform: "uppercase" },
+  title: { color: "#111827", fontWeight: "800", fontSize: 17, marginBottom: 6 },
+  body: { color: "#4b5563", marginBottom: 12, lineHeight: 20 },
+  link: { alignSelf: "flex-start", backgroundColor: "#ffffff", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: "#d1d5db" },
+  linkText: { color: "#007aff", fontWeight: "700" },
+  button: { backgroundColor: "#ffffff", borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: "#d1d5db" },
+  buttonText: { color: "#007aff", fontWeight: "700" },
   error: { color: "#b91c1c", marginBottom: 12 },
-  meta: { color: "#334155", marginBottom: 12, fontWeight: "700" },
 });

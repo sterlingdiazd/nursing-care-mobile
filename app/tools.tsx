@@ -4,6 +4,7 @@ import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-nativ
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { logClientEvent } from "@/src/logging/clientLogger";
+import { mobilePrimaryButton, mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
 
 export default function ToolsScreen() {
   const { setTokenManually } = useAuth();
@@ -25,8 +26,8 @@ export default function ToolsScreen() {
   return (
     <MobileWorkspaceShell
       eyebrow="Herramientas"
-      title="Utilidades avanzadas para soporte y desarrollo."
-      description="Estas opciones no forman parte del flujo principal de negocio. Se mantienen aparte para conservar una experiencia mas profesional y enfocada."
+      title="Utilidades avanzadas"
+      description="Opciones de soporte y desarrollo fuera del flujo principal."
     >
       <View style={styles.card}>
         <Text style={styles.sectionEyebrow}>Token manual</Text>
@@ -62,53 +63,44 @@ export default function ToolsScreen() {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#fffdf9",
-    borderRadius: 24,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: "#dbe5f3",
+    ...mobileSurfaceCard,
+    borderRadius: mobileTheme.radius.xl,
+    padding: 20,
   },
   sectionEyebrow: {
-    fontSize: 12,
-    fontWeight: "800",
-    textTransform: "uppercase",
-    letterSpacing: 1.3,
-    color: "#2563eb",
+    ...mobileTheme.typography.eyebrow,
+    color: mobileTheme.colors.ink.muted,
     marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 24,
-    lineHeight: 30,
-    fontWeight: "800",
-    color: "#102a43",
+    ...mobileTheme.typography.title,
+    color: mobileTheme.colors.ink.primary,
     marginBottom: 10,
   },
   copy: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: "#52637a",
+    ...mobileTheme.typography.body,
+    color: mobileTheme.colors.ink.secondary,
     marginBottom: 14,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#cbd5e1",
-    borderRadius: 16,
-    paddingHorizontal: 14,
+    borderColor: "#d1d5db",
+    borderRadius: 14,
+    paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: "#0f172a",
-    backgroundColor: "#fff",
+    color: "#111827",
+    backgroundColor: "#ffffff",
   },
   tokenInput: {
     minHeight: 180,
     marginBottom: 16,
   },
   primaryButton: {
-    backgroundColor: "#1d4ed8",
-    borderRadius: 18,
-    paddingVertical: 16,
+    ...mobilePrimaryButton,
+    borderRadius: mobileTheme.radius.md,
+    paddingVertical: 15,
     paddingHorizontal: 18,
-    alignItems: "center",
   },
   primaryButtonText: {
     color: "#fff",
@@ -116,6 +108,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   buttonPressed: {
-    opacity: 0.92,
+    opacity: 0.88,
   },
 });

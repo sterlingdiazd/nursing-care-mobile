@@ -91,8 +91,8 @@ export default function AdminAuditLogsScreen() {
   return (
     <MobileWorkspaceShell
       eyebrow="Auditoria"
-      title="Registro de acciones administrativas"
-      description="Historial completo de eventos sensibles para cumplimiento y seguridad."
+      title="Registro de auditoria"
+      description="Historial de eventos sensibles para seguimiento y cumplimiento."
       actions={(
         <View style={styles.headerActions}>
           <Pressable style={styles.button} onPress={() => setShowFilters(!showFilters)}>
@@ -239,40 +239,40 @@ export default function AdminAuditLogsScreen() {
 
 const styles = StyleSheet.create({
   headerActions: { flexDirection: "row", gap: 8 },
-  button: { backgroundColor: "#f0f4f8", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },
-  buttonText: { color: "#102a43", fontWeight: "700", fontSize: 14 },
-  buttonPrimary: { backgroundColor: "#3b82f6", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10, flex: 1 },
+  button: { backgroundColor: "#ffffff", borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: "#d1d5db" },
+  buttonText: { color: "#007aff", fontWeight: "700", fontSize: 14 },
+  buttonPrimary: { backgroundColor: "#007aff", borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, flex: 1 },
   buttonPrimaryText: { color: "#ffffff", fontWeight: "700", fontSize: 14, textAlign: "center" },
   buttonDisabled: { opacity: 0.5 },
   error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
-  filtersCard: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
-  filtersTitle: { fontSize: 16, fontWeight: "800", color: "#102a43", marginBottom: 12 },
-  input: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#cbd5e0", borderRadius: 12, padding: 12, marginBottom: 8 },
+  filtersCard: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 18, padding: 16, marginBottom: 12 },
+  filtersTitle: { fontSize: 16, fontWeight: "800", color: "#111827", marginBottom: 12 },
+  input: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#d1d5db", borderRadius: 14, padding: 14, marginBottom: 8, color: "#111827" },
   filterActions: { flexDirection: "row", gap: 8, marginTop: 8 },
   summary: { flexDirection: "row", justifyContent: "space-between", marginBottom: 12, paddingHorizontal: 4 },
-  summaryText: { color: "#52637a", fontSize: 14, fontWeight: "600" },
+  summaryText: { color: "#6b7280", fontSize: 14, fontWeight: "600" },
   list: { gap: 12 },
-  card: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14 },
-  timestamp: { color: "#7c2d12", fontWeight: "800", fontSize: 12, marginBottom: 4 },
-  actor: { color: "#52637a", fontSize: 14, marginBottom: 4 },
-  action: { color: "#102a43", fontWeight: "800", fontSize: 16, marginBottom: 4 },
-  entity: { color: "#52637a", fontSize: 13, fontFamily: "monospace", marginBottom: 4 },
-  notes: { color: "#52637a", fontSize: 13, marginBottom: 8 },
-  detailButton: { backgroundColor: "#3b82f6", borderRadius: 12, paddingVertical: 8, marginTop: 8 },
+  card: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 18, padding: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 2 },
+  timestamp: { color: "#92400e", fontWeight: "800", fontSize: 12, marginBottom: 4 },
+  actor: { color: "#6b7280", fontSize: 14, marginBottom: 4 },
+  action: { color: "#111827", fontWeight: "800", fontSize: 16, marginBottom: 4 },
+  entity: { color: "#6b7280", fontSize: 13, fontFamily: "monospace", marginBottom: 4 },
+  notes: { color: "#4b5563", fontSize: 13, marginBottom: 8 },
+  detailButton: { backgroundColor: "#007aff", borderRadius: 12, paddingVertical: 8, marginTop: 8 },
   detailButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 14, textAlign: "center" },
   pagination: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 16, paddingHorizontal: 4 },
-  pageInfo: { color: "#52637a", fontSize: 14, fontWeight: "600" },
-  modal: { flex: 1, backgroundColor: "#ffffff" },
-  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "#e2e8f0" },
-  modalTitle: { fontSize: 20, fontWeight: "800", color: "#102a43" },
-  closeButton: { backgroundColor: "#f0f4f8", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 8 },
-  closeButtonText: { color: "#102a43", fontWeight: "700", fontSize: 14 },
+  pageInfo: { color: "#6b7280", fontSize: 14, fontWeight: "600" },
+  modal: { flex: 1, backgroundColor: "#f2f2f7" },
+  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "#e5e7eb", backgroundColor: "#ffffff" },
+  modalTitle: { fontSize: 20, fontWeight: "800", color: "#111827" },
+  closeButton: { backgroundColor: "#ffffff", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: "#d1d5db" },
+  closeButtonText: { color: "#007aff", fontWeight: "700", fontSize: 14 },
   modalContent: { padding: 16, gap: 16 },
   detailField: { gap: 4 },
-  detailLabel: { color: "#7c2d12", fontSize: 12, fontWeight: "800", textTransform: "uppercase" },
-  detailValue: { color: "#102a43", fontSize: 15 },
-  detailValueSecondary: { color: "#52637a", fontSize: 14 },
-  detailValueMono: { color: "#102a43", fontSize: 13, fontFamily: "monospace" },
-  jsonContainer: { backgroundColor: "#f7fafc", borderRadius: 12, padding: 12, marginTop: 4 },
-  jsonText: { color: "#102a43", fontSize: 12, fontFamily: "monospace" },
+  detailLabel: { color: "#6b7280", fontSize: 12, fontWeight: "800", textTransform: "uppercase" },
+  detailValue: { color: "#111827", fontSize: 15 },
+  detailValueSecondary: { color: "#4b5563", fontSize: 14 },
+  detailValueMono: { color: "#111827", fontSize: 13, fontFamily: "monospace" },
+  jsonContainer: { backgroundColor: "#ffffff", borderRadius: 12, padding: 12, marginTop: 4, borderWidth: 1, borderColor: "#e5e7eb" },
+  jsonText: { color: "#111827", fontSize: 12, fontFamily: "monospace" },
 });

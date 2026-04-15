@@ -293,16 +293,21 @@ export default function AdminCatalogScreen() {
         style={styles.card}
         onPress={() => handleEdit(activeTab, item)}
       >
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>{item.displayName ?? item.code}</Text>
-          {!item.isActive && (
-            <View style={styles.inactiveBadge}>
-              <Text style={styles.inactiveBadgeText}>Inactivo</Text>
+        <View style={styles.cardContent}>
+          <View style={styles.cardTextBlock}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>{item.displayName ?? item.code}</Text>
+              {!item.isActive && (
+                <View style={styles.inactiveBadge}>
+                  <Text style={styles.inactiveBadgeText}>Inactivo</Text>
+                </View>
+              )}
             </View>
-          )}
+            <Text style={styles.cardSubtitle}>{getSubtitle()}</Text>
+            {item.code && <Text style={styles.cardCode}>Código {item.code}</Text>}
+          </View>
+          <Text style={styles.cardChevron}>›</Text>
         </View>
-        <Text style={styles.cardSubtitle}>{getSubtitle()}</Text>
-        {item.code && <Text style={styles.cardCode}>Código: {item.code}</Text>}
       </TouchableOpacity>
     );
   };
@@ -377,10 +382,10 @@ export default function AdminCatalogScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Volver</Text>
+          <Text style={styles.backButtonText}>Volver</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Catálogo de precios</Text>
-        <Text style={styles.subtitle}>Gestiona categorías, tipos y factores</Text>
+        <Text style={styles.subtitle}>Gestiona opciones y factores desde una sola vista.</Text>
       </View>
 
       {error && (
@@ -398,11 +403,11 @@ export default function AdminCatalogScreen() {
           onPress={() => setIncludeInactive(!includeInactive)}
         >
           <Text style={[styles.toggleButtonText, includeInactive && styles.toggleButtonTextActive]}>
-            {includeInactive ? "✓ Mostrar inactivos" : "Mostrar inactivos"}
+            {includeInactive ? "Ocultar inactivos" : "Mostrar inactivos"}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={loadData} style={styles.reloadButton}>
-          <Text style={styles.reloadButtonText}>Recargar</Text>
+          <Text style={styles.reloadButtonText}>Actualizar</Text>
         </TouchableOpacity>
       </View>
 
@@ -435,7 +440,7 @@ export default function AdminCatalogScreen() {
         style={styles.fab}
         onPress={() => handleCreate(activeTab)}
       >
-        <Text style={styles.fabText}>+</Text>
+        <Text style={styles.fabText}>Nuevo</Text>
       </TouchableOpacity>
 
       <Modal
@@ -470,7 +475,7 @@ export default function AdminCatalogScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f4f2ec",
+    backgroundColor: "#f2f2f7",
   },
   loadingContainer: {
     flex: 1,
@@ -483,35 +488,38 @@ const styles = StyleSheet.create({
     color: "#5f7280",
   },
   header: {
-    padding: 16,
-    backgroundColor: "#fffdf8",
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 14,
+    backgroundColor: "#f2f2f7",
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(23, 48, 66, 0.08)",
+    borderBottomColor: "#e5e7eb",
   },
   backButton: {
-    marginBottom: 8,
+    marginBottom: 10,
+    alignSelf: "flex-start",
   },
   backButtonText: {
-    fontSize: 16,
-    color: "#1f4b6e",
+    fontSize: 15,
+    color: "#007aff",
     fontWeight: "600",
   },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#173042",
-    fontFamily: "serif",
+    fontSize: 30,
+    fontWeight: "800",
+    color: "#111827",
   },
   subtitle: {
     fontSize: 14,
-    color: "#5f7280",
-    marginTop: 4,
+    color: "#6b7280",
+    marginTop: 6,
+    lineHeight: 20,
   },
   errorContainer: {
     margin: 16,
     padding: 16,
     backgroundColor: "#fef2f2",
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: "#fecaca",
   },
@@ -533,117 +541,135 @@ const styles = StyleSheet.create({
   },
   controls: {
     flexDirection: "row",
-    padding: 16,
-    gap: 8,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 10,
+    gap: 10,
   },
   toggleButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "rgba(23, 48, 66, 0.08)",
-    backgroundColor: "#fffdf8",
+    borderColor: "#d1d5db",
+    backgroundColor: "#ffffff",
   },
   toggleButtonActive: {
-    backgroundColor: "#1f4b6e",
-    borderColor: "#1f4b6e",
+    backgroundColor: "#eff6ff",
+    borderColor: "#bfdbfe",
   },
   toggleButtonText: {
     fontSize: 14,
-    color: "#173042",
+    color: "#111827",
+    fontWeight: "600",
   },
   toggleButtonTextActive: {
-    color: "#fff",
+    color: "#007aff",
   },
   reloadButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "rgba(23, 48, 66, 0.08)",
-    backgroundColor: "#fffdf8",
+    borderColor: "#d1d5db",
+    backgroundColor: "#ffffff",
   },
   reloadButtonText: {
     fontSize: 14,
-    color: "#173042",
+    color: "#007aff",
     fontWeight: "600",
   },
   tabsContainer: {
     paddingHorizontal: 16,
-    paddingBottom: 8,
+    paddingBottom: 10,
   },
   tab: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 15,
     paddingVertical: 10,
     marginRight: 8,
-    borderRadius: 20,
-    backgroundColor: "#fffdf8",
+    borderRadius: 999,
+    backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "rgba(23, 48, 66, 0.08)",
+    borderColor: "#d1d5db",
   },
   tabActive: {
-    backgroundColor: "#1f4b6e",
-    borderColor: "#1f4b6e",
+    backgroundColor: "#111827",
+    borderColor: "#111827",
   },
   tabText: {
     fontSize: 14,
-    color: "#173042",
+    color: "#111827",
     fontWeight: "600",
   },
   tabTextActive: {
-    color: "#fff",
+    color: "#ffffff",
   },
   content: {
     flex: 1,
   },
   cardsContainer: {
     padding: 16,
-    gap: 12,
+    gap: 10,
   },
   card: {
-    backgroundColor: "#fffdf8",
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     borderWidth: 1,
-    borderColor: "rgba(23, 48, 66, 0.08)",
-    shadowColor: "#152230",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
+    borderColor: "#e5e7eb",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
     elevation: 2,
+  },
+  cardContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 14,
+  },
+  cardTextBlock: {
+    flex: 1,
   },
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 4,
+    gap: 8,
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
-    color: "#173042",
+    color: "#111827",
     flex: 1,
   },
   inactiveBadge: {
-    backgroundColor: "#fef2f2",
+    backgroundColor: "#fff1f2",
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingVertical: 3,
+    borderRadius: 999,
   },
   inactiveBadgeText: {
-    fontSize: 12,
-    color: "#b74f4d",
+    fontSize: 11,
+    color: "#be123c",
     fontWeight: "600",
   },
   cardSubtitle: {
-    fontSize: 14,
-    color: "#5f7280",
+    fontSize: 13,
+    color: "#4b5563",
     marginBottom: 4,
   },
   cardCode: {
     fontSize: 12,
-    color: "#60707a",
-    fontFamily: "monospace",
+    color: "#9ca3af",
+  },
+  cardChevron: {
+    color: "#9ca3af",
+    fontSize: 24,
+    lineHeight: 24,
   },
   emptyState: {
     padding: 32,
@@ -657,49 +683,49 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 16,
     bottom: 16,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#1f4b6e",
+    minWidth: 88,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#007aff",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#152230",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    paddingHorizontal: 18,
+    shadowColor: "#007aff",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
     elevation: 4,
   },
   fabText: {
-    fontSize: 32,
-    color: "#fff",
-    fontWeight: "300",
-    marginTop: -2,
+    fontSize: 15,
+    color: "#ffffff",
+    fontWeight: "700",
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: "#f4f2ec",
+    backgroundColor: "#f2f2f7",
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     padding: 16,
-    backgroundColor: "#fffdf8",
+    backgroundColor: "#ffffff",
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(23, 48, 66, 0.08)",
+    borderBottomColor: "#e5e7eb",
   },
   modalCancelText: {
     fontSize: 16,
-    color: "#5f7280",
+    color: "#6b7280",
   },
   modalTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#173042",
+    color: "#111827",
   },
   modalSaveText: {
     fontSize: 16,
-    color: "#1f4b6e",
+    color: "#007aff",
     fontWeight: "700",
   },
   modalSaveTextDisabled: {
@@ -715,17 +741,17 @@ const styles = StyleSheet.create({
   formLabel: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#173042",
+    color: "#111827",
     marginBottom: 8,
   },
   formInput: {
-    backgroundColor: "#fffdf8",
+    backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "rgba(23, 48, 66, 0.08)",
-    borderRadius: 12,
-    padding: 12,
+    borderColor: "#d1d5db",
+    borderRadius: 14,
+    padding: 14,
     fontSize: 16,
-    color: "#173042",
+    color: "#111827",
   },
   checkboxRow: {
     flexDirection: "row",
@@ -737,15 +763,15 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: "rgba(23, 48, 66, 0.08)",
-    backgroundColor: "#fffdf8",
+    borderColor: "#d1d5db",
+    backgroundColor: "#ffffff",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
   },
   checkboxChecked: {
-    backgroundColor: "#1f4b6e",
-    borderColor: "#1f4b6e",
+    backgroundColor: "#007aff",
+    borderColor: "#007aff",
   },
   checkmark: {
     color: "#fff",
@@ -754,6 +780,6 @@ const styles = StyleSheet.create({
   },
   checkboxLabel: {
     fontSize: 16,
-    color: "#173042",
+    color: "#111827",
   },
 });

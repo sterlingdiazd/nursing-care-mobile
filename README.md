@@ -65,9 +65,14 @@ The Nursing Care Mobile app provides on-the-go access to nursing and residential
    npm install
    ```
 
-2. **Configure environment**:
-   Create `.env.local` and set `EXPO_PUBLIC_API_BASE_URL` to a backend URL the phone can reach on the same network, preferably using the HTTPS `sslip.io` host exposed by the app config.
-   Example: `EXPO_PUBLIC_API_BASE_URL=https://192-168-1-50.sslip.io:5050`
+2. **Configure environment** (automatic in most cases):
+   The app automatically detects the development machine's IP address when running on physical devices through Expo. You typically don't need to set `EXPO_PUBLIC_API_BASE_URL` manually.
+
+   However, if you need to override the API endpoint:
+   - For simulator/emulator: `EXPO_PUBLIC_API_BASE_URL=http://localhost:5050`
+   - For physical device on LAN: `EXPO_PUBLIC_API_BASE_URL=https://192-168-1-50.sslip.io:5050`
+
+   See `.env.example` for more details.
 
 3. **Start the development server**:
    ```bash
@@ -75,10 +80,22 @@ The Nursing Care Mobile app provides on-the-go access to nursing and residential
    ```
 
 ### Execution
+
+**Simulator / Emulator**:
 - Press i for iOS simulator.
 - Press a for Android emulator.
-- Scan the QR code with Expo Go for physical device testing.
-- Google login on native devices uses the in-app browser and returns to the app automatically. If the backend uses a local HTTPS certificate, trust that certificate on the phone before testing Google login.
+
+**Physical Device Testing**:
+1. Make sure backend is running on your development machine (run `./scripts/dev-up.sh` from project root).
+2. Ensure your device is on the same WiFi network as your development machine.
+3. Run `npm start` to start the Expo development server.
+4. Scan the QR code displayed with Expo Go app on your physical device.
+5. The app will automatically detect your development machine's IP and connect to the backend.
+
+**SSL Certificate Trust (for HTTPS with self-signed certificates)**:
+- On iOS: If prompted, go to Settings > General > VPN & Device Management > install the certificate and trust it.
+- On Android: Similar process in Settings > Security > Install from storage.
+- For Google login on devices with local HTTPS: Trust the certificate before testing OAuth.
 
 ---
 

@@ -8,6 +8,7 @@ import {
   useClientLogs,
 } from "@/src/logging/clientLogger";
 import { checkBackendHealth, HealthResponse } from "@/src/services/authService";
+import { mobileSecondaryButton, mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
 
 export default function DiagnosticsScreen() {
   const logs = useClientLogs();
@@ -36,8 +37,8 @@ export default function DiagnosticsScreen() {
   return (
     <MobileWorkspaceShell
       eyebrow="Diagnostico"
-      title="Comprueba backend, errores y trazas del cliente."
-      description="La observabilidad se separa del acceso para que la experiencia normal no se mezcle con soporte y depuracion."
+      title="Estado tecnico"
+      description="Verifica backend y revisa los eventos recientes del cliente."
     >
       <View style={styles.card}>
         <Text style={styles.sectionEyebrow}>Backend</Text>
@@ -122,60 +123,49 @@ export default function DiagnosticsScreen() {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#fffdf9",
-    borderRadius: 24,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: "#dbe5f3",
+    ...mobileSurfaceCard,
+    borderRadius: mobileTheme.radius.xl,
+    padding: 20,
   },
   sectionEyebrow: {
-    fontSize: 12,
-    fontWeight: "800",
-    textTransform: "uppercase",
-    letterSpacing: 1.3,
-    color: "#2563eb",
+    ...mobileTheme.typography.eyebrow,
+    color: mobileTheme.colors.ink.muted,
     marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 24,
-    lineHeight: 30,
-    fontWeight: "800",
-    color: "#102a43",
+    ...mobileTheme.typography.title,
+    color: mobileTheme.colors.ink.primary,
     marginBottom: 10,
   },
   copy: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: "#52637a",
+    ...mobileTheme.typography.body,
+    color: mobileTheme.colors.ink.secondary,
     marginBottom: 12,
   },
   secondaryButton: {
-    backgroundColor: "#eef4ff",
-    borderRadius: 18,
+    ...mobileSecondaryButton,
+    borderRadius: mobileTheme.radius.md,
     paddingVertical: 15,
     paddingHorizontal: 18,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#d7e3fb",
   },
   clearButton: {
     minWidth: 132,
   },
   secondaryButtonText: {
-    color: "#163561",
+    color: "#007aff",
     fontSize: 15,
     fontWeight: "700",
     textAlign: "center",
   },
   buttonPressed: {
-    opacity: 0.92,
+    opacity: 0.88,
   },
   buttonDisabled: {
     opacity: 0.65,
   },
   successCard: {
     marginTop: 14,
-    borderRadius: 18,
+    borderRadius: 16,
     backgroundColor: "#ecfdf5",
     borderWidth: 1,
     borderColor: "#bbf7d0",
@@ -183,7 +173,7 @@ const styles = StyleSheet.create({
   },
   errorCard: {
     marginTop: 14,
-    borderRadius: 18,
+    borderRadius: 16,
     backgroundColor: "#fff7ed",
     borderWidth: 1,
     borderColor: "#fed7aa",
@@ -192,13 +182,13 @@ const styles = StyleSheet.create({
   statusTitle: {
     fontSize: 15,
     fontWeight: "800",
-    color: "#102a43",
+    color: "#111827",
     marginBottom: 6,
   },
   statusText: {
     fontSize: 14,
     lineHeight: 20,
-    color: "#36506c",
+    color: "#4b5563",
   },
   logHeader: {
     flexDirection: "row",
@@ -218,23 +208,23 @@ const styles = StyleSheet.create({
   },
   logMeta: {
     fontSize: 11,
-    color: "#64748b",
+    color: "#6b7280",
     marginBottom: 4,
   },
   logCorrelation: {
     fontSize: 12,
-    color: "#1d4ed8",
+    color: "#007aff",
     marginBottom: 4,
   },
   logMessage: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#0f172a",
+    color: "#111827",
     marginBottom: 4,
   },
   logData: {
     fontSize: 12,
     lineHeight: 18,
-    color: "#334155",
+    color: "#4b5563",
   },
 });

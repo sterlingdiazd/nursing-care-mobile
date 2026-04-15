@@ -78,8 +78,8 @@ export default function AdminCareRequestsScreen() {
   return (
     <MobileWorkspaceShell
       eyebrow="Solicitudes de Cuidado"
-      title="Gestión de solicitudes"
-      description="Monitorear y administrar todas las solicitudes de servicio."
+      title="Gestion de solicitudes"
+      description="Consulta, filtra y supervisa todas las solicitudes de servicio."
       actions={(
         <View style={styles.headerActions}>
           <Pressable style={styles.button} onPress={() => setShowFilters(!showFilters)}>
@@ -196,33 +196,33 @@ export default function AdminCareRequestsScreen() {
 
 const styles = StyleSheet.create({
   headerActions: { flexDirection: "row", gap: 8 },
-  button: { backgroundColor: "#f0f4f8", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },
-  buttonText: { color: "#102a43", fontWeight: "700", fontSize: 14 },
-  buttonPrimary: { backgroundColor: "#3b82f6", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },
+  button: { backgroundColor: "#ffffff", borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: "#d1d5db" },
+  buttonText: { color: "#007aff", fontWeight: "700", fontSize: 14 },
+  buttonPrimary: { backgroundColor: "#007aff", borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10 },
   buttonPrimaryText: { color: "#ffffff", fontWeight: "700", fontSize: 14 },
   error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
   loading: { color: "#52637a", fontSize: 14, textAlign: "center", padding: 20 },
-  filtersCard: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
-  filtersTitle: { fontSize: 16, fontWeight: "800", color: "#102a43", marginBottom: 12 },
-  filterLabel: { fontSize: 14, fontWeight: "700", color: "#52637a", marginTop: 8, marginBottom: 6 },
+  filtersCard: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 18, padding: 16, marginBottom: 12 },
+  filtersTitle: { fontSize: 16, fontWeight: "800", color: "#111827", marginBottom: 12 },
+  filterLabel: { fontSize: 14, fontWeight: "700", color: "#6b7280", marginTop: 8, marginBottom: 6 },
   filterChips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 },
-  chip: { backgroundColor: "#f0f4f8", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
-  chipActive: { backgroundColor: "#3b82f6" },
-  chipText: { color: "#102a43", fontSize: 12, fontWeight: "600" },
+  chip: { backgroundColor: "#ffffff", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: "#d1d5db" },
+  chipActive: { backgroundColor: "#111827", borderColor: "#111827" },
+  chipText: { color: "#111827", fontSize: 12, fontWeight: "600" },
   chipTextActive: { color: "#ffffff" },
-  input: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#cbd5e0", borderRadius: 12, padding: 12 },
+  input: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#d1d5db", borderRadius: 14, padding: 14, color: "#111827" },
   emptyState: { padding: 40, alignItems: "center" },
   emptyStateText: { color: "#52637a", fontSize: 16, textAlign: "center" },
   list: { gap: 12 },
-  card: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
-  cardOverdue: { borderColor: "#f59e0b", borderWidth: 2 },
-  overdueIndicator: { backgroundColor: "#fef3c7", borderRadius: 8, padding: 8, marginBottom: 8 },
+  card: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 18, padding: 16, marginBottom: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 2 },
+  cardOverdue: { borderColor: "#f59e0b", borderWidth: 1.5 },
+  overdueIndicator: { backgroundColor: "#fff7ed", borderRadius: 10, padding: 8, marginBottom: 8, alignSelf: "flex-start" },
   overdueText: { color: "#92400e", fontSize: 12, fontWeight: "700" },
-  cardTitle: { color: "#102a43", fontWeight: "800", fontSize: 18, marginBottom: 4 },
-  cardMeta: { color: "#52637a", fontSize: 14, marginBottom: 8 },
+  cardTitle: { color: "#111827", fontWeight: "800", fontSize: 18, marginBottom: 4 },
+  cardMeta: { color: "#6b7280", fontSize: 14, marginBottom: 8 },
   cardRow: { flexDirection: "row", marginBottom: 4 },
-  cardLabel: { color: "#7c2d12", fontSize: 13, fontWeight: "700", width: 140 },
-  cardValue: { color: "#102a43", fontSize: 13, flex: 1 },
+  cardLabel: { color: "#6b7280", fontSize: 13, fontWeight: "700", width: 140 },
+  cardValue: { color: "#111827", fontSize: 13, flex: 1 },
   unassigned: { color: "#dc2626", fontSize: 13, fontStyle: "italic", marginTop: 4 },
-  cardTimestamp: { color: "#7c2d12", fontSize: 11, marginTop: 8 },
+  cardTimestamp: { color: "#6b7280", fontSize: 11, marginTop: 8 },
 });

@@ -6,6 +6,17 @@ import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { getAdminDashboard } from "@/src/services/adminPortalService";
 
+const adminSections = [
+  { label: "Usuarios", path: "/admin/users" },
+  { label: "Enfermeras", path: "/admin/nurse-profiles" },
+  { label: "Clientes", path: "/admin/clients" },
+  { label: "Solicitudes", path: "/admin/care-requests" },
+  { label: "Acciones", path: "/admin/action-items" },
+  { label: "Notificaciones", path: "/admin/notifications" },
+  { label: "Auditoria", path: "/admin/audit-logs" },
+  { label: "Reportes", path: "/admin/reports" },
+] as const;
+
 export default function AdminDashboardScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
   const [snapshot, setSnapshot] = useState<Awaited<ReturnType<typeof getAdminDashboard>> | null>(null);
@@ -36,56 +47,135 @@ export default function AdminDashboardScreen() {
   return (
     <MobileWorkspaceShell
       eyebrow="Administracion"
-      title="Panel administrativo mobile"
-      description="Replica la visibilidad ejecutiva del portal web para seguimiento rapido de pendientes operativos."
+      title="Panel administrativo"
+      description="Supervisa pendientes y entra rapido a cada modulo."
       actions={
         <>
-          <Pressable style={styles.button} onPress={() => router.push("/admin/users" as any)}>
-            <Text style={styles.buttonText}>Usuarios</Text>
+          <Pressable style={styles.primaryButton} onPress={() => router.push("/admin/action-items" as any)}>
+            <Text style={styles.primaryButtonText}>Ver acciones</Text>
           </Pressable>
-          <Pressable style={styles.button} onPress={() => router.push("/admin/nurse-profiles" as any)}>
-            <Text style={styles.buttonText}>Enfermeras</Text>
-          </Pressable>
-          <Pressable style={styles.button} onPress={() => router.push("/admin/clients" as any)}>
-            <Text style={styles.buttonText}>Clientes</Text>
-          </Pressable>
-          <Pressable style={styles.button} onPress={() => router.push("/admin/care-requests" as any)}>
-            <Text style={styles.buttonText}>Solicitudes</Text>
-          </Pressable>
-          <Pressable style={styles.button} onPress={() => router.push("/admin/action-items" as any)}>
-            <Text style={styles.buttonText}>Abrir cola de acciones</Text>
-          </Pressable>
-          <Pressable style={styles.button} onPress={() => router.push("/admin/notifications" as any)}>
-            <Text style={styles.buttonText}>Abrir notificaciones</Text>
-          </Pressable>
-          <Pressable style={styles.button} onPress={() => router.push("/admin/audit-logs" as any)}>
-            <Text style={styles.buttonText}>Abrir auditoria</Text>
-          </Pressable>
-          <Pressable style={styles.button} onPress={() => router.push("/admin/reports" as any)}>
-            <Text style={styles.buttonText}>Abrir reportes</Text>
+          <Pressable style={styles.secondaryButton} onPress={() => router.push("/admin/care-requests" as any)}>
+            <Text style={styles.secondaryButtonText}>Abrir solicitudes</Text>
           </Pressable>
         </>
       }
     >
       {error && <Text style={styles.error}>{error}</Text>}
       {snapshot && (
-        <View style={styles.grid}>
-          <View style={styles.card}><Text style={styles.label}>Perfiles pendientes</Text><Text style={styles.value}>{snapshot.pendingNurseProfilesCount}</Text></View>
-          <View style={styles.card}><Text style={styles.label}>Sin asignar</Text><Text style={styles.value}>{snapshot.careRequestsWaitingForAssignmentCount}</Text></View>
-          <View style={styles.card}><Text style={styles.label}>Pendientes de aprobacion</Text><Text style={styles.value}>{snapshot.careRequestsWaitingForApprovalCount}</Text></View>
-          <View style={styles.card}><Text style={styles.label}>Notificaciones sin leer</Text><Text style={styles.value}>{snapshot.unreadAdminNotificationsCount}</Text></View>
-        </View>
+        <>
+          <View style={styles.metricsRow}>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricValue}>{snapshot.pendingNurseProfilesCount}</Text>
+              <Text style={styles.metricLabel}>Perfiles pendientes</Text>
+            </View>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricValue}>{snapshot.careRequestsWaitingForAssignmentCount}</Text>
+              <Text style={styles.metricLabel}>Sin asignar</Text>
+            </View>
+          </View>
+
+          <View style={styles.metricsRow}>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricValue}>{snapshot.careRequestsWaitingForApprovalCount}</Text>
+              <Text style={styles.metricLabel}>Pendientes de aprobacion</Text>
+            </View>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricValue}>{snapshot.unreadAdminNotificationsCount}</Text>
+              <Text style={styles.metricLabel}>No leidas</Text>
+            </View>
+          </View>
+        </>
       )}
+
+      <View style={styles.sectionList}>
+        {adminSections.map((section) => (
+          <Pressable
+            key={section.path}
+            style={styles.sectionRow}
+            onPress={() => router.push(section.path as any)}
+          >
+            <Text style={styles.sectionLabel}>{section.label}</Text>
+            <Text style={styles.sectionChevron}>›</Text>
+          </Pressable>
+        ))}
+      </View>
     </MobileWorkspaceShell>
   );
 }
 
 const styles = StyleSheet.create({
-  grid: { gap: 12 },
-  card: { backgroundColor: "#fffdf9", borderRadius: 18, borderWidth: 1, borderColor: "#dbe5f3", padding: 16 },
-  label: { color: "#52637a", fontWeight: "700", marginBottom: 6 },
-  value: { color: "#102a43", fontWeight: "800", fontSize: 28 },
-  button: { backgroundColor: "#fef3c7", borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12 },
-  buttonText: { color: "#132d75", fontWeight: "800" },
+  metricsRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 12,
+  },
+  metricCard: {
+    flex: 1,
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    padding: 16,
+  },
+  metricValue: {
+    color: "#111827",
+    fontWeight: "800",
+    fontSize: 28,
+    marginBottom: 6,
+  },
+  metricLabel: {
+    color: "#6b7280",
+    fontWeight: "600",
+    fontSize: 13,
+  },
+  primaryButton: {
+    backgroundColor: "#007aff",
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+  },
+  primaryButtonText: {
+    color: "#ffffff",
+    fontWeight: "800",
+  },
+  secondaryButton: {
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+  },
+  secondaryButtonText: {
+    color: "#007aff",
+    fontWeight: "700",
+  },
+  sectionList: {
+    marginTop: 8,
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    overflow: "hidden",
+  },
+  sectionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+  },
+  sectionLabel: {
+    color: "#111827",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  sectionChevron: {
+    color: "#9ca3af",
+    fontSize: 24,
+    lineHeight: 24,
+  },
   error: { color: "#b91c1c", marginBottom: 12 },
 });

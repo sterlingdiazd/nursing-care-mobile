@@ -13,10 +13,17 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { hapticFeedback } from "@/src/utils/haptics";
+import { mobileSecondaryButton, mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
 
 import { useAuth } from "@/src/context/AuthContext";
 import { logClientEvent } from "@/src/logging/clientLogger";
-import { canAccessCareRequests, canCreateCareRequests } from "@/src/utils/authRedirect";
+import {
+  canAccessAccount,
+  canAccessAdminPortal,
+  canAccessCareRequests,
+  canAccessSupportTools,
+  canCreateCareRequests,
+} from "@/src/utils/authRedirect";
 import { formatRoleLabels } from "@/src/utils/roleLabels";
 
 interface MobileWorkspaceShellProps {
@@ -33,7 +40,7 @@ interface NavigationItem {
   description: string;
   hideWhenAuthenticated?: boolean;
   hideWhenAnonymous?: boolean;
-  adminOnly?: boolean;
+  access?: "admin" | "careRequests" | "createCareRequest" | "account" | "support";
 }
 
 const navigationItems: NavigationItem[] = [
@@ -43,51 +50,53 @@ const navigationItems: NavigationItem[] = [
     path: "/admin",
     description: "Resumen ejecutivo",
     hideWhenAnonymous: true,
-    adminOnly: true,
+    access: "admin",
   },
   {
     label: "Enfermeras",
     path: "/admin/nurse-profiles",
     description: "Perfiles y revision",
     hideWhenAnonymous: true,
-    adminOnly: true,
+    access: "admin",
   },
   {
     label: "Usuarios",
     path: "/admin/users",
     description: "Cuentas y roles",
     hideWhenAnonymous: true,
-    adminOnly: true,
+    access: "admin",
   },
   {
     label: "Clientes",
     path: "/admin/clients",
     description: "Cartera de clientes",
     hideWhenAnonymous: true,
-    adminOnly: true,
+    access: "admin",
   },
   {
     label: "Solicitudes admin",
     path: "/admin/care-requests",
     description: "Cola administrativa",
     hideWhenAnonymous: true,
-    adminOnly: true,
+    access: "admin",
   },
   {
     label: "Solicitudes",
     path: "/care-requests",
     description: "Cola y revision",
     hideWhenAnonymous: true,
+    access: "careRequests",
   },
   {
     label: "Nueva solicitud",
     path: "/create-care-request",
     description: "Captura guiada",
     hideWhenAnonymous: true,
+    access: "createCareRequest",
   },
-  { label: "Cuenta", path: "/account", description: "Sesion y acceso" },
-  { label: "Diagnostico", path: "/diagnostics", description: "Backend y logs" },
-  { label: "Herramientas", path: "/tools", description: "Utilidades avanzadas" },
+  { label: "Cuenta", path: "/account", description: "Sesion y acceso", hideWhenAnonymous: true, access: "account" },
+  { label: "Diagnostico", path: "/diagnostics", description: "Backend y logs", hideWhenAnonymous: true, access: "support" },
+  { label: "Herramientas", path: "/tools", description: "Utilidades avanzadas", hideWhenAnonymous: true, access: "support" },
   {
     label: "Iniciar sesion",
     path: "/login",
@@ -168,6 +177,9 @@ export default function MobileWorkspaceShell({
   };
   const canOpenCareRequests = canAccessCareRequests(accessState);
   const canOpenCreateCareRequest = canCreateCareRequests(accessState);
+  const canOpenAdminPortal = canAccessAdminPortal(accessState);
+  const canOpenAccount = canAccessAccount(accessState);
+  const canOpenSupportTools = canAccessSupportTools(accessState);
 
   useEffect(() => {
     setHasMounted(true);
@@ -215,15 +227,23 @@ export default function MobileWorkspaceShell({
           return false;
         }
 
-        if (item.adminOnly && !roles.includes("ADMIN")) {
+        if (item.access === "admin" && !canOpenAdminPortal) {
           return false;
         }
 
-        if (item.path === "/care-requests" && !canOpenCareRequests) {
+        if (item.access === "careRequests" && !canOpenCareRequests) {
           return false;
         }
 
-        if (item.path === "/create-care-request" && !canOpenCreateCareRequest) {
+        if (item.access === "createCareRequest" && !canOpenCreateCareRequest) {
+          return false;
+        }
+
+        if (item.access === "account" && !canOpenAccount) {
+          return false;
+        }
+
+        if (item.access === "support" && !canOpenSupportTools) {
           return false;
         }
 
@@ -231,9 +251,13 @@ export default function MobileWorkspaceShell({
           return false;
         }
 
+        if (item.path === "/create-care-request" && activePath === "/create-care-request") {
+          return false;
+        }
+
         return true;
       }),
-    [canOpenCareRequests, canOpenCreateCareRequest, isAuthenticated, isNurseUnderReview],
+    [canOpenAccount, canOpenAdminPortal, canOpenCareRequests, canOpenCreateCareRequest, canOpenSupportTools, isAuthenticated, isNurseUnderReview, activePath],
   );
 
   if (
@@ -267,9 +291,11 @@ export default function MobileWorkspaceShell({
   const renderSidebar = () => (
     <View style={styles.sidebar}>
       <Text style={styles.sidebarEyebrow}>NursingCare</Text>
-      <Text style={styles.sidebarTitle}>Consola mobile</Text>
+      <Text style={styles.sidebarTitle}>{isAuthenticated ? "Espacio de trabajo" : "Acceso"}</Text>
       <Text style={styles.sidebarCopy}>
-        Navega entre resumen, solicitudes, cuenta, diagnostico y herramientas desde una sola estructura.
+        {isAuthenticated
+          ? "Accesos principales segun tu perfil."
+          : "Entra o crea tu cuenta para continuar."}
       </Text>
 
       <View style={styles.navList}>
@@ -371,12 +397,12 @@ export default function MobileWorkspaceShell({
             )}
 
             <View style={styles.topBarText}>
-              <Text style={styles.topBarLabel}>Seccion activa</Text>
+              <Text style={styles.topBarLabel}>{isAuthenticated ? "Seccion activa" : "Acceso"}</Text>
               <Text style={styles.topBarTitle}>{currentItem.label}</Text>
             </View>
 
             <View style={styles.topBarChip}>
-              <Text style={styles.topBarChipText}>{isAuthenticated ? "Sesion activa" : "Sesion requerida"}</Text>
+              <Text style={styles.topBarChipText}>{isAuthenticated ? "Sesion activa" : "Invitado"}</Text>
             </View>
           </BlurView>
 
@@ -404,12 +430,12 @@ export default function MobileWorkspaceShell({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#eef3fb",
+    backgroundColor: mobileTheme.colors.surface.canvas,
   },
   screen: {
     flex: 1,
     flexDirection: "row",
-    backgroundColor: "#eef3fb",
+    backgroundColor: mobileTheme.colors.surface.canvas,
   },
   sidebarHost: {
     width: 320,
@@ -419,7 +445,7 @@ const styles = StyleSheet.create({
   drawerOverlay: {
     flex: 1,
     flexDirection: "row",
-    backgroundColor: "rgba(15, 23, 42, 0.18)",
+    backgroundColor: "rgba(15, 23, 42, 0.16)",
   },
   drawerScrim: {
     flex: 1,
@@ -430,8 +456,8 @@ const styles = StyleSheet.create({
   },
   sidebar: {
     flex: 1,
-    backgroundColor: "#123047",
-    borderRadius: 30,
+    ...mobileSurfaceCard,
+    borderRadius: mobileTheme.radius.xl,
     padding: 22,
   },
   sidebarEyebrow: {
@@ -439,18 +465,18 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: 1.8,
     textTransform: "uppercase",
-    color: "rgba(214, 234, 248, 0.72)",
+    color: "#6b7280",
     marginBottom: 12,
   },
   sidebarTitle: {
     fontSize: 30,
     lineHeight: 36,
     fontWeight: "800",
-    color: "#fffef8",
+    color: "#111827",
     marginBottom: 12,
   },
   sidebarCopy: {
-    color: "rgba(232, 241, 247, 0.78)",
+    color: "#4b5563",
     lineHeight: 22,
     marginBottom: 22,
   },
@@ -458,42 +484,42 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   navButton: {
-    borderRadius: 18,
+    borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 14,
-    backgroundColor: "rgba(255,255,255,0.04)",
+    backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    borderColor: "#d1d5db",
   },
   navButtonActive: {
-    backgroundColor: "#f6ead7",
-    borderColor: "rgba(246, 234, 215, 0.8)",
+    backgroundColor: "#eff6ff",
+    borderColor: "#bfdbfe",
   },
   navButtonLabel: {
-    color: "#eff6ff",
+    color: "#111827",
     fontSize: 15,
     fontWeight: "800",
     marginBottom: 4,
   },
   navButtonLabelActive: {
-    color: "#102a43",
+    color: "#007aff",
   },
   navButtonMeta: {
-    color: "rgba(232, 241, 247, 0.66)",
+    color: "#6b7280",
     fontSize: 13,
     lineHeight: 18,
   },
   navButtonMetaActive: {
-    color: "#415b75",
+    color: "#4b5563",
   },
   sidebarFooter: {
     marginTop: 22,
     paddingTop: 18,
     borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.12)",
+    borderTopColor: "#e5e7eb",
   },
   sidebarMetaLabel: {
-    color: "#d8ecec",
+    color: "#6b7280",
     fontSize: 12,
     fontWeight: "800",
     letterSpacing: 1.2,
@@ -501,13 +527,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sidebarMetaValue: {
-    color: "#fffef8",
+    color: "#111827",
     fontSize: 16,
     fontWeight: "700",
     marginBottom: 6,
   },
   sidebarMetaCopy: {
-    color: "rgba(232, 241, 247, 0.78)",
+    color: "#4b5563",
     lineHeight: 20,
   },
   sidebarLogoutButton: {
@@ -516,11 +542,11 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.24)",
-    backgroundColor: "rgba(255,255,255,0.04)",
+    borderColor: "#d1d5db",
+    backgroundColor: "#ffffff",
   },
   sidebarLogoutButtonText: {
-    color: "#fffef8",
+    color: "#007aff",
     fontSize: 15,
     fontWeight: "800",
   },
@@ -532,22 +558,24 @@ const styles = StyleSheet.create({
   topBar: {
     marginTop: 10,
     marginBottom: 14,
-    borderRadius: 24,
-    backgroundColor: "rgba(255, 253, 248, 0.92)",
+    borderRadius: 22,
+    backgroundColor: "#ffffff",
     paddingVertical: 14,
     paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
   menuButton: {
-    borderRadius: 14,
+    ...mobileSecondaryButton,
+    borderRadius: mobileTheme.radius.md,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    backgroundColor: "#123047",
   },
   menuButtonText: {
-    color: "#fffef8",
+    color: "#007aff",
     fontSize: 14,
     fontWeight: "800",
   },
@@ -555,7 +583,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   topBarLabel: {
-    color: "#7f5724",
+    color: "#6b7280",
     fontSize: 12,
     fontWeight: "800",
     letterSpacing: 1.2,
@@ -563,7 +591,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   topBarTitle: {
-    color: "#102a43",
+    color: "#111827",
     fontSize: 18,
     fontWeight: "800",
   },
@@ -571,10 +599,10 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: "rgba(183, 128, 60, 0.12)",
+    backgroundColor: "#eff6ff",
   },
   topBarChipText: {
-    color: "#7f5724",
+    color: "#007aff",
     fontSize: 12,
     fontWeight: "800",
   },
@@ -586,34 +614,29 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   hero: {
-    backgroundColor: "#10295f",
-    borderRadius: 30,
+    ...mobileSurfaceCard,
+    borderRadius: mobileTheme.radius.xl,
     padding: 24,
-    shadowColor: "#0f172a",
-    shadowOpacity: 0.16,
-    shadowOffset: { width: 0, height: 12 },
-    shadowRadius: 24,
-    elevation: 8,
   },
   eyebrow: {
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "700",
     letterSpacing: 1.8,
     textTransform: "uppercase",
-    color: "#93c5fd",
+    color: "#6b7280",
     marginBottom: 10,
   },
   title: {
-    fontSize: 31,
-    lineHeight: 38,
+    fontSize: 30,
+    lineHeight: 36,
     fontWeight: "800",
-    color: "#f8fafc",
+    color: "#111827",
     marginBottom: 10,
   },
   description: {
     fontSize: 15,
     lineHeight: 24,
-    color: "#dbeafe",
+    color: "#4b5563",
   },
   actions: {
     marginTop: 20,
@@ -623,6 +646,6 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   buttonPressed: {
-    opacity: 0.92,
+    opacity: 0.88,
   },
 });

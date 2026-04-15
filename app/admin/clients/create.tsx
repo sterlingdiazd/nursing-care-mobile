@@ -1,13 +1,22 @@
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { validateEmail } from "@/src/api/auth";
 import { useAuth } from "@/src/context/AuthContext";
 import {
   createAdminClient,
   type CreateAdminClientRequest,
 } from "@/src/services/adminPortalService";
+import {
+  getExactDigitsFieldError,
+  getRejectedDigitsOnlyInputError,
+  getRejectedTextOnlyInputError,
+  getTextOnlyFieldError,
+  sanitizeDigitsOnlyInput,
+  sanitizeTextOnlyInput,
+} from "@/src/utils/identityValidation";
 
 export default function AdminCreateClientScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
@@ -35,15 +44,49 @@ export default function AdminCreateClientScreen() {
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!form.name.trim()) newErrors.name = "El nombre es obligatorio";
-    if (!form.lastName.trim()) newErrors.lastName = "El apellido es obligatorio";
-    if (!form.identificationNumber.trim()) newErrors.identificationNumber = "El número de identificación es obligatorio";
-    if (!form.phone.trim()) newErrors.phone = "El teléfono es obligatorio";
-    if (!form.email.trim()) newErrors.email = "El correo electrónico es obligatorio";
-    else if (!form.email.includes("@")) newErrors.email = "El correo debe ser válido";
+    const trimmedEmail = form.email.trim();
+
+    const nameInputError = getRejectedTextOnlyInputError(form.name, "El nombre");
+    if (nameInputError) newErrors.name = nameInputError;
+    else {
+      const nextNameError = getTextOnlyFieldError(form.name, "El nombre");
+      if (nextNameError) newErrors.name = nextNameError;
+    }
+
+    const lastNameInputError = getRejectedTextOnlyInputError(form.lastName, "El apellido");
+    if (lastNameInputError) newErrors.lastName = lastNameInputError;
+    else {
+      const nextLastNameError = getTextOnlyFieldError(form.lastName, "El apellido");
+      if (nextLastNameError) newErrors.lastName = nextLastNameError;
+    }
+
+    const identificationInputError = getRejectedDigitsOnlyInputError(
+      form.identificationNumber,
+      "La cedula",
+      11,
+    );
+    if (identificationInputError) newErrors.identificationNumber = identificationInputError;
+    else {
+      const nextIdentificationError = getExactDigitsFieldError(form.identificationNumber, "La cedula", 11);
+      if (nextIdentificationError) newErrors.identificationNumber = nextIdentificationError;
+    }
+
+    const phoneInputError = getRejectedDigitsOnlyInputError(form.phone, "El telefono", 10);
+    if (phoneInputError) newErrors.phone = phoneInputError;
+    else {
+      const nextPhoneError = getExactDigitsFieldError(form.phone, "El telefono", 10);
+      if (nextPhoneError) newErrors.phone = nextPhoneError;
+    }
+
+    if (!trimmedEmail) newErrors.email = "El correo electrónico es obligatorio";
+    else if (!validateEmail(trimmedEmail)) newErrors.email = "El correo debe ser válido";
+
     if (!form.password.trim()) newErrors.password = "La contraseña es obligatoria";
     else if (form.password.length < 8) newErrors.password = "La contraseña debe tener al menos 8 caracteres";
-    if (form.password && form.confirmPassword !== form.password) newErrors.confirmPassword = "Las contraseñas no coinciden";
+
+    if (!form.confirmPassword.trim()) newErrors.confirmPassword = "Debes confirmar la contraseña";
+    else if (form.confirmPassword !== form.password) newErrors.confirmPassword = "Las contraseñas no coinciden";
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -55,7 +98,23 @@ export default function AdminCreateClientScreen() {
       setError(null);
       setSubmitting(true);
       const result = await createAdminClient(form);
-      router.push(`/admin/clients/${result.userId}` as never);
+      const createdClientUserId = result.userId?.trim();
+
+      if (!createdClientUserId) {
+        throw new Error("El cliente fue creado, pero no se recibió el identificador para abrir el detalle.");
+      }
+
+      Alert.alert(
+        "Cliente creado",
+        "La cuenta del cliente se creó correctamente y ya está lista para gestión administrativa.",
+        [
+          {
+            text: "Ver detalle",
+            onPress: () => router.replace(`/admin/clients/${createdClientUserId}` as never),
+          },
+        ],
+        { cancelable: false },
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible crear el cliente.");
     } finally {
@@ -84,7 +143,7 @@ export default function AdminCreateClientScreen() {
             style={[styles.input, errors.name ? styles.inputError : undefined]}
             placeholder="Nombre del cliente"
             value={form.name}
-            onChangeText={(text) => setForm({ ...form, name: text })}
+            onChangeText={(text) => setForm({ ...form, name: sanitizeTextOnlyInput(text) })}
           />
           {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
 
@@ -93,7 +152,7 @@ export default function AdminCreateClientScreen() {
             style={[styles.input, errors.lastName ? styles.inputError : undefined]}
             placeholder="Apellido del cliente"
             value={form.lastName}
-            onChangeText={(text) => setForm({ ...form, lastName: text })}
+            onChangeText={(text) => setForm({ ...form, lastName: sanitizeTextOnlyInput(text) })}
           />
           {errors.lastName && <Text style={styles.errorText}>{errors.lastName}</Text>}
 
@@ -102,7 +161,9 @@ export default function AdminCreateClientScreen() {
             style={[styles.input, errors.identificationNumber ? styles.inputError : undefined]}
             placeholder="Número de identificación"
             value={form.identificationNumber}
-            onChangeText={(text) => setForm({ ...form, identificationNumber: text })}
+            onChangeText={(text) => setForm({ ...form, identificationNumber: sanitizeDigitsOnlyInput(text, 11) })}
+            keyboardType="number-pad"
+            maxLength={11}
           />
           {errors.identificationNumber && <Text style={styles.errorText}>{errors.identificationNumber}</Text>}
 
@@ -111,8 +172,9 @@ export default function AdminCreateClientScreen() {
             style={[styles.input, errors.phone ? styles.inputError : undefined]}
             placeholder="Número de teléfono"
             value={form.phone}
-            onChangeText={(text) => setForm({ ...form, phone: text })}
+            onChangeText={(text) => setForm({ ...form, phone: sanitizeDigitsOnlyInput(text, 10) })}
             keyboardType="phone-pad"
+            maxLength={10}
           />
           {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
 
@@ -124,6 +186,7 @@ export default function AdminCreateClientScreen() {
             onChangeText={(text) => setForm({ ...form, email: text })}
             keyboardType="email-address"
             autoCapitalize="none"
+            autoCorrect={false}
           />
           {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
 

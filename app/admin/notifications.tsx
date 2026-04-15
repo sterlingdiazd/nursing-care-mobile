@@ -57,8 +57,8 @@ export default function AdminNotificationsScreen() {
   return (
     <MobileWorkspaceShell
       eyebrow="Notificaciones"
-      title="Centro de notificaciones administrativo"
-      description="Replica mobile de la bandeja de avisos del portal web con lectura, descarte y archivo."
+      title="Notificaciones"
+      description="Bandeja administrativa con acciones rapidas y acceso directo."
       actions={<Pressable style={styles.button} onPress={() => void load()}><Text style={styles.buttonText}>Actualizar</Text></Pressable>}
     >
       {!!error && <Text style={styles.error}>{error}</Text>}
@@ -94,17 +94,28 @@ export default function AdminNotificationsScreen() {
 
 const styles = StyleSheet.create({
   list: { gap: 12 },
-  card: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14 },
-  meta: { color: "#7c2d12", fontWeight: "800", marginBottom: 6 },
-  title: { color: "#102a43", fontWeight: "800", fontSize: 17, marginBottom: 6 },
-  body: { color: "#52637a", marginBottom: 8 },
-  source: { color: "#475569", marginBottom: 10 },
+  card: {
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 18,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  meta: { color: "#92400e", fontWeight: "800", marginBottom: 6, fontSize: 12, textTransform: "uppercase" },
+  title: { color: "#111827", fontWeight: "800", fontSize: 17, marginBottom: 6 },
+  body: { color: "#4b5563", marginBottom: 8, lineHeight: 20 },
+  source: { color: "#6b7280", marginBottom: 10 },
   actions: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
-  action: { backgroundColor: "#e2e8f0", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
-  actionText: { color: "#334155", fontWeight: "700" },
-  actionPrimary: { backgroundColor: "#dbeafe", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
-  actionPrimaryText: { color: "#1e3a8a", fontWeight: "800" },
-  button: { backgroundColor: "#fef3c7", borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12 },
-  buttonText: { color: "#132d75", fontWeight: "800" },
+  action: { backgroundColor: "#ffffff", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: "#d1d5db" },
+  actionText: { color: "#4b5563", fontWeight: "700" },
+  actionPrimary: { backgroundColor: "#007aff", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
+  actionPrimaryText: { color: "#ffffff", fontWeight: "800" },
+  button: { backgroundColor: "#ffffff", borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: "#d1d5db" },
+  buttonText: { color: "#007aff", fontWeight: "700" },
   error: { color: "#b91c1c", marginBottom: 12 },
 });

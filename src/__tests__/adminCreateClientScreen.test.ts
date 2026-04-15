@@ -16,8 +16,8 @@ function makeForm(overrides?: Partial<CreateAdminClientRequest>): CreateAdminCli
   return {
     name: "Juan",
     lastName: "Pérez",
-    identificationNumber: "001-1234567-8",
-    phone: "809-555-0001",
+    identificationNumber: "00112345678",
+    phone: "8095550001",
     email: "juan@example.com",
     password: "password123",
     confirmPassword: "password123",
@@ -32,8 +32,8 @@ function makeMockClientDetail(overrides?: Partial<AdminClientDetailDto>): AdminC
     displayName: "Juan Pérez",
     name: "Juan",
     lastName: "Pérez",
-    identificationNumber: "001-1234567-8",
-    phone: "809-555-0001",
+    identificationNumber: "00112345678",
+    phone: "8095550001",
     isActive: true,
     ownedCareRequestsCount: 0,
     lastCareRequestAtUtc: null,
@@ -110,14 +110,19 @@ describe("Admin Create Client Screen - Form Validation", () => {
   function validate(form: CreateAdminClientRequest) {
     const errors: Record<string, string> = {};
     if (!form.name.trim()) errors.name = "El nombre es obligatorio";
+    else if (!/^[\p{L} ]+$/u.test(form.name.trim())) errors.name = "El nombre solo acepta letras y espacios";
     if (!form.lastName.trim()) errors.lastName = "El apellido es obligatorio";
-    if (!form.identificationNumber.trim()) errors.identificationNumber = "El número de identificación es obligatorio";
-    if (!form.phone.trim()) errors.phone = "El teléfono es obligatorio";
+    else if (!/^[\p{L} ]+$/u.test(form.lastName.trim())) errors.lastName = "El apellido solo acepta letras y espacios";
+    if (!form.identificationNumber.trim()) errors.identificationNumber = "La cedula es obligatoria";
+    else if (!/^\d{11}$/.test(form.identificationNumber.trim())) errors.identificationNumber = "La cedula debe tener exactamente 11 digitos";
+    if (!form.phone.trim()) errors.phone = "El telefono es obligatorio";
+    else if (!/^\d{10}$/.test(form.phone.trim())) errors.phone = "El telefono debe tener exactamente 10 digitos";
     if (!form.email.trim()) errors.email = "El correo electrónico es obligatorio";
     else if (!form.email.includes("@")) errors.email = "El correo debe ser válido";
     if (!form.password.trim()) errors.password = "La contraseña es obligatoria";
     else if (form.password.length < 8) errors.password = "La contraseña debe tener al menos 8 caracteres";
-    if (form.password && form.confirmPassword !== form.password) errors.confirmPassword = "Las contraseñas no coinciden";
+    if (!form.confirmPassword.trim()) errors.confirmPassword = "Debes confirmar la contraseña";
+    else if (form.confirmPassword !== form.password) errors.confirmPassword = "Las contraseñas no coinciden";
     return errors;
   }
 
@@ -133,12 +138,22 @@ describe("Admin Create Client Screen - Form Validation", () => {
 
   it("should fail when identificationNumber is empty", () => {
     const errors = validate(makeForm({ identificationNumber: "" }));
-    expect(errors.identificationNumber).toBe("El número de identificación es obligatorio");
+    expect(errors.identificationNumber).toBe("La cedula es obligatoria");
+  });
+
+  it("should fail when identificationNumber is not exactly 11 digits", () => {
+    const errors = validate(makeForm({ identificationNumber: "001-1234567-8" }));
+    expect(errors.identificationNumber).toBe("La cedula debe tener exactamente 11 digitos");
   });
 
   it("should fail when phone is empty", () => {
     const errors = validate(makeForm({ phone: "" }));
-    expect(errors.phone).toBe("El teléfono es obligatorio");
+    expect(errors.phone).toBe("El telefono es obligatorio");
+  });
+
+  it("should fail when phone is not exactly 10 digits", () => {
+    const errors = validate(makeForm({ phone: "809-555-0001" }));
+    expect(errors.phone).toBe("El telefono debe tener exactamente 10 digitos");
   });
 
   it("should fail when email is empty", () => {
@@ -166,6 +181,11 @@ describe("Admin Create Client Screen - Form Validation", () => {
     expect(errors.confirmPassword).toBe("Las contraseñas no coinciden");
   });
 
+  it("should fail when confirmPassword is empty", () => {
+    const errors = validate(makeForm({ confirmPassword: "" }));
+    expect(errors.confirmPassword).toBe("Debes confirmar la contraseña");
+  });
+
   it("should pass when all fields are valid", () => {
     const errors = validate(makeForm());
     expect(Object.keys(errors)).toHaveLength(0);
@@ -181,9 +201,9 @@ describe("Admin Create Client Screen - Form Validation", () => {
     expect(errors.password).toBeDefined();
   });
 
-  it("should not report confirmPassword error when password is empty", () => {
+  it("should require confirmPassword even when password is empty", () => {
     const errors = validate(makeForm({ password: "", confirmPassword: "something" }));
-    expect(errors.confirmPassword).toBeUndefined();
+    expect(errors.confirmPassword).toBeDefined();
   });
 
   it("should accept password of exactly 8 characters", () => {

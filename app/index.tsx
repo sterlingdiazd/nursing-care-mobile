@@ -4,56 +4,93 @@ import { router } from "expo-router";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { logClientEvent } from "@/src/logging/clientLogger";
+import {
+  canAccessAdminPortal,
+  canAccessCareRequests,
+  canAccessSupportTools,
+  canCreateCareRequests,
+} from "@/src/utils/authRedirect";
 import { formatRoleLabels } from "@/src/utils/roleLabels";
 import { hapticFeedback } from "@/src/utils/haptics";
 
-const authenticatedQuickSections = [
+const adminQuickSections = [
   {
     title: "Panel admin",
-    body: "Accede a indicadores, cola administrativa y notificaciones del portal de administracion.",
+    body: "Indicadores y accesos administrativos.",
     path: "/admin",
   },
   {
     title: "Solicitudes",
-    body: "Revisa la cola viva, abre el detalle y recorre el ciclo completo de cada solicitud.",
+    body: "Cola activa y seguimiento.",
     path: "/care-requests",
   },
   {
     title: "Nueva solicitud",
-    body: "Captura una solicitud con un flujo guiado y asociacion automatica al usuario autenticado.",
+    body: "Registrar un nuevo servicio.",
     path: "/create-care-request",
   },
   {
     title: "Cuenta",
-    body: "Gestiona Google OAuth, login manual, estado de sesion y salida segura.",
+    body: "Sesion, acceso y perfil.",
     path: "/account",
   },
   {
     title: "Diagnostico",
-    body: "Comprueba backend, revisa errores y consulta logs recientes del cliente.",
+    body: "Estado tecnico y errores.",
     path: "/diagnostics",
   },
   {
     title: "Herramientas",
-    body: "Agrupa utilidades avanzadas y opciones de depuracion sin contaminar los flujos principales.",
+    body: "Utilidades avanzadas.",
+    path: "/tools",
+  },
+];
+
+const clientQuickSections = [
+  {
+    title: "Solicitudes",
+    body: "Cola activa y seguimiento.",
+    path: "/care-requests",
+  },
+  {
+    title: "Nueva solicitud",
+    body: "Registrar un nuevo servicio.",
+    path: "/create-care-request",
+  },
+  {
+    title: "Cuenta",
+    body: "Sesion, acceso y perfil.",
+    path: "/account",
+  },
+];
+
+const nurseQuickSections = [
+  {
+    title: "Solicitudes",
+    body: "Servicios asignados y seguimiento.",
+    path: "/care-requests",
+  },
+  {
+    title: "Diagnostico",
+    body: "Estado tecnico y errores.",
+    path: "/diagnostics",
+  },
+  {
+    title: "Herramientas",
+    body: "Utilidades avanzadas.",
     path: "/tools",
   },
 ];
 
 const publicQuickSections = [
   {
-    title: "Cuenta",
-    body: "Consulta el estado de la sesion actual y centraliza el acceso desde Google o login manual.",
-    path: "/account",
-  },
-  {
     title: "Iniciar sesion",
-    body: "Entra con tu cuenta existente antes de abrir solicitudes o trabajar en la cola.",
+    body: "Entrar con tu cuenta.",
     path: "/login",
   },
   {
     title: "Registrar",
-    body: "Completa tu alta si todavia no tienes perfil en la plataforma.",
+    body: "Crear una cuenta nueva.",
     path: "/register",
   },
 ];
@@ -62,59 +99,83 @@ export default function HomeScreen() {
   const { email, isAuthenticated, roles, requiresAdminReview, requiresProfileCompletion, profileType } = useAuth();
   const isNurseUnderReview = requiresAdminReview && profileType === 1;
   const isAnonymous = !isAuthenticated;
+  const isAdmin = roles.includes("ADMIN");
+  const isClient = roles.includes("CLIENT");
+  const isNurse = roles.includes("NURSE");
+  const accessState = {
+    roles,
+    requiresProfileCompletion,
+    requiresAdminReview,
+  };
   const hasOperationalAccess = isAuthenticated && !requiresProfileCompletion && !isNurseUnderReview;
-  const canCreateRequest = (roles.includes("CLIENT") || roles.includes("ADMIN")) && !isNurseUnderReview;
+  const canCreateRequest = canCreateCareRequests(accessState);
+  const canOpenCareRequests = canAccessCareRequests(accessState);
+  const canOpenAdminPortal = canAccessAdminPortal(accessState);
+  const canOpenSupportTools = canAccessSupportTools(accessState);
+  const authenticatedQuickSections = isAdmin
+    ? adminQuickSections
+    : isClient
+      ? clientQuickSections
+      : nurseQuickSections;
   const quickSectionsSource = isAnonymous
     ? publicQuickSections
     : authenticatedQuickSections.filter(
-      (section) => !isNurseUnderReview || (section.path !== "/care-requests" && section.path !== "/create-care-request"),
+      (section) => !isNurseUnderReview || section.path === "/account",
     );
   const quickSectionsToShow = quickSectionsSource.filter((section) => {
     if (section.path === "/create-care-request") {
-      return roles.includes("CLIENT") || roles.includes("ADMIN");
+      return canCreateRequest;
     }
     if (section.path === "/admin") {
-      return roles.includes("ADMIN");
+      return canOpenAdminPortal;
+    }
+    if (section.path === "/care-requests") {
+      return canOpenCareRequests;
+    }
+    if (section.path === "/diagnostics" || section.path === "/tools") {
+      return canOpenSupportTools;
     }
     return true;
   });
-  const heroEyebrow = hasOperationalAccess ? "Resumen operativo" : isAnonymous ? "Acceso y cuenta" : "Estado de cuenta";
+  const heroEyebrow = hasOperationalAccess
+    ? isAdmin
+      ? "Resumen admin"
+      : isClient
+        ? "Tus servicios"
+        : "Tu jornada"
+    : isAnonymous
+      ? "Acceso y cuenta"
+      : "Estado de cuenta";
   const heroTitle = hasOperationalAccess
-    ? "Una consola mobile clara para navegar, capturar y supervisar."
+    ? isAdmin
+      ? "Control rapido de la operacion."
+      : isClient
+        ? "Solicita y da seguimiento sin complicaciones."
+        : "Revisa tus servicios desde un solo lugar."
     : isAnonymous
-      ? "Accede primero a tu cuenta antes de entrar al flujo operativo."
-      : "Tu cuenta necesita una validacion adicional antes de operar.";
+      ? "Cuidado profesional en pocos pasos."
+      : canOpenSupportTools
+        ? "Tu cuenta tiene acceso restringido."
+        : "Tu cuenta aun no puede operar.";
   const heroDescription = hasOperationalAccess
-    ? "La app ahora se organiza como un workspace: secciones visibles desde el inicio, navegacion lateral consistente y accesos directos segun el estado de la sesion."
+    ? isAdmin
+      ? "Accede a panel, solicitudes y herramientas segun tus permisos."
+      : isClient
+        ? "Crea solicitudes, revisa su estado y administra tu cuenta."
+        : "Consulta servicios asignados y estado de tu cuenta."
     : isAnonymous
-      ? "La pantalla principal publica se concentra en acceso, registro y estado de sesion. Las solicitudes y acciones operativas aparecen solo despues de autenticarte."
-      : "Mientras la revision administrativa siga pendiente, la pantalla principal prioriza estado, cuenta y herramientas no operativas.";
+      ? "Inicia sesion o crea tu cuenta para solicitar servicios y dar seguimiento."
+      : canOpenSupportTools
+        ? "Mientras termina la revision administrativa, solo veras accesos permitidos para tu perfil."
+        : "Mientras termina la revision administrativa, no veras funciones operativas.";
   const sessionTitle = hasOperationalAccess
-    ? "La experiencia ya esta lista para operar."
+    ? "Sesion lista"
     : isAnonymous
-      ? "Necesitas iniciar sesion para ver solicitudes y acciones operativas."
-      : "Tu sesion esta activa, pero el acceso operativo sigue limitado.";
+      ? "Antes de comenzar"
+      : "Acceso limitado";
   const sessionBody = isAuthenticated
     ? `${email ?? "No hay cuenta cargada"} • ${formatRoleLabels(roles)}`
-    : "Sin sesion activa • Accede o registrate para continuar";
-  const recommendedSteps = hasOperationalAccess
-    ? [
-      "1. Revisa el resumen y el estado de tu sesion.",
-      "2. Entra a la cola para revisar solicitudes activas.",
-      "3. Usa Nueva solicitud cuando necesites capturar trabajo nuevo.",
-      "4. Abre Cuenta o Diagnostico solo cuando el flujo lo requiera.",
-    ]
-    : isAnonymous
-      ? [
-        "1. Inicia sesion o registrate desde esta pantalla.",
-        "2. Completa tu perfil si la plataforma te lo solicita.",
-        "3. Vuelve al resumen para desbloquear solicitudes y acciones segun tu rol.",
-      ]
-      : [
-        "1. Revisa el estado actual de tu cuenta.",
-        "2. Ve a Cuenta si necesitas cambiar sesion o confirmar acceso.",
-        "3. Espera la completacion administrativa para habilitar la operacion completa.",
-      ];
+    : "Accede con tu cuenta o registrate para usar la app.";
 
   return (
     <MobileWorkspaceShell
@@ -202,30 +263,47 @@ export default function HomeScreen() {
         </>
       }
     >
-      <View style={styles.recommendedCard}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardEyebrow}>Flujo recomendado</Text>
-        </View>
-        <Text style={styles.cardTitle}>
-          {hasOperationalAccess ? "Recorrido profesional" : isAnonymous ? "Acceso inicial" : "Estado de validación"}
-        </Text>
-        <View style={styles.stepsList}>
-          {recommendedSteps.map((step, idx) => (
-            <View key={idx} style={styles.stepItem}>
-              <View style={styles.stepBullet} />
-              <Text style={styles.cardBody}>{step}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
-
       <View style={styles.grid}>
         <View style={styles.sessionCard}>
-          <Text style={styles.sessionEyebrow}>Sesión actual</Text>
+          <Text style={styles.sessionEyebrow}>{isAnonymous ? "Bienvenida" : "Sesion"}</Text>
           <Text style={styles.sessionTitle}>{sessionTitle}</Text>
           <View style={styles.sessionMeta}>
              <Text style={styles.sessionBody}>{sessionBody}</Text>
           </View>
+          {isAnonymous ? (
+            <View style={styles.publicHighlights}>
+              <View style={styles.publicHighlight}>
+                <Text style={styles.publicHighlightTitle}>Solicita servicios</Text>
+                <Text style={styles.publicHighlightBody}>Completa una solicitud en minutos.</Text>
+              </View>
+              <View style={styles.publicHighlight}>
+                <Text style={styles.publicHighlightTitle}>Da seguimiento</Text>
+                <Text style={styles.publicHighlightBody}>Revisa estado y asignaciones desde tu cuenta.</Text>
+              </View>
+            </View>
+          ) : isClient ? (
+            <View style={styles.publicHighlights}>
+              <View style={styles.publicHighlight}>
+                <Text style={styles.publicHighlightTitle}>Nueva solicitud</Text>
+                <Text style={styles.publicHighlightBody}>Solicita un servicio cuando lo necesites.</Text>
+              </View>
+              <View style={styles.publicHighlight}>
+                <Text style={styles.publicHighlightTitle}>Seguimiento</Text>
+                <Text style={styles.publicHighlightBody}>Consulta el estado de tus solicitudes activas.</Text>
+              </View>
+            </View>
+          ) : isNurse && !isNurseUnderReview ? (
+            <View style={styles.publicHighlights}>
+              <View style={styles.publicHighlight}>
+                <Text style={styles.publicHighlightTitle}>Servicios asignados</Text>
+                <Text style={styles.publicHighlightBody}>Accede a la cola operativa disponible para ti.</Text>
+              </View>
+              <View style={styles.publicHighlight}>
+                <Text style={styles.publicHighlightTitle}>Cuenta</Text>
+                <Text style={styles.publicHighlightBody}>Revisa tu sesion y datos de acceso.</Text>
+              </View>
+            </View>
+          ) : null}
           {isNurseUnderReview ? (
             <View style={styles.reviewBadge}>
               <Text style={styles.reviewNote}>
@@ -250,9 +328,13 @@ export default function HomeScreen() {
               pressed && styles.buttonPressed,
             ]}
           >
-            <View style={styles.cardIconPlaceholder} />
-            <Text style={styles.cardTitleSmall}>{section.title}</Text>
-            <Text style={styles.cardBodySmall} numberOfLines={2}>{section.body}</Text>
+            <View style={styles.cardContent}>
+              <View>
+                <Text style={styles.cardTitleSmall}>{section.title}</Text>
+                <Text style={styles.cardBodySmall} numberOfLines={1}>{section.body}</Text>
+              </View>
+              <Text style={styles.cardChevron}>›</Text>
+            </View>
           </Pressable>
         ))}
       </View>
@@ -262,154 +344,103 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   grid: {
-    gap: 16,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
+    gap: 14,
   },
   sessionCard: {
     width: "100%",
-    backgroundColor: "#102a43",
-    borderRadius: 28,
-    padding: 24,
-    shadowColor: "#102a43",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 10,
+    backgroundColor: "#ffffff",
+    borderRadius: 22,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 3,
   },
   sessionEyebrow: {
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "700",
     textTransform: "uppercase",
-    letterSpacing: 1.5,
-    color: "#9fb3c8",
-    marginBottom: 12,
+    letterSpacing: 1.2,
+    color: "#6b7280",
+    marginBottom: 8,
   },
   sessionTitle: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: "800",
-    color: "#f8fafc",
+    color: "#111827",
     marginBottom: 12,
-    letterSpacing: -0.5,
   },
   sessionMeta: {
-    backgroundColor: "rgba(255,255,255,0.08)",
-    paddingHorizontal: 16,
+    backgroundColor: "#f8fafc",
+    paddingHorizontal: 14,
     paddingVertical: 12,
-    borderRadius: 16,
+    borderRadius: 14,
   },
   sessionBody: {
-    fontSize: 15,
-    color: "#cbd5e1",
+    fontSize: 14,
+    color: "#4b5563",
     fontWeight: "600",
   },
   card: {
-    width: "47.5%",
     backgroundColor: "#ffffff",
-    borderRadius: 24,
-    padding: 20,
+    borderRadius: 18,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
     borderWidth: 1,
-    borderColor: "#f1f5f9",
+    borderColor: "#e5e7eb",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
     elevation: 2,
-    marginBottom: 8,
   },
-  recommendedCard: {
-    backgroundColor: "#fffbeb",
-    borderRadius: 28,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: "#fde68a",
-    marginBottom: 8,
-    shadowColor: "#f59e0b",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.05,
-    shadowRadius: 16,
-  },
-  cardHeader: {
+  cardContent: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
-  },
-  cardEyebrow: {
-    fontSize: 12,
-    fontWeight: "800",
-    textTransform: "uppercase",
-    letterSpacing: 1.5,
-    color: "#b45309",
-  },
-  cardTitle: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#78350f",
-    marginBottom: 16,
-    letterSpacing: -0.5,
+    justifyContent: "space-between",
+    gap: 16,
   },
   cardTitleSmall: {
-    fontSize: 17,
-    fontWeight: "800",
-    color: "#1e293b",
-    marginBottom: 6,
-    letterSpacing: -0.3,
-  },
-  stepsList: {
-    gap: 10,
-  },
-  stepItem: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  stepBullet: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#f59e0b",
-    marginRight: 10,
-  },
-  cardBody: {
     fontSize: 15,
-    color: "#92400e",
-    lineHeight: 22,
-    fontWeight: "500",
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 4,
   },
   cardBodySmall: {
     fontSize: 13,
-    color: "#64748b",
-    lineHeight: 18,
+    color: "#6b7280",
   },
   primaryButton: {
-    backgroundColor: "#fbbf24",
+    backgroundColor: "#007aff",
     borderRadius: 16,
-    paddingVertical: 18,
+    paddingVertical: 16,
     paddingHorizontal: 20,
     alignItems: "center",
-    shadowColor: "#fbbf24",
+    shadowColor: "#007aff",
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.16,
     shadowRadius: 12,
   },
   secondaryButton: {
     borderRadius: 16,
-    paddingVertical: 18,
+    paddingVertical: 16,
     paddingHorizontal: 20,
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
+    borderColor: "#d1d5db",
   },
   primaryButtonText: {
-    color: "#451a03",
-    fontSize: 17,
+    color: "#ffffff",
+    fontSize: 16,
     fontWeight: "800",
   },
   secondaryButtonText: {
-    color: "#ffffff",
-    fontSize: 16,
+    color: "#007aff",
+    fontSize: 15,
     fontWeight: "700",
   },
   buttonPressed: {
@@ -421,7 +452,7 @@ const styles = StyleSheet.create({
   },
   reviewBadge: {
     marginTop: 16,
-    backgroundColor: "#fef3c7",
+    backgroundColor: "#fff7ed",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
@@ -432,11 +463,33 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#92400e",
   },
-  cardIconPlaceholder: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: "#f1f5f9",
-    marginBottom: 12,
+  publicHighlights: {
+    marginTop: 16,
+    gap: 10,
+  },
+  publicHighlight: {
+    backgroundColor: "#f8fafc",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  publicHighlightTitle: {
+    color: "#111827",
+    fontSize: 14,
+    fontWeight: "700",
+    marginBottom: 3,
+  },
+  publicHighlightBody: {
+    color: "#4b5563",
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  cardChevron: {
+    fontSize: 24,
+    lineHeight: 24,
+    color: "#9ca3af",
+    fontWeight: "400",
   },
 });

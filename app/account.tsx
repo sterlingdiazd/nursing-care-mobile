@@ -13,6 +13,7 @@ import {
 import { authTestIds, testProps } from "@/src/testing/authTestIds";
 import { formatRoleLabels } from "@/src/utils/roleLabels";
 import { hapticFeedback } from "@/src/utils/haptics";
+import { mobilePrimaryButton, mobileSecondaryButton, mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
 
 export default function AccountScreen() {
   const { email, isAuthenticated, logout, roles, token } = useAuth();
@@ -43,8 +44,8 @@ export default function AccountScreen() {
   return (
     <MobileWorkspaceShell
       eyebrow="Cuenta"
-      title="Gestiona acceso, sesion y cambio de cuenta."
-      description="Este espacio se concentra solo en identidad y autenticacion. El diagnostico y las herramientas se movieron a secciones dedicadas."
+      title="Acceso y sesion"
+      description="Consulta el estado actual de tu cuenta y cambia de acceso cuando lo necesites."
     >
       <View style={styles.card}>
         <Text style={styles.sectionEyebrow}>Sesion</Text>
@@ -141,55 +142,43 @@ export default function AccountScreen() {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#fffdf9",
-    borderRadius: 24,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: "#dbe5f3",
+    ...mobileSurfaceCard,
+    borderRadius: mobileTheme.radius.xl,
+    padding: 20,
   },
   sectionEyebrow: {
-    fontSize: 12,
-    fontWeight: "800",
-    textTransform: "uppercase",
-    letterSpacing: 1.3,
-    color: "#2563eb",
+    ...mobileTheme.typography.eyebrow,
+    color: mobileTheme.colors.ink.muted,
     marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 24,
-    lineHeight: 30,
-    fontWeight: "800",
-    color: "#102a43",
+    ...mobileTheme.typography.title,
+    color: mobileTheme.colors.ink.primary,
     marginBottom: 10,
   },
   copy: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: "#52637a",
+    ...mobileTheme.typography.body,
+    color: mobileTheme.colors.ink.secondary,
     marginBottom: 6,
   },
   primaryButton: {
     marginTop: 14,
-    backgroundColor: "#1d4ed8",
-    borderRadius: 18,
-    paddingVertical: 16,
+    ...mobilePrimaryButton,
+    borderRadius: mobileTheme.radius.md,
+    paddingVertical: 15,
     paddingHorizontal: 18,
-    alignItems: "center",
   },
   secondaryButton: {
     marginTop: 12,
-    backgroundColor: "#eef4ff",
-    borderRadius: 18,
+    ...mobileSecondaryButton,
+    borderRadius: mobileTheme.radius.md,
     paddingVertical: 15,
     paddingHorizontal: 18,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#d7e3fb",
   },
   dangerButton: {
     marginTop: 12,
     backgroundColor: "#fff1f2",
-    borderRadius: 18,
+    borderRadius: 16,
     paddingVertical: 15,
     paddingHorizontal: 18,
     alignItems: "center",
@@ -202,7 +191,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   secondaryButtonText: {
-    color: "#163561",
+    color: "#007aff",
     fontSize: 15,
     fontWeight: "700",
   },
@@ -212,6 +201,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   buttonPressed: {
-    opacity: 0.92,
+    opacity: 0.88,
   },
 });
