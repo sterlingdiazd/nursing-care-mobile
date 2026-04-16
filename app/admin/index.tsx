@@ -13,6 +13,7 @@ const adminSections = [
   { label: "Solicitudes", path: "/admin/care-requests" },
   { label: "Acciones", path: "/admin/action-items" },
   { label: "Notificaciones", path: "/admin/notifications" },
+  { label: "Nomina", path: "/admin/payroll" },
   { label: "Auditoria", path: "/admin/audit-logs" },
   { label: "Reportes", path: "/admin/reports" },
 ] as const;

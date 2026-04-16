@@ -65,6 +65,11 @@ const clientQuickSections = [
 
 const nurseQuickSections = [
   {
+    title: "Mi Nomina",
+    body: "Resumen de compensaciones y historial de pagos.",
+    path: "/nurse/payroll",
+  },
+  {
     title: "Solicitudes",
     body: "Servicios asignados y seguimiento.",
     path: "/care-requests",

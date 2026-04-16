@@ -109,6 +109,14 @@ function RootLayoutNav() {
           name="admin/notifications"
           options={{ title: "Notificaciones administrativas", headerShown: false }}
         />
+        <Stack.Screen
+          name="admin/payroll"
+          options={{ title: "Nomina", headerShown: false }}
+        />
+        <Stack.Screen
+          name="nurse/payroll"
+          options={{ title: "Mi Nomina", headerShown: false }}
+        />
         <Stack.Screen name="modal" options={{ presentation: "modal" }} />
       </Stack>
     </AuthProvider>
