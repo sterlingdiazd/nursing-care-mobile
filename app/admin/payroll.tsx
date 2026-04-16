@@ -37,7 +37,11 @@ export default function AdminPayrollScreen() {
 
   if (loading) {
     return (
-      <MobileWorkspaceShell eyebrow="Nomina" title="Resumen de Nomina">
+      <MobileWorkspaceShell
+        eyebrow="Nomina"
+        title="Resumen de Nomina"
+        description="Monitorea los períodos y compensaciones"
+      >
         <View style={styles.container}>
           <Text>Cargando...</Text>
         </View>
@@ -46,7 +50,11 @@ export default function AdminPayrollScreen() {
   }
 
   return (
-    <MobileWorkspaceShell eyebrow="Nomina" title="Resumen de Nomina">
+    <MobileWorkspaceShell
+      eyebrow="Nomina"
+      title="Resumen de Nomina"
+      description="Monitorea los períodos y compensaciones"
+    >
       <ScrollView style={styles.container}>
         {error && (
           <View style={styles.errorCard}>
@@ -82,7 +90,7 @@ export default function AdminPayrollScreen() {
           <Text style={styles.sectionTitle}>Períodos Recientes</Text>
           
           {summary?.recentPeriods && summary.recentPeriods.length > 0 ? (
-            summary.recentPeriods.map((period) => (
+            summary.recentPeriods.map((period: AdminMobilePayrollSummaryDto["recentPeriods"][number]) => (
               <TouchableOpacity 
                 key={period.id} 
                 style={styles.periodItem}

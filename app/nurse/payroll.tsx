@@ -51,7 +51,11 @@ export default function NursePayrollScreen() {
 
   if (loading) {
     return (
-      <MobileWorkspaceShell eyebrow="Nomina" title="Mi Nomina">
+      <MobileWorkspaceShell
+        eyebrow="Nomina"
+        title="Mi Nomina"
+        description="Consulta tu balance y pagos recientes"
+      >
         <View style={styles.container}>
           <Text>Cargando...</Text>
         </View>
@@ -60,7 +64,11 @@ export default function NursePayrollScreen() {
   }
 
   return (
-    <MobileWorkspaceShell eyebrow="Nomina" title="Mi Nomina">
+    <MobileWorkspaceShell
+      eyebrow="Nomina"
+      title="Mi Nomina"
+      description="Consulta tu balance y pagos recientes"
+    >
       <ScrollView style={styles.container}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Resumen del Período Actual</Text>
