@@ -6,10 +6,23 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "."),
     },
+    extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
+  },
+  optimizeDeps: {
+    exclude: ["src/services/payrollService"],
+  },
+  esbuild: {
+    target: "es2022",
+    jsx: "automatic",
   },
   test: {
-    environment: "jsdom",
     globals: true,
+    setupFiles: ["./setupTests.ts"],
+    environmentMatchGlobs: [
+      ["**/*.test.ts", "node"],
+      ["**/*.{test,spec}.{ts,tsx}", "jsdom"],
+      ["**/components/**/*.{test,spec}.{js,jsx}", "jsdom"],
+    ],
     server: {
       deps: {
         inline: [
@@ -20,6 +33,8 @@ export default defineConfig({
           "expo-constants",
           "expo-linking",
           "react-native-safe-area-context",
+          "src/services/payrollService",
+          "src/services/payrollTypes",
         ],
       },
     },

@@ -84,6 +84,133 @@ export function getDisplayErrorMessage(responseText: string, status: number) {
   }
 }
 
+export async function requestVoid({
+  path,
+  method,
+  body,
+  correlationId: providedCorrelationId,
+  token,
+  auth,
+  skipAuthRefresh,
+  onMeta,
+}: JsonRequestOptions): Promise<void> {
+  const correlationId = providedCorrelationId ?? createCorrelationId();
+  const url = `${API_BASE_URL}${path}`;
+  const shouldUseAuth = auth || Boolean(token);
+  const session = shouldUseAuth ? getCachedAuthSession() ?? (await loadAuthSession()) : null;
+  const authToken = token ?? session?.token ?? null;
+
+  logClientEvent("mobile.http", "Request started", {
+    correlationId,
+    method,
+    url,
+    hasAuthorization: Boolean(authToken),
+  });
+
+  let response: Response;
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    response = await fetch(url, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Correlation-ID": correlationId,
+        "X-Client-App": "nursing-care-mobile",
+        "X-Client-Platform": "expo-go",
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      const message = `La solicitud tardó demasiado tiempo en responder. Verifica tu conexión a internet y que el servidor esté funcionando. URL: ${url}`;
+
+      logClientEvent(
+        "mobile.http",
+        "Request timeout",
+        {
+          correlationId,
+          method,
+          url,
+          timeoutMs: 30000,
+        },
+        "error",
+      );
+
+      throw new Error(message);
+    }
+
+    const message = getNetworkErrorMessage(url, error);
+
+    logClientEvent(
+      "mobile.http",
+      "Request failed before reaching the server",
+      {
+        correlationId,
+        method,
+        url,
+        message,
+      },
+      "error",
+    );
+
+    throw new Error(message);
+  }
+
+  const responseText = await response.text();
+  const responseCorrelationId = response.headers.get("X-Correlation-ID");
+
+  if (response.status === 401 && shouldUseAuth && !skipAuthRefresh) {
+    const refreshedToken = await refreshAccessToken();
+
+    if (refreshedToken) {
+      return requestVoid({
+        path,
+        method,
+        body,
+        token: refreshedToken,
+        auth,
+        skipAuthRefresh: true,
+        onMeta,
+      });
+    }
+  }
+
+  if (!response.ok) {
+    logClientEvent(
+      "mobile.http",
+      "Request failed",
+      {
+        correlationId,
+        responseCorrelationId,
+        status: response.status,
+        responseText,
+      },
+      "error",
+    );
+
+    if (response.status === 204) {
+      return;
+    }
+
+    throw new Error(getDisplayErrorMessage(responseText, response.status));
+  }
+
+  logClientEvent("mobile.http", "Request success", {
+    correlationId,
+    responseCorrelationId,
+    status: response.status,
+  });
+
+  onMeta?.({ correlationId, status: response.status, url });
+}
+
 export async function requestJson<T>({
   path,
   method,

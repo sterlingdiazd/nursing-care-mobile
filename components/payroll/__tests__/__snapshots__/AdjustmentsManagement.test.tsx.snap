@@ -1,0 +1,9 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AdjustmentsManagement > AdjustmentListItem > renders correctly with negative amount 1`] = `null`;
+
+exports[`AdjustmentsManagement > AdjustmentListItem > renders correctly with positive amount 1`] = `null`;
+
+exports[`AdjustmentsManagement > CreateAdjustmentModal > renders correctly when not visible 1`] = `null`;
+
+exports[`AdjustmentsManagement > CreateAdjustmentModal > renders correctly when visible 1`] = `null`;

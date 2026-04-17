@@ -1,163 +1,532 @@
-import { useEffect, useState } from "react";
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { useEffect, useState, useCallback } from "react";
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, RefreshControl, Alert } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
-import { getAdminMobilePayrollSummary, type AdminMobilePayrollSummaryDto } from "@/src/services/payrollService";
+import {
+  getPayrollPeriods,
+  getPayrollPeriodById,
+  createPayrollPeriod,
+  closePayrollPeriod,
+  getCompensationRules,
+  createCompensationRule,
+  updateCompensationRule,
+  deactivateCompensationRule,
+  getDeductions,
+  createDeduction,
+  deleteDeduction,
+  getAdjustments,
+  createAdjustment,
+  deleteAdjustment,
+  type AdminPayrollPeriodListResult,
+  type AdminPayrollPeriodDetail,
+  type AdminCompensationRuleListItem,
+  type AdminCompensationRuleListResult,
+  type AdminDeductionListResult,
+  type AdminCompensationAdjustmentListResult,
+  type CreatePayrollPeriodRequest,
+  type CreateCompensationRuleRequest,
+  type UpdateCompensationRuleRequest,
+  type CreateDeductionRequest,
+  type CreateCompensationAdjustmentRequest,
+} from "@/src/services/payrollService";
+import { 
+  PeriodListItem, 
+  CreatePeriodModal, 
+  PeriodDetail, 
+  PayrollTabs,
+  RuleListItem,
+  CreateRuleModal,
+  DeductionListItem,
+  CreateDeductionModal,
+  AdjustmentListItem,
+  CreateAdjustmentModal,
+  ErrorView,
+  LoadingView,
+  EmptyView,
+} from "@/components/payroll";
 
 export default function AdminPayrollScreen() {
-  const { roles } = useAuth();
-  
-  const [summary, setSummary] = useState<AdminMobilePayrollSummaryDto | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { roles, isReady, isAuthenticated, requiresProfileCompletion } = useAuth();
+  const [activeTab, setActiveTab] = useState("periods");
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const data = await getAdminMobilePayrollSummary();
-        setSummary(data);
-      } catch (e) {
-        console.error(e);
-        setError(e instanceof Error ? e.message : "Error al cargar datos");
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
+    if (!isReady) return;
+    if (!isAuthenticated) return void router.replace("/login" as any);
+    if (requiresProfileCompletion) return void router.replace("/register" as any);
+    if (!roles.includes("ADMIN")) return void router.replace("/" as any);
+  }, [isReady, isAuthenticated, requiresProfileCompletion, roles]);
+  
+  const [periodList, setPeriodList] = useState<AdminPayrollPeriodListResult | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState<AdminPayrollPeriodDetail | null>(null);
+  const [periodsLoading, setPeriodsLoading] = useState(true);
+  const [periodsError, setPeriodsError] = useState<string | null>(null);
+  const [showCreatePeriodModal, setShowCreatePeriodModal] = useState(false);
+  const [periodsRefreshing, setPeriodsRefreshing] = useState(false);
+
+  const [rules, setRules] = useState<AdminCompensationRuleListResult | null>(null);
+  const [selectedRule, setSelectedRule] = useState<AdminCompensationRuleListItem | null>(null);
+  const [rulesLoading, setRulesLoading] = useState(true);
+  const [rulesError, setRulesError] = useState<string | null>(null);
+  const [showCreateRuleModal, setShowCreateRuleModal] = useState(false);
+  const [rulesRefreshing, setRulesRefreshing] = useState(false);
+
+  const [deductions, setDeductions] = useState<AdminDeductionListResult | null>(null);
+  const [deductionsLoading, setDeductionsLoading] = useState(true);
+  const [deductionsError, setDeductionsError] = useState<string | null>(null);
+  const [showCreateDeductionModal, setShowCreateDeductionModal] = useState(false);
+  const [deductionsRefreshing, setDeductionsRefreshing] = useState(false);
+
+  const [adjustments, setAdjustments] = useState<AdminCompensationAdjustmentListResult | null>(null);
+  const [adjustmentsLoading, setAdjustmentsLoading] = useState(true);
+  const [adjustmentsError, setAdjustmentsError] = useState<string | null>(null);
+  const [showCreateAdjustmentModal, setShowCreateAdjustmentModal] = useState(false);
+  const [adjustmentsRefreshing, setAdjustmentsRefreshing] = useState(false);
+
+  const loadPeriods = useCallback(async () => {
+    try {
+      setPeriodsError(null);
+      setPeriodsLoading(true);
+      const data = await getPayrollPeriods({ pageNumber: 1, pageSize: 20 });
+      setPeriodList(data);
+    } catch (e) {
+      setPeriodsError(e instanceof Error ? e.message : "Error al cargar períodos");
+    } finally {
+      setPeriodsLoading(false);
+    }
   }, []);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("es-DO", {
-      style: "currency",
-      currency: "DOP",
-    }).format(amount);
-  };
+  const loadRules = useCallback(async () => {
+    try {
+      setRulesError(null);
+      setRulesLoading(true);
+      const data = await getCompensationRules();
+      setRules(data);
+    } catch (e) {
+      setRulesError(e instanceof Error ? e.message : "Error al cargar reglas");
+    } finally {
+      setRulesLoading(false);
+    }
+  }, []);
 
-  if (loading) {
+  const loadDeductions = useCallback(async () => {
+    try {
+      setDeductionsError(null);
+      setDeductionsLoading(true);
+      const data = await getDeductions();
+      setDeductions(data);
+    } catch (e) {
+      setDeductionsError(e instanceof Error ? e.message : "Error al cargar deducciones");
+    } finally {
+      setDeductionsLoading(false);
+    }
+  }, []);
+
+  const loadAdjustments = useCallback(async () => {
+    try {
+      setAdjustmentsError(null);
+      setAdjustmentsLoading(true);
+      const data = await getAdjustments();
+      setAdjustments(data);
+    } catch (e) {
+      setAdjustmentsError(e instanceof Error ? e.message : "Error al cargar ajustes");
+    } finally {
+      setAdjustmentsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    switch (activeTab) {
+      case "periods":
+        if (!periodList && !periodsLoading) void loadPeriods();
+        break;
+      case "rules":
+        if (!rules && !rulesLoading) void loadRules();
+        break;
+      case "deductions":
+        if (!deductions && !deductionsLoading) void loadDeductions();
+        break;
+      case "adjustments":
+        if (!adjustments && !adjustmentsLoading) void loadAdjustments();
+        break;
+    }
+  }, [activeTab, loadPeriods, loadRules, loadDeductions, loadAdjustments]);
+
+  const handleRefresh = useCallback(async () => {
+    setPeriodsRefreshing(true);
+    setRulesRefreshing(true);
+    setDeductionsRefreshing(true);
+    setAdjustmentsRefreshing(true);
+    
+    try {
+      switch (activeTab) {
+        case "periods":
+          await loadPeriods();
+          break;
+        case "rules":
+          await loadRules();
+          break;
+        case "deductions":
+          await loadDeductions();
+          break;
+        case "adjustments":
+          await loadAdjustments();
+          break;
+      }
+    } finally {
+      setPeriodsRefreshing(false);
+      setRulesRefreshing(false);
+      setDeductionsRefreshing(false);
+      setAdjustmentsRefreshing(false);
+    }
+  }, [activeTab, loadPeriods, loadRules, loadDeductions, loadAdjustments]);
+
+  const handlePeriodPress = useCallback((period: { id: string }) => {
+    getPayrollPeriodById(period.id).then(setSelectedPeriod);
+  }, []);
+
+  const handleBackToList = useCallback(() => {
+    setSelectedPeriod(null);
+    void loadPeriods();
+  }, [loadPeriods]);
+
+  const handleCreatePeriod = useCallback(async (data: CreatePayrollPeriodRequest) => {
+    await createPayrollPeriod(data);
+    setShowCreatePeriodModal(false);
+    Alert.alert("Éxito", "Período de nómina creado correctamente");
+    void loadPeriods();
+  }, [loadPeriods]);
+
+  const handleClosePeriod = useCallback(async () => {
+    if (!selectedPeriod) return;
+    await closePayrollPeriod(selectedPeriod.id);
+    const detail = await getPayrollPeriodById(selectedPeriod.id);
+    setSelectedPeriod(detail);
+    Alert.alert("Éxito", "Período de nómina cerrado correctamente");
+    void loadPeriods();
+  }, [selectedPeriod, loadPeriods]);
+
+  const handleRulePress = useCallback((rule: AdminCompensationRuleListItem) => {
+    setSelectedRule(rule);
+    setShowCreateRuleModal(true);
+  }, []);
+
+  const handleCreateRule = useCallback(async (data: CreateCompensationRuleRequest | UpdateCompensationRuleRequest) => {
+    if ("employmentType" in data) {
+      await createCompensationRule(data as CreateCompensationRuleRequest);
+      Alert.alert("Éxito", "Regla de compensación creada correctamente");
+    } else if (selectedRule) {
+      await updateCompensationRule(selectedRule.id, data);
+      Alert.alert("Éxito", "Regla de compensación actualizada correctamente");
+    }
+    setShowCreateRuleModal(false);
+    setSelectedRule(null);
+    void loadRules();
+  }, [selectedRule, loadRules]);
+
+  const handleDeactivateRule = useCallback(async () => {
+    if (!selectedRule) return;
+    await deactivateCompensationRule(selectedRule.id);
+    setShowCreateRuleModal(false);
+    setSelectedRule(null);
+    Alert.alert("Éxito", "Regla de compensación desactivada correctamente");
+    void loadRules();
+  }, [selectedRule, loadRules]);
+
+  const handleDeleteDeduction = useCallback(async (deduction: { id: string }) => {
+    await deleteDeduction(deduction.id);
+    Alert.alert("Éxito", "Deducción eliminada correctamente");
+    void loadDeductions();
+  }, [loadDeductions]);
+
+  const handleCreateDeduction = useCallback(async (data: CreateDeductionRequest) => {
+    await createDeduction(data);
+    setShowCreateDeductionModal(false);
+    Alert.alert("Éxito", "Deducción creada correctamente");
+    void loadDeductions();
+  }, [loadDeductions]);
+
+  const handleDeleteAdjustment = useCallback(async (adjustment: { id: string }) => {
+    await deleteAdjustment(adjustment.id);
+    Alert.alert("Éxito", "Ajuste eliminado correctamente");
+    void loadAdjustments();
+  }, [loadAdjustments]);
+
+  const handleCreateAdjustment = useCallback(async (data: CreateCompensationAdjustmentRequest) => {
+    await createAdjustment(data);
+    setShowCreateAdjustmentModal(false);
+    Alert.alert("Éxito", "Ajuste de compensación creado correctamente");
+    void loadAdjustments();
+  }, [loadAdjustments]);
+
+  const renderPeriodsTab = () => {
+    if (selectedPeriod) {
+      return (
+        <PeriodDetail
+          period={selectedPeriod}
+          onClose={handleClosePeriod}
+          onBack={handleBackToList}
+        />
+      );
+    }
+
     return (
-      <MobileWorkspaceShell
-        eyebrow="Nomina"
-        title="Resumen de Nomina"
-        description="Monitorea los períodos y compensaciones"
+      <ScrollView
+        style={styles.content}
+        refreshControl={
+          <RefreshControl refreshing={periodsRefreshing} onRefresh={handleRefresh} />
+        }
       >
-        <View style={styles.container}>
-          <Text>Cargando...</Text>
-        </View>
-      </MobileWorkspaceShell>
-    );
-  }
-
-  return (
-    <MobileWorkspaceShell
-      eyebrow="Nomina"
-      title="Resumen de Nomina"
-      description="Monitorea los períodos y compensaciones"
-    >
-      <ScrollView style={styles.container}>
-        {error && (
-          <View style={styles.errorCard}>
-            <Text style={styles.errorText}>{error}</Text>
+        {periodsError && !periodsLoading ? (
+          <ErrorView message={periodsError} onRetry={loadPeriods} />
+        ) : periodsLoading ? (
+          <LoadingView message="Cargando períodos..." />
+        ) : periodList?.items.length === 0 ? (
+          <EmptyView 
+            title="No hay períodos de nómina" 
+            subtitle="Crea un nuevo período para comenzar"
+            actionLabel="+ Nuevo Período"
+            onAction={() => setShowCreatePeriodModal(true)}
+          />
+        ) : (
+          <View style={styles.list}>
+            {periodList?.items.map((period) => (
+              <PeriodListItem
+                key={period.id}
+                period={period}
+                onPress={handlePeriodPress}
+              />
+            ))}
           </View>
         )}
 
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{summary?.openPeriodsCount || 0}</Text>
-            <Text style={styles.statLabel}>Abiertos</Text>
+        {periodList && periodList.items.length > 0 && (
+          <View style={styles.createSection}>
+            <TouchableOpacity
+              style={styles.createButton}
+              onPress={() => setShowCreatePeriodModal(true)}
+            >
+              <Text style={styles.createButtonText}>+ Nuevo Período</Text>
+            </TouchableOpacity>
           </View>
-          
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{summary?.closedPeriodsCount || 0}</Text>
-            <Text style={styles.statLabel}>Cerrados</Text>
-          </View>
-          
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{summary?.activeNursesCount || 0}</Text>
-            <Text style={styles.statLabel}>Enfermeras</Text>
-          </View>
-        </View>
+        )}
+      </ScrollView>
+    );
+  };
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Compensación del Período Actual</Text>
-          <Text style={styles.amount}>
-            {formatCurrency(summary?.totalCompensationCurrentPeriod || 0)}
-          </Text>
+  const renderRulesTab = () => (
+    <ScrollView
+      style={styles.content}
+      refreshControl={
+        <RefreshControl refreshing={rulesRefreshing} onRefresh={handleRefresh} />
+      }
+    >
+      {rulesError && !rulesLoading ? (
+        <ErrorView message={rulesError} onRetry={loadRules} />
+      ) : rulesLoading ? (
+        <LoadingView message="Cargando reglas..." />
+      ) : rules?.items.length === 0 ? (
+        <EmptyView 
+          title="No hay reglas de compensación"
+          subtitle="Crea una nueva regla para comenzar"
+          actionLabel="+ Nueva Regla"
+          onAction={() => {
+            setSelectedRule(null);
+            setShowCreateRuleModal(true);
+          }}
+        />
+      ) : (
+        <View style={styles.list}>
+          {rules?.items.map((rule) => (
+            <RuleListItem
+              key={rule.id}
+              rule={rule}
+              onPress={handleRulePress}
+            />
+          ))}
         </View>
+      )}
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Períodos Recientes</Text>
-          
-          {summary?.recentPeriods && summary.recentPeriods.length > 0 ? (
-            summary.recentPeriods.map((period: AdminMobilePayrollSummaryDto["recentPeriods"][number]) => (
-              <TouchableOpacity 
-                key={period.id} 
-                style={styles.periodItem}
-              >
-                <View>
-                  <Text style={styles.periodDate}>
-                    {period.startDate} - {period.endDate}
-                  </Text>
-                  <Text style={styles.periodInfo}>
-                    {period.lineCount} servicios
-                  </Text>
-                </View>
-                <Text style={[
-                  styles.periodStatus,
-                  period.status === "Open" ? styles.statusOpen : styles.statusClosed
-                ]}>
-                  {period.status === "Open" ? "Abierto" : "Cerrado"}
-                </Text>
-              </TouchableOpacity>
-            ))
-          ) : (
-            <View style={styles.card}>
-              <Text>No hay períodos recientes.</Text>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.section}>
-          <TouchableOpacity 
-            style={styles.button}
-            onPress={() => router.push("/admin/action-items" as any)}
+      {rules && rules.items.length > 0 && (
+        <View style={styles.createSection}>
+          <TouchableOpacity
+            style={styles.createButton}
+            onPress={() => {
+              setSelectedRule(null);
+              setShowCreateRuleModal(true);
+            }}
           >
-            <Text style={styles.buttonText}>Ir a Acciones</Text>
+            <Text style={styles.createButtonText}>+ Nueva Regla</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+      )}
+    </ScrollView>
+  );
+
+  const renderDeductionsTab = () => (
+    <ScrollView
+      style={styles.content}
+      refreshControl={
+        <RefreshControl refreshing={deductionsRefreshing} onRefresh={handleRefresh} />
+      }
+    >
+      {deductionsError && !deductionsLoading ? (
+        <ErrorView message={deductionsError} onRetry={loadDeductions} />
+      ) : deductionsLoading ? (
+        <LoadingView message="Cargando deducciones..." />
+      ) : deductions?.items.length === 0 ? (
+        <EmptyView 
+          title="No hay deducciones"
+          subtitle="Agrega una deducción para comenzar"
+          actionLabel="+ Nueva Deducción"
+          onAction={() => setShowCreateDeductionModal(true)}
+        />
+      ) : (
+        <View style={styles.list}>
+          {deductions?.items.map((deduction) => (
+            <DeductionListItem
+              key={deduction.id}
+              deduction={deduction}
+              onDelete={handleDeleteDeduction}
+            />
+          ))}
+        </View>
+      )}
+
+      {deductions && deductions.items.length > 0 && (
+        <View style={styles.createSection}>
+          <TouchableOpacity
+            style={styles.createButton}
+            onPress={() => setShowCreateDeductionModal(true)}
+          >
+            <Text style={styles.createButtonText}>+ Nueva Deducción</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </ScrollView>
+  );
+
+  const renderAdjustmentsTab = () => (
+    <ScrollView
+      style={styles.content}
+      refreshControl={
+        <RefreshControl refreshing={adjustmentsRefreshing} onRefresh={handleRefresh} />
+      }
+    >
+      {adjustmentsError && !adjustmentsLoading ? (
+        <ErrorView message={adjustmentsError} onRetry={loadAdjustments} />
+      ) : adjustmentsLoading ? (
+        <LoadingView message="Cargando ajustes..." />
+      ) : adjustments?.items.length === 0 ? (
+        <EmptyView 
+          title="No hay ajustes"
+          subtitle="Agrega un ajuste para comenzar"
+          actionLabel="+ Nuevo Ajuste"
+          onAction={() => setShowCreateAdjustmentModal(true)}
+        />
+      ) : (
+        <View style={styles.list}>
+          {adjustments?.items.map((adjustment) => (
+            <AdjustmentListItem
+              key={adjustment.id}
+              adjustment={adjustment}
+              onDelete={handleDeleteAdjustment}
+            />
+          ))}
+        </View>
+      )}
+
+      {adjustments && adjustments.items.length > 0 && (
+        <View style={styles.createSection}>
+          <TouchableOpacity
+            style={styles.createButton}
+            onPress={() => setShowCreateAdjustmentModal(true)}
+          >
+            <Text style={styles.createButtonText}>+ Nuevo Ajuste</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </ScrollView>
+  );
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case "periods":
+        return renderPeriodsTab();
+      case "rules":
+        return renderRulesTab();
+      case "deductions":
+        return renderDeductionsTab();
+      case "adjustments":
+        return renderAdjustmentsTab();
+      default:
+        return renderPeriodsTab();
+    }
+  };
+
+  return (
+    <MobileWorkspaceShell
+      eyebrow="Nómina"
+      title="Gestión de Nómina"
+      description="Administra períodos, reglas y compensaciones"
+    >
+      <PayrollTabs activeTab={activeTab} onTabChange={setActiveTab} />
+      
+      {renderContent()}
+
+      <CreatePeriodModal
+        visible={showCreatePeriodModal}
+        onClose={() => setShowCreatePeriodModal(false)}
+        onSubmit={handleCreatePeriod}
+      />
+
+      <CreateRuleModal
+        visible={showCreateRuleModal}
+        onClose={() => {
+          setShowCreateRuleModal(false);
+          setSelectedRule(null);
+        }}
+        onSubmit={handleCreateRule}
+        onDeactivate={selectedRule?.isActive ? handleDeactivateRule : undefined}
+        editingRule={selectedRule}
+      />
+
+      <CreateDeductionModal
+        visible={showCreateDeductionModal}
+        onClose={() => setShowCreateDeductionModal(false)}
+        onSubmit={handleCreateDeduction}
+      />
+
+      <CreateAdjustmentModal
+        visible={showCreateAdjustmentModal}
+        onClose={() => setShowCreateAdjustmentModal(false)}
+        onSubmit={handleCreateAdjustment}
+      />
     </MobileWorkspaceShell>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  section: { padding: 16, marginBottom: 16 },
-  sectionTitle: { fontSize: 16, fontWeight: "600", marginBottom: 8 },
-  statsGrid: { flexDirection: "row", justifyContent: "space-between", padding: 16 },
-  statCard: { flex: 1, backgroundColor: "#f5f5f5", padding: 12, borderRadius: 8, marginHorizontal: 4, alignItems: "center" },
-  statValue: { fontSize: 24, fontWeight: "bold", color: "#1976d2" },
-  statLabel: { fontSize: 10, textAlign: "center", color: "#666" },
-  amount: { fontSize: 32, fontWeight: "bold", color: "#2e7d32" },
-  card: { backgroundColor: "#f5f5f5", padding: 12, borderRadius: 8 },
-  periodItem: { 
-    flexDirection: "row", 
-    justifyContent: "space-between", 
-    padding: 12, 
-    borderBottomWidth: 1, 
-    borderBottomColor: "#eee",
-    backgroundColor: "#f9f9f9",
-    borderRadius: 8,
-    marginBottom: 8,
+  content: {
+    flex: 1,
   },
-  periodDate: { fontSize: 14, fontWeight: "500" },
-  periodInfo: { fontSize: 12, color: "#666" },
-  periodStatus: { fontSize: 12, fontWeight: "500", alignSelf: "center" },
-  statusOpen: { color: "#1976d2" },
-  statusClosed: { color: "#666" },
-  button: { backgroundColor: "#1976d2", padding: 14, borderRadius: 8, alignItems: "center", marginTop: 8 },
-  buttonText: { color: "#fff", fontWeight: "600", fontSize: 16 },
-  errorCard: { backgroundColor: "#fee2e2", padding: 12, borderRadius: 8, margin: 16 },
-  errorText: { color: "#991b1b" },
+  list: {
+    padding: 16,
+  },
+  createSection: {
+    padding: 16,
+    paddingTop: 8,
+  },
+  createButton: {
+    backgroundColor: "#1976d2",
+    padding: 14,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  createButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
 });

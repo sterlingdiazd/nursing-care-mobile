@@ -1,0 +1,7 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`DeductionsManagement > CreateDeductionModal > renders correctly when not visible 1`] = `null`;
+
+exports[`DeductionsManagement > CreateDeductionModal > renders correctly when visible 1`] = `null`;
+
+exports[`DeductionsManagement > DeductionListItem > renders correctly 1`] = `null`;

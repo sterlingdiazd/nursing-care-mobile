@@ -1,39 +1,28 @@
-import { requestJson } from "@/src/services/httpClient";
-
-export type NursePayrollSummaryDto = {
-  nurseUserId: string;
-  nurseDisplayName: string;
-  currentPeriodId?: string | null;
-  currentPeriodStartDate?: string | null;
-  currentPeriodEndDate?: string | null;
-  currentPeriodStatus?: string | null;
-  totalCompensationThisPeriod: number;
-  pendingPaymentsCount: number;
-  completedPaymentsCount: number;
-};
-
-export type PayrollPeriodListItemDto = {
-  id: string;
-  startDate: string;
-  endDate: string;
-  status: string;
-  totalNurses: number;
-  totalCompensation: number;
-};
-
-export type AdminMobilePayrollSummaryDto = {
-  openPeriodsCount: number;
-  closedPeriodsCount: number;
-  totalCompensationCurrentPeriod: number;
-  activeNursesCount: number;
-  recentPeriods: Array<{
-    id: string;
-    startDate: string;
-    endDate: string;
-    status: string;
-    lineCount: number;
-  }>;
-};
+import { requestJson, requestVoid } from "@/src/services/httpClient";
+import { API_BASE_URL } from "@/src/config/api";
+import type {
+  NursePayrollSummaryDto,
+  PayrollPeriodListItemDto,
+  AdminMobilePayrollSummaryDto,
+  RecentPeriod,
+  AdminPayrollPeriodListItem,
+  AdminPayrollPeriodListResult,
+  AdminPayrollLineItem,
+  AdminPayrollStaffSummary,
+  AdminPayrollPeriodDetail,
+  CreatePayrollPeriodRequest,
+  AdminCompensationRuleListItem,
+  AdminCompensationRuleDetail,
+  AdminCompensationRuleListResult,
+  CreateCompensationRuleRequest,
+  UpdateCompensationRuleRequest,
+  AdminDeductionListItem,
+  AdminDeductionListResult,
+  CreateDeductionRequest,
+  AdminCompensationAdjustmentListItem,
+  AdminCompensationAdjustmentListResult,
+  CreateCompensationAdjustmentRequest,
+} from "./payrollTypes";
 
 export async function getNursePayrollSummary(_userId: string): Promise<NursePayrollSummaryDto> {
   return requestJson<NursePayrollSummaryDto>({
@@ -58,3 +47,184 @@ export async function getAdminMobilePayrollSummary(): Promise<AdminMobilePayroll
     auth: true,
   });
 }
+
+export async function getPayrollPeriods(options?: {
+  pageNumber?: number;
+  pageSize?: number;
+  status?: string | null;
+}): Promise<AdminPayrollPeriodListResult> {
+  const params = new URLSearchParams();
+  if (options?.pageNumber) params.set("pageNumber", String(options.pageNumber));
+  if (options?.pageSize) params.set("pageSize", String(options.pageSize));
+  if (options?.status) params.set("status", options.status);
+  
+  const queryString = params.toString();
+  const path = `/api/admin/payroll/periods${queryString ? `?${queryString}` : ""}`;
+  
+  return requestJson<AdminPayrollPeriodListResult>({
+    path,
+    method: "GET",
+    auth: true,
+  });
+}
+
+export async function getPayrollPeriodById(id: string): Promise<AdminPayrollPeriodDetail> {
+  return requestJson<AdminPayrollPeriodDetail>({
+    path: `/api/admin/payroll/periods/${id}`,
+    method: "GET",
+    auth: true,
+  });
+}
+
+export async function createPayrollPeriod(request: CreatePayrollPeriodRequest): Promise<{ id: string }> {
+  return requestJson<{ id: string }>({
+    path: "/api/admin/payroll/periods",
+    method: "POST",
+    body: request,
+    auth: true,
+  });
+}
+
+export async function closePayrollPeriod(id: string): Promise<void> {
+  return requestVoid({
+    path: `/api/admin/payroll/periods/${id}/close`,
+    method: "PATCH",
+    auth: true,
+  });
+}
+
+export function getPayrollPeriodExportUrl(id: string): string {
+  return `${API_BASE_URL}/api/admin/payroll/periods/${id}/export`;
+}
+
+export async function getCompensationRules(): Promise<AdminCompensationRuleListResult> {
+  return requestJson<AdminCompensationRuleListResult>({
+    path: "/api/admin/payroll/compensation-rules",
+    method: "GET",
+    auth: true,
+  });
+}
+
+export async function getCompensationRuleById(id: string): Promise<AdminCompensationRuleDetail> {
+  return requestJson<AdminCompensationRuleDetail>({
+    path: `/api/admin/payroll/compensation-rules/${id}`,
+    method: "GET",
+    auth: true,
+  });
+}
+
+export async function createCompensationRule(request: CreateCompensationRuleRequest): Promise<{ id: string }> {
+  return requestJson<{ id: string }>({
+    path: "/api/admin/payroll/compensation-rules",
+    method: "POST",
+    body: request,
+    auth: true,
+  });
+}
+
+export async function updateCompensationRule(id: string, request: UpdateCompensationRuleRequest): Promise<void> {
+  return requestVoid({
+    path: `/api/admin/payroll/compensation-rules/${id}`,
+    method: "PUT",
+    body: request,
+    auth: true,
+  });
+}
+
+export async function deactivateCompensationRule(id: string): Promise<void> {
+  return requestVoid({
+    path: `/api/admin/payroll/compensation-rules/${id}`,
+    method: "DELETE",
+    auth: true,
+  });
+}
+
+export async function getDeductions(options?: {
+  nurseId?: string | null;
+  periodId?: string | null;
+}): Promise<AdminDeductionListResult> {
+  const params = new URLSearchParams();
+  if (options?.nurseId) params.set("nurseId", options.nurseId);
+  if (options?.periodId) params.set("periodId", options.periodId);
+  
+  const queryString = params.toString();
+  const path = `/api/admin/payroll/deductions${queryString ? `?${queryString}` : ""}`;
+  
+  return requestJson<AdminDeductionListResult>({
+    path,
+    method: "GET",
+    auth: true,
+  });
+}
+
+export async function createDeduction(request: CreateDeductionRequest): Promise<{ id: string }> {
+  return requestJson<{ id: string }>({
+    path: "/api/admin/payroll/deductions",
+    method: "POST",
+    body: request,
+    auth: true,
+  });
+}
+
+export async function deleteDeduction(id: string): Promise<void> {
+  return requestVoid({
+    path: `/api/admin/payroll/deductions/${id}`,
+    method: "DELETE",
+    auth: true,
+  });
+}
+
+export async function getAdjustments(executionId?: string | null): Promise<AdminCompensationAdjustmentListResult> {
+  const params = new URLSearchParams();
+  if (executionId) params.set("executionId", executionId);
+  
+  const queryString = params.toString();
+  const path = `/api/admin/payroll/adjustments${queryString ? `?${queryString}` : ""}`;
+  
+  return requestJson<AdminCompensationAdjustmentListResult>({
+    path,
+    method: "GET",
+    auth: true,
+  });
+}
+
+export async function createAdjustment(request: CreateCompensationAdjustmentRequest): Promise<{ id: string }> {
+  return requestJson<{ id: string }>({
+    path: "/api/admin/payroll/adjustments",
+    method: "POST",
+    body: request,
+    auth: true,
+  });
+}
+
+export async function deleteAdjustment(id: string): Promise<void> {
+  return requestVoid({
+    path: `/api/admin/payroll/adjustments/${id}`,
+    method: "DELETE",
+    auth: true,
+  });
+}
+
+export type {
+  NursePayrollSummaryDto,
+  PayrollPeriodListItemDto,
+  AdminMobilePayrollSummaryDto,
+  RecentPeriod,
+  AdminPayrollPeriodListItem,
+  AdminPayrollPeriodListResult,
+  AdminPayrollLineItem,
+  AdminPayrollStaffSummary,
+  AdminPayrollPeriodDetail,
+  CreatePayrollPeriodRequest,
+  AdminCompensationRuleListItem,
+  AdminCompensationRuleDetail,
+  AdminCompensationRuleListResult,
+  CreateCompensationRuleRequest,
+  UpdateCompensationRuleRequest,
+  AdminDeductionListItem,
+  AdminDeductionListResult,
+  CreateDeductionRequest,
+  AdminCompensationAdjustmentListItem,
+  AdminCompensationAdjustmentListResult,
+  CreateCompensationAdjustmentRequest,
+} from "./payrollTypes";
