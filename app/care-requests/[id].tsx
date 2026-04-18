@@ -29,6 +29,8 @@ function getStatusColors(status: CareRequestDto["status"]) {
       return { bg: "#fee2e2", fg: "#991b1b" };
     case "Completed":
       return { bg: "#dbeafe", fg: "#1d4ed8" };
+    case "Cancelled":
+      return { bg: "#f1f5f9", fg: "#475569" };
     default:
       return { bg: "#fef3c7", fg: "#92400e" };
   }
@@ -42,6 +44,8 @@ function getStatusLabel(status: CareRequestDto["status"]) {
       return "Rechazada";
     case "Completed":
       return "Completada";
+    case "Cancelled":
+      return "Cancelada";
     default:
       return "Pendiente";
   }
@@ -56,6 +60,7 @@ export default function CareRequestDetailScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isActing, setIsActing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const loadCareRequest = async () => {
     if (!id) {
@@ -104,10 +109,19 @@ export default function CareRequestDetailScreen() {
 
     setIsActing(true);
     setError(null);
+    setSuccessMessage(null);
 
     try {
       const updated = await transitionCareRequest(id, action);
       setCareRequest(updated);
+
+      const labels: Record<CareRequestTransitionAction, string> = {
+        approve: "Solicitud aprobada exitosamente.",
+        reject: "Solicitud rechazada.",
+        complete: "Solicitud completada exitosamente.",
+        cancel: "Solicitud cancelada.",
+      };
+      setSuccessMessage(labels[action]);
     } catch (nextError: any) {
       setError(nextError.message ?? "No fue posible actualizar la solicitud.");
     } finally {
@@ -148,6 +162,9 @@ export default function CareRequestDetailScreen() {
     Boolean(userId) &&
     careRequest?.status === "Approved" &&
     careRequest.assignedNurse === userId;
+  const canCancel =
+    (roles.includes("CLIENT") || roles.includes("ADMIN")) &&
+    (careRequest?.status === "Pending" || careRequest?.status === "Approved");
 
   if (isLoading && !careRequest) {
     return (
@@ -222,13 +239,24 @@ export default function CareRequestDetailScreen() {
               Rechazada: {new Date(careRequest.rejectedAtUtc).toLocaleString()}
             </Text>
           )}
+          {careRequest.rejectionReason && (
+            <Text style={styles.metaText}>
+              Razon de rechazo: {careRequest.rejectionReason}
+            </Text>
+          )}
           {careRequest.completedAtUtc && (
             <Text style={styles.metaText}>
               Completada: {new Date(careRequest.completedAtUtc).toLocaleString()}
             </Text>
           )}
+          {careRequest.cancelledAtUtc && (
+            <Text style={styles.metaText}>
+              Cancelada: {new Date(careRequest.cancelledAtUtc).toLocaleString()}
+            </Text>
+          )}
         </View>
 
+        {successMessage && <Text style={styles.successText}>{successMessage}</Text>}
         {error && <Text style={styles.errorText}>{error}</Text>}
 
         {canManageAssignment && (
@@ -331,6 +359,21 @@ export default function CareRequestDetailScreen() {
               ]}
             >
               <Text style={styles.primaryButtonText}>Completar</Text>
+            </Pressable>
+          )}
+
+          {canCancel && (
+            <Pressable
+              onPress={() => runAction("cancel")}
+              disabled={isActing}
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                styles.cancelButton,
+                isActing && styles.disabledButton,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              <Text style={styles.cancelButtonText}>Cancelar solicitud</Text>
             </Pressable>
           )}
         </View>
@@ -493,9 +536,24 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     fontSize: 16,
   },
+  successText: {
+    color: "#166534",
+    marginTop: 16,
+    lineHeight: 21,
+    fontWeight: "700",
+  },
   errorText: {
     color: "#be123c",
     marginTop: 16,
     lineHeight: 21,
+  },
+  cancelButton: {
+    borderColor: "#e2e8f0",
+    backgroundColor: "#f8fafc",
+  },
+  cancelButtonText: {
+    color: "#475569",
+    fontWeight: "800",
+    fontSize: 16,
   },
 });

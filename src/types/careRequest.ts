@@ -27,12 +27,14 @@ export interface CareRequestDto {
   careRequestDate?: string | null;
   suggestedNurse?: string | null;
   assignedNurse?: string | null;
-  status: "Pending" | "Approved" | "Rejected" | "Completed";
+  status: "Pending" | "Approved" | "Rejected" | "Completed" | "Cancelled";
   createdAtUtc: string;
   updatedAtUtc: string;
   approvedAtUtc: string | null;
   rejectedAtUtc: string | null;
   completedAtUtc: string | null;
+  cancelledAtUtc: string | null;
+  rejectionReason: string | null;
 }
 
-export type CareRequestTransitionAction = "approve" | "reject" | "complete";
+export type CareRequestTransitionAction = "approve" | "reject" | "complete" | "cancel";
