@@ -44,7 +44,8 @@ describe("RulesManagement", () => {
       const component = renderer.create(
         <RuleListItem rule={mockRule} onPress={mockOnPress} />
       );
-      const touchable = component.root.findByType("TouchableOpacity");
+      const { TouchableOpacity } = require("react-native");
+      const touchable = component.root.findByType(TouchableOpacity);
       act(() => {
         touchable.props.onPress();
       });
