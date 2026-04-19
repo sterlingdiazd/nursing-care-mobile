@@ -200,7 +200,15 @@ export type AdminCareRequestView =
   | "approved-incomplete"
   | "overdue";
 
-export type AdminCareRequestStatus = "Pending" | "Approved" | "Rejected" | "Completed";
+export type AdminCareRequestStatus =
+  | "Pending"
+  | "Approved"
+  | "Rejected"
+  | "Completed"
+  | "Cancelled"
+  | "Invoiced"
+  | "Paid"
+  | "Voided";
 
 export interface AdminCareRequestListItemDto {
   id: string;
@@ -272,6 +280,14 @@ export interface AdminCareRequestDetailDto {
   rejectedAtUtc: string | null;
   completedAtUtc: string | null;
   isOverdueOrStale: boolean;
+  invoiceNumber?: string;
+  invoicedAtUtc?: string;
+  bankReference?: string;
+  paidAtUtc?: string;
+  voidReason?: string;
+  voidedAtUtc?: string;
+  receiptNumber?: string;
+  receiptGeneratedAtUtc?: string;
   pricingBreakdown: AdminCareRequestPricingBreakdownDto;
   timeline: AdminCareRequestTimelineEventDto[];
 }
@@ -333,6 +349,88 @@ export async function createAdminCareRequest(request: CreateAdminCareRequestDto)
     body: request,
     auth: true,
   });
+}
+
+// Billing response types
+export interface InvoicedResponse {
+  id: string;
+  invoiceNumber: string;
+  invoicedAtUtc: string;
+  totalAmount: number;
+}
+
+export interface PaidResponse {
+  id: string;
+  paidAtUtc: string;
+  totalAmount: number;
+}
+
+export interface VoidedResponse {
+  id: string;
+  voidedAtUtc: string;
+  voidReason: string;
+}
+
+export interface GenerateReceiptResponse {
+  receiptId: string;
+  receiptNumber: string;
+  receiptContentBase64?: string;
+}
+
+export interface GetReceiptResponse {
+  receiptId: string;
+  receiptNumber: string;
+  receiptContentBase64?: string;
+  generatedAtUtc: string;
+}
+
+// Billing service functions
+export async function invoiceCareRequest(id: string, invoiceNumber: string): Promise<InvoicedResponse> {
+  return requestJson<InvoicedResponse>({
+    path: `/api/admin/care-requests/${id}/invoice`,
+    method: "POST",
+    body: { invoiceNumber },
+    auth: true,
+  });
+}
+
+export async function payCareRequest(id: string, bankReference: string): Promise<PaidResponse> {
+  return requestJson<PaidResponse>({
+    path: `/api/admin/care-requests/${id}/pay`,
+    method: "POST",
+    body: { bankReference },
+    auth: true,
+  });
+}
+
+export async function voidCareRequest(id: string, voidReason: string): Promise<VoidedResponse> {
+  return requestJson<VoidedResponse>({
+    path: `/api/admin/care-requests/${id}/void`,
+    method: "POST",
+    body: { voidReason },
+    auth: true,
+  });
+}
+
+export async function generateReceipt(id: string): Promise<GenerateReceiptResponse> {
+  return requestJson<GenerateReceiptResponse>({
+    path: `/api/admin/care-requests/${id}/receipt`,
+    method: "POST",
+    auth: true,
+  });
+}
+
+export async function getReceipt(id: string): Promise<GetReceiptResponse | null> {
+  try {
+    return await requestJson<GetReceiptResponse>({
+      path: `/api/admin/care-requests/${id}/receipt`,
+      method: "GET",
+      auth: true,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("404")) return null;
+    throw err;
+  }
 }
 
 // Nurse Profile types and functions
