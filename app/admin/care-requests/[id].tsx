@@ -1,15 +1,19 @@
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import {
+  generateReceipt,
   getAdminCareRequestDetail,
+  invoiceCareRequest,
+  payCareRequest,
+  voidCareRequest,
   type AdminCareRequestDetailDto,
 } from "@/src/services/adminPortalService";
 
-function formatTimestamp(value: string | null) {
+function formatTimestamp(value: string | null | undefined) {
   if (!value) return "N/A";
   return new Intl.DateTimeFormat("es-DO", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 }
@@ -23,8 +27,23 @@ function statusLabel(status: string) {
   if (status === "Approved") return "Aprobado";
   if (status === "Rejected") return "Rechazado";
   if (status === "Completed") return "Completado";
+  if (status === "Cancelled") return "Cancelada";
+  if (status === "Invoiced") return "Facturada";
+  if (status === "Paid") return "Pagada";
+  if (status === "Voided") return "Anulada";
   return status;
 }
+
+function statusColor(status: string): string {
+  if (status === "Paid") return "#166534";
+  if (status === "Invoiced") return "#92400e";
+  if (status === "Voided") return "#991b1b";
+  if (status === "Completed") return "#1e3a5f";
+  if (status === "Rejected" || status === "Cancelled") return "#dc2626";
+  return "#102a43";
+}
+
+type BillingModal = "invoice" | "pay" | "void" | null;
 
 export default function AdminCareRequestDetailScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
@@ -32,6 +51,11 @@ export default function AdminCareRequestDetailScreen() {
   const [detail, setDetail] = useState<AdminCareRequestDetailDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Billing modal state
+  const [activeModal, setActiveModal] = useState<BillingModal>(null);
+  const [billingInput, setBillingInput] = useState("");
+  const [billingLoading, setBillingLoading] = useState(false);
 
   const load = async () => {
     if (!id) return;
@@ -59,6 +83,114 @@ export default function AdminCareRequestDetailScreen() {
     return null;
   }
 
+  const openModal = (modal: BillingModal) => {
+    setBillingInput("");
+    setActiveModal(modal);
+  };
+
+  const closeModal = () => {
+    if (billingLoading) return;
+    setActiveModal(null);
+    setBillingInput("");
+  };
+
+  const handleInvoice = async () => {
+    if (!billingInput.trim()) {
+      Alert.alert("Error", "El número de factura es obligatorio.");
+      return;
+    }
+    if (!id) return;
+    try {
+      setBillingLoading(true);
+      await invoiceCareRequest(id, billingInput.trim());
+      setActiveModal(null);
+      Alert.alert("Éxito", "Solicitud facturada correctamente.");
+      void load();
+    } catch (err) {
+      Alert.alert("Error", err instanceof Error ? err.message : "No fue posible facturar la solicitud.");
+    } finally {
+      setBillingLoading(false);
+    }
+  };
+
+  const handlePay = async () => {
+    if (!billingInput.trim()) {
+      Alert.alert("Error", "La referencia bancaria es obligatoria.");
+      return;
+    }
+    if (!id) return;
+    try {
+      setBillingLoading(true);
+      await payCareRequest(id, billingInput.trim());
+      setActiveModal(null);
+      Alert.alert("Éxito", "Pago registrado correctamente.");
+      void load();
+    } catch (err) {
+      Alert.alert("Error", err instanceof Error ? err.message : "No fue posible registrar el pago.");
+    } finally {
+      setBillingLoading(false);
+    }
+  };
+
+  const handleVoid = async () => {
+    if (!billingInput.trim()) {
+      Alert.alert("Error", "El motivo de anulación es obligatorio.");
+      return;
+    }
+    if (!id) return;
+    try {
+      setBillingLoading(true);
+      await voidCareRequest(id, billingInput.trim());
+      setActiveModal(null);
+      Alert.alert("Éxito", "Solicitud anulada correctamente.");
+      void load();
+    } catch (err) {
+      Alert.alert("Error", err instanceof Error ? err.message : "No fue posible anular la solicitud.");
+    } finally {
+      setBillingLoading(false);
+    }
+  };
+
+  const handleGenerateReceipt = async () => {
+    if (!id) return;
+    try {
+      setBillingLoading(true);
+      await generateReceipt(id);
+      Alert.alert("Éxito", "Recibo generado correctamente.");
+      void load();
+    } catch (err) {
+      Alert.alert("Error", err instanceof Error ? err.message : "No fue posible generar el recibo.");
+    } finally {
+      setBillingLoading(false);
+    }
+  };
+
+  const modalConfig: Record<
+    Exclude<BillingModal, null>,
+    { title: string; inputLabel: string; placeholder: string; onConfirm: () => Promise<void> }
+  > = {
+    invoice: {
+      title: "Facturar Solicitud",
+      inputLabel: "Número de factura",
+      placeholder: "Ej. FAC-2024-001",
+      onConfirm: handleInvoice,
+    },
+    pay: {
+      title: "Registrar Pago",
+      inputLabel: "Referencia bancaria",
+      placeholder: "Ej. REF-123456",
+      onConfirm: handlePay,
+    },
+    void: {
+      title: "Anular Solicitud",
+      inputLabel: "Motivo de anulación",
+      placeholder: "Describa el motivo",
+      onConfirm: handleVoid,
+    },
+  };
+
+  const currentModal = activeModal ? modalConfig[activeModal] : null;
+
   return (
     <MobileWorkspaceShell
       eyebrow="Solicitud de Cuidado"
@@ -73,11 +205,58 @@ export default function AdminCareRequestDetailScreen() {
       {!!error && <Text style={styles.error}>{error}</Text>}
       {loading && <Text style={styles.loading}>Cargando...</Text>}
 
+      {/* Billing action modals */}
+      {currentModal && (
+        <Modal
+          testID="billing-modal"
+          visible={activeModal !== null}
+          transparent
+          animationType="fade"
+          onRequestClose={closeModal}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>{currentModal.title}</Text>
+              <Text style={styles.modalInputLabel}>{currentModal.inputLabel}</Text>
+              <TextInput
+                testID="billing-modal-input"
+                style={styles.modalInput}
+                placeholder={currentModal.placeholder}
+                value={billingInput}
+                onChangeText={setBillingInput}
+                editable={!billingLoading}
+                autoFocus
+              />
+              <View style={styles.modalActions}>
+                <Pressable
+                  testID="billing-modal-cancel"
+                  style={[styles.modalButton, styles.modalButtonSecondary]}
+                  onPress={closeModal}
+                  disabled={billingLoading}
+                >
+                  <Text style={styles.modalButtonSecondaryText}>Cancelar</Text>
+                </Pressable>
+                <Pressable
+                  testID="billing-modal-confirm"
+                  style={[styles.modalButton, styles.modalButtonPrimary, billingLoading && styles.modalButtonDisabled]}
+                  onPress={() => void currentModal.onConfirm()}
+                  disabled={billingLoading}
+                >
+                  <Text style={styles.modalButtonPrimaryText}>
+                    {billingLoading ? "Procesando..." : "Confirmar"}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+
       {detail && (
         <ScrollView>
           {detail.isOverdueOrStale && (
             <View style={styles.overdueAlert}>
-              <Text style={styles.overdueAlertText}>⚠️ Esta solicitud está vencida o estancada</Text>
+              <Text style={styles.overdueAlertText}>Esta solicitud está vencida o estancada</Text>
             </View>
           )}
 
@@ -152,9 +331,124 @@ export default function AdminCareRequestDetailScreen() {
             )}
             <View style={styles.field}>
               <Text style={styles.fieldLabel}>Estado</Text>
-              <Text style={styles.fieldValue}>{statusLabel(detail.status)}</Text>
+              <Text testID="care-request-status" style={[styles.statusBadge, { color: statusColor(detail.status) }]}>
+                {statusLabel(detail.status)}
+              </Text>
             </View>
           </View>
+
+          {/* Billing Info Card — shown when any billing data exists */}
+          {(detail.invoiceNumber || detail.bankReference || detail.voidReason || detail.receiptNumber) && (
+            <View style={styles.card} testID="billing-info-card">
+              <Text style={styles.cardTitle}>Información de Facturación</Text>
+              {detail.invoiceNumber && (
+                <>
+                  <View style={styles.field}>
+                    <Text style={styles.fieldLabel}>Número de factura</Text>
+                    <Text style={styles.fieldValue}>{detail.invoiceNumber}</Text>
+                  </View>
+                  <View style={styles.field}>
+                    <Text style={styles.fieldLabel}>Fecha de facturación</Text>
+                    <Text style={styles.fieldValue}>{formatTimestamp(detail.invoicedAtUtc)}</Text>
+                  </View>
+                </>
+              )}
+              {detail.bankReference && (
+                <>
+                  <View style={styles.field}>
+                    <Text style={styles.fieldLabel}>Referencia bancaria</Text>
+                    <Text style={styles.fieldValue}>{detail.bankReference}</Text>
+                  </View>
+                  <View style={styles.field}>
+                    <Text style={styles.fieldLabel}>Fecha de pago</Text>
+                    <Text style={styles.fieldValue}>{formatTimestamp(detail.paidAtUtc)}</Text>
+                  </View>
+                </>
+              )}
+              {detail.voidReason && (
+                <>
+                  <View style={styles.field}>
+                    <Text style={styles.fieldLabel}>Motivo de anulación</Text>
+                    <Text style={styles.fieldValue}>{detail.voidReason}</Text>
+                  </View>
+                  <View style={styles.field}>
+                    <Text style={styles.fieldLabel}>Fecha de anulación</Text>
+                    <Text style={styles.fieldValue}>{formatTimestamp(detail.voidedAtUtc)}</Text>
+                  </View>
+                </>
+              )}
+              {detail.receiptNumber && (
+                <>
+                  <View style={styles.field}>
+                    <Text style={styles.fieldLabel}>Número de recibo</Text>
+                    <Text style={styles.fieldValue}>{detail.receiptNumber}</Text>
+                  </View>
+                  <View style={styles.field}>
+                    <Text style={styles.fieldLabel}>Fecha de recibo</Text>
+                    <Text style={styles.fieldValue}>{formatTimestamp(detail.receiptGeneratedAtUtc)}</Text>
+                  </View>
+                </>
+              )}
+            </View>
+          )}
+
+          {/* Billing Action Buttons */}
+          {detail.status === "Completed" && (
+            <View style={styles.actionsCard} testID="billing-actions-completed">
+              <Pressable
+                testID="btn-facturar"
+                style={[styles.actionButton, styles.actionButtonPrimary]}
+                onPress={() => openModal("invoice")}
+                disabled={billingLoading}
+              >
+                <Text style={styles.actionButtonPrimaryText}>Facturar</Text>
+              </Pressable>
+            </View>
+          )}
+
+          {detail.status === "Invoiced" && (
+            <View style={styles.actionsCard} testID="billing-actions-invoiced">
+              <Pressable
+                testID="btn-registrar-pago"
+                style={[styles.actionButton, styles.actionButtonPrimary]}
+                onPress={() => openModal("pay")}
+                disabled={billingLoading}
+              >
+                <Text style={styles.actionButtonPrimaryText}>Registrar Pago</Text>
+              </Pressable>
+              <Pressable
+                testID="btn-anular-invoiced"
+                style={[styles.actionButton, styles.actionButtonDanger]}
+                onPress={() => openModal("void")}
+                disabled={billingLoading}
+              >
+                <Text style={styles.actionButtonDangerText}>Anular</Text>
+              </Pressable>
+            </View>
+          )}
+
+          {detail.status === "Paid" && (
+            <View style={styles.actionsCard} testID="billing-actions-paid">
+              <Pressable
+                testID="btn-generar-recibo"
+                style={[styles.actionButton, styles.actionButtonPrimary]}
+                onPress={() => void handleGenerateReceipt()}
+                disabled={billingLoading}
+              >
+                <Text style={styles.actionButtonPrimaryText}>
+                  {billingLoading ? "Procesando..." : "Generar Recibo"}
+                </Text>
+              </Pressable>
+              <Pressable
+                testID="btn-anular-paid"
+                style={[styles.actionButton, styles.actionButtonDanger]}
+                onPress={() => openModal("void")}
+                disabled={billingLoading}
+              >
+                <Text style={styles.actionButtonDangerText}>Anular</Text>
+              </Pressable>
+            </View>
+          )}
 
           {/* Pricing Breakdown */}
           <View style={styles.card}>
@@ -275,4 +569,26 @@ const styles = StyleSheet.create({
   timelineTimestamp: { color: "#7c2d12", fontSize: 11, fontWeight: "700", marginBottom: 2 },
   timelineTitle: { color: "#102a43", fontSize: 14, fontWeight: "700", marginBottom: 2 },
   timelineDescription: { color: "#52637a", fontSize: 13 },
+  // Status badge
+  statusBadge: { fontSize: 15, fontWeight: "700" },
+  // Billing actions card
+  actionsCard: { backgroundColor: "#f0f7ff", borderWidth: 1, borderColor: "#bfdbfe", borderRadius: 18, padding: 14, marginBottom: 12, gap: 10 },
+  actionButton: { borderRadius: 12, paddingVertical: 14, alignItems: "center" },
+  actionButtonPrimary: { backgroundColor: "#1e40af" },
+  actionButtonPrimaryText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  actionButtonDanger: { backgroundColor: "#fee2e2", borderWidth: 1, borderColor: "#fca5a5" },
+  actionButtonDangerText: { color: "#991b1b", fontWeight: "700", fontSize: 15 },
+  // Modal styles
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "center", alignItems: "center", padding: 24 },
+  modalCard: { backgroundColor: "#fff", borderRadius: 18, padding: 24, width: "100%" },
+  modalTitle: { fontSize: 18, fontWeight: "800", color: "#102a43", marginBottom: 16 },
+  modalInputLabel: { color: "#7c2d12", fontSize: 12, fontWeight: "800", textTransform: "uppercase", marginBottom: 6 },
+  modalInput: { borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: "#102a43", marginBottom: 20 },
+  modalActions: { flexDirection: "row", gap: 10 },
+  modalButton: { flex: 1, borderRadius: 12, paddingVertical: 13, alignItems: "center" },
+  modalButtonPrimary: { backgroundColor: "#1e40af" },
+  modalButtonPrimaryText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  modalButtonSecondary: { backgroundColor: "#f1f5f9", borderWidth: 1, borderColor: "#cbd5e1" },
+  modalButtonSecondaryText: { color: "#475569", fontWeight: "700", fontSize: 15 },
+  modalButtonDisabled: { opacity: 0.6 },
 });

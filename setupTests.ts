@@ -18,6 +18,7 @@ vi.mock('react-native', () => ({
   View: createMockComponent('View'),
   Text: createMockComponent('Text'),
   TouchableOpacity: createMockComponent('TouchableOpacity'),
+  Pressable: createMockComponent('Pressable'),
   ScrollView: createMockComponent('ScrollView'),
   RefreshControl: createMockComponent('RefreshControl'),
   FlatList: createMockComponent('FlatList'),
