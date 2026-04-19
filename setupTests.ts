@@ -128,6 +128,10 @@ vi.mock('@/components/app/MobileWorkspaceShell', () => ({
   default: vi.fn(({ children }) => children),
 }));
 
-// Mock console.error to reduce noise
-vi.spyOn(console, 'error').mockImplementation(() => {});
-vi.spyOn(console, 'warn').mockImplementation(() => {});
+// During development we want real exceptions and warnings to be visible.
+// If you ever need to silence test output (for example, in CI), set:
+//   SUPPRESS_TEST_CONSOLE=1
+if (process.env.SUPPRESS_TEST_CONSOLE === "1") {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+}
