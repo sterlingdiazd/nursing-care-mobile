@@ -71,6 +71,34 @@ export const adminTestIds = {
   payroll: {
     periodsScreen: "admin-payroll-periods-screen",
     nurseDetailScreen: "admin-payroll-nurse-detail-screen",
+    // UC-008: Nurse Payroll Detail
+    periodDetailPage: "admin-payroll-period-detail-page",
+    periodDetailLoaded: "payroll-period-detail-loaded",
+    periodStatusBadge: "payroll-period-status-badge",
+    nurseSummaryTable: "payroll-nurse-summary-table",
+    nurseRow: "payroll-nurse-row",
+    nurseDetailPanel: "nurse-payroll-detail-panel",
+    nurseDetailLoaded: "nurse-payroll-detail-loaded",
+    nurseServicesTable: "nurse-payroll-services-table",
+    nurseDeductionsTable: "nurse-payroll-deductions-table",
+    // UC-009: Payroll Period Immutability
+    overrideRequestButton: "override-request-button",
+    errorToast: "error-toast",
+    linesTable: "payroll-lines-table",
+  },
+  billingModal: {
+    // UC-004: Invoice
+    invoiceModal: "invoice-modal",
+    invoiceNumberInput: "invoice-number-input",
+    invoiceSubmitButton: "invoice-submit-button",
+    // UC-005: Pay
+    paymentModal: "payment-modal",
+    bankReferenceInput: "bank-reference-input",
+    paymentSubmitButton: "payment-submit-button",
+    // UC-006: Void
+    voidModal: "void-modal",
+    voidReasonInput: "void-reason-input",
+    voidSubmitButton: "void-submit-button",
   },
   users: {
     listScreen: "admin-users-list-screen",

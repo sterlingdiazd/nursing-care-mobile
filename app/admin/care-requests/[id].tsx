@@ -207,6 +207,20 @@ export default function AdminCareRequestDetailScreen() {
         </Pressable>
       )}
     >
+      <View
+        testID="admin-care-detail-page"
+        nativeID="admin-care-detail-page"
+        style={styles.pageRoot}
+      >
+      {!loading && detail && (
+        <Text
+          testID="care-request-detail-loaded"
+          nativeID="care-request-detail-loaded"
+          style={styles.hiddenMarker}
+        >
+          {" "}
+        </Text>
+      )}
       {!!error && <Text style={styles.error}>{error}</Text>}
       {loading && <Text style={styles.loading}>Cargando...</Text>}
 
@@ -214,17 +228,47 @@ export default function AdminCareRequestDetailScreen() {
       {currentModal && (
         <Modal
           testID="billing-modal"
+          nativeID="billing-modal"
           visible={activeModal !== null}
           transparent
           animationType="fade"
           onRequestClose={closeModal}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.modalCard}>
+            <View
+              style={styles.modalCard}
+              testID={
+                activeModal === "invoice"
+                  ? "invoice-modal"
+                  : activeModal === "pay"
+                  ? "payment-modal"
+                  : "void-modal"
+              }
+              nativeID={
+                activeModal === "invoice"
+                  ? "invoice-modal"
+                  : activeModal === "pay"
+                  ? "payment-modal"
+                  : "void-modal"
+              }
+            >
               <Text style={styles.modalTitle}>{currentModal.title}</Text>
               <Text style={styles.modalInputLabel}>{currentModal.inputLabel}</Text>
               <TextInput
-                testID="billing-modal-input"
+                testID={
+                  activeModal === "invoice"
+                    ? "invoice-number-input"
+                    : activeModal === "pay"
+                    ? "bank-reference-input"
+                    : "void-reason-input"
+                }
+                nativeID={
+                  activeModal === "invoice"
+                    ? "invoice-number-input"
+                    : activeModal === "pay"
+                    ? "bank-reference-input"
+                    : "void-reason-input"
+                }
                 style={styles.modalInput}
                 placeholder={currentModal.placeholder}
                 value={billingInput}
@@ -235,6 +279,7 @@ export default function AdminCareRequestDetailScreen() {
               <View style={styles.modalActions}>
                 <Pressable
                   testID="billing-modal-cancel"
+                  nativeID="billing-modal-cancel"
                   style={[styles.modalButton, styles.modalButtonSecondary]}
                   onPress={closeModal}
                   disabled={billingLoading}
@@ -242,7 +287,20 @@ export default function AdminCareRequestDetailScreen() {
                   <Text style={styles.modalButtonSecondaryText}>Cancelar</Text>
                 </Pressable>
                 <Pressable
-                  testID="billing-modal-confirm"
+                  testID={
+                    activeModal === "invoice"
+                      ? "invoice-submit-button"
+                      : activeModal === "pay"
+                      ? "payment-submit-button"
+                      : "void-submit-button"
+                  }
+                  nativeID={
+                    activeModal === "invoice"
+                      ? "invoice-submit-button"
+                      : activeModal === "pay"
+                      ? "payment-submit-button"
+                      : "void-submit-button"
+                  }
                   style={[styles.modalButton, styles.modalButtonPrimary, billingLoading && styles.modalButtonDisabled]}
                   onPress={() => void currentModal.onConfirm()}
                   disabled={billingLoading}
@@ -258,7 +316,10 @@ export default function AdminCareRequestDetailScreen() {
       )}
 
       {detail && (
-        <ScrollView>
+        <ScrollView
+          testID="admin-care-request-detail-page"
+          nativeID="admin-care-request-detail-page"
+        >
           {detail.isOverdueOrStale && (
             <View style={styles.overdueAlert}>
               <Text style={styles.overdueAlertText}>Esta solicitud está vencida o estancada</Text>
@@ -336,7 +397,11 @@ export default function AdminCareRequestDetailScreen() {
             )}
             <View style={styles.field}>
               <Text style={styles.fieldLabel}>Estado</Text>
-              <Text testID="care-request-status" style={[styles.statusBadge, { color: statusColor(detail.status) }]}>
+              <Text
+                testID="care-request-status-badge"
+                nativeID="care-request-status-badge"
+                style={[styles.statusBadge, { color: statusColor(detail.status) }]}
+              >
                 {statusLabel(detail.status)}
               </Text>
             </View>
@@ -347,7 +412,7 @@ export default function AdminCareRequestDetailScreen() {
             <View style={styles.card} testID="billing-info-card">
               <Text style={styles.cardTitle}>Información de Facturación</Text>
               {detail.invoiceNumber && (
-                <>
+                <View testID="invoice-details-section" nativeID="invoice-details-section">
                   <View style={styles.field}>
                     <Text style={styles.fieldLabel}>Número de factura</Text>
                     <Text style={styles.fieldValue}>{detail.invoiceNumber}</Text>
@@ -356,10 +421,10 @@ export default function AdminCareRequestDetailScreen() {
                     <Text style={styles.fieldLabel}>Fecha de facturación</Text>
                     <Text style={styles.fieldValue}>{formatTimestamp(detail.invoicedAtUtc)}</Text>
                   </View>
-                </>
+                </View>
               )}
               {detail.bankReference && (
-                <>
+                <View testID="payment-details-section" nativeID="payment-details-section">
                   <View style={styles.field}>
                     <Text style={styles.fieldLabel}>Referencia bancaria</Text>
                     <Text style={styles.fieldValue}>{detail.bankReference}</Text>
@@ -368,10 +433,10 @@ export default function AdminCareRequestDetailScreen() {
                     <Text style={styles.fieldLabel}>Fecha de pago</Text>
                     <Text style={styles.fieldValue}>{formatTimestamp(detail.paidAtUtc)}</Text>
                   </View>
-                </>
+                </View>
               )}
               {detail.voidReason && (
-                <>
+                <View testID="void-details-section" nativeID="void-details-section">
                   <View style={styles.field}>
                     <Text style={styles.fieldLabel}>Motivo de anulación</Text>
                     <Text style={styles.fieldValue}>{detail.voidReason}</Text>
@@ -380,19 +445,25 @@ export default function AdminCareRequestDetailScreen() {
                     <Text style={styles.fieldLabel}>Fecha de anulación</Text>
                     <Text style={styles.fieldValue}>{formatTimestamp(detail.voidedAtUtc)}</Text>
                   </View>
-                </>
+                </View>
               )}
               {detail.receiptNumber && (
-                <>
+                <View testID="receipt-details-section" nativeID="receipt-details-section">
                   <View style={styles.field}>
                     <Text style={styles.fieldLabel}>Número de recibo</Text>
-                    <Text style={styles.fieldValue}>{detail.receiptNumber}</Text>
+                    <Text
+                      testID="receipt-number-display"
+                      nativeID="receipt-number-display"
+                      style={styles.fieldValue}
+                    >
+                      {detail.receiptNumber}
+                    </Text>
                   </View>
                   <View style={styles.field}>
                     <Text style={styles.fieldLabel}>Fecha de recibo</Text>
                     <Text style={styles.fieldValue}>{formatTimestamp(detail.receiptGeneratedAtUtc)}</Text>
                   </View>
-                </>
+                </View>
               )}
             </View>
           )}
@@ -401,7 +472,8 @@ export default function AdminCareRequestDetailScreen() {
           {detail.status === "Completed" && (
             <View style={styles.actionsCard} testID="billing-actions-completed">
               <Pressable
-                testID="btn-facturar"
+                testID="invoice-care-request-button"
+                nativeID="invoice-care-request-button"
                 style={[styles.actionButton, styles.actionButtonPrimary]}
                 onPress={() => openModal("invoice")}
                 disabled={billingLoading}
@@ -414,7 +486,8 @@ export default function AdminCareRequestDetailScreen() {
           {detail.status === "Invoiced" && (
             <View style={styles.actionsCard} testID="billing-actions-invoiced">
               <Pressable
-                testID="btn-registrar-pago"
+                testID="pay-care-request-button"
+                nativeID="pay-care-request-button"
                 style={[styles.actionButton, styles.actionButtonPrimary]}
                 onPress={() => openModal("pay")}
                 disabled={billingLoading}
@@ -422,7 +495,8 @@ export default function AdminCareRequestDetailScreen() {
                 <Text style={styles.actionButtonPrimaryText}>Registrar Pago</Text>
               </Pressable>
               <Pressable
-                testID="btn-anular-invoiced"
+                testID="void-care-request-button"
+                nativeID="void-care-request-button"
                 style={[styles.actionButton, styles.actionButtonDanger]}
                 onPress={() => openModal("void")}
                 disabled={billingLoading}
@@ -435,7 +509,8 @@ export default function AdminCareRequestDetailScreen() {
           {detail.status === "Paid" && (
             <View style={styles.actionsCard} testID="billing-actions-paid">
               <Pressable
-                testID="btn-generar-recibo"
+                testID="generate-receipt-button"
+                nativeID="generate-receipt-button"
                 style={[styles.actionButton, styles.actionButtonPrimary]}
                 onPress={() => void handleGenerateReceipt()}
                 disabled={billingLoading}
@@ -446,6 +521,7 @@ export default function AdminCareRequestDetailScreen() {
               </Pressable>
               <Pressable
                 testID="btn-anular-paid"
+                nativeID="btn-anular-paid"
                 style={[styles.actionButton, styles.actionButtonDanger]}
                 onPress={() => openModal("void")}
                 disabled={billingLoading}
@@ -550,6 +626,7 @@ export default function AdminCareRequestDetailScreen() {
           </View>
         </ScrollView>
       )}
+      </View>
     </MobileWorkspaceShell>
   );
 }
@@ -559,6 +636,8 @@ const styles = StyleSheet.create({
   buttonText: { color: "#102a43", fontWeight: "700", fontSize: 14 },
   error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
   loading: { color: "#52637a", fontSize: 14, textAlign: "center", padding: 20 },
+  pageRoot: { flex: 1 },
+  hiddenMarker: { height: 0, width: 0, opacity: 0 },
   overdueAlert: { backgroundColor: "#fef3c7", borderRadius: 12, padding: 12, marginBottom: 12 },
   overdueAlertText: { color: "#92400e", fontSize: 14, fontWeight: "700", textAlign: "center" },
   card: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },

@@ -223,7 +223,20 @@ export function PeriodDetail({ period, onClose, onBack }: PeriodDetailProps) {
 
   return (
     <>
-      <ScrollView style={styles.container}>
+      <ScrollView
+        style={styles.container}
+        testID="admin-payroll-period-detail-page"
+        nativeID="admin-payroll-period-detail-page"
+      >
+        {/* Hidden loaded marker */}
+        <Text
+          testID="payroll-period-detail-loaded"
+          nativeID="payroll-period-detail-loaded"
+          style={styles.hiddenMarker}
+        >
+          {" "}
+        </Text>
+
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
@@ -234,7 +247,11 @@ export function PeriodDetail({ period, onClose, onBack }: PeriodDetailProps) {
             <Text style={styles.dates}>
               {period.startDate} - {period.endDate}
             </Text>
-            <View style={[styles.statusBadge, isOpen ? styles.statusOpen : styles.statusClosed]}>
+            <View
+              style={[styles.statusBadge, isOpen ? styles.statusOpen : styles.statusClosed]}
+              testID="payroll-period-status-badge"
+              nativeID="payroll-period-status-badge"
+            >
               <Text style={[styles.statusText, isOpen ? styles.statusTextOpen : styles.statusTextClosed]}>
                 {isOpen ? "Abierto" : "Cerrado"}
               </Text>
@@ -321,7 +338,11 @@ export function PeriodDetail({ period, onClose, onBack }: PeriodDetailProps) {
         </View>
 
         {/* Staff summary — tappable names + voucher download */}
-        <View style={styles.staffSection}>
+        <View
+          style={styles.staffSection}
+          testID="payroll-nurse-summary-table"
+          nativeID="payroll-nurse-summary-table"
+        >
           <Text style={styles.sectionTitle}>
             Resumen por Enfermera ({period.staffSummary.length})
           </Text>
@@ -332,7 +353,12 @@ export function PeriodDetail({ period, onClose, onBack }: PeriodDetailProps) {
             </View>
           ) : (
             period.staffSummary.map((staff) => (
-              <View key={staff.nurseUserId} style={styles.staffItem}>
+              <View
+                key={staff.nurseUserId}
+                style={styles.staffItem}
+                testID="payroll-nurse-row"
+                nativeID="payroll-nurse-row"
+              >
                 <View style={styles.staffHeader}>
                   <Pressable
                     onPress={() => handleNursePress(staff.nurseUserId, staff.nurseDisplayName)}
@@ -378,7 +404,11 @@ export function PeriodDetail({ period, onClose, onBack }: PeriodDetailProps) {
 
         {/* Per-line override section */}
         {period.lines.length > 0 && (
-          <View style={styles.linesSection}>
+          <View
+            style={styles.linesSection}
+            testID="payroll-lines-table"
+            nativeID="payroll-lines-table"
+          >
             <Text style={styles.sectionTitle}>Líneas de Nómina ({period.lines.length})</Text>
             {period.lines.map((line) => (
               <View key={line.id} style={styles.lineItem}>
@@ -413,8 +443,8 @@ export function PeriodDetail({ period, onClose, onBack }: PeriodDetailProps) {
                     <Pressable
                       style={styles.adjustButton}
                       onPress={() => openOverrideModal(line)}
-                      testID={`admin-line-adjust-${line.id}`}
-                      nativeID={`admin-line-adjust-${line.id}`}
+                      testID="override-request-button"
+                      nativeID="override-request-button"
                     >
                       <Text style={styles.adjustButtonText}>Ajustar</Text>
                     </Pressable>
@@ -521,10 +551,19 @@ export function PeriodDetail({ period, onClose, onBack }: PeriodDetailProps) {
         <View style={styles.modalOverlay}>
           <View
             style={[styles.modalCard, styles.nurseDetailModal]}
-            testID="admin-nurse-detail-modal"
-            nativeID="admin-nurse-detail-modal"
+            testID="nurse-payroll-detail-panel"
+            nativeID="nurse-payroll-detail-panel"
             accessibilityViewIsModal
           >
+            {/* Loaded marker for nurse detail */}
+            <Text
+              testID="nurse-payroll-detail-loaded"
+              nativeID="nurse-payroll-detail-loaded"
+              style={styles.hiddenMarker}
+            >
+              {" "}
+            </Text>
+
             <View style={styles.nurseDetailHeader}>
               <Text style={styles.modalTitle}>{selectedNurseName}</Text>
               <Pressable
@@ -536,7 +575,11 @@ export function PeriodDetail({ period, onClose, onBack }: PeriodDetailProps) {
               </Pressable>
             </View>
 
-            <ScrollView style={styles.nurseDetailScroll}>
+            <ScrollView
+              style={styles.nurseDetailScroll}
+              testID="nurse-payroll-services-table"
+              nativeID="nurse-payroll-services-table"
+            >
               {nurseLines.length === 0 ? (
                 <Text style={styles.emptyText}>Sin líneas para este período.</Text>
               ) : (
@@ -572,6 +615,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
+  },
+  hiddenMarker: {
+    height: 0,
+    width: 0,
+    opacity: 0,
   },
   header: {
     padding: 16,
