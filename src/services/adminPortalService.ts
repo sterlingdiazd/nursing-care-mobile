@@ -1281,6 +1281,29 @@ export async function updateNurseCategory(
   });
 }
 
+export interface CatalogPricingPreviewRequest {
+  careRequestTypeCode: string;
+  unit: number;
+  existingSameUnitTypeCount: number;
+}
+
+export interface CatalogPricingPreviewResult {
+  basePrice: number;
+  categoryFactor: number;
+  grandTotal: number;
+}
+
+export async function catalogPricingPreview(
+  body: CatalogPricingPreviewRequest,
+): Promise<CatalogPricingPreviewResult> {
+  return requestJson<CatalogPricingPreviewResult>({
+    path: "/api/admin/catalog/pricing-preview",
+    method: "POST",
+    body,
+    auth: true,
+  });
+}
+
 // Admin Reports types and functions
 export interface CareRequestPipelineReportDto {
   pendingCount: number;

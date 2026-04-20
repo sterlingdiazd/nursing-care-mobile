@@ -3,6 +3,7 @@ import { API_BASE_URL } from "@/src/config/api";
 import type {
   NursePayrollSummaryDto,
   PayrollPeriodListItemDto,
+  NursePayrollPeriodDetailDto,
   AdminMobilePayrollSummaryDto,
   RecentPeriod,
   AdminPayrollPeriodListItem,
@@ -40,6 +41,18 @@ export async function getNursePayrollHistory(_userId: string): Promise<PayrollPe
     method: "GET",
     auth: true,
   });
+}
+
+export async function getNursePayrollPeriodDetail(periodId: string): Promise<NursePayrollPeriodDetailDto> {
+  return requestJson<NursePayrollPeriodDetailDto>({
+    path: `/api/nurse/payroll/periods/${periodId}`,
+    method: "GET",
+    auth: true,
+  });
+}
+
+export function getNursePayrollVoucherUrl(periodId: string): string {
+  return `${API_BASE_URL}/api/nurse/payroll/periods/${periodId}/voucher`;
 }
 
 export async function getAdminMobilePayrollSummary(): Promise<AdminMobilePayrollSummaryDto> {
@@ -207,18 +220,65 @@ export async function deleteAdjustment(id: string): Promise<void> {
   });
 }
 
-export async function recalculatePayroll(request?: RecalculatePayrollRequest): Promise<RecalculatePayrollResult> {
-  return requestJson<RecalculatePayrollResult>({
-    path: "/api/admin/payroll/recalculate",
+export async function recalculatePayroll(request?: RecalculatePayrollRequest, maxRetries = 2): Promise<RecalculatePayrollResult> {
+  let lastError: Error | undefined;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await requestJson<RecalculatePayrollResult>({
+        path: "/api/admin/payroll/recalculate",
+        method: "POST",
+        body: request ?? {},
+        auth: true,
+      });
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      // Do not retry on client errors (4xx) — only on network/server errors
+      if (lastError.message.includes("400") || lastError.message.includes("401") ||
+          lastError.message.includes("403") || lastError.message.includes("429")) {
+        throw lastError;
+      }
+      if (attempt < maxRetries) {
+        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+      }
+    }
+  }
+  throw lastError!;
+}
+
+// --- Batch B additions: Admin payroll line override and voucher functions ---
+
+export async function submitPayrollLineOverride(
+  lineId: string,
+  data: { overrideAmount: number; reason: string }
+): Promise<void> {
+  return requestVoid({
+    path: `/api/admin/payroll/lines/${lineId}/override`,
     method: "POST",
-    body: request ?? {},
+    body: data,
     auth: true,
   });
+}
+
+export async function approvePayrollLineOverride(lineId: string): Promise<void> {
+  return requestVoid({
+    path: `/api/admin/payroll/lines/${lineId}/override/approve`,
+    method: "POST",
+    auth: true,
+  });
+}
+
+export function getAdminPayrollVoucherUrl(periodId: string, nurseId: string): string {
+  return `${API_BASE_URL}/api/admin/payroll/periods/${periodId}/vouchers/${nurseId}`;
+}
+
+export function getAdminPayrollBulkVouchersUrl(periodId: string): string {
+  return `${API_BASE_URL}/api/admin/payroll/periods/${periodId}/vouchers`;
 }
 
 export type {
   NursePayrollSummaryDto,
   PayrollPeriodListItemDto,
+  NursePayrollPeriodDetailDto,
   AdminMobilePayrollSummaryDto,
   RecentPeriod,
   AdminPayrollPeriodListItem,

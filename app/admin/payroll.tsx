@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity, RefreshControl, Alert, Modal, Pressable } from "react-native";
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, RefreshControl, Alert, Modal, Pressable, AccessibilityInfo } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
@@ -329,8 +329,10 @@ export default function AdminPayrollScreen() {
             disabled={recalculateLoading}
             testID="admin-payroll-recalculate-button"
             nativeID="admin-payroll-recalculate-button"
+            accessibilityLabel={recalculateLoading ? "Recalculando nómina" : "Recalcular nómina"}
+            accessibilityState={{ busy: recalculateLoading }}
           >
-            <Text style={styles.toolbarButtonText}>
+            <Text style={styles.toolbarButtonText} testID={recalculateLoading ? "admin-payroll-recalculate-loading" : undefined}>
               {recalculateLoading ? "Recalculando..." : "Recalcular nómina"}
             </Text>
           </Pressable>
@@ -569,6 +571,8 @@ export default function AdminPayrollScreen() {
             style={styles.modalCard}
             testID="admin-payroll-recalculate-confirm-dialog"
             nativeID="admin-payroll-recalculate-confirm-dialog"
+            accessibilityViewIsModal={true}
+            accessibilityRole="alert"
           >
             <Text style={styles.modalTitle}>Confirmar recalculo</Text>
             <Text style={styles.modalBody}>

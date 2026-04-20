@@ -37,6 +37,7 @@ import {
   updateVolumeDiscountRule,
   updateNurseSpecialty,
   updateNurseCategory,
+  catalogPricingPreview,
   type CareRequestCategoryListItemDto,
   type CareRequestTypeListItemDto,
   type UnitTypeListItemDto,
@@ -45,6 +46,7 @@ import {
   type VolumeDiscountRuleListItemDto,
   type NurseSpecialtyListItemDto,
   type NurseCategoryListItemDto,
+  type CatalogPricingPreviewResult,
 } from "@/src/services/adminPortalService";
 import { useAuth } from "@/src/context/AuthContext";
 
@@ -98,6 +100,13 @@ export default function AdminCatalogScreen() {
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [saving, setSaving] = useState(false);
 
+  // Pricing preview states
+  const [pricingPreviewVisible, setPricingPreviewVisible] = useState(false);
+  const [pricingPreviewResult, setPricingPreviewResult] = useState<CatalogPricingPreviewResult | null>(null);
+  const [pricingPreviewLoading, setPricingPreviewLoading] = useState(false);
+  const [pricingPreviewError, setPricingPreviewError] = useState<string | null>(null);
+  const [selectedTypeCode, setSelectedTypeCode] = useState<string | null>(null);
+
   const loadData = useCallback(async () => {
     if (!token) return;
     setError(null);
@@ -131,6 +140,26 @@ export default function AdminCatalogScreen() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  const handlePricingPreview = async (typeCode: string) => {
+    setSelectedTypeCode(typeCode);
+    setPricingPreviewResult(null);
+    setPricingPreviewError(null);
+    setPricingPreviewLoading(true);
+    setPricingPreviewVisible(true);
+    try {
+      const result = await catalogPricingPreview({
+        careRequestTypeCode: typeCode,
+        unit: 1,
+        existingSameUnitTypeCount: 0,
+      });
+      setPricingPreviewResult(result);
+    } catch (e: any) {
+      setPricingPreviewError(e?.message ?? "No fue posible obtener la vista previa.");
+    } finally {
+      setPricingPreviewLoading(false);
+    }
+  };
 
   const handleCreate = (tabKey: TabKey) => {
     setEditingItem(null);
@@ -306,7 +335,21 @@ export default function AdminCatalogScreen() {
             <Text style={styles.cardSubtitle}>{getSubtitle()}</Text>
             {item.code && <Text style={styles.cardCode}>Código {item.code}</Text>}
           </View>
-          <Text style={styles.cardChevron}>›</Text>
+          <View style={styles.cardActions}>
+            {activeTab === "types" && item.code && (
+              <TouchableOpacity
+                testID={`pricing-preview-btn-${item.code}`}
+                style={styles.previewButton}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handlePricingPreview(item.code);
+                }}
+              >
+                <Text style={styles.previewButtonText}>Previsualizar precio</Text>
+              </TouchableOpacity>
+            )}
+            <Text style={styles.cardChevron}>›</Text>
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -442,6 +485,51 @@ export default function AdminCatalogScreen() {
       >
         <Text style={styles.fabText}>Nuevo</Text>
       </TouchableOpacity>
+
+      <Modal
+        visible={pricingPreviewVisible}
+        animationType="slide"
+        presentationStyle="formSheet"
+        onRequestClose={() => setPricingPreviewVisible(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setPricingPreviewVisible(false)}>
+              <Text style={styles.modalCancelText}>Cerrar</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Vista previa de precio</Text>
+            <View style={{ width: 60 }} />
+          </View>
+          <View style={styles.previewModalBody}>
+            {pricingPreviewLoading && (
+              <View style={styles.previewLoadingRow}>
+                <ActivityIndicator color="#007aff" />
+                <Text style={styles.previewLoadingText}>Calculando precio...</Text>
+              </View>
+            )}
+            {pricingPreviewError && (
+              <Text style={styles.previewErrorText}>{pricingPreviewError}</Text>
+            )}
+            {pricingPreviewResult && (
+              <View style={styles.previewResultCard}>
+                <Text style={styles.previewTypeLabel}>Código: {selectedTypeCode}</Text>
+                <View style={styles.previewRow}>
+                  <Text style={styles.previewRowLabel}>Precio base</Text>
+                  <Text style={styles.previewRowValue}>${pricingPreviewResult.basePrice.toFixed(2)}</Text>
+                </View>
+                <View style={styles.previewRow}>
+                  <Text style={styles.previewRowLabel}>Factor de categoría</Text>
+                  <Text style={styles.previewRowValue}>{pricingPreviewResult.categoryFactor}</Text>
+                </View>
+                <View style={[styles.previewRow, styles.previewTotalRow]}>
+                  <Text style={styles.previewTotalLabel}>Total</Text>
+                  <Text style={styles.previewTotalValue}>${pricingPreviewResult.grandTotal.toFixed(2)}</Text>
+                </View>
+              </View>
+            )}
+          </View>
+        </SafeAreaView>
+      </Modal>
 
       <Modal
         visible={modalVisible}
@@ -670,6 +758,87 @@ const styles = StyleSheet.create({
     color: "#9ca3af",
     fontSize: 24,
     lineHeight: 24,
+  },
+  cardActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  previewButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: "#eff6ff",
+    borderWidth: 1,
+    borderColor: "#bfdbfe",
+  },
+  previewButtonText: {
+    fontSize: 12,
+    color: "#1d4ed8",
+    fontWeight: "600",
+  },
+  previewModalBody: {
+    flex: 1,
+    padding: 20,
+  },
+  previewLoadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 24,
+  },
+  previewLoadingText: {
+    fontSize: 15,
+    color: "#5f7280",
+  },
+  previewErrorText: {
+    fontSize: 15,
+    color: "#b74f4d",
+    lineHeight: 22,
+  },
+  previewResultCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    gap: 0,
+  },
+  previewTypeLabel: {
+    fontSize: 13,
+    color: "#6b7280",
+    marginBottom: 16,
+  },
+  previewRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+  },
+  previewRowLabel: {
+    fontSize: 15,
+    color: "#374151",
+  },
+  previewRowValue: {
+    fontSize: 15,
+    color: "#111827",
+    fontWeight: "600",
+  },
+  previewTotalRow: {
+    borderBottomWidth: 0,
+    marginTop: 4,
+    paddingTop: 14,
+  },
+  previewTotalLabel: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  previewTotalValue: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#007aff",
   },
   emptyState: {
     padding: 32,

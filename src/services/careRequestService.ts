@@ -96,3 +96,26 @@ export async function getActiveNurseProfiles(): Promise<ActiveNurseProfileSummar
     auth: true,
   });
 }
+
+export interface PricingDiscrepancy {
+  fieldName: string;
+  storedValue: string;
+  currentValue: string;
+  difference: string;
+}
+
+export interface PricingVerificationResult {
+  careRequestId: string;
+  matches: boolean;
+  toleranceUsed: number;
+  limitationNotes: string[];
+  discrepancies: PricingDiscrepancy[];
+}
+
+export async function verifyCareRequestPricing(id: string): Promise<PricingVerificationResult> {
+  return requestJson<PricingVerificationResult>({
+    path: `/api/care-requests/${id}/verify-pricing`,
+    method: "GET",
+    auth: true,
+  });
+}

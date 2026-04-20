@@ -68,6 +68,7 @@ export interface AdminPayrollLineItem {
   deductionsTotal: number;
   netCompensation: number;
   createdAtUtc: string;
+  pendingOverrideId?: string | null;
 }
 
 export interface AdminPayrollStaffSummary {
@@ -202,4 +203,22 @@ export interface RecalculatePayrollResult {
   totalOldNet: number;
   totalNewNet: number;
   triggeredAtUtc: string;
+}
+
+export interface NursePayrollServiceLineDto {
+  serviceExecutionId: string;
+  serviceDate: string;
+  description: string;
+  baseCompensation: number;
+  transportIncentive: number;
+  complexityBonus: number;
+  netCompensation: number;
+}
+
+export interface NursePayrollPeriodDetailDto {
+  periodId: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+  services: NursePayrollServiceLineDto[];
 }

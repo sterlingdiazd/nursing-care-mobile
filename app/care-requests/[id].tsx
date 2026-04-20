@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocalSearchParams, router } from "expo-router";
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,7 +18,9 @@ import {
   getActiveNurseProfiles,
   getCareRequestById,
   transitionCareRequest,
+  verifyCareRequestPricing,
   type ActiveNurseProfileSummary,
+  type PricingVerificationResult,
 } from "@/src/services/careRequestService";
 import { CareRequestDto, CareRequestTransitionAction } from "@/src/types/careRequest";
 
@@ -61,6 +64,10 @@ export default function CareRequestDetailScreen() {
   const [isActing, setIsActing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [pricingModalVisible, setPricingModalVisible] = useState(false);
+  const [pricingResult, setPricingResult] = useState<PricingVerificationResult | null>(null);
+  const [isPricingLoading, setIsPricingLoading] = useState(false);
+  const [pricingError, setPricingError] = useState<string | null>(null);
 
   const loadCareRequest = async () => {
     if (!id) {
@@ -153,6 +160,22 @@ export default function CareRequestDetailScreen() {
   const assignedNurseLabel = assignedNurseRecord
     ? [assignedNurseRecord.name, assignedNurseRecord.lastName].filter(Boolean).join(" ") || assignedNurseRecord.email
     : careRequest?.assignedNurse ?? "Sin asignar";
+  const runPricingVerification = async () => {
+    if (!id) return;
+    setIsPricingLoading(true);
+    setPricingError(null);
+    setPricingResult(null);
+    setPricingModalVisible(true);
+    try {
+      const result = await verifyCareRequestPricing(id);
+      setPricingResult(result);
+    } catch (nextError: any) {
+      setPricingError(nextError.message ?? "No fue posible verificar los precios.");
+    } finally {
+      setIsPricingLoading(false);
+    }
+  };
+
   const canManageAssignment = roles.includes("ADMIN");
   const canApproveOrReject =
     roles.includes("ADMIN") && careRequest?.status === "Pending";
@@ -186,6 +209,7 @@ export default function CareRequestDetailScreen() {
   const statusLabel = getStatusLabel(careRequest.status);
 
   return (
+    <>
     <MobileWorkspaceShell
       eyebrow="Detalle de solicitud"
       title="Revisa contexto, estado y transiciones."
@@ -314,6 +338,22 @@ export default function CareRequestDetailScreen() {
           </View>
         )}
 
+        {roles.includes("ADMIN") && (
+          <View style={styles.pricingSection}>
+            <Pressable
+              onPress={runPricingVerification}
+              testID="verify-pricing-btn"
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                styles.pricingButton,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              <Text style={styles.pricingButtonText}>Verificar precios</Text>
+            </Pressable>
+          </View>
+        )}
+
         <View style={styles.actionRow}>
           {canApproveOrReject && (
             <>
@@ -379,6 +419,70 @@ export default function CareRequestDetailScreen() {
         </View>
       </View>
     </MobileWorkspaceShell>
+
+    <Modal
+      visible={pricingModalVisible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={() => setPricingModalVisible(false)}
+    >
+      <View style={styles.pricingModalContainer}>
+        <View style={styles.pricingModalHeader}>
+          <Text style={styles.pricingModalTitle}>Verificacion de precios</Text>
+          <Pressable
+            onPress={() => setPricingModalVisible(false)}
+            style={({ pressed }) => [pressed && styles.buttonPressed]}
+          >
+            <Text style={styles.pricingModalClose}>Cerrar</Text>
+          </Pressable>
+        </View>
+
+        <ScrollView style={styles.pricingModalBody}>
+          {isPricingLoading && (
+            <View style={styles.pricingLoadingRow}>
+              <ActivityIndicator color="#1d4ed8" />
+              <Text style={styles.pricingLoadingText}>Verificando precios...</Text>
+            </View>
+          )}
+
+          {pricingError && (
+            <Text style={styles.pricingErrorText}>{pricingError}</Text>
+          )}
+
+          {pricingResult && pricingResult.matches && (
+            <View style={styles.pricingSuccessCard}>
+              <Text style={styles.pricingSuccessText}>Todos los valores coinciden</Text>
+              {pricingResult.limitationNotes.length > 0 && (
+                <View style={styles.pricingNotesList}>
+                  {pricingResult.limitationNotes.map((note, i) => (
+                    <Text key={i} style={styles.pricingNoteItem}>{note}</Text>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
+
+          {pricingResult && !pricingResult.matches && (
+            <View style={styles.pricingDiscrepancyCard}>
+              <Text style={styles.pricingDiscrepancyTitle}>Discrepancias encontradas</Text>
+              <View style={styles.pricingTableHeader}>
+                <Text style={[styles.pricingTableCell, styles.pricingTableHeaderText]}>Campo</Text>
+                <Text style={[styles.pricingTableCell, styles.pricingTableHeaderText]}>Guardado</Text>
+                <Text style={[styles.pricingTableCell, styles.pricingTableHeaderText]}>Actual</Text>
+              </View>
+              {pricingResult.discrepancies.map((d, i) => (
+                <View key={i} style={styles.pricingTableRow}>
+                  <Text style={styles.pricingTableCell}>{d.fieldName}</Text>
+                  <Text style={styles.pricingTableCell}>{d.storedValue}</Text>
+                  <Text style={styles.pricingTableCell}>{d.currentValue}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </ScrollView>
+      </View>
+    </Modal>
+    </>
   );
 }
 
@@ -555,5 +659,121 @@ const styles = StyleSheet.create({
     color: "#475569",
     fontWeight: "800",
     fontSize: 16,
+  },
+  pricingSection: {
+    marginTop: 20,
+    paddingTop: 18,
+    borderTopWidth: 1,
+    borderTopColor: "#e2e8f0",
+  },
+  pricingButton: {
+    borderColor: "#bfdbfe",
+    backgroundColor: "#eff6ff",
+  },
+  pricingButtonText: {
+    color: "#1d4ed8",
+    fontWeight: "800",
+    fontSize: 16,
+  },
+  pricingModalContainer: {
+    flex: 1,
+    backgroundColor: "#f8fafc",
+  },
+  pricingModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
+  },
+  pricingModalTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#102a43",
+  },
+  pricingModalClose: {
+    fontSize: 16,
+    color: "#2563eb",
+    fontWeight: "600",
+  },
+  pricingModalBody: {
+    flex: 1,
+    padding: 20,
+  },
+  pricingLoadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 24,
+  },
+  pricingLoadingText: {
+    color: "#52637a",
+    fontSize: 15,
+  },
+  pricingErrorText: {
+    color: "#be123c",
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  pricingSuccessCard: {
+    backgroundColor: "#dcfce7",
+    borderRadius: 16,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: "#bbf7d0",
+    gap: 12,
+  },
+  pricingSuccessText: {
+    color: "#166534",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  pricingNotesList: {
+    gap: 6,
+  },
+  pricingNoteItem: {
+    color: "#166534",
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  pricingDiscrepancyCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#fecaca",
+    gap: 0,
+  },
+  pricingDiscrepancyTitle: {
+    color: "#991b1b",
+    fontSize: 16,
+    fontWeight: "800",
+    marginBottom: 14,
+  },
+  pricingTableHeader: {
+    flexDirection: "row",
+    backgroundColor: "#fef2f2",
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    marginBottom: 4,
+  },
+  pricingTableHeaderText: {
+    fontWeight: "700",
+    color: "#991b1b",
+  },
+  pricingTableRow: {
+    flexDirection: "row",
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: "#fecaca",
+  },
+  pricingTableCell: {
+    flex: 1,
+    fontSize: 13,
+    color: "#334e68",
   },
 });
