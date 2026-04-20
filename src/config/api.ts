@@ -12,16 +12,16 @@ import { Platform } from "react-native";
  * 4. Default sslip.io URL
  */
 const getApiBaseUrl = (): string => {
-  // Priority 1: User-set environment variable
+  // Priority 1: Web platform always uses localhost (Expo web = dev/automation only)
+  if (Platform.OS === "web") {
+    return "http://localhost:5050";
+  }
+
+  // Priority 2: User-set environment variable (mobile devices)
   // Only use if it's explicitly set and not empty
   const envUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
   if (envUrl && envUrl.trim() && envUrl.trim() !== "http://localhost:5050") {
     return envUrl.trim();
-  }
-
-  // Priority 2: Web platform - use localhost for simplicity
-  if (Platform.OS === "web") {
-    return "http://localhost:5050";
   }
 
   // Priority 3: Dynamic detection of the development machine IP
