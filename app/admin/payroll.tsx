@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity, RefreshControl, Alert } from "react-native";
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, RefreshControl, Alert, Modal, Pressable } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
@@ -19,6 +19,7 @@ import {
   getAdjustments,
   createAdjustment,
   deleteAdjustment,
+  recalculatePayroll,
   type AdminPayrollPeriodListResult,
   type AdminPayrollPeriodDetail,
   type AdminCompensationRuleListItem,
@@ -30,6 +31,7 @@ import {
   type UpdateCompensationRuleRequest,
   type CreateDeductionRequest,
   type CreateCompensationAdjustmentRequest,
+  type RecalculatePayrollResult,
 } from "@/src/services/payrollService";
 import { 
   PeriodListItem, 
@@ -46,6 +48,22 @@ import {
   LoadingView,
   EmptyView,
 } from "@/components/payroll";
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP" }).format(value);
+}
+
+function formatTriggeredAt(value: string) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("es-DO", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(parsed);
+}
 
 export default function AdminPayrollScreen() {
   const { roles, isReady, isAuthenticated, requiresProfileCompletion } = useAuth();
@@ -83,6 +101,10 @@ export default function AdminPayrollScreen() {
   const [adjustmentsError, setAdjustmentsError] = useState<string | null>(null);
   const [showCreateAdjustmentModal, setShowCreateAdjustmentModal] = useState(false);
   const [adjustmentsRefreshing, setAdjustmentsRefreshing] = useState(false);
+
+  const [showRecalculateConfirmModal, setShowRecalculateConfirmModal] = useState(false);
+  const [recalculateLoading, setRecalculateLoading] = useState(false);
+  const [recalculateResult, setRecalculateResult] = useState<RecalculatePayrollResult | null>(null);
 
   const loadPeriods = useCallback(async () => {
     try {
@@ -260,6 +282,22 @@ export default function AdminPayrollScreen() {
     void loadAdjustments();
   }, [loadAdjustments]);
 
+  const handleRecalculate = useCallback(async () => {
+    setRecalculateLoading(true);
+    try {
+      const result = await recalculatePayroll({});
+      setRecalculateResult(result);
+      setShowRecalculateConfirmModal(false);
+      // Refresh periods so any derived totals stay current.
+      void loadPeriods();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "No fue posible recalcular la nómina.";
+      Alert.alert("Error", message);
+    } finally {
+      setRecalculateLoading(false);
+    }
+  }, [loadPeriods]);
+
   const renderPeriodsTab = () => {
     if (selectedPeriod) {
       return (
@@ -278,6 +316,50 @@ export default function AdminPayrollScreen() {
           <RefreshControl refreshing={periodsRefreshing} onRefresh={handleRefresh} />
         }
       >
+        {!periodsLoading && (
+          <Text testID="admin-payroll-loaded" nativeID="admin-payroll-loaded" style={styles.hiddenMarker}>
+            {" "}
+          </Text>
+        )}
+
+        <View style={styles.toolbar}>
+          <Pressable
+            style={[styles.toolbarButton, recalculateLoading ? styles.toolbarButtonDisabled : undefined]}
+            onPress={() => setShowRecalculateConfirmModal(true)}
+            disabled={recalculateLoading}
+            testID="admin-payroll-recalculate-button"
+            nativeID="admin-payroll-recalculate-button"
+          >
+            <Text style={styles.toolbarButtonText}>
+              {recalculateLoading ? "Recalculando..." : "Recalcular nómina"}
+            </Text>
+          </Pressable>
+        </View>
+
+        {recalculateResult && (
+          <View
+            style={styles.summaryCard}
+            testID="admin-payroll-recalculate-summary"
+            nativeID="admin-payroll-recalculate-summary"
+          >
+            <Text style={styles.summaryTitle}>Resultado de recalculo</Text>
+            <Text style={styles.summaryRow}>
+              Líneas afectadas: <Text style={styles.summaryValue}>{recalculateResult.linesAffected}</Text>
+            </Text>
+            <Text style={styles.summaryRow}>
+              Total anterior (solo afectadas):{" "}
+              <Text style={styles.summaryValue}>{formatCurrency(recalculateResult.totalOldNet)}</Text>
+            </Text>
+            <Text style={styles.summaryRow}>
+              Total nuevo (solo afectadas):{" "}
+              <Text style={styles.summaryValue}>{formatCurrency(recalculateResult.totalNewNet)}</Text>
+            </Text>
+            <Text style={styles.summaryRow}>
+              Fecha: <Text style={styles.summaryValue}>{formatTriggeredAt(recalculateResult.triggeredAtUtc)}</Text>
+            </Text>
+          </View>
+        )}
+
         {periodsError && !periodsLoading ? (
           <ErrorView message={periodsError} onRetry={loadPeriods} />
         ) : periodsLoading ? (
@@ -290,7 +372,7 @@ export default function AdminPayrollScreen() {
             onAction={() => setShowCreatePeriodModal(true)}
           />
         ) : (
-          <View style={styles.list}>
+          <View style={styles.list} testID="admin-payroll-periods-list" nativeID="admin-payroll-periods-list">
             {periodList?.items.map((period) => (
               <PeriodListItem
                 key={period.id}
@@ -471,9 +553,51 @@ export default function AdminPayrollScreen() {
       title="Gestión de Nómina"
       description="Administra períodos, reglas y compensaciones"
     >
-      <PayrollTabs activeTab={activeTab} onTabChange={setActiveTab} />
-      
-      {renderContent()}
+      <View style={styles.screen} testID="admin-payroll-screen" nativeID="admin-payroll-screen">
+        <PayrollTabs activeTab={activeTab} onTabChange={setActiveTab} />
+        {renderContent()}
+      </View>
+
+      <Modal
+        transparent
+        visible={showRecalculateConfirmModal}
+        animationType="fade"
+        onRequestClose={() => setShowRecalculateConfirmModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View
+            style={styles.modalCard}
+            testID="admin-payroll-recalculate-confirm-dialog"
+            nativeID="admin-payroll-recalculate-confirm-dialog"
+          >
+            <Text style={styles.modalTitle}>Confirmar recalculo</Text>
+            <Text style={styles.modalBody}>
+              Solo se recalculan los períodos abiertos. Las modificaciones manuales aprobadas se mantienen y no se recalculan.
+            </Text>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={() => setShowRecalculateConfirmModal(false)}
+                disabled={recalculateLoading}
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonTextSecondary]}>Cancelar</Text>
+              </TouchableOpacity>
+              <Pressable
+                style={[styles.modalButton, recalculateLoading ? styles.modalButtonDisabled : undefined]}
+                onPress={handleRecalculate}
+                disabled={recalculateLoading}
+                testID="admin-payroll-recalculate-confirm-cta"
+                nativeID="admin-payroll-recalculate-confirm-cta"
+              >
+                <Text style={styles.modalButtonText}>
+                  {recalculateLoading ? "Procesando..." : "Confirmar"}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <CreatePeriodModal
         visible={showCreatePeriodModal}
@@ -508,8 +632,58 @@ export default function AdminPayrollScreen() {
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
   content: {
     flex: 1,
+  },
+  hiddenMarker: {
+    height: 0,
+    width: 0,
+    opacity: 0,
+  },
+  toolbar: {
+    padding: 16,
+    paddingBottom: 8,
+  },
+  toolbarButton: {
+    backgroundColor: "#0f766e",
+    padding: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  toolbarButtonDisabled: {
+    opacity: 0.7,
+  },
+  toolbarButtonText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  summaryCard: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: "#f0fdfa",
+    borderWidth: 1,
+    borderColor: "#99f6e4",
+  },
+  summaryTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#0f172a",
+    marginBottom: 6,
+  },
+  summaryRow: {
+    color: "#0f172a",
+    fontSize: 13,
+    marginTop: 4,
+  },
+  summaryValue: {
+    fontWeight: "700",
+    color: "#0f172a",
   },
   list: {
     padding: 16,
@@ -528,5 +702,53 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.55)",
+    justifyContent: "center",
+    padding: 18,
+  },
+  modalCard: {
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 16,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#0f172a",
+    marginBottom: 8,
+  },
+  modalBody: {
+    color: "#334155",
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 10,
+    marginTop: 14,
+  },
+  modalButton: {
+    backgroundColor: "#0f766e",
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+  },
+  modalButtonSecondary: {
+    backgroundColor: "#e2e8f0",
+  },
+  modalButtonDisabled: {
+    opacity: 0.7,
+  },
+  modalButtonText: {
+    color: "#fff",
+    fontWeight: "800",
+    fontSize: 14,
+  },
+  modalButtonTextSecondary: {
+    color: "#0f172a",
   },
 });

@@ -44,6 +44,57 @@ describe("AdminPayrollScreen", () => {
     expect(component.root.findByProps({ children: "Ajustes" })).toBeTruthy();
   });
 
+  it("opens confirmation modal and renders summary after recalculation", async () => {
+    const {
+      getPayrollPeriods,
+      getCompensationRules,
+      getDeductions,
+      getAdjustments,
+      recalculatePayroll,
+    } = await import("@/src/services/payrollService");
+
+    vi.mocked(getPayrollPeriods).mockResolvedValue({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 });
+    vi.mocked(getCompensationRules).mockResolvedValue({ items: [], totalCount: 0 });
+    vi.mocked(getDeductions).mockResolvedValue({ items: [], totalCount: 0 });
+    vi.mocked(getAdjustments).mockResolvedValue({ items: [], totalCount: 0 });
+
+    vi.mocked(recalculatePayroll).mockResolvedValue({
+      auditId: "audit-123",
+      linesAffected: 3,
+      totalOldNet: 1000,
+      totalNewNet: 1100,
+      triggeredAtUtc: "2026-04-20T12:00:00Z",
+    });
+
+    let component: any;
+    await act(async () => {
+      component = renderer.create(<AdminPayrollScreen />);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // Open confirmation dialog
+    const recalcButton = component.root.findByProps({ testID: "admin-payroll-recalculate-button" });
+    await act(async () => {
+      recalcButton.props.onPress();
+    });
+
+    expect(component.root.findByProps({ testID: "admin-payroll-recalculate-confirm-dialog" })).toBeTruthy();
+
+    // Confirm
+    const confirmCta = component.root.findByProps({ testID: "admin-payroll-recalculate-confirm-cta" });
+    await act(async () => {
+      await confirmCta.props.onPress();
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(vi.mocked(recalculatePayroll)).toHaveBeenCalled();
+    expect(component.root.findByProps({ testID: "admin-payroll-recalculate-summary" })).toBeTruthy();
+  });
+
   it("switches between tabs", async () => {
     const { getPayrollPeriods, getCompensationRules, getDeductions, getAdjustments } = await import("@/src/services/payrollService");
     

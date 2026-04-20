@@ -190,3 +190,16 @@ export interface CreateCompensationAdjustmentRequest {
   label: string;
   amount: number;
 }
+
+export interface RecalculatePayrollRequest {
+  periodId?: string | null;
+  ruleId?: string | null;
+}
+
+export interface RecalculatePayrollResult {
+  auditId: string;
+  linesAffected: number;
+  totalOldNet: number;
+  totalNewNet: number;
+  triggeredAtUtc: string;
+}

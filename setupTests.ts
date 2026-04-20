@@ -121,6 +121,13 @@ vi.mock('@/src/services/payrollService', () => ({
   getAdjustments: vi.fn().mockResolvedValue({ items: [], totalCount: 0 }),
   createAdjustment: vi.fn().mockResolvedValue({}),
   deleteAdjustment: vi.fn().mockResolvedValue({}),
+  recalculatePayroll: vi.fn().mockResolvedValue({
+    auditId: "audit-1",
+    linesAffected: 0,
+    totalOldNet: 0,
+    totalNewNet: 0,
+    triggeredAtUtc: "2026-04-20T00:00:00Z",
+  }),
 }));
 
 // Mock MobileWorkspaceShell

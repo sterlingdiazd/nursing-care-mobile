@@ -22,6 +22,8 @@ import type {
   AdminCompensationAdjustmentListItem,
   AdminCompensationAdjustmentListResult,
   CreateCompensationAdjustmentRequest,
+  RecalculatePayrollRequest,
+  RecalculatePayrollResult,
 } from "./payrollTypes";
 
 export async function getNursePayrollSummary(_userId: string): Promise<NursePayrollSummaryDto> {
@@ -205,6 +207,15 @@ export async function deleteAdjustment(id: string): Promise<void> {
   });
 }
 
+export async function recalculatePayroll(request?: RecalculatePayrollRequest): Promise<RecalculatePayrollResult> {
+  return requestJson<RecalculatePayrollResult>({
+    path: "/api/admin/payroll/recalculate",
+    method: "POST",
+    body: request ?? {},
+    auth: true,
+  });
+}
+
 export type {
   NursePayrollSummaryDto,
   PayrollPeriodListItemDto,
@@ -227,4 +238,6 @@ export type {
   AdminCompensationAdjustmentListItem,
   AdminCompensationAdjustmentListResult,
   CreateCompensationAdjustmentRequest,
+  RecalculatePayrollRequest,
+  RecalculatePayrollResult,
 } from "./payrollTypes";
