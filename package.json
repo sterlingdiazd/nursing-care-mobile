@@ -48,5 +48,10 @@
     "typescript": "~5.9.2",
     "vitest": "^2.1.1"
   },
+  "overrides": {
+    "minimatch@9.0.9": {
+      "brace-expansion": "2.0.3"
+    }
+  },
   "private": true
 }
