@@ -208,6 +208,18 @@ export default function CareRequestDetailScreen() {
   const colors = getStatusColors(careRequest.status);
   const statusLabel = getStatusLabel(careRequest.status);
 
+  const formatCurrency = (value: number | null | undefined) =>
+    value != null ? `RD$ ${value.toLocaleString("es-DO", { minimumFractionDigits: 2 })}` : "N/A";
+  const formatFactor = (value: number | null | undefined) =>
+    value != null ? value.toFixed(4) : "N/A";
+  const formatPercent = (value: number | null | undefined) =>
+    value != null ? `${value}%` : "N/A";
+
+  const hasPricingData =
+    careRequest.price != null ||
+    careRequest.categoryFactorSnapshot != null ||
+    careRequest.lineBeforeVolumeDiscount != null;
+
   return (
     <>
     <MobileWorkspaceShell
@@ -226,16 +238,16 @@ export default function CareRequestDetailScreen() {
         </Pressable>
       }
     >
-      <View style={styles.card}>
+      <View style={styles.card} testID="care-detail-page" nativeID="care-detail-page">
         <Text style={styles.eyebrow}>Detalle de solicitud</Text>
         <View style={styles.headerRow}>
           <Text style={styles.title}>{careRequest.careRequestDescription}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: colors.bg }]}>
+          <View style={[styles.statusBadge, { backgroundColor: colors.bg }]} testID="care-detail-status-chip" nativeID="care-detail-status-chip">
             <Text style={[styles.statusText, { color: colors.fg }]}>{statusLabel}</Text>
           </View>
         </View>
 
-        <View style={styles.metaGroup}>
+        <View style={styles.metaGroup} testID="care-detail-info-section" nativeID="care-detail-info-section">
           <Text style={styles.metaText}>ID de solicitud: {careRequest.id}</Text>
           <Text style={styles.metaText}>ID de usuario: {careRequest.userID}</Text>
           <Text style={styles.metaText}>
@@ -279,6 +291,60 @@ export default function CareRequestDetailScreen() {
             </Text>
           )}
         </View>
+
+        {hasPricingData && (
+          <View style={styles.pricingBreakdown} testID="care-detail-pricing-breakdown" nativeID="care-detail-pricing-breakdown">
+            <Text style={styles.sectionEyebrow}>Desglose de precios</Text>
+            <View testID="price-breakdown-category" nativeID="price-breakdown-category" style={styles.pricingRow}>
+              <Text style={styles.pricingLabel}>Categoria</Text>
+              <Text style={styles.pricingValue}>{careRequest.pricingCategoryCode ?? careRequest.careRequestType ?? "N/A"}</Text>
+            </View>
+            <View testID="price-breakdown-base-price" nativeID="price-breakdown-base-price" style={styles.pricingRow}>
+              <Text style={styles.pricingLabel}>Precio base</Text>
+              <Text style={styles.pricingValue}>{formatCurrency(careRequest.price)}</Text>
+            </View>
+            <View testID="price-breakdown-category-factor" nativeID="price-breakdown-category-factor" style={styles.pricingRow}>
+              <Text style={styles.pricingLabel}>Factor de categoria</Text>
+              <Text style={styles.pricingValue}>{formatFactor(careRequest.categoryFactorSnapshot)}</Text>
+            </View>
+            <View testID="price-breakdown-distance-factor" nativeID="price-breakdown-distance-factor" style={styles.pricingRow}>
+              <Text style={styles.pricingLabel}>Factor de distancia</Text>
+              <Text style={styles.pricingValue}>{formatFactor(careRequest.distanceFactorMultiplierSnapshot)}</Text>
+            </View>
+            <View testID="price-breakdown-complexity-factor" nativeID="price-breakdown-complexity-factor" style={styles.pricingRow}>
+              <Text style={styles.pricingLabel}>Factor de complejidad</Text>
+              <Text style={styles.pricingValue}>{formatFactor(careRequest.complexityMultiplierSnapshot)}</Text>
+            </View>
+            <View testID="price-breakdown-client-base-price" nativeID="price-breakdown-client-base-price" style={styles.pricingRow}>
+              <Text style={styles.pricingLabel}>Precio base del cliente</Text>
+              <Text style={styles.pricingValue}>{formatCurrency(careRequest.clientBasePrice)}</Text>
+            </View>
+            <View testID="price-breakdown-line-before-discount" nativeID="price-breakdown-line-before-discount" style={styles.pricingRow}>
+              <Text style={styles.pricingLabel}>Linea antes de descuento</Text>
+              <Text style={styles.pricingValue}>{formatCurrency(careRequest.lineBeforeVolumeDiscount)}</Text>
+            </View>
+            <View testID="price-breakdown-volume-discount" nativeID="price-breakdown-volume-discount" style={styles.pricingRow}>
+              <Text style={styles.pricingLabel}>Descuento por volumen</Text>
+              <Text style={styles.pricingValue}>{formatPercent(careRequest.volumeDiscountPercentSnapshot)}</Text>
+            </View>
+            <View testID="price-breakdown-unit-price-after-discount" nativeID="price-breakdown-unit-price-after-discount" style={styles.pricingRow}>
+              <Text style={styles.pricingLabel}>Precio unitario tras descuento</Text>
+              <Text style={styles.pricingValue}>{formatCurrency(careRequest.unitPriceAfterVolumeDiscount)}</Text>
+            </View>
+            <View testID="price-breakdown-subtotal-before-supplies" nativeID="price-breakdown-subtotal-before-supplies" style={styles.pricingRow}>
+              <Text style={styles.pricingLabel}>Subtotal antes de insumos</Text>
+              <Text style={styles.pricingValue}>{formatCurrency(careRequest.subtotalBeforeSupplies)}</Text>
+            </View>
+            <View testID="price-breakdown-medical-supplies" nativeID="price-breakdown-medical-supplies" style={styles.pricingRow}>
+              <Text style={styles.pricingLabel}>Insumos medicos</Text>
+              <Text style={styles.pricingValue}>{formatCurrency(careRequest.medicalSuppliesCost)}</Text>
+            </View>
+            <View testID="price-breakdown-total" nativeID="price-breakdown-total" style={[styles.pricingRow, styles.pricingTotalRow]}>
+              <Text style={[styles.pricingLabel, styles.pricingTotalLabel]}>Total</Text>
+              <Text style={[styles.pricingValue, styles.pricingTotalValue]}>{formatCurrency(careRequest.total)}</Text>
+            </View>
+          </View>
+        )}
 
         {successMessage && <Text style={styles.successText}>{successMessage}</Text>}
         {error && <Text style={styles.errorText}>{error}</Text>}
@@ -659,6 +725,48 @@ const styles = StyleSheet.create({
     color: "#475569",
     fontWeight: "800",
     fontSize: 16,
+  },
+  pricingBreakdown: {
+    marginTop: 20,
+    paddingTop: 18,
+    borderTopWidth: 1,
+    borderTopColor: "#e2e8f0",
+  },
+  pricingRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f1f5f9",
+  },
+  pricingTotalRow: {
+    borderBottomWidth: 0,
+    borderTopWidth: 2,
+    borderTopColor: "#1d4ed8",
+    marginTop: 4,
+    paddingTop: 12,
+  },
+  pricingLabel: {
+    fontSize: 14,
+    color: "#475569",
+    flex: 1,
+  },
+  pricingValue: {
+    fontSize: 14,
+    color: "#0f172a",
+    fontWeight: "600",
+    textAlign: "right",
+  },
+  pricingTotalLabel: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#0f172a",
+  },
+  pricingTotalValue: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#1d4ed8",
   },
   pricingSection: {
     marginTop: 20,

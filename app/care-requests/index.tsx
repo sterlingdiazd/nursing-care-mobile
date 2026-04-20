@@ -156,6 +156,9 @@ export default function CareRequestsScreen() {
             return (
               <Pressable
                 key={careRequest.id}
+                testID={`care-request-card-${careRequest.id}`}
+                nativeID={`care-request-card-${careRequest.id}`}
+                accessibilityRole="link"
                 onPress={() =>
                   router.push({
                     pathname: "/care-requests/[id]",

@@ -35,6 +35,16 @@ export interface CareRequestDto {
   completedAtUtc: string | null;
   cancelledAtUtc: string | null;
   rejectionReason: string | null;
+  // Pricing snapshot fields (populated after pricing calculation)
+  // Source: Pipeline Layer 4.2 — CareRequestResponse from backend
+  pricingCategoryCode?: string | null;
+  categoryFactorSnapshot?: number | null;
+  distanceFactorMultiplierSnapshot?: number | null;
+  complexityMultiplierSnapshot?: number | null;
+  volumeDiscountPercentSnapshot?: number | null;
+  lineBeforeVolumeDiscount?: number | null;
+  unitPriceAfterVolumeDiscount?: number | null;
+  subtotalBeforeSupplies?: number | null;
 }
 
 export type CareRequestTransitionAction = "approve" | "reject" | "complete" | "cancel";
