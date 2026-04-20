@@ -1,5 +1,5 @@
-import { vi } from 'vitest';
-import React from 'react';
+import { vi } from "vitest";
+import React from "react";
 
 // Mock React Native components
 const createMockComponent = (name: string) => {
@@ -11,34 +11,34 @@ const createMockComponent = (name: string) => {
   return component;
 };
 
-vi.mock('react-native', () => ({
+vi.mock("react-native", () => ({
   StyleSheet: {
     create: (styles: any) => styles,
   },
-  View: createMockComponent('View'),
-  Text: createMockComponent('Text'),
-  TouchableOpacity: createMockComponent('TouchableOpacity'),
-  Pressable: createMockComponent('Pressable'),
-  ScrollView: createMockComponent('ScrollView'),
-  RefreshControl: createMockComponent('RefreshControl'),
-  FlatList: createMockComponent('FlatList'),
-  SectionList: createMockComponent('SectionList'),
-  StatusBar: createMockComponent('StatusBar'),
-  TextInput: createMockComponent('TextInput'),
-  ActivityIndicator: createMockComponent('ActivityIndicator'),
-  Modal: createMockComponent('Modal'),
-  KeyboardAvoidingView: createMockComponent('KeyboardAvoidingView'),
+  View: createMockComponent("View"),
+  Text: createMockComponent("Text"),
+  TouchableOpacity: createMockComponent("TouchableOpacity"),
+  Pressable: createMockComponent("Pressable"),
+  ScrollView: createMockComponent("ScrollView"),
+  RefreshControl: createMockComponent("RefreshControl"),
+  FlatList: createMockComponent("FlatList"),
+  SectionList: createMockComponent("SectionList"),
+  StatusBar: createMockComponent("StatusBar"),
+  TextInput: createMockComponent("TextInput"),
+  ActivityIndicator: createMockComponent("ActivityIndicator"),
+  Modal: createMockComponent("Modal"),
+  KeyboardAvoidingView: createMockComponent("KeyboardAvoidingView"),
   Alert: {
     alert: vi.fn(),
   },
   Platform: {
-    OS: 'ios',
+    OS: "ios",
     select: (obj: any) => obj.ios,
   },
 }));
 
 // Mock Expo Router
-vi.mock('expo-router', () => ({
+vi.mock("expo-router", () => ({
   router: {
     push: vi.fn(),
     back: vi.fn(),
@@ -53,40 +53,40 @@ vi.mock('expo-router', () => ({
 }));
 
 // Mock React Native Safe Area Context
-vi.mock('react-native-safe-area-context', () => ({
-  SafeAreaProvider: 'SafeAreaProvider',
-  SafeAreaView: 'SafeAreaView',
+vi.mock("react-native-safe-area-context", () => ({
+  SafeAreaProvider: "SafeAreaProvider",
+  SafeAreaView: "SafeAreaView",
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
 }));
 
 // Mock Expo Constants
-vi.mock('expo-constants', () => ({
+vi.mock("expo-constants", () => ({
   default: {
     statusBarHeight: 0,
   },
 }));
 
 // Mock Expo Linking
-vi.mock('expo-linking', () => ({
+vi.mock("expo-linking", () => ({
   createURL: vi.fn(),
   useURL: vi.fn(),
 }));
 
 // Mock AsyncStorage
-vi.mock('@react-native-async-storage/async-storage', () => ({
+vi.mock("@react-native-async-storage/async-storage", () => ({
   setItem: vi.fn(),
   getItem: vi.fn(),
   removeItem: vi.fn(),
 }));
 
 // Mock AuthContext
-vi.mock('@/src/context/AuthContext', () => ({
+vi.mock("@/src/context/AuthContext", () => ({
   useAuth: vi.fn(() => ({
-    token: 'mock-token',
-    userId: '1',
-    email: 'admin@example.com',
-    roles: ['ADMIN'],
-    profileType: 'ADMIN',
+    token: "mock-token",
+    userId: "1",
+    email: "admin@example.com",
+    roles: ["ADMIN"],
+    profileType: "ADMIN",
     requiresProfileCompletion: false,
     requiresAdminReview: false,
     isAuthenticated: true,
@@ -105,7 +105,7 @@ vi.mock('@/src/context/AuthContext', () => ({
 }));
 
 // Mock Payroll Service
-vi.mock('@/src/services/payrollService', () => ({
+vi.mock("@/src/services/payrollService", () => ({
   getPayrollPeriods: vi.fn().mockResolvedValue({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 }),
   getPayrollPeriodById: vi.fn().mockResolvedValue({}),
   createPayrollPeriod: vi.fn().mockResolvedValue({}),
@@ -124,7 +124,7 @@ vi.mock('@/src/services/payrollService', () => ({
 }));
 
 // Mock MobileWorkspaceShell
-vi.mock('@/components/app/MobileWorkspaceShell', () => ({
+vi.mock("@/components/app/MobileWorkspaceShell", () => ({
   default: vi.fn(({ children }) => children),
 }));
 
@@ -135,3 +135,7 @@ if (process.env.SUPPRESS_TEST_CONSOLE === "1") {
   vi.spyOn(console, "error").mockImplementation(() => {});
   vi.spyOn(console, "warn").mockImplementation(() => {});
 }
+
+// NOTE: We intentionally do not import @testing-library/react-native here.
+// With the current Vitest + RN mock setup, importing it can cause Node to parse
+// real React Native modules (Flow syntax like `typeof`) and crash the suite.
