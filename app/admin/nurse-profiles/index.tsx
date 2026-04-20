@@ -1,3 +1,8 @@
+// @generated-by: implementation-agent
+// @pipeline-run: 2026-04-20T-priority-1
+// @diffs: DIFF-ADMIN-NP-001
+// @do-not-edit: false
+
 import { useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
@@ -116,6 +121,8 @@ export default function AdminNurseProfilesScreen() {
             key={item.userId}
             onPress={() => router.push(`/admin/nurse-profiles/${item.userId}` as any)}
             style={[styles.card, styles.cardPending]}
+            testID={`admin-nurse-profile-pending-card-${item.userId}`}
+            nativeID={`admin-nurse-profile-pending-card-${item.userId}`}
           >
             <View style={styles.pendingBadge}>
               <Text style={styles.pendingBadgeText}>⚠️ Pendiente de revisión</Text>
@@ -145,6 +152,8 @@ export default function AdminNurseProfilesScreen() {
             key={item.userId}
             onPress={() => router.push(`/admin/nurse-profiles/${item.userId}` as any)}
             style={styles.card}
+            testID={`admin-nurse-profile-${tab}-card-${item.userId}`}
+            nativeID={`admin-nurse-profile-${tab}-card-${item.userId}`}
           >
             <Text style={styles.cardTitle}>{item.name} {item.lastName}</Text>
             <Text style={styles.cardMeta}>{item.email}</Text>

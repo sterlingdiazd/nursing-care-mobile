@@ -1,3 +1,8 @@
+// @generated-by: implementation-agent
+// @pipeline-run: 2026-04-20T-priority-1
+// @diffs: DIFF-ADMIN-USERS-001
+// @do-not-edit: false
+
 import { useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
@@ -193,6 +198,8 @@ export default function AdminUsersScreen() {
               key={item.id}
               onPress={() => router.push(`/admin/users/${item.id}` as never)}
               style={styles.card}
+              testID={`admin-user-card-${item.id}`}
+              nativeID={`admin-user-card-${item.id}`}
             >
               <View style={styles.cardHeader}>
                 <Text style={styles.cardTitle}>{item.displayName}</Text>

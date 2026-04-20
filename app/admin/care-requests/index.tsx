@@ -1,3 +1,8 @@
+// @generated-by: implementation-agent
+// @pipeline-run: 2026-04-20T-priority-1
+// @diffs: DIFF-ADMIN-CR-001
+// @do-not-edit: false
+
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
