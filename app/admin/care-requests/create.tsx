@@ -7,7 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { router } from "expo-router";
@@ -22,6 +21,8 @@ import {
   type CreateAdminCareRequestDto,
   type AdminCareRequestClientOptionDto,
 } from "@/src/services/adminPortalService";
+import { FormInput } from "@/src/components/form";
+import { adminTestIds } from "@/src/testing/testIds";
 import { getAvailableNurses } from "@/src/services/catalogOptionsService";
 import type { AvailableNurseOption } from "@/src/types/catalog";
 
@@ -263,7 +264,8 @@ export default function CreateAdminCareRequestScreen() {
             </View>
           ) : (
             <View>
-              <TextInput
+              <FormInput
+                testID={adminTestIds.careRequests.create.clientSearchInput}
                 style={[styles.input, errors.clientUserId ? styles.inputError : undefined]}
                 placeholder="Buscar cliente por nombre o correo"
                 value={clientSearch}
@@ -342,7 +344,8 @@ export default function CreateAdminCareRequestScreen() {
               </Pressable>
             ))}
           </View>
-          <TextInput
+          <FormInput
+            testID="admin-care-create-custom-type-input"
             style={[styles.input, activeTypeIsCustom ? styles.inputActive : undefined]}
             placeholder="Otro tipo (especificar)"
             value={activeTypeIsCustom ? form.careRequestType : customCareType}
@@ -365,7 +368,8 @@ export default function CreateAdminCareRequestScreen() {
           </View>
 
           <Text style={styles.label}>Descripción de la solicitud *</Text>
-          <TextInput
+          <FormInput
+            testID={adminTestIds.careRequests.create.descriptionInput}
             style={[styles.input, styles.textArea, errors.careRequestDescription ? styles.inputError : undefined]}
             placeholder="Detalles sobre lo requerido..."
             value={form.careRequestDescription}
@@ -378,7 +382,8 @@ export default function CreateAdminCareRequestScreen() {
         {/* === SECTION: NURSE (Optional) === */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Enfermera Sugerida (Opcional)</Text>
-          <TextInput
+          <FormInput
+            testID={adminTestIds.careRequests.create.nurseInput}
             style={styles.input}
             placeholder="Nombre de la enfermera"
             value={form.suggestedNurse ?? ""}
@@ -428,16 +433,16 @@ export default function CreateAdminCareRequestScreen() {
               <Text style={styles.subtitle}>Estos valores sobreescriben la tarifa base calculada.</Text>
               
               <Text style={styles.label}>Precio base fijo (override)</Text>
-              <TextInput style={styles.input} placeholder="Ej: 1500" value={form.clientBasePriceOverride?.toString() || ""} onChangeText={(text) => setForm({ ...form, clientBasePriceOverride: parseFloat(text) || undefined })} keyboardType="numeric" />
+              <FormInput testID="admin-care-create-price-override-input" style={styles.input} placeholder="Ej: 1500" value={form.clientBasePriceOverride?.toString() || ""} onChangeText={(text) => setForm({ ...form, clientBasePriceOverride: parseFloat(text) || undefined })} keyboardType="numeric" />
 
               <Text style={styles.label}>Costo de insumos médicos</Text>
-              <TextInput style={styles.input} placeholder="Costo extra" value={form.medicalSuppliesCost?.toString() || ""} onChangeText={(text) => setForm({ ...form, medicalSuppliesCost: parseFloat(text) || undefined })} keyboardType="numeric" />
+              <FormInput testID="admin-care-create-medical-supplies-input" style={styles.input} placeholder="Costo extra" value={form.medicalSuppliesCost?.toString() || ""} onChangeText={(text) => setForm({ ...form, medicalSuppliesCost: parseFloat(text) || undefined })} keyboardType="numeric" />
 
               <Text style={styles.label}>Factor de distancia (Multiplicador)</Text>
-              <TextInput style={styles.input} placeholder="Ej: Cerca, Lejos..." value={form.distanceFactor} onChangeText={(text) => setForm({ ...form, distanceFactor: text })} />
+              <FormInput testID="admin-care-create-distance-factor-input" style={styles.input} placeholder="Ej: Cerca, Lejos..." value={form.distanceFactor} onChangeText={(text) => setForm({ ...form, distanceFactor: text })} />
 
               <Text style={styles.label}>Nivel de complejidad</Text>
-              <TextInput style={styles.input} placeholder="Ej: Avanzado" value={form.complexityLevel} onChangeText={(text) => setForm({ ...form, complexityLevel: text })} />
+              <FormInput testID="admin-care-create-complexity-input" style={styles.input} placeholder="Ej: Avanzado" value={form.complexityLevel} onChangeText={(text) => setForm({ ...form, complexityLevel: text })} />
             </View>
           )}
         </View>
@@ -448,7 +453,13 @@ export default function CreateAdminCareRequestScreen() {
 
       {/* STICKY FOOTER */}
       <View style={styles.stickyFooter}>
-        <Pressable style={styles.buttonPrimary} onPress={handleSubmit} disabled={submitting}>
+        <Pressable
+          testID={adminTestIds.careRequests.create.submitButton}
+          nativeID={adminTestIds.careRequests.create.submitButton}
+          style={styles.buttonPrimary}
+          onPress={handleSubmit}
+          disabled={submitting}
+        >
           <Text style={styles.buttonPrimaryText}>{submitting ? "Creando Solicitud..." : "Generar Solicitud de Cuidado"}</Text>
         </Pressable>
       </View>

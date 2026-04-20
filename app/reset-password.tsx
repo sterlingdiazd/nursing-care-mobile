@@ -2,8 +2,6 @@ import React, { useState } from "react";
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   ScrollView,
   ActivityIndicator,
   Alert,
@@ -15,7 +13,9 @@ import {
   RESET_PASSWORD_HELP_TEXT,
   buildPasswordResetSuccessAlert,
 } from "@/src/utils/passwordRecovery";
-import { authTestIds, testProps } from "@/src/testing/authTestIds";
+import { authTestIds } from "@/src/testing/authTestIds";
+import { FormButton, FormInput } from "@/src/components/form";
+import { testProps } from "@/src/testing/testIds";
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
@@ -92,12 +92,13 @@ export default function ResetPasswordScreen() {
       contentContainerStyle={styles.contentContainer}
       {...testProps(authTestIds.resetPassword.screen)}
     >
-      <TouchableOpacity 
-        style={styles.backButton} 
+      <FormButton
+        testID="reset-password-back-button"
+        style={styles.backButton}
         onPress={() => router.back()}
       >
         <Text style={styles.backButtonText}>← Volver</Text>
-      </TouchableOpacity>
+      </FormButton>
 
       <Text style={styles.title}>Restablecer contraseña</Text>
       <Text style={styles.subtitle}>
@@ -109,8 +110,8 @@ export default function ResetPasswordScreen() {
 
       <View style={styles.formGroup}>
         <Text style={styles.label}>Correo electrónico</Text>
-        <TextInput
-          {...testProps(authTestIds.resetPassword.emailInput)}
+        <FormInput
+          testID={authTestIds.resetPassword.emailInput}
           style={[styles.input, emailError ? styles.inputError : null]}
           placeholder="tu@correo.com"
           value={email}
@@ -125,8 +126,8 @@ export default function ResetPasswordScreen() {
 
       <View style={styles.formGroup}>
         <Text style={styles.label}>Código de verificación</Text>
-        <TextInput
-          {...testProps(authTestIds.resetPassword.codeInput)}
+        <FormInput
+          testID={authTestIds.resetPassword.codeInput}
           style={[styles.input, codeError ? styles.inputError : null]}
           placeholder="123456"
           value={code}
@@ -140,8 +141,8 @@ export default function ResetPasswordScreen() {
 
       <View style={styles.formGroup}>
         <Text style={styles.label}>Nueva contraseña</Text>
-        <TextInput
-          {...testProps(authTestIds.resetPassword.newPasswordInput)}
+        <FormInput
+          testID={authTestIds.resetPassword.newPasswordInput}
           style={[styles.input, passwordError ? styles.inputError : null]}
           placeholder="Mínimo 6 caracteres"
           value={newPassword}
@@ -154,8 +155,8 @@ export default function ResetPasswordScreen() {
 
       <View style={styles.formGroup}>
         <Text style={styles.label}>Confirmar nueva contraseña</Text>
-        <TextInput
-          {...testProps(authTestIds.resetPassword.confirmPasswordInput)}
+        <FormInput
+          testID={authTestIds.resetPassword.confirmPasswordInput}
           style={[styles.input, passwordError ? styles.inputError : null]}
           placeholder="Repite la contraseña"
           value={confirmPassword}
@@ -167,8 +168,8 @@ export default function ResetPasswordScreen() {
         {passwordError ? <Text style={styles.errorText} {...testProps(authTestIds.resetPassword.passwordError)}>{passwordError}</Text> : null}
       </View>
 
-      <TouchableOpacity
-        {...testProps(authTestIds.resetPassword.submitButton)}
+      <FormButton
+        testID={authTestIds.resetPassword.submitButton}
         style={[styles.button, isLoading ? styles.buttonDisabled : null]}
         onPress={handleSubmit}
         disabled={isLoading}
@@ -178,7 +179,7 @@ export default function ResetPasswordScreen() {
         ) : (
           <Text style={styles.buttonText}>Establecer contraseña</Text>
         )}
-      </TouchableOpacity>
+      </FormButton>
     </ScrollView>
   );
 }

@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { validateEmail } from "@/src/api/auth";
 import { useAuth } from "@/src/context/AuthContext";
+import { FormInput } from "@/src/components/form";
+import { adminTestIds } from "@/src/testing/testIds";
 import {
   createAdminClient,
   type CreateAdminClientRequest,
@@ -144,7 +146,8 @@ export default function AdminCreateClientScreen() {
           <View style={styles.row}>
             <View style={styles.col}>
               <Text style={styles.label}>Nombre *</Text>
-              <TextInput
+              <FormInput
+                testID={adminTestIds.clients.create.nameInput}
                 style={[styles.input, errors.name ? styles.inputError : undefined]}
                 placeholder="Nombre"
                 value={form.name}
@@ -153,7 +156,8 @@ export default function AdminCreateClientScreen() {
             </View>
             <View style={styles.col}>
               <Text style={styles.label}>Apellido *</Text>
-              <TextInput
+              <FormInput
+                testID={adminTestIds.clients.create.lastNameInput}
                 style={[styles.input, errors.lastName ? styles.inputError : undefined]}
                 placeholder="Apellido"
                 value={form.lastName}
@@ -166,7 +170,8 @@ export default function AdminCreateClientScreen() {
           )}
 
           <Text style={styles.label}>Número de identificación *</Text>
-          <TextInput
+          <FormInput
+            testID={adminTestIds.clients.create.identificationInput}
             style={[styles.input, errors.identificationNumber ? styles.inputError : undefined]}
             placeholder="Número de cédula/pasaporte"
             value={form.identificationNumber}
@@ -177,7 +182,8 @@ export default function AdminCreateClientScreen() {
           {errors.identificationNumber && <Text style={styles.errorText}>{errors.identificationNumber}</Text>}
 
           <Text style={styles.label}>Teléfono *</Text>
-          <TextInput
+          <FormInput
+            testID={adminTestIds.clients.create.phoneInput}
             style={[styles.input, errors.phone ? styles.inputError : undefined]}
             placeholder="Ej: 8091234567"
             value={form.phone}
@@ -188,7 +194,8 @@ export default function AdminCreateClientScreen() {
           {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
 
           <Text style={styles.label}>Correo electrónico *</Text>
-          <TextInput
+          <FormInput
+            testID={adminTestIds.clients.create.emailInput}
             style={[styles.input, errors.email ? styles.inputError : undefined]}
             placeholder="correo@ejemplo.com"
             value={form.email}
@@ -202,7 +209,8 @@ export default function AdminCreateClientScreen() {
           <View style={styles.row}>
              <View style={styles.col}>
                 <Text style={styles.label}>Contraseña *</Text>
-                <TextInput
+                <FormInput
+                  testID={adminTestIds.clients.create.passwordInput}
                   style={[styles.input, errors.password ? styles.inputError : undefined]}
                   placeholder="Mínimo 8"
                   value={form.password}
@@ -212,7 +220,8 @@ export default function AdminCreateClientScreen() {
              </View>
              <View style={styles.col}>
                 <Text style={styles.label}>Confirmar *</Text>
-                <TextInput
+                <FormInput
+                  testID={adminTestIds.clients.create.confirmPasswordInput}
                   style={[styles.input, errors.confirmPassword ? styles.inputError : undefined]}
                   placeholder="Confirmar"
                   value={form.confirmPassword}
@@ -233,7 +242,13 @@ export default function AdminCreateClientScreen() {
 
       {/* STICKY FOOTER */}
       <View style={styles.stickyFooter}>
-        <Pressable style={styles.buttonPrimary} onPress={handleSubmit} disabled={submitting}>
+        <Pressable
+          testID={adminTestIds.clients.create.submitButton}
+          nativeID={adminTestIds.clients.create.submitButton}
+          style={styles.buttonPrimary}
+          onPress={handleSubmit}
+          disabled={submitting}
+        >
           <Text style={styles.buttonPrimaryText}>{submitting ? "Procesando..." : "Registrar Cliente"}</Text>
         </Pressable>
       </View>

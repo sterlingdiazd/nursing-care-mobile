@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
@@ -9,6 +9,8 @@ import {
   type AdminCareRequestListItemDto,
   type AdminCareRequestView,
 } from "@/src/services/adminPortalService";
+import { FormInput } from "@/src/components/form";
+import { adminTestIds } from "@/src/testing/testIds";
 
 function formatTimestamp(value: string) {
   return new Intl.DateTimeFormat("es-DO", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
@@ -82,10 +84,20 @@ export default function AdminCareRequestsScreen() {
       description="Consulta, filtra y supervisa todas las solicitudes de servicio."
       actions={(
         <View style={styles.headerActions}>
-          <Pressable style={styles.button} onPress={() => setShowFilters(!showFilters)}>
+          <Pressable
+            testID={adminTestIds.careRequests.filterButton}
+            nativeID={adminTestIds.careRequests.filterButton}
+            style={styles.button}
+            onPress={() => setShowFilters(!showFilters)}
+          >
             <Text style={styles.buttonText}>{showFilters ? "Ocultar filtros" : "Filtros"}</Text>
           </Pressable>
-          <Pressable style={styles.buttonPrimary} onPress={() => router.push("/admin/care-requests/create" as any)}>
+          <Pressable
+            testID={adminTestIds.careRequests.createButton}
+            nativeID={adminTestIds.careRequests.createButton}
+            style={styles.buttonPrimary}
+            onPress={() => router.push("/admin/care-requests/create" as any)}
+          >
             <Text style={styles.buttonPrimaryText}>Crear</Text>
           </Pressable>
         </View>
@@ -122,7 +134,8 @@ export default function AdminCareRequestsScreen() {
           </View>
 
           <Text style={styles.filterLabel}>Buscar</Text>
-          <TextInput
+          <FormInput
+            testID={adminTestIds.careRequests.searchInput}
             style={styles.input}
             placeholder="Nombre del cliente, correo o descripción"
             value={searchQuery}

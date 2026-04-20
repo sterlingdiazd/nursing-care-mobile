@@ -5,6 +5,7 @@ import { router } from "expo-router";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { getAdminDashboard } from "@/src/services/adminPortalService";
+import { adminTestIds } from "@/src/testing/testIds";
 
 const adminSections = [
   { label: "Usuarios", path: "/admin/users" },
@@ -52,10 +53,20 @@ export default function AdminDashboardScreen() {
       description="Supervisa pendientes y entra rapido a cada modulo."
       actions={
         <>
-          <Pressable style={styles.primaryButton} onPress={() => router.push("/admin/action-items" as any)}>
+          <Pressable
+            testID={adminTestIds.dashboard.actionsButton}
+            nativeID={adminTestIds.dashboard.actionsButton}
+            style={styles.primaryButton}
+            onPress={() => router.push("/admin/action-items" as any)}
+          >
             <Text style={styles.primaryButtonText}>Ver acciones</Text>
           </Pressable>
-          <Pressable style={styles.secondaryButton} onPress={() => router.push("/admin/care-requests" as any)}>
+          <Pressable
+            testID={adminTestIds.dashboard.requestsButton}
+            nativeID={adminTestIds.dashboard.requestsButton}
+            style={styles.secondaryButton}
+            onPress={() => router.push("/admin/care-requests" as any)}
+          >
             <Text style={styles.secondaryButtonText}>Abrir solicitudes</Text>
           </Pressable>
         </>

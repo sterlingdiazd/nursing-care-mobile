@@ -8,13 +8,14 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { router } from "expo-router";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { FormInput } from "@/src/components/form";
+import { careRequestTestIds } from "@/src/testing/testIds";
 import { useAuth } from "@/src/context/AuthContext";
 import { createCorrelationId, logClientEvent } from "@/src/logging/clientLogger";
 import { getAvailableNurses, getCareRequestOptions } from "@/src/services/catalogOptionsService";
@@ -562,7 +563,8 @@ export default function CreateCareRequestScreen() {
             </View>
 
             <Text style={styles.label}>Descripcion de la solicitud</Text>
-            <TextInput
+            <FormInput
+              testID={careRequestTestIds.create.descriptionInput}
               value={form.careRequestDescription}
               onChangeText={(text) => setForm((prev) => ({ ...prev, careRequestDescription: text }))}
               placeholder="Describe el cuidado requerido, urgencia, detalles clinicos y notas operativas."
@@ -582,7 +584,8 @@ export default function CreateCareRequestScreen() {
               <Text style={styles.sectionTitle}>Enfermera sugerida (opcional)</Text>
             </View>
 
-            <TextInput
+            <FormInput
+              testID={careRequestTestIds.create.suggestedNurseInput}
               value={form.suggestedNurse ?? ""}
               onChangeText={(text) => {
                 setForm((prev) => ({ ...prev, suggestedNurse: text }));
@@ -594,15 +597,13 @@ export default function CreateCareRequestScreen() {
               placeholder="Nombre de la enfermera preferida"
               editable={!isLoading}
               onFocus={() => setShowSuggestedNurseOptions(true)}
-              testID="create-care-request-suggested-nurse-input"
-              nativeID="create-care-request-suggested-nurse-input"
               style={[styles.input, isLoading && styles.inputDisabled]}
             />
             {showSuggestedNurseOptions && !isLoading && (
                 <View
                   style={styles.autocompletePanel}
-                  testID="create-care-request-suggested-nurse-options"
-                  nativeID="create-care-request-suggested-nurse-options"
+                  testID={careRequestTestIds.create.suggestedNurseOptions}
+                  nativeID={careRequestTestIds.create.suggestedNurseOptions}
                 >
                   {nurseLookupLoading ? (
                     <View style={styles.autocompleteLoadingRow}>

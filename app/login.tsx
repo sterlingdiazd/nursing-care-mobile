@@ -2,8 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   ScrollView,
   ActivityIndicator,
   Alert,
@@ -20,7 +18,9 @@ import { validateEmail } from "@/src/api/auth";
 import { AuthResponse } from "@/src/types/auth";
 import { resolvePostAuthRoute } from "@/src/utils/authRedirect";
 import { hapticFeedback } from "@/src/utils/haptics";
-import { authTestIds, testProps } from "@/src/testing/authTestIds";
+import { authTestIds } from "@/src/testing/authTestIds";
+import { FormButton, FormInput } from "@/src/components/form";
+import { testProps } from "@/src/testing/testIds";
 import {
   getGoogleOAuthStartUrl,
   getLocalHttpsCertificateWarning,
@@ -271,8 +271,8 @@ export default function LoginScreen() {
       {/* Email Input */}
       <View style={styles.formGroup}>
         <Text style={styles.label}>Correo</Text>
-        <TextInput
-          {...testProps(authTestIds.login.emailInput)}
+        <FormInput
+          testID={authTestIds.login.emailInput}
           style={[styles.input, emailError ? styles.inputError : null]}
           placeholder="tu@correo.com"
           value={email}
@@ -292,8 +292,8 @@ export default function LoginScreen() {
       {/* Password Input */}
       <View style={styles.formGroup}>
         <Text style={styles.label}>Contrasena</Text>
-        <TextInput
-          {...testProps(authTestIds.login.passwordInput)}
+        <FormInput
+          testID={authTestIds.login.passwordInput}
           style={[styles.input, passwordError ? styles.inputError : null]}
           placeholder="Ingresa tu contrasena"
           value={password}
@@ -309,8 +309,8 @@ export default function LoginScreen() {
         {passwordError ? <Text style={styles.errorText} {...testProps(authTestIds.login.passwordError)}>{passwordError}</Text> : null}
       </View>
 
-      <TouchableOpacity
-        {...testProps(authTestIds.login.forgotPasswordLink)}
+      <FormButton
+        testID={authTestIds.login.forgotPasswordLink}
         onPress={() => {
           hapticFeedback.light();
           router.push("/forgot-password" as any);
@@ -319,11 +319,11 @@ export default function LoginScreen() {
         disabled={isLoading}
       >
         <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
-      </TouchableOpacity>
+      </FormButton>
 
       {/* Login Button */}
-      <TouchableOpacity
-        {...testProps(authTestIds.login.submitButton)}
+      <FormButton
+        testID={authTestIds.login.submitButton}
         style={[styles.button, isLoading ? styles.buttonDisabled : null]}
         onPress={() => {
           hapticFeedback.light();
@@ -336,7 +336,7 @@ export default function LoginScreen() {
         ) : (
           <Text style={styles.buttonText}>Iniciar sesion</Text>
         )}
-      </TouchableOpacity>
+      </FormButton>
 
       <View style={styles.dividerContainer}>
         <View style={styles.dividerLine} />
@@ -344,8 +344,8 @@ export default function LoginScreen() {
         <View style={styles.dividerLine} />
       </View>
 
-      <TouchableOpacity
-        {...testProps(authTestIds.login.googleButton)}
+      <FormButton
+        testID={authTestIds.login.googleButton}
         style={[styles.secondaryButton, isLoading ? styles.buttonDisabled : null]}
         onPress={() => {
           hapticFeedback.light();
@@ -354,13 +354,13 @@ export default function LoginScreen() {
         disabled={isLoading}
       >
         <Text style={styles.secondaryButtonText}>Continuar con Google</Text>
-      </TouchableOpacity>
+      </FormButton>
 
       {/* Register Link */}
       <View style={styles.registerLinkContainer}>
         <Text style={styles.registerLinkText}>¿No tienes cuenta? </Text>
-        <TouchableOpacity
-          {...testProps(authTestIds.login.registerLink)}
+        <FormButton
+          testID={authTestIds.login.registerLink}
           onPress={() => {
             hapticFeedback.light();
             router.push("/register" as any);
@@ -368,7 +368,7 @@ export default function LoginScreen() {
           disabled={isLoading}
         >
           <Text style={styles.registerLink}>Registrate</Text>
-        </TouchableOpacity>
+        </FormButton>
       </View>
     </ScrollView>
   </SafeAreaView>

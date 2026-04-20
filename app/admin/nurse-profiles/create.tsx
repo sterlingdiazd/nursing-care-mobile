@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
@@ -8,6 +8,8 @@ import {
   createNurseProfileForAdmin,
   type CreateNurseProfileRequest,
 } from "@/src/services/adminPortalService";
+import { FormInput } from "@/src/components/form";
+import { adminTestIds } from "@/src/testing/testIds";
 
 const CATEGORIES = ["Auxiliar", "Técnico", "Profesional", "Especialista"];
 
@@ -113,31 +115,31 @@ export default function AdminCreateNurseProfileScreen() {
           <View style={styles.row}>
             <View style={styles.col}>
               <Text style={styles.label}>Nombre *</Text>
-              <TextInput style={[styles.input, errors.name ? styles.inputError : undefined]} placeholder="Nombre" value={form.name} onChangeText={(text) => setForm({ ...form, name: text })} />
+              <FormInput testID={adminTestIds.nurses.create.nameInput} style={[styles.input, errors.name ? styles.inputError : undefined]} placeholder="Nombre" value={form.name} onChangeText={(text) => setForm({ ...form, name: text })} />
             </View>
             <View style={styles.col}>
               <Text style={styles.label}>Apellido *</Text>
-              <TextInput style={[styles.input, errors.lastName ? styles.inputError : undefined]} placeholder="Apellido" value={form.lastName} onChangeText={(text) => setForm({ ...form, lastName: text })} />
+              <FormInput testID={adminTestIds.nurses.create.lastNameInput} style={[styles.input, errors.lastName ? styles.inputError : undefined]} placeholder="Apellido" value={form.lastName} onChangeText={(text) => setForm({ ...form, lastName: text })} />
             </View>
           </View>
 
           <Text style={styles.label}>Cédula *</Text>
-          <TextInput style={[styles.input, errors.identificationNumber ? styles.inputError : undefined]} placeholder="Número de identificación" value={form.identificationNumber} onChangeText={(text) => setForm({ ...form, identificationNumber: text })} keyboardType="numeric" />
+          <FormInput testID={adminTestIds.nurses.create.identificationInput} style={[styles.input, errors.identificationNumber ? styles.inputError : undefined]} placeholder="Número de identificación" value={form.identificationNumber} onChangeText={(text) => setForm({ ...form, identificationNumber: text })} keyboardType="numeric" />
 
           <Text style={styles.label}>Teléfono *</Text>
-          <TextInput style={[styles.input, errors.phone ? styles.inputError : undefined]} placeholder="Ej: 8091234567" value={form.phone} onChangeText={(text) => setForm({ ...form, phone: text })} keyboardType="phone-pad" />
+          <FormInput testID={adminTestIds.nurses.create.phoneInput} style={[styles.input, errors.phone ? styles.inputError : undefined]} placeholder="Ej: 8091234567" value={form.phone} onChangeText={(text) => setForm({ ...form, phone: text })} keyboardType="phone-pad" />
 
           <Text style={styles.label}>Correo electrónico *</Text>
-          <TextInput style={[styles.input, errors.email ? styles.inputError : undefined]} placeholder="Enfermera@correo.com" value={form.email} onChangeText={(text) => setForm({ ...form, email: text })} keyboardType="email-address" autoCapitalize="none" />
+          <FormInput testID={adminTestIds.nurses.create.emailInput} style={[styles.input, errors.email ? styles.inputError : undefined]} placeholder="Enfermera@correo.com" value={form.email} onChangeText={(text) => setForm({ ...form, email: text })} keyboardType="email-address" autoCapitalize="none" />
 
           <View style={styles.row}>
             <View style={styles.col}>
               <Text style={styles.label}>Contraseña *</Text>
-              <TextInput style={[styles.input, errors.password ? styles.inputError : undefined]} placeholder="****" value={form.password} onChangeText={(text) => setForm({ ...form, password: text })} secureTextEntry />
+              <FormInput testID={adminTestIds.nurses.create.passwordInput} style={[styles.input, errors.password ? styles.inputError : undefined]} placeholder="****" value={form.password} onChangeText={(text) => setForm({ ...form, password: text })} secureTextEntry />
             </View>
             <View style={styles.col}>
               <Text style={styles.label}>Confirmar *</Text>
-              <TextInput style={[styles.input, errors.confirmPassword ? styles.inputError : undefined]} placeholder="****" value={form.confirmPassword} onChangeText={(text) => setForm({ ...form, confirmPassword: text })} secureTextEntry />
+              <FormInput testID={adminTestIds.nurses.create.confirmPasswordInput} style={[styles.input, errors.confirmPassword ? styles.inputError : undefined]} placeholder="****" value={form.confirmPassword} onChangeText={(text) => setForm({ ...form, confirmPassword: text })} secureTextEntry />
             </View>
           </View>
           {(errors.password || errors.confirmPassword) && <Text style={styles.errorText}>Revise que las contraseñas coincidan y tengan mínimo 8 caracteres.</Text>}
@@ -175,7 +177,8 @@ export default function AdminCreateNurseProfileScreen() {
               </Pressable>
             ))}
           </View>
-          <TextInput
+          <FormInput
+            testID={adminTestIds.nurses.create.categoryInput}
             style={[styles.input, activeCategoryIsCustom ? styles.inputActive : undefined, errors.category ? styles.inputError : undefined]}
             placeholder="Otra categoría"
             value={activeCategoryIsCustom ? form.category : customCategory}
@@ -189,19 +192,19 @@ export default function AdminCreateNurseProfileScreen() {
           <View style={styles.row}>
             <View style={styles.col}>
               <Text style={styles.label}>Especialidad *</Text>
-              <TextInput style={[styles.input, errors.specialty ? styles.inputError : undefined]} placeholder="Ej: Pediatría" value={form.specialty} onChangeText={(text) => setForm({ ...form, specialty: text })} />
+              <FormInput testID={adminTestIds.nurses.create.specialtyInput} style={[styles.input, errors.specialty ? styles.inputError : undefined]} placeholder="Ej: Pediatría" value={form.specialty} onChangeText={(text) => setForm({ ...form, specialty: text })} />
             </View>
             <View style={styles.col}>
               <Text style={styles.label}>Licencia / Exequátur</Text>
-              <TextInput style={styles.input} placeholder="(Opcional)" value={form.licenseId ?? ""} onChangeText={(text) => setForm({ ...form, licenseId: text })} />
+              <FormInput testID={adminTestIds.nurses.create.licenseInput} style={styles.input} placeholder="(Opcional)" value={form.licenseId ?? ""} onChangeText={(text) => setForm({ ...form, licenseId: text })} />
             </View>
           </View>
 
           <Text style={styles.label}>Fecha de contratación *</Text>
           {Platform.OS === "web" ? (
-             <TextInput style={[styles.input, errors.hireDate ? styles.inputError : undefined]} value={form.hireDate} onChangeText={(text) => setForm({ ...form, hireDate: text })} {...({ type: "date" } as any)} />
+             <FormInput testID={adminTestIds.nurses.create.hireDateInput} style={[styles.input, errors.hireDate ? styles.inputError : undefined]} value={form.hireDate} onChangeText={(text) => setForm({ ...form, hireDate: text })} {...({ type: "date" } as any)} />
           ) : (
-            <TextInput style={[styles.input, errors.hireDate ? styles.inputError : undefined]} placeholder="YYYY-MM-DD" value={form.hireDate} onChangeText={(text) => setForm({ ...form, hireDate: text })} />
+            <FormInput testID={adminTestIds.nurses.create.hireDateInput} style={[styles.input, errors.hireDate ? styles.inputError : undefined]} placeholder="YYYY-MM-DD" value={form.hireDate} onChangeText={(text) => setForm({ ...form, hireDate: text })} />
           )}
         </View>
 
@@ -214,11 +217,11 @@ export default function AdminCreateNurseProfileScreen() {
           {showBankingInfo && (
             <View style={styles.accordionContent}>
               <Text style={styles.label}>Nombre del Banco</Text>
-              <TextInput style={[styles.input, errors.bankName ? styles.inputError : undefined]} placeholder="Ej: Banreservas" value={form.bankName} onChangeText={(text) => setForm({ ...form, bankName: text })} />
+              <FormInput testID={adminTestIds.nurses.create.bankNameInput} style={[styles.input, errors.bankName ? styles.inputError : undefined]} placeholder="Ej: Banreservas" value={form.bankName} onChangeText={(text) => setForm({ ...form, bankName: text })} />
               {errors.bankName && <Text style={styles.errorText}>{errors.bankName}</Text>}
-              
+
               <Text style={styles.label}>Número de Cuenta</Text>
-              <TextInput style={styles.input} placeholder="Número de cuenta bancaria" value={form.accountNumber ?? ""} onChangeText={(text) => setForm({ ...form, accountNumber: text })} keyboardType="numeric" />
+              <FormInput testID={adminTestIds.nurses.create.accountNumberInput} style={styles.input} placeholder="Número de cuenta bancaria" value={form.accountNumber ?? ""} onChangeText={(text) => setForm({ ...form, accountNumber: text })} keyboardType="numeric" />
             </View>
           )}
         </View>
@@ -228,7 +231,13 @@ export default function AdminCreateNurseProfileScreen() {
 
       {/* STICKY FOOTER */}
       <View style={styles.stickyFooter}>
-        <Pressable style={styles.buttonPrimary} onPress={handleSubmit} disabled={submitting}>
+        <Pressable
+          testID={adminTestIds.nurses.create.submitButton}
+          nativeID={adminTestIds.nurses.create.submitButton}
+          style={styles.buttonPrimary}
+          onPress={handleSubmit}
+          disabled={submitting}
+        >
           <Text style={styles.buttonPrimaryText}>{submitting ? "Procesando..." : "Registrar Enfermera"}</Text>
         </Pressable>
       </View>

@@ -10,7 +10,8 @@ import {
   getLocalHttpsCertificateWarning,
   getMobileApiBaseUrl,
 } from "@/src/services/authService";
-import { authTestIds, testProps } from "@/src/testing/authTestIds";
+import { authTestIds } from "@/src/testing/authTestIds";
+import { testProps } from "@/src/testing/testIds";
 import { formatRoleLabels } from "@/src/utils/roleLabels";
 import { hapticFeedback } from "@/src/utils/haptics";
 import { mobilePrimaryButton, mobileSecondaryButton, mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";

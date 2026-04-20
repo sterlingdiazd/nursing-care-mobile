@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
@@ -30,7 +29,9 @@ import {
 import { getNurseProfileOptions } from "@/src/services/catalogOptionsService";
 import type { CatalogCodeNameOption } from "@/src/types/catalog";
 import { hapticFeedback } from "@/src/utils/haptics";
-import { authTestIds, testProps } from "@/src/testing/authTestIds";
+import { authTestIds } from "@/src/testing/authTestIds";
+import { FormButton, FormInput } from "@/src/components/form";
+import { testProps } from "@/src/testing/testIds";
 
 const clientProfileCopy =
   "Perfil de cliente seleccionado. No hay campos adicionales por completar en esta etapa y el acceso operativo queda disponible cuando termine el registro.";
@@ -287,7 +288,8 @@ export default function RegisterScreen() {
       {/* Email Input */}
       <View style={styles.formGroup}>
         <Text style={styles.label}>Nombre</Text>
-        <TextInput
+        <FormInput
+          testID={authTestIds.register.nameInput}
           style={[styles.input, nameError ? styles.inputError : null]}
           placeholder="Tu nombre"
           value={name}
@@ -299,12 +301,13 @@ export default function RegisterScreen() {
           editable={!isLoading}
           placeholderTextColor="#999"
         />
-        {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
+        {nameError ? <Text style={styles.errorText} {...testProps(authTestIds.register.nameError)}>{nameError}</Text> : null}
       </View>
 
       <View style={styles.formGroup}>
         <Text style={styles.label}>Apellido</Text>
-        <TextInput
+        <FormInput
+          testID={authTestIds.register.lastNameInput}
           style={[styles.input, lastNameError ? styles.inputError : null]}
           placeholder="Tu apellido"
           value={lastName}
@@ -316,12 +319,13 @@ export default function RegisterScreen() {
           editable={!isLoading}
           placeholderTextColor="#999"
         />
-        {lastNameError ? <Text style={styles.errorText}>{lastNameError}</Text> : null}
+        {lastNameError ? <Text style={styles.errorText} {...testProps(authTestIds.register.lastNameError)}>{lastNameError}</Text> : null}
       </View>
 
       <View style={styles.formGroup}>
         <Text style={styles.label}>Cédula</Text>
-        <TextInput
+        <FormInput
+          testID={authTestIds.register.identificationInput}
           style={[styles.input, identificationNumberError ? styles.inputError : null]}
           placeholder="00112345678"
           value={identificationNumber}
@@ -336,13 +340,14 @@ export default function RegisterScreen() {
           placeholderTextColor="#999"
         />
         {identificationNumberError ? (
-          <Text style={styles.errorText}>{identificationNumberError}</Text>
+          <Text style={styles.errorText} {...testProps(authTestIds.register.identificationError)}>{identificationNumberError}</Text>
         ) : null}
       </View>
 
       <View style={styles.formGroup}>
         <Text style={styles.label}>Telefono</Text>
-        <TextInput
+        <FormInput
+          testID={authTestIds.register.phoneInput}
           style={[styles.input, phoneError ? styles.inputError : null]}
           placeholder="8095550101"
           value={phone}
@@ -356,12 +361,13 @@ export default function RegisterScreen() {
           editable={!isLoading}
           placeholderTextColor="#999"
         />
-        {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
+        {phoneError ? <Text style={styles.errorText} {...testProps(authTestIds.register.phoneError)}>{phoneError}</Text> : null}
       </View>
 
       <View style={styles.formGroup}>
         <Text style={styles.label}>Correo</Text>
-        <TextInput
+        <FormInput
+          testID={authTestIds.register.emailInput}
           style={[styles.input, emailError ? styles.inputError : null]}
           placeholder="tu@correo.com"
           value={effectiveEmail}
@@ -372,14 +378,15 @@ export default function RegisterScreen() {
           editable={!isLoading && !isProfileCompletionMode}
           placeholderTextColor="#999"
         />
-        {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+        {emailError ? <Text style={styles.errorText} {...testProps(authTestIds.register.emailError)}>{emailError}</Text> : null}
       </View>
 
       {!isProfileCompletionMode && (
         <>
           <View style={styles.formGroup}>
             <Text style={styles.label}>Contrasena</Text>
-            <TextInput
+            <FormInput
+              testID={authTestIds.register.passwordInput}
               style={[styles.input, passwordError ? styles.inputError : null]}
               placeholder="Minimo 6 caracteres"
               value={password}
@@ -389,12 +396,13 @@ export default function RegisterScreen() {
               editable={!isLoading}
               placeholderTextColor="#999"
             />
-            {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+            {passwordError ? <Text style={styles.errorText} {...testProps(authTestIds.register.passwordError)}>{passwordError}</Text> : null}
           </View>
 
           <View style={styles.formGroup}>
             <Text style={styles.label}>Confirmar contrasena</Text>
-            <TextInput
+            <FormInput
+              testID={authTestIds.register.confirmPasswordInput}
               style={[styles.input, confirmPasswordError ? styles.inputError : null]}
               placeholder="Vuelve a escribir tu contrasena"
               value={confirmPassword}
@@ -404,7 +412,7 @@ export default function RegisterScreen() {
               editable={!isLoading}
               placeholderTextColor="#999"
             />
-            {confirmPasswordError ? <Text style={styles.errorText}>{confirmPasswordError}</Text> : null}
+            {confirmPasswordError ? <Text style={styles.errorText} {...testProps(authTestIds.register.confirmPasswordError)}>{confirmPasswordError}</Text> : null}
           </View>
         </>
       )}
@@ -477,7 +485,8 @@ export default function RegisterScreen() {
 
           <View style={styles.formGroup}>
             <Text style={styles.label}>Fecha de contratacion</Text>
-            <TextInput
+            <FormInput
+              testID={authTestIds.register.hireDateInput}
               style={[styles.input, hireDateError ? styles.inputError : null]}
               placeholder="2026-03-21"
               value={hireDate}
@@ -520,7 +529,8 @@ export default function RegisterScreen() {
 
           <View style={styles.formGroup}>
             <Text style={styles.label}>Licencia</Text>
-            <TextInput
+            <FormInput
+              testID="register-license-input"
               style={[styles.input, licenseIdError ? styles.inputError : null]}
               placeholder="Opcional"
               value={licenseId}
@@ -538,7 +548,8 @@ export default function RegisterScreen() {
 
           <View style={styles.formGroup}>
             <Text style={styles.label}>Banco</Text>
-            <TextInput
+            <FormInput
+              testID="register-bank-name-input"
               style={[styles.input, bankNameError ? styles.inputError : null]}
               placeholder="Banco principal"
               value={bankName}
@@ -555,7 +566,8 @@ export default function RegisterScreen() {
 
           <View style={styles.formGroup}>
             <Text style={styles.label}>Numero de cuenta</Text>
-            <TextInput
+            <FormInput
+              testID="register-account-number-input"
               style={[styles.input, accountNumberError ? styles.inputError : null]}
               placeholder="Opcional"
               value={accountNumber}
@@ -583,7 +595,8 @@ export default function RegisterScreen() {
       ) : null}
 
       {/* Submit Button */}
-      <TouchableOpacity
+      <FormButton
+        testID={authTestIds.register.submitButton}
         style={[styles.button, isLoading ? styles.buttonDisabled : null]}
         onPress={() => {
           hapticFeedback.light();
@@ -596,7 +609,7 @@ export default function RegisterScreen() {
         ) : (
           <Text style={styles.buttonText}>{isProfileCompletionMode ? "Completar registro" : "Crear cuenta"}</Text>
         )}
-      </TouchableOpacity>
+      </FormButton>
 
       {!isProfileCompletionMode && (
         <>
@@ -606,7 +619,8 @@ export default function RegisterScreen() {
             <View style={styles.dividerLine} />
           </View>
 
-          <TouchableOpacity
+          <FormButton
+            testID={authTestIds.register.googleButton}
             style={[styles.secondaryButton, isLoading ? styles.buttonDisabled : null]}
             onPress={() => {
               hapticFeedback.light();
@@ -615,7 +629,7 @@ export default function RegisterScreen() {
             disabled={isLoading}
           >
             <Text style={styles.secondaryButtonText}>Continuar con Google</Text>
-          </TouchableOpacity>
+          </FormButton>
 
           <Text style={styles.secondaryHint}>
             Google te llevara a completar este mismo formulario antes de usar la app.
