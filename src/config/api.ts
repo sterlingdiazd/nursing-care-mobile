@@ -12,15 +12,18 @@ import { Platform } from "react-native";
  * 4. Default sslip.io URL
  */
 const getApiBaseUrl = (): string => {
-  // Priority 1: Web platform always uses localhost (Expo web = dev/automation only)
+  const apiPort = process.env.EXPO_PUBLIC_API_PORT || "5050";
+  const defaultLocalUrl = `http://localhost:${apiPort}`;
+
+  // Priority 1: Web platform uses localhost (Expo web = dev/automation only)
   if (Platform.OS === "web") {
-    return "http://localhost:5050";
+    return defaultLocalUrl;
   }
 
   // Priority 2: User-set environment variable (mobile devices)
   // Only use if it's explicitly set and not empty
   const envUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
-  if (envUrl && envUrl.trim() && envUrl.trim() !== "http://localhost:5050") {
+  if (envUrl && envUrl.trim() && envUrl.trim() !== defaultLocalUrl) {
     return envUrl.trim();
   }
 
@@ -55,12 +58,12 @@ const getApiBaseUrl = (): string => {
   // Construct URL using detected IP (convert to sslip.io domain for HTTPS)
   if (hostIp && hostIp !== "localhost" && hostIp !== "127.0.0.1") {
     const dynamicDomain = hostIp.replace(/\./g, "-") + ".sslip.io";
-    return `https://${dynamicDomain}:5050`;
+    return `https://${dynamicDomain}:${apiPort}`;
   }
 
   // Priority 4: Fallback with reasonable defaults
   // This will be used if IP detection fails completely
-  return "https://10-0-0-34.sslip.io:5050";
+  return `https://10-0-0-34.sslip.io:${apiPort}`;
 };
 
 export const API_BASE_URL = getApiBaseUrl();
