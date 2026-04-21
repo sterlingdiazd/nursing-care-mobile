@@ -223,6 +223,8 @@ export default function CareRequestDetailScreen() {
   return (
     <>
     <MobileWorkspaceShell
+      testID="care-detail-page"
+      nativeID="care-detail-page"
       eyebrow="Detalle de solicitud"
       title="Revisa contexto, estado y transiciones."
       description="El detalle concentra la lectura operativa y las acciones permitidas segun el rol actual."
@@ -408,7 +410,8 @@ export default function CareRequestDetailScreen() {
           <View style={styles.pricingSection}>
             <Pressable
               onPress={runPricingVerification}
-              testID="verify-pricing-btn"
+              testID="price-breakdown-verify-button"
+              nativeID="price-breakdown-verify-button"
               style={({ pressed }) => [
                 styles.secondaryButton,
                 styles.pricingButton,
@@ -492,11 +495,13 @@ export default function CareRequestDetailScreen() {
       presentationStyle="pageSheet"
       onRequestClose={() => setPricingModalVisible(false)}
     >
-      <View style={styles.pricingModalContainer}>
+      <View style={styles.pricingModalContainer} testID="price-verification-modal" nativeID="price-verification-modal">
         <View style={styles.pricingModalHeader}>
           <Text style={styles.pricingModalTitle}>Verificacion de precios</Text>
           <Pressable
             onPress={() => setPricingModalVisible(false)}
+            testID="price-verification-close-button"
+            nativeID="price-verification-close-button"
             style={({ pressed }) => [pressed && styles.buttonPressed]}
           >
             <Text style={styles.pricingModalClose}>Cerrar</Text>
@@ -516,10 +521,10 @@ export default function CareRequestDetailScreen() {
           )}
 
           {pricingResult && pricingResult.matches && (
-            <View style={styles.pricingSuccessCard}>
+            <View style={styles.pricingSuccessCard} testID="price-verification-success" nativeID="price-verification-success">
               <Text style={styles.pricingSuccessText}>Todos los valores coinciden</Text>
               {pricingResult.limitationNotes.length > 0 && (
-                <View style={styles.pricingNotesList}>
+                <View style={styles.pricingNotesList} testID="price-verification-limitation" nativeID="price-verification-limitation">
                   {pricingResult.limitationNotes.map((note, i) => (
                     <Text key={i} style={styles.pricingNoteItem}>{note}</Text>
                   ))}
@@ -529,7 +534,7 @@ export default function CareRequestDetailScreen() {
           )}
 
           {pricingResult && !pricingResult.matches && (
-            <View style={styles.pricingDiscrepancyCard}>
+            <View style={styles.pricingDiscrepancyCard} testID="price-verification-discrepancies" nativeID="price-verification-discrepancies">
               <Text style={styles.pricingDiscrepancyTitle}>Discrepancias encontradas</Text>
               <View style={styles.pricingTableHeader}>
                 <Text style={[styles.pricingTableCell, styles.pricingTableHeaderText]}>Campo</Text>

@@ -32,6 +32,8 @@ interface MobileWorkspaceShellProps {
   description: string;
   actions?: ReactNode;
   children: ReactNode;
+  testID?: string;
+  nativeID?: string;
 }
 
 interface NavigationItem {
@@ -151,6 +153,8 @@ export default function MobileWorkspaceShell({
   description,
   actions,
   children,
+  testID,
+  nativeID,
 }: MobileWorkspaceShellProps) {
   const pathname = usePathname();
   const {
@@ -352,7 +356,7 @@ export default function MobileWorkspaceShell({
   );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]} testID={testID} nativeID={nativeID}>
       {!isWideLayout && (
         <Modal
           visible={drawerOpen}

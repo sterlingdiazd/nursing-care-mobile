@@ -240,6 +240,8 @@ export interface AdminCareRequestPricingBreakdownDto {
   complexityLevel: string | null;
   complexityFactorValue: number;
   volumeDiscountPercent: number;
+  lineBeforeVolumeDiscount?: number | null;
+  unitPriceAfterVolumeDiscount?: number | null;
   subtotalBeforeSupplies: number;
   medicalSuppliesCost: number;
   total: number;
@@ -250,6 +252,19 @@ export interface AdminCareRequestTimelineEventDto {
   title: string;
   description: string;
   occurredAtUtc: string;
+}
+
+interface AdminCareRequestBillingInfoDto {
+  invoiceNumber?: string | null;
+  invoicedAtUtc?: string | null;
+  paidAtUtc?: string | null;
+  voidedAtUtc?: string | null;
+  voidReason?: string | null;
+  bankReference?: string | null;
+  validationDate?: string | null;
+  receiptNumber?: string | null;
+  receiptId?: string | null;
+  receiptGeneratedAtUtc?: string | null;
 }
 
 export interface AdminCareRequestDetailDto {
@@ -290,6 +305,25 @@ export interface AdminCareRequestDetailDto {
   receiptGeneratedAtUtc?: string;
   pricingBreakdown: AdminCareRequestPricingBreakdownDto;
   timeline: AdminCareRequestTimelineEventDto[];
+  billingInfo?: AdminCareRequestBillingInfoDto | null;
+}
+
+function normalizeAdminCareRequestDetail(
+  detail: AdminCareRequestDetailDto,
+): AdminCareRequestDetailDto {
+  const billingInfo = detail.billingInfo ?? null;
+
+  return {
+    ...detail,
+    invoiceNumber: detail.invoiceNumber ?? billingInfo?.invoiceNumber ?? undefined,
+    invoicedAtUtc: detail.invoicedAtUtc ?? billingInfo?.invoicedAtUtc ?? undefined,
+    bankReference: detail.bankReference ?? billingInfo?.bankReference ?? undefined,
+    paidAtUtc: detail.paidAtUtc ?? billingInfo?.paidAtUtc ?? undefined,
+    voidReason: detail.voidReason ?? billingInfo?.voidReason ?? undefined,
+    voidedAtUtc: detail.voidedAtUtc ?? billingInfo?.voidedAtUtc ?? undefined,
+    receiptNumber: detail.receiptNumber ?? billingInfo?.receiptNumber ?? undefined,
+    receiptGeneratedAtUtc: detail.receiptGeneratedAtUtc ?? billingInfo?.receiptGeneratedAtUtc ?? undefined,
+  };
 }
 
 export interface AdminCareRequestClientOptionDto {
@@ -326,11 +360,13 @@ export async function getAdminCareRequests(params?: { view?: AdminCareRequestVie
 }
 
 export async function getAdminCareRequestDetail(id: string) {
-  return requestJson<AdminCareRequestDetailDto>({
+  const response = await requestJson<AdminCareRequestDetailDto>({
     path: `/api/admin/care-requests/${id}`,
     method: "GET",
     auth: true,
   });
+
+  return normalizeAdminCareRequestDetail(response);
 }
 
 export async function getAdminCareRequestClients(search?: string) {
@@ -1409,4 +1445,3 @@ export function getAdminReportExportUrl(key: string, params?: { from?: string; t
   const suffix = searchParams.toString();
   return `${baseUrl}/api/admin/reports/${key}/export${suffix ? `?${suffix}` : ""}`;
 }
-

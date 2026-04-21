@@ -4,7 +4,7 @@
 // @do-not-edit: false
 
 import { useEffect, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
@@ -17,6 +17,23 @@ import {
   voidCareRequest,
   type AdminCareRequestDetailDto,
 } from "@/src/services/adminPortalService";
+import {
+  verifyCareRequestPricing,
+  type PricingVerificationResult,
+} from "@/src/services/careRequestService";
+
+function automationProps(testId: string) {
+  return {
+    testID: testId,
+    nativeID: testId,
+    ...(Platform.OS === "web"
+      ? ({
+          id: testId,
+          "data-testid": testId,
+        } as any)
+      : null),
+  };
+}
 
 function formatTimestamp(value: string | null | undefined) {
   if (!value) return "N/A";
@@ -25,6 +42,10 @@ function formatTimestamp(value: string | null | undefined) {
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP" }).format(value);
+}
+
+function formatCurrencyOrNA(value: number | null | undefined) {
+  return value == null ? "N/A" : formatCurrency(value);
 }
 
 function statusLabel(status: string) {
@@ -61,6 +82,10 @@ export default function AdminCareRequestDetailScreen() {
   const [activeModal, setActiveModal] = useState<BillingModal>(null);
   const [billingInput, setBillingInput] = useState("");
   const [billingLoading, setBillingLoading] = useState(false);
+  const [pricingModalVisible, setPricingModalVisible] = useState(false);
+  const [isPricingLoading, setIsPricingLoading] = useState(false);
+  const [pricingError, setPricingError] = useState<string | null>(null);
+  const [pricingResult, setPricingResult] = useState<PricingVerificationResult | null>(null);
 
   const load = async () => {
     if (!id) return;
@@ -106,13 +131,16 @@ export default function AdminCareRequestDetailScreen() {
     }
     if (!id) return;
     try {
+      setError(null);
       setBillingLoading(true);
       await invoiceCareRequest(id, billingInput.trim());
       setActiveModal(null);
       Alert.alert("Éxito", "Solicitud facturada correctamente.");
       void load();
     } catch (err) {
-      Alert.alert("Error", err instanceof Error ? err.message : "No fue posible facturar la solicitud.");
+      const nextError = err instanceof Error ? err.message : "No fue posible facturar la solicitud.";
+      setError(nextError);
+      Alert.alert("Error", nextError);
     } finally {
       setBillingLoading(false);
     }
@@ -125,13 +153,16 @@ export default function AdminCareRequestDetailScreen() {
     }
     if (!id) return;
     try {
+      setError(null);
       setBillingLoading(true);
       await payCareRequest(id, billingInput.trim());
       setActiveModal(null);
       Alert.alert("Éxito", "Pago registrado correctamente.");
       void load();
     } catch (err) {
-      Alert.alert("Error", err instanceof Error ? err.message : "No fue posible registrar el pago.");
+      const nextError = err instanceof Error ? err.message : "No fue posible registrar el pago.";
+      setError(nextError);
+      Alert.alert("Error", nextError);
     } finally {
       setBillingLoading(false);
     }
@@ -144,13 +175,16 @@ export default function AdminCareRequestDetailScreen() {
     }
     if (!id) return;
     try {
+      setError(null);
       setBillingLoading(true);
       await voidCareRequest(id, billingInput.trim());
       setActiveModal(null);
       Alert.alert("Éxito", "Solicitud anulada correctamente.");
       void load();
     } catch (err) {
-      Alert.alert("Error", err instanceof Error ? err.message : "No fue posible anular la solicitud.");
+      const nextError = err instanceof Error ? err.message : "No fue posible anular la solicitud.";
+      setError(nextError);
+      Alert.alert("Error", nextError);
     } finally {
       setBillingLoading(false);
     }
@@ -159,14 +193,33 @@ export default function AdminCareRequestDetailScreen() {
   const handleGenerateReceipt = async () => {
     if (!id) return;
     try {
+      setError(null);
       setBillingLoading(true);
       await generateReceipt(id);
       Alert.alert("Éxito", "Recibo generado correctamente.");
       void load();
     } catch (err) {
-      Alert.alert("Error", err instanceof Error ? err.message : "No fue posible generar el recibo.");
+      const nextError = err instanceof Error ? err.message : "No fue posible generar el recibo.";
+      setError(nextError);
+      Alert.alert("Error", nextError);
     } finally {
       setBillingLoading(false);
+    }
+  };
+
+  const handleVerifyPricing = async () => {
+    if (!id) return;
+    try {
+      setPricingModalVisible(true);
+      setIsPricingLoading(true);
+      setPricingError(null);
+      setPricingResult(null);
+      const result = await verifyCareRequestPricing(id);
+      setPricingResult(result);
+    } catch (err) {
+      setPricingError(err instanceof Error ? err.message : "No fue posible verificar los precios.");
+    } finally {
+      setIsPricingLoading(false);
     }
   };
 
@@ -208,20 +261,34 @@ export default function AdminCareRequestDetailScreen() {
       )}
     >
       <View
-        testID="admin-care-detail-page"
-        nativeID="admin-care-detail-page"
+        {...automationProps("admin-care-detail-page")}
         style={styles.pageRoot}
       >
+      {/* Marker for UC-002 (admin detail page). Must be present even while `detail` is still loading. */}
+      <View
+        {...automationProps("admin-care-request-detail-page")}
+        style={styles.captureMarker}
+      />
       {!loading && detail && (
         <Text
           testID="care-request-detail-loaded"
           nativeID="care-request-detail-loaded"
+          {...(Platform.OS === "web"
+            ? ({
+                id: "care-request-detail-loaded",
+                "data-testid": "care-request-detail-loaded",
+              } as any)
+            : null)}
           style={styles.hiddenMarker}
         >
           {" "}
         </Text>
       )}
-      {!!error && <Text style={styles.error}>{error}</Text>}
+      {!!error && (
+        <Text {...automationProps("admin-care-request-error-banner")} style={styles.error}>
+          {error}
+        </Text>
+      )}
       {loading && <Text style={styles.loading}>Cargando...</Text>}
 
       {/* Billing action modals */}
@@ -317,6 +384,7 @@ export default function AdminCareRequestDetailScreen() {
 
       {detail && (
         <ScrollView
+          // Keep these on the scroll container too for clarity, but the marker above is the capture contract.
           testID="admin-care-request-detail-page"
           nativeID="admin-care-request-detail-page"
         >
@@ -531,6 +599,19 @@ export default function AdminCareRequestDetailScreen() {
             </View>
           )}
 
+          <View style={styles.actionsCard}>
+            <Pressable
+              {...automationProps("price-breakdown-verify-button")}
+              style={[styles.actionButton, styles.actionButtonSecondary]}
+              onPress={() => void handleVerifyPricing()}
+              disabled={isPricingLoading}
+            >
+              <Text style={styles.actionButtonSecondaryText}>
+                {isPricingLoading ? "Verificando..." : "Verificar precios"}
+              </Text>
+            </Pressable>
+          </View>
+
           {/* Pricing Breakdown */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Desglose de Precios</Text>
@@ -564,15 +645,27 @@ export default function AdminCareRequestDetailScreen() {
                 <Text style={styles.fieldValue}>{detail.pricingBreakdown.volumeDiscountPercent}%</Text>
               </View>
             )}
-            <View style={styles.field}>
+            <View {...automationProps("price-breakdown-line-before-discount")} style={styles.field}>
+              <Text style={styles.fieldLabel}>Linea antes de descuento</Text>
+              <Text style={styles.fieldValue}>
+                {formatCurrencyOrNA(detail.pricingBreakdown.lineBeforeVolumeDiscount)}
+              </Text>
+            </View>
+            <View {...automationProps("price-breakdown-unit-price-after-discount")} style={styles.field}>
+              <Text style={styles.fieldLabel}>Precio unitario tras descuento</Text>
+              <Text style={styles.fieldValue}>
+                {formatCurrencyOrNA(detail.pricingBreakdown.unitPriceAfterVolumeDiscount)}
+              </Text>
+            </View>
+            <View {...automationProps("price-breakdown-subtotal-before-supplies")} style={styles.field}>
               <Text style={styles.fieldLabel}>Subtotal antes de suministros</Text>
               <Text style={styles.fieldValue}>{formatCurrency(detail.pricingBreakdown.subtotalBeforeSupplies)}</Text>
             </View>
-            <View style={styles.field}>
+            <View {...automationProps("price-breakdown-medical-supplies")} style={styles.field}>
               <Text style={styles.fieldLabel}>Costo de suministros médicos</Text>
               <Text style={styles.fieldValue}>{formatCurrency(detail.pricingBreakdown.medicalSuppliesCost)}</Text>
             </View>
-            <View style={styles.field}>
+            <View {...automationProps("price-breakdown-total")} style={styles.field}>
               <Text style={styles.fieldLabel}>Total</Text>
               <Text style={[styles.fieldValue, styles.totalValue]}>{formatCurrency(detail.pricingBreakdown.total)}</Text>
             </View>
@@ -627,6 +720,76 @@ export default function AdminCareRequestDetailScreen() {
         </ScrollView>
       )}
       </View>
+
+      <Modal
+        visible={pricingModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setPricingModalVisible(false)}
+      >
+        <View {...automationProps("price-verification-modal")} style={styles.pricingModalContainer}>
+          <View style={styles.pricingModalHeader}>
+            <Text style={styles.pricingModalTitle}>Verificación de precios</Text>
+            <Pressable
+              {...automationProps("price-verification-close-button")}
+              onPress={() => setPricingModalVisible(false)}
+            >
+              <Text style={styles.pricingModalClose}>Cerrar</Text>
+            </Pressable>
+          </View>
+
+          <ScrollView style={styles.pricingModalBody}>
+            {isPricingLoading && (
+              <View style={styles.pricingLoadingRow}>
+                <ActivityIndicator color="#1e40af" />
+                <Text style={styles.pricingLoadingText}>Verificando precios...</Text>
+              </View>
+            )}
+
+            {!!pricingError && (
+              <Text {...automationProps("price-verification-error-banner")} style={styles.pricingErrorText}>
+                {pricingError}
+              </Text>
+            )}
+
+            {pricingResult?.matches && (
+              <View {...automationProps("price-verification-success")} style={styles.pricingSuccessCard}>
+                <Text style={styles.pricingSuccessText}>Todos los valores coinciden</Text>
+                {pricingResult.limitationNotes.length > 0 && (
+                  <View {...automationProps("price-verification-limitation")} style={styles.pricingNotesList}>
+                    {pricingResult.limitationNotes.map((note, index) => (
+                      <Text key={`${note}-${index}`} style={styles.pricingNoteItem}>
+                        {note}
+                      </Text>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
+
+            {pricingResult && !pricingResult.matches && (
+              <View
+                {...automationProps("price-verification-discrepancies")}
+                style={styles.pricingDiscrepancyCard}
+              >
+                <Text style={styles.pricingDiscrepancyTitle}>Discrepancias encontradas</Text>
+                <View style={styles.pricingTableHeader}>
+                  <Text style={[styles.pricingTableCell, styles.pricingTableHeaderText]}>Campo</Text>
+                  <Text style={[styles.pricingTableCell, styles.pricingTableHeaderText]}>Guardado</Text>
+                  <Text style={[styles.pricingTableCell, styles.pricingTableHeaderText]}>Actual</Text>
+                </View>
+                {pricingResult.discrepancies.map((discrepancy, index) => (
+                  <View key={`${discrepancy.fieldName}-${index}`} style={styles.pricingTableRow}>
+                    <Text style={styles.pricingTableCell}>{discrepancy.fieldName}</Text>
+                    <Text style={styles.pricingTableCell}>{discrepancy.storedValue}</Text>
+                    <Text style={styles.pricingTableCell}>{discrepancy.currentValue}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
     </MobileWorkspaceShell>
   );
 }
@@ -637,6 +800,8 @@ const styles = StyleSheet.create({
   error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
   loading: { color: "#52637a", fontSize: 14, textAlign: "center", padding: 20 },
   pageRoot: { flex: 1 },
+  // Must be "visible" for Playwright (non-zero box). Opacity keeps it visually hidden.
+  captureMarker: { position: "absolute", top: 0, left: 0, width: 2, height: 2, opacity: 0.01 },
   hiddenMarker: { height: 0, width: 0, opacity: 0 },
   overdueAlert: { backgroundColor: "#fef3c7", borderRadius: 12, padding: 12, marginBottom: 12 },
   overdueAlertText: { color: "#92400e", fontSize: 14, fontWeight: "700", textAlign: "center" },
@@ -660,6 +825,8 @@ const styles = StyleSheet.create({
   actionButton: { borderRadius: 12, paddingVertical: 14, alignItems: "center" },
   actionButtonPrimary: { backgroundColor: "#1e40af" },
   actionButtonPrimaryText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  actionButtonSecondary: { backgroundColor: "#eff6ff", borderWidth: 1, borderColor: "#bfdbfe" },
+  actionButtonSecondaryText: { color: "#1e40af", fontWeight: "700", fontSize: 15 },
   actionButtonDanger: { backgroundColor: "#fee2e2", borderWidth: 1, borderColor: "#fca5a5" },
   actionButtonDangerText: { color: "#991b1b", fontWeight: "700", fontSize: 15 },
   // Modal styles
@@ -675,4 +842,56 @@ const styles = StyleSheet.create({
   modalButtonSecondary: { backgroundColor: "#f1f5f9", borderWidth: 1, borderColor: "#cbd5e1" },
   modalButtonSecondaryText: { color: "#475569", fontWeight: "700", fontSize: 15 },
   modalButtonDisabled: { opacity: 0.6 },
+  pricingModalContainer: { flex: 1, backgroundColor: "#f8fafc" },
+  pricingModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
+  },
+  pricingModalTitle: { fontSize: 18, fontWeight: "800", color: "#102a43" },
+  pricingModalClose: { fontSize: 16, color: "#1e40af", fontWeight: "700" },
+  pricingModalBody: { flex: 1, padding: 20 },
+  pricingLoadingRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 20 },
+  pricingLoadingText: { color: "#52637a", fontSize: 15 },
+  pricingErrorText: { color: "#991b1b", fontSize: 15, lineHeight: 22 },
+  pricingSuccessCard: {
+    backgroundColor: "#dcfce7",
+    borderRadius: 16,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: "#bbf7d0",
+    gap: 12,
+  },
+  pricingSuccessText: { color: "#166534", fontSize: 16, fontWeight: "800" },
+  pricingNotesList: { gap: 6 },
+  pricingNoteItem: { color: "#166534", fontSize: 14, lineHeight: 20 },
+  pricingDiscrepancyCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#fecaca",
+  },
+  pricingDiscrepancyTitle: { color: "#991b1b", fontSize: 16, fontWeight: "800", marginBottom: 14 },
+  pricingTableHeader: {
+    flexDirection: "row",
+    backgroundColor: "#fef2f2",
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    marginBottom: 4,
+  },
+  pricingTableHeaderText: { color: "#991b1b", fontWeight: "700" },
+  pricingTableRow: {
+    flexDirection: "row",
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: "#fecaca",
+  },
+  pricingTableCell: { flex: 1, fontSize: 13, color: "#334e68" },
 });

@@ -675,6 +675,68 @@ describe("Admin Portal Service - Auth: true Requirement", () => {
       );
     });
 
+    it("getAdminCareRequestDetail should flatten nested billingInfo fields", async () => {
+      const mockRequestJson = vi.mocked(httpClient.requestJson);
+      mockRequestJson.mockResolvedValue({
+        id: "request-123",
+        clientUserId: "client-123",
+        clientDisplayName: "Test Client",
+        clientEmail: "client@example.com",
+        clientIdentificationNumber: null,
+        assignedNurseUserId: "nurse-123",
+        assignedNurseDisplayName: "Test Nurse",
+        assignedNurseEmail: "nurse@example.com",
+        careRequestDescription: "Request detail",
+        careRequestType: "hogar_basico",
+        unit: 1,
+        unitType: "mes",
+        price: 2500,
+        total: 2650,
+        distanceFactor: "local",
+        complexityLevel: "estandar",
+        clientBasePrice: 2500,
+        medicalSuppliesCost: 150,
+        careRequestDate: "2026-04-21",
+        suggestedNurse: null,
+        status: "Invoiced",
+        createdAtUtc: "2026-04-21T12:00:00Z",
+        updatedAtUtc: "2026-04-21T12:05:00Z",
+        approvedAtUtc: "2026-04-21T12:01:00Z",
+        rejectedAtUtc: null,
+        completedAtUtc: "2026-04-21T12:02:00Z",
+        isOverdueOrStale: false,
+        pricingBreakdown: {
+          category: "hogar",
+          basePrice: 2500,
+          categoryFactor: 1,
+          distanceFactor: "local",
+          distanceFactorValue: 1,
+          complexityLevel: "estandar",
+          complexityFactorValue: 1,
+          volumeDiscountPercent: 0,
+          subtotalBeforeSupplies: 2500,
+          medicalSuppliesCost: 150,
+          total: 2650,
+        },
+        timeline: [],
+        billingInfo: {
+          invoiceNumber: "FAC-2026-0001",
+          invoicedAtUtc: "2026-04-21T12:03:00Z",
+          bankReference: "TRF-2026-0001",
+          receiptNumber: "REC-20260421-0001",
+          receiptGeneratedAtUtc: "2026-04-21T12:04:00Z",
+        },
+      });
+
+      const detail = await getAdminCareRequestDetail("request-123");
+
+      expect(detail.invoiceNumber).toBe("FAC-2026-0001");
+      expect(detail.invoicedAtUtc).toBe("2026-04-21T12:03:00Z");
+      expect(detail.bankReference).toBe("TRF-2026-0001");
+      expect(detail.receiptNumber).toBe("REC-20260421-0001");
+      expect(detail.receiptGeneratedAtUtc).toBe("2026-04-21T12:04:00Z");
+    });
+
     it("getAdminCareRequestClients should use auth: true", async () => {
       const mockRequestJson = vi.mocked(httpClient.requestJson);
       mockRequestJson.mockResolvedValue([]);

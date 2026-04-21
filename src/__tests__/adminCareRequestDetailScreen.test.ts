@@ -50,6 +50,8 @@ function makeMockDetail(overrides?: Partial<AdminCareRequestDetailDto>): AdminCa
       complexityLevel: "alto",
       complexityFactorValue: 1.3,
       volumeDiscountPercent: 5,
+      lineBeforeVolumeDiscount: 2340,
+      unitPriceAfterVolumeDiscount: 2223,
       subtotalBeforeSupplies: 4700,
       medicalSuppliesCost: 500,
       total: 5200,
@@ -348,6 +350,8 @@ describe("Admin Care Request Detail Screen - Pricing Breakdown", () => {
     expect(typeof pricingBreakdown.basePrice).toBe("number");
     expect(typeof pricingBreakdown.categoryFactor).toBe("number");
     expect(typeof pricingBreakdown.volumeDiscountPercent).toBe("number");
+    expect(typeof pricingBreakdown.lineBeforeVolumeDiscount).toBe("number");
+    expect(typeof pricingBreakdown.unitPriceAfterVolumeDiscount).toBe("number");
     expect(typeof pricingBreakdown.subtotalBeforeSupplies).toBe("number");
     expect(typeof pricingBreakdown.medicalSuppliesCost).toBe("number");
     expect(typeof pricingBreakdown.total).toBe("number");
@@ -365,6 +369,8 @@ describe("Admin Care Request Detail Screen - Pricing Breakdown", () => {
           complexityLevel: null,
           complexityFactorValue: 1.0,
           volumeDiscountPercent: 0,
+          lineBeforeVolumeDiscount: null,
+          unitPriceAfterVolumeDiscount: null,
           subtotalBeforeSupplies: 1000,
           medicalSuppliesCost: 0,
           total: 1000,
@@ -377,6 +383,8 @@ describe("Admin Care Request Detail Screen - Pricing Breakdown", () => {
     expect(result.pricingBreakdown.distanceFactor).toBeNull();
     expect(result.pricingBreakdown.complexityLevel).toBeNull();
     expect(result.pricingBreakdown.volumeDiscountPercent).toBe(0);
+    expect(result.pricingBreakdown.lineBeforeVolumeDiscount).toBeNull();
+    expect(result.pricingBreakdown.unitPriceAfterVolumeDiscount).toBeNull();
   });
 });
 
