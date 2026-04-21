@@ -161,16 +161,16 @@ export default function AdminPayrollScreen() {
   useEffect(() => {
     switch (activeTab) {
       case "periods":
-        if (!periodList && !periodsLoading) void loadPeriods();
+        if (!periodList) void loadPeriods();
         break;
       case "rules":
-        if (!rules && !rulesLoading) void loadRules();
+        if (!rules) void loadRules();
         break;
       case "deductions":
-        if (!deductions && !deductionsLoading) void loadDeductions();
+        if (!deductions) void loadDeductions();
         break;
       case "adjustments":
-        if (!adjustments && !adjustmentsLoading) void loadAdjustments();
+        if (!adjustments) void loadAdjustments();
         break;
     }
   }, [activeTab, loadPeriods, loadRules, loadDeductions, loadAdjustments]);

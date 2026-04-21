@@ -44,6 +44,25 @@ describe("AdminPayrollScreen", () => {
     expect(component.root.findByProps({ children: "Ajustes" })).toBeTruthy();
   });
 
+  it("loads payroll periods on initial render", async () => {
+    const { getPayrollPeriods, getCompensationRules, getDeductions, getAdjustments } =
+      await import("@/src/services/payrollService");
+
+    vi.mocked(getPayrollPeriods).mockResolvedValue({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 });
+    vi.mocked(getCompensationRules).mockResolvedValue({ items: [], totalCount: 0 });
+    vi.mocked(getDeductions).mockResolvedValue({ items: [], totalCount: 0 });
+    vi.mocked(getAdjustments).mockResolvedValue({ items: [], totalCount: 0 });
+
+    await act(async () => {
+      renderer.create(<AdminPayrollScreen />);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(vi.mocked(getPayrollPeriods)).toHaveBeenCalledTimes(1);
+  });
+
   it("opens confirmation modal and renders summary after recalculation", async () => {
     const {
       getPayrollPeriods,

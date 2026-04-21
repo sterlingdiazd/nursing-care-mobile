@@ -65,6 +65,7 @@ export function PeriodDetail({ period, onClose, onBack }: PeriodDetailProps) {
   const [overrideAmount, setOverrideAmount] = useState("");
   const [overrideReason, setOverrideReason] = useState("");
   const [overrideSubmitting, setOverrideSubmitting] = useState(false);
+  const [immutabilityErrorVisible, setImmutabilityErrorVisible] = useState(false);
 
   // Approve override state
   const [approvingLineId, setApprovingLineId] = useState<string | null>(null);
@@ -98,6 +99,12 @@ export function PeriodDetail({ period, onClose, onBack }: PeriodDetailProps) {
 
   // --- Override modal ---
   const openOverrideModal = (line: AdminPayrollLineItem) => {
+    if (!isOpen) {
+      setImmutabilityErrorVisible(true);
+      return;
+    }
+
+    setImmutabilityErrorVisible(false);
     setOverrideLine(line);
     setOverrideAmount("");
     setOverrideReason("");
@@ -220,6 +227,7 @@ export function PeriodDetail({ period, onClose, onBack }: PeriodDetailProps) {
   const nurseLines = selectedNurseId
     ? period.lines.filter((l) => l.nurseUserId === selectedNurseId)
     : [];
+  const nurseDeductionLines = nurseLines.filter((line) => line.deductionsTotal > 0);
 
   return (
     <>
@@ -236,6 +244,14 @@ export function PeriodDetail({ period, onClose, onBack }: PeriodDetailProps) {
         >
           {" "}
         </Text>
+
+        {immutabilityErrorVisible && (
+          <View style={styles.errorToast} testID="error-toast" nativeID="error-toast">
+            <Text style={styles.errorToastText}>
+              Este período está cerrado. No se pueden registrar modificaciones.
+            </Text>
+          </View>
+        )}
 
         {/* Header */}
         <View style={styles.header}>
@@ -575,34 +591,61 @@ export function PeriodDetail({ period, onClose, onBack }: PeriodDetailProps) {
               </Pressable>
             </View>
 
-            <ScrollView
-              style={styles.nurseDetailScroll}
-              testID="nurse-payroll-services-table"
-              nativeID="nurse-payroll-services-table"
-            >
-              {nurseLines.length === 0 ? (
-                <Text style={styles.emptyText}>Sin líneas para este período.</Text>
-              ) : (
-                nurseLines.map((line) => (
-                  <View key={line.id} style={styles.nurseDetailLine}>
-                    <Text style={styles.nurseDetailDescription} numberOfLines={2}>
-                      {line.description}
-                    </Text>
-                    <View style={styles.nurseDetailAmounts}>
-                      <Text style={styles.nurseDetailLabel}>Base:</Text>
-                      <Text style={styles.nurseDetailValue}>
-                        {new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP" }).format(line.baseCompensation)}
+            <ScrollView style={styles.nurseDetailScroll}>
+              <View
+                testID="nurse-payroll-services-table"
+                nativeID="nurse-payroll-services-table"
+              >
+                <Text style={styles.nurseDetailSectionTitle}>Servicios</Text>
+                {nurseLines.length === 0 ? (
+                  <Text style={styles.emptyText}>Sin líneas para este período.</Text>
+                ) : (
+                  nurseLines.map((line) => (
+                    <View key={line.id} style={styles.nurseDetailLine}>
+                      <Text style={styles.nurseDetailDescription} numberOfLines={2}>
+                        {line.description}
                       </Text>
+                      <View style={styles.nurseDetailAmounts}>
+                        <Text style={styles.nurseDetailLabel}>Base:</Text>
+                        <Text style={styles.nurseDetailValue}>
+                          {new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP" }).format(line.baseCompensation)}
+                        </Text>
+                      </View>
+                      <View style={styles.nurseDetailAmounts}>
+                        <Text style={styles.nurseDetailLabel}>Neto:</Text>
+                        <Text style={[styles.nurseDetailValue, styles.summaryValueGreen]}>
+                          {new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP" }).format(line.netCompensation)}
+                        </Text>
+                      </View>
                     </View>
-                    <View style={styles.nurseDetailAmounts}>
-                      <Text style={styles.nurseDetailLabel}>Neto:</Text>
-                      <Text style={[styles.nurseDetailValue, styles.summaryValueGreen]}>
-                        {new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP" }).format(line.netCompensation)}
+                  ))
+                )}
+              </View>
+
+              <View
+                style={styles.nurseDetailSection}
+                testID="nurse-payroll-deductions-table"
+                nativeID="nurse-payroll-deductions-table"
+              >
+                <Text style={styles.nurseDetailSectionTitle}>Deducciones</Text>
+                {nurseDeductionLines.length === 0 ? (
+                  <Text style={styles.emptyText}>Sin deducciones registradas para este período.</Text>
+                ) : (
+                  nurseDeductionLines.map((line) => (
+                    <View key={`${line.id}-deduction`} style={styles.nurseDetailLine}>
+                      <Text style={styles.nurseDetailDescription} numberOfLines={2}>
+                        {line.description}
                       </Text>
+                      <View style={styles.nurseDetailAmounts}>
+                        <Text style={styles.nurseDetailLabel}>Deducción:</Text>
+                        <Text style={[styles.nurseDetailValue, styles.summaryValueNegative]}>
+                          {new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP" }).format(line.deductionsTotal)}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                ))
-              )}
+                  ))
+                )}
+              </View>
             </ScrollView>
           </View>
         </View>
@@ -620,6 +663,21 @@ const styles = StyleSheet.create({
     height: 0,
     width: 0,
     opacity: 0,
+  },
+  errorToast: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: "#fee2e2",
+    borderWidth: 1,
+    borderColor: "#fecaca",
+  },
+  errorToastText: {
+    color: "#991b1b",
+    fontSize: 13,
+    fontWeight: "600",
   },
   header: {
     padding: 16,
@@ -980,6 +1038,15 @@ const styles = StyleSheet.create({
   nurseDetailScroll: {
     flexGrow: 0,
   },
+  nurseDetailSection: {
+    marginTop: 20,
+  },
+  nurseDetailSectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#0f172a",
+    marginBottom: 12,
+  },
   nurseDetailLine: {
     paddingVertical: 10,
     borderBottomWidth: 1,
@@ -1003,5 +1070,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
     color: "#0f172a",
+  },
+  summaryValueNegative: {
+    color: "#b91c1c",
   },
 });
