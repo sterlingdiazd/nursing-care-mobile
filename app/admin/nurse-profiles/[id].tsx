@@ -10,6 +10,7 @@ import {
   type NurseProfileAdminRecordDto,
 } from "@/src/services/adminPortalService";
 import { mobileAdminActionButton, mobileAdminActionButtonText } from "@/src/design-system/mobileStyles";
+import { adminTestIds } from "@/src/testing/testIds";
 
 function formatTimestamp(value: string | null) {
   if (!value) return "N/A";
@@ -69,20 +70,35 @@ export default function AdminNurseProfileDetailScreen() {
       eyebrow="Perfil de Enfermera"
       title={detail ? `${detail.name} ${detail.lastName}` : "Cargando..."}
       description="Información completa del perfil de enfermera."
+      testID={adminTestIds.nurses.detailScreen}
+      nativeID={adminTestIds.nurses.detailScreen}
       actions={(
         <View style={styles.headerActions}>
           <Pressable style={styles.button} onPress={() => void load()}>
             <Text style={styles.buttonText}>Actualizar</Text>
           </Pressable>
           {detail && (
-            <Pressable style={styles.buttonPrimary} onPress={() => router.push(`/admin/nurse-profiles/${id}/edit` as any)}>
+            <Pressable
+              testID={adminTestIds.nurses.detailPrimaryAction}
+              nativeID={adminTestIds.nurses.detailPrimaryAction}
+              style={styles.buttonPrimary}
+              onPress={() => router.push(`/admin/nurse-profiles/${id}/edit` as any)}
+            >
               <Text style={styles.buttonPrimaryText}>Editar</Text>
             </Pressable>
           )}
         </View>
       )}
     >
-      {!!error && <Text style={styles.error}>{error}</Text>}
+      {!!error && (
+        <Text
+          testID={adminTestIds.nurses.detailErrorBanner}
+          nativeID={adminTestIds.nurses.detailErrorBanner}
+          style={styles.error}
+        >
+          {error}
+        </Text>
+      )}
       {loading && <Text style={styles.loading}>Cargando...</Text>}
 
       {detail && (
@@ -106,6 +122,13 @@ export default function AdminNurseProfileDetailScreen() {
                 </View>
               )}
             </View>
+            <Text
+              testID={adminTestIds.nurses.detailStatusChip}
+              nativeID={adminTestIds.nurses.detailStatusChip}
+              style={styles.statusChip}
+            >
+              Acceso operacional: {detail.nurseProfileIsActive ? "Activo" : "Inactivo"}
+            </Text>
           </View>
 
           {/* Personal Info */}
@@ -229,6 +252,8 @@ export default function AdminNurseProfileDetailScreen() {
             </View>
             
             <Pressable
+              testID={adminTestIds.nurses.detailOperationalToggleButton}
+              nativeID={adminTestIds.nurses.detailOperationalToggleButton}
               style={[styles.toggleButton, toggling && styles.toggleButtonDisabled]}
               onPress={handleToggleOperationalAccess}
               disabled={toggling}
@@ -240,6 +265,8 @@ export default function AdminNurseProfileDetailScreen() {
 
             {detail.isPendingReview && (
               <Pressable
+                testID={adminTestIds.nurses.detailReviewButton}
+                nativeID={adminTestIds.nurses.detailReviewButton}
                 style={styles.reviewButton}
                 onPress={() => router.push(`/admin/nurse-profiles/${id}/review` as any)}
               >
@@ -276,6 +303,7 @@ const styles = StyleSheet.create({
   loading: { color: "#52637a", fontSize: 14, textAlign: "center", padding: 20 },
   statusCard: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
   statusRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  statusChip: { marginTop: 10, alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 12, fontWeight: "800", backgroundColor: "#f8fbff", borderWidth: 1, borderColor: "#dbe5f3", color: "#102a43" },
   badgeSuccess: { backgroundColor: "#d1fae5", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6 },
   badgeTextSuccess: { color: "#065f46", fontSize: 12, fontWeight: "700" },
   badgeWarning: { backgroundColor: "#fef3c7", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6 },

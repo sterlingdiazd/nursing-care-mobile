@@ -10,6 +10,7 @@ import {
   type NurseProfileAdminRecordDto,
   type UpdateNurseProfileRequest,
 } from "@/src/services/adminPortalService";
+import { adminTestIds } from "@/src/testing/testIds";
 
 export default function AdminEditNurseProfileScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
@@ -135,13 +136,37 @@ export default function AdminEditNurseProfileScreen() {
       eyebrow="Editar Perfil"
       title="Editar enfermera"
       description="Actualizar la información del perfil de la enfermera."
+      testID={adminTestIds.nurses.edit.screen}
+      nativeID={adminTestIds.nurses.edit.screen}
     >
-      {!!loadError && <Text style={styles.error}>{loadError}</Text>}
-      {!!submitError && <Text style={styles.error}>{submitError}</Text>}
+      {!!loadError && (
+        <Text
+          testID={adminTestIds.nurses.edit.errorBanner}
+          nativeID={adminTestIds.nurses.edit.errorBanner}
+          style={styles.error}
+        >
+          {loadError}
+        </Text>
+      )}
+      {!!submitError && (
+        <Text
+          testID={adminTestIds.nurses.edit.errorBanner}
+          nativeID={adminTestIds.nurses.edit.errorBanner}
+          style={styles.error}
+        >
+          {submitError}
+        </Text>
+      )}
       {loading && <Text style={styles.loading}>Cargando...</Text>}
 
       <View style={styles.stepIndicator}>
-        <Text style={styles.stepText}>Paso {step} de 3</Text>
+        <Text
+          testID={adminTestIds.nurses.edit.progressChip}
+          nativeID={adminTestIds.nurses.edit.progressChip}
+          style={styles.stepText}
+        >
+          Paso {step} de 3
+        </Text>
       </View>
 
       <ScrollView>

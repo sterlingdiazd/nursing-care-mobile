@@ -83,7 +83,15 @@ export const adminTestIds = {
   },
   nurses: {
     listScreen: "admin-nurse-list-screen",
+    listCreateButton: "admin-nurse-list-create-button",
+    listReadinessChip: "admin-nurse-readiness-chip",
+    listErrorBanner: "admin-nurse-list-error-banner",
     detailScreen: "admin-nurse-detail-screen",
+    detailStatusChip: "admin-nurse-detail-status-chip",
+    detailErrorBanner: "admin-nurse-detail-error-banner",
+    detailPrimaryAction: "admin-nurse-detail-primary-action",
+    detailOperationalToggleButton: "admin-nurse-detail-operational-toggle-button",
+    detailReviewButton: "admin-nurse-detail-review-button",
     create: {
       screen: "admin-nurse-create-screen",
       progressChip: "admin-nurse-create-progress-chip",
@@ -116,6 +124,8 @@ export const adminTestIds = {
     },
     edit: {
       screen: "admin-nurse-edit-screen",
+      progressChip: "admin-nurse-edit-progress-chip",
+      errorBanner: "admin-nurse-edit-error-banner",
       submitButton: "admin-nurse-edit-submit-button",
     },
   },

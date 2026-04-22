@@ -17,6 +17,7 @@ import {
   type ActiveNurseProfileSummaryDto,
   type NurseProfileSummaryDto,
 } from "@/src/services/adminPortalService";
+import { adminTestIds } from "@/src/testing/testIds";
 
 type TabType = "pending" | "active" | "inactive";
 
@@ -67,15 +68,40 @@ export default function AdminNurseProfilesScreen() {
   return (
     <MobileWorkspaceShell
       eyebrow="Perfiles de Enfermeras"
-      title="Gestion de enfermeras"
-      description="Administra perfiles y estado operativo del personal de enfermeria."
+      title="Gestión de enfermeras"
+      description="Administra perfiles y estado operativo del personal de enfermería."
+      testID={adminTestIds.nurses.listScreen}
+      nativeID={adminTestIds.nurses.listScreen}
       actions={(
-        <Pressable style={styles.buttonPrimary} onPress={() => router.push("/admin/nurse-profiles/create" as any)}>
+        <Pressable
+          testID={adminTestIds.nurses.listCreateButton}
+          nativeID={adminTestIds.nurses.listCreateButton}
+          style={styles.buttonPrimary}
+          onPress={() => router.push("/admin/nurse-profiles/create" as any)}
+        >
           <Text style={styles.buttonPrimaryText}>Crear</Text>
         </Pressable>
       )}
     >
-      {!!error && <Text style={styles.error}>{error}</Text>}
+      <View style={styles.summaryRow}>
+        <Text
+          testID={adminTestIds.nurses.listReadinessChip}
+          nativeID={adminTestIds.nurses.listReadinessChip}
+          style={styles.summaryChip}
+        >
+          Pendientes: {pendingItems.length} • Activas: {activeItems.length} • Inactivas: {inactiveItems.length}
+        </Text>
+      </View>
+
+      {!!error && (
+        <Text
+          testID={adminTestIds.nurses.listErrorBanner}
+          nativeID={adminTestIds.nurses.listErrorBanner}
+          style={styles.error}
+        >
+          {error}
+        </Text>
+      )}
 
       <View style={styles.tabs}>
         <Pressable
@@ -125,7 +151,7 @@ export default function AdminNurseProfilesScreen() {
             nativeID={`admin-nurse-profile-pending-card-${item.userId}`}
           >
             <View style={styles.pendingBadge}>
-              <Text style={styles.pendingBadgeText}>⚠️ Pendiente de revisión</Text>
+              <Text style={styles.pendingBadgeText}>Pendiente de revisión</Text>
             </View>
             <Text style={styles.cardTitle}>{item.name} {item.lastName}</Text>
             <Text style={styles.cardMeta}>{item.email}</Text>
@@ -207,6 +233,8 @@ const styles = StyleSheet.create({
   buttonPrimaryText: { color: "#ffffff", fontWeight: "700", fontSize: 14 },
   error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
   loading: { color: "#52637a", fontSize: 14, textAlign: "center", padding: 20 },
+  summaryRow: { marginBottom: 10 },
+  summaryChip: { alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 12, fontWeight: "800", backgroundColor: "#f8fbff", borderWidth: 1, borderColor: "#dbe5f3", color: "#102a43" },
   tabs: { flexDirection: "row", gap: 8, marginBottom: 12 },
   tab: { flex: 1, backgroundColor: "#ffffff", borderRadius: 14, paddingVertical: 12, alignItems: "center", borderWidth: 1, borderColor: "#d1d5db" },
   tabActive: { backgroundColor: "#111827", borderColor: "#111827" },
