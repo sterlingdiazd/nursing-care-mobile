@@ -174,10 +174,10 @@ export default function AdminReviewNurseProfileScreen() {
         )}
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Checklist de aprobacion</Text>
+          <Text style={styles.cardTitle}>Checklist de aprobación</Text>
           <Text style={styles.reviewNote}>
             {reviewProgress.ready
-              ? "La informacion requerida esta completa y la enfermera puede quedar lista para asignaciones."
+              ? "La información requerida está completa y la enfermera puede quedar lista para asignaciones."
               : "Completa estos campos antes de activar a la enfermera para trabajo operativo."}
           </Text>
           {reviewProgress.missingLabels.length > 0 ? (
@@ -196,6 +196,8 @@ export default function AdminReviewNurseProfileScreen() {
 
           <Text style={styles.label}>Especialidad *</Text>
           <TextInput
+            testID={adminTestIds.nurses.review.specialtyInput}
+            nativeID={adminTestIds.nurses.review.specialtyInput}
             style={[styles.input, errors.specialty ? styles.inputError : undefined]}
             placeholder="Especialidad de la enfermera"
             value={form.specialty}
@@ -205,6 +207,8 @@ export default function AdminReviewNurseProfileScreen() {
 
           <Text style={styles.label}>Licencia *</Text>
           <TextInput
+            testID={adminTestIds.nurses.review.licenseInput}
+            nativeID={adminTestIds.nurses.review.licenseInput}
             style={[styles.input, errors.licenseId ? styles.inputError : undefined]}
             placeholder="Número de licencia profesional"
             value={form.licenseId ?? ""}
@@ -214,6 +218,8 @@ export default function AdminReviewNurseProfileScreen() {
 
           <Text style={styles.label}>Banco *</Text>
           <TextInput
+            testID={adminTestIds.nurses.review.bankNameInput}
+            nativeID={adminTestIds.nurses.review.bankNameInput}
             style={[styles.input, errors.bankName ? styles.inputError : undefined]}
             placeholder="Nombre del banco"
             value={form.bankName}
@@ -223,6 +229,8 @@ export default function AdminReviewNurseProfileScreen() {
 
           <Text style={styles.label}>Número de cuenta *</Text>
           <TextInput
+            testID={adminTestIds.nurses.review.accountNumberInput}
+            nativeID={adminTestIds.nurses.review.accountNumberInput}
             style={[styles.input, errors.accountNumber ? styles.inputError : undefined]}
             placeholder="Número de cuenta bancaria"
             value={form.accountNumber ?? ""}
@@ -243,6 +251,8 @@ export default function AdminReviewNurseProfileScreen() {
             ))}
           </View>
           <TextInput
+            testID={adminTestIds.nurses.review.categoryInput}
+            nativeID={adminTestIds.nurses.review.categoryInput}
             style={[styles.input, errors.category ? styles.inputError : undefined]}
             placeholder="Otra categoría profesional"
             value={CATEGORIES.includes(form.category) ? "" : form.category}

@@ -321,6 +321,7 @@ export default function CreateAdminCareRequestScreen() {
                 value: form.careRequestDate,
                 onChange: (e: any) => setForm({ ...form, careRequestDate: e.target.value }),
                 placeholder: "YYYY-MM-DD",
+                "data-testid": adminTestIds.careRequests.create.dateInput,
                 style: {
                   padding: "12px",
                   borderRadius: "12px",
@@ -353,7 +354,17 @@ export default function CreateAdminCareRequestScreen() {
               </View>
             </View>
           ) : (
-            <Pressable onPress={openDatePicker} style={({ pressed }) => [styles.input, styles.datePickerTrigger, pressed && styles.buttonPressed, errors.careRequestDate ? styles.inputError : undefined]}>
+            <Pressable
+              testID={adminTestIds.careRequests.create.dateInput}
+              nativeID={adminTestIds.careRequests.create.dateInput}
+              onPress={openDatePicker}
+              style={({ pressed }) => [
+                styles.input,
+                styles.datePickerTrigger,
+                pressed && styles.buttonPressed,
+                errors.careRequestDate ? styles.inputError : undefined,
+              ]}
+            >
               <Text style={form.careRequestDate ? styles.dateValue : styles.datePlaceholder}>
                 {form.careRequestDate || "Selecciona una fecha"}
               </Text>
@@ -458,11 +469,11 @@ export default function CreateAdminCareRequestScreen() {
         </View>
 
         <View style={styles.reviewCard}>
-          <Text style={styles.cardTitle}>Revision previa</Text>
+          <Text style={styles.cardTitle}>Revisión previa</Text>
           <Text style={styles.reviewHelper}>
             {creationProgress.coreReady
               ? "Verifica estos datos antes de crear la solicitud."
-              : "Completa la informacion clave para desbloquear la revision y los ajustes de precio."}
+              : "Completa la información clave para desbloquear la revisión y los ajustes de precio."}
           </Text>
           <View style={styles.reviewChecklist}>
             {creationProgress.checklist.map((item) => (
@@ -495,7 +506,7 @@ export default function CreateAdminCareRequestScreen() {
           </Pressable>
           {advancedPricingLocked ? (
             <View style={styles.lockedAccordionNotice}>
-              <Text style={styles.lockedAccordionText}>Completa cliente, fecha, tipo, unidades y descripcion antes de ajustar precios.</Text>
+              <Text style={styles.lockedAccordionText}>Completa cliente, fecha, tipo, unidades y descripción antes de ajustar precios.</Text>
             </View>
           ) : null}
 
