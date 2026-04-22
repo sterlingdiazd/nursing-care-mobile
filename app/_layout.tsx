@@ -98,6 +98,26 @@ function RootLayoutNav() {
           options={{ title: "Detalle de solicitud", headerShown: false }}
         />
         <Stack.Screen
+          name="admin/care-requests/[id]"
+          options={{ title: "Detalle administrativo", headerShown: false }}
+        />
+        <Stack.Screen
+          name="admin/care-requests/[id]/invoice"
+          options={{ title: "Emitir factura", headerShown: false }}
+        />
+        <Stack.Screen
+          name="admin/care-requests/[id]/pay"
+          options={{ title: "Registrar pago", headerShown: false }}
+        />
+        <Stack.Screen
+          name="admin/care-requests/[id]/void"
+          options={{ title: "Anular solicitud", headerShown: false }}
+        />
+        <Stack.Screen
+          name="admin/care-requests/[id]/receipt"
+          options={{ title: "Generar recibo", headerShown: false }}
+        />
+        <Stack.Screen
           name="admin/index"
           options={{ title: "Panel administrativo", headerShown: false }}
         />

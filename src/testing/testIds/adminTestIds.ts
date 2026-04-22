@@ -23,6 +23,22 @@ export const adminTestIds = {
       receiptButton: "generate-receipt-button",
       updateButton: "admin-care-detail-update-button",
     },
+    billingRoutes: {
+      backButton: "admin-care-billing-back-button",
+      errorBanner: "admin-care-billing-error-banner",
+      successBanner: "admin-care-billing-success-banner",
+      invoiceScreen: "admin-care-request-invoice-screen",
+      invoiceInput: "admin-care-request-invoice-input",
+      invoiceSubmitButton: "admin-care-request-invoice-submit-button",
+      payScreen: "admin-care-request-pay-screen",
+      payInput: "admin-care-request-pay-input",
+      paySubmitButton: "admin-care-request-pay-submit-button",
+      voidScreen: "admin-care-request-void-screen",
+      voidInput: "admin-care-request-void-input",
+      voidSubmitButton: "admin-care-request-void-submit-button",
+      receiptScreen: "admin-care-request-receipt-screen",
+      receiptSubmitButton: "admin-care-request-receipt-submit-button",
+    },
     create: {
       screen: "admin-care-create-screen",
       clientSearchInput: "admin-care-create-client-search-input",
@@ -88,20 +104,6 @@ export const adminTestIds = {
     overrideRequestButton: "override-request-button",
     errorToast: "error-toast",
     linesTable: "payroll-lines-table",
-  },
-  billingModal: {
-    // UC-004: Invoice
-    invoiceModal: "invoice-modal",
-    invoiceNumberInput: "invoice-number-input",
-    invoiceSubmitButton: "invoice-submit-button",
-    // UC-005: Pay
-    paymentModal: "payment-modal",
-    bankReferenceInput: "bank-reference-input",
-    paymentSubmitButton: "payment-submit-button",
-    // UC-006: Void
-    voidModal: "void-modal",
-    voidReasonInput: "void-reason-input",
-    voidSubmitButton: "void-submit-button",
   },
   users: {
     listScreen: "admin-users-list-screen",

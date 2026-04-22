@@ -5,6 +5,7 @@
 
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { mobilePrimaryButton, mobileSecondarySurface, mobileTheme } from "@/src/design-system/mobileStyles";
 
 export interface SearchFilterBarProps {
   searchPlaceholder: string;
@@ -44,7 +45,7 @@ export default function SearchFilterBar({
             testID="search-filter-bar-clear"
             nativeID="search-filter-bar-clear"
           >
-            <Text style={styles.clearButtonText}>✕</Text>
+            <Text style={styles.clearButtonText}>Limpiar</Text>
           </Pressable>
         )}
         <Pressable
@@ -63,55 +64,51 @@ export default function SearchFilterBar({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#ffffff",
+    backgroundColor: mobileTheme.colors.surface.primary,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 18,
-    padding: 12,
-    marginBottom: 12,
+    borderColor: mobileTheme.colors.border.subtle,
+    borderRadius: mobileTheme.radius.xl,
+    padding: mobileTheme.spacing.lg,
+    marginBottom: mobileTheme.spacing.lg,
   },
   inputRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: mobileTheme.spacing.sm,
   },
   input: {
     flex: 1,
-    backgroundColor: "#f9fafb",
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 14,
+    ...mobileSecondarySurface,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    color: "#111827",
+    color: mobileTheme.colors.ink.primary,
     fontSize: 15,
   },
   clearButton: {
-    backgroundColor: "#f3f4f6",
-    borderRadius: 12,
-    paddingHorizontal: 10,
+    backgroundColor: mobileTheme.colors.surface.tertiary,
+    borderRadius: mobileTheme.radius.md,
+    paddingHorizontal: 12,
     paddingVertical: 10,
   },
   clearButtonText: {
-    color: "#6b7280",
+    color: mobileTheme.colors.ink.secondary,
     fontWeight: "700",
-    fontSize: 14,
+    fontSize: 13,
   },
   searchButton: {
-    backgroundColor: "#007aff",
-    borderRadius: 14,
+    ...mobilePrimaryButton,
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
   searchButtonText: {
-    color: "#ffffff",
+    color: mobileTheme.colors.ink.inverse,
     fontWeight: "700",
     fontSize: 14,
   },
   filtersRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: mobileTheme.spacing.sm,
     marginTop: 10,
   },
 });

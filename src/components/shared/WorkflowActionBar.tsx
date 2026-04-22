@@ -1,4 +1,5 @@
 import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
+import { mobilePrimaryButton, mobileSecondaryButton, mobileTheme } from "@/src/design-system/mobileStyles";
 
 export interface WorkflowAction {
   label: string;
@@ -55,27 +56,30 @@ export default function WorkflowActionBar({ actions }: WorkflowActionBarProps) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
-    gap: 10,
+    gap: mobileTheme.spacing.sm,
     paddingHorizontal: 2,
     paddingVertical: 4,
   },
   button: {
-    borderRadius: 18,
+    borderRadius: mobileTheme.radius.lg,
     paddingVertical: 12,
     paddingHorizontal: 20,
     alignItems: "center",
     justifyContent: "center",
+    minHeight: 48,
   },
   primaryButton: {
-    backgroundColor: "#1d4ed8",
+    ...mobilePrimaryButton,
+    paddingHorizontal: 20,
   },
   dangerButton: {
-    backgroundColor: "#dc2626",
+    backgroundColor: mobileTheme.colors.surface.danger,
+    borderWidth: 1,
+    borderColor: mobileTheme.colors.border.danger,
   },
   secondaryButton: {
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#d1d5db",
+    ...mobileSecondaryButton,
+    paddingHorizontal: 20,
   },
   disabledButton: {
     opacity: 0.45,
@@ -88,15 +92,15 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   primaryButtonText: {
-    color: "#ffffff",
+    color: mobileTheme.colors.ink.inverse,
   },
   dangerButtonText: {
-    color: "#ffffff",
+    color: mobileTheme.colors.status.dangerText,
   },
   secondaryButtonText: {
-    color: "#374151",
+    color: mobileTheme.colors.ink.accentStrong,
   },
   disabledButtonText: {
-    color: "#9ca3af",
+    color: mobileTheme.colors.ink.muted,
   },
 });

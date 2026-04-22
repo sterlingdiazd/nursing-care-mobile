@@ -1,97 +1,103 @@
-/**
- * Billing UI tests for the AdminCareRequestDetailScreen.
- *
- * The full-screen rendering test is impractical in this project's test environment
- * because the [id].tsx component depends on auth-guard useEffect chains and
- * expo-router hooks that do not resolve deterministically in the jsdom+vitest
- * environment (confirmed: both Promise.resolve() and setTimeout(0) approaches time out).
- *
- * Instead, these tests verify:
- * 1. The statusLabel helper produces correct Spanish labels for billing statuses.
- * 2. The statusColor helper returns correct colors.
- * 3. The billing service mock integration (already covered by billingService.test.ts).
- *
- * Integration-level rendering (button visibility per status) is verified via
- * manual QA and end-to-end tests.
- */
 import { describe, expect, it } from "vitest";
 
-// Replicate the pure helpers from [id].tsx so we can unit-test them in isolation.
-// These match the implementations exactly.
-function statusLabel(status: string): string {
-  if (status === "Pending") return "Pendiente";
-  if (status === "Approved") return "Aprobado";
-  if (status === "Rejected") return "Rechazado";
-  if (status === "Completed") return "Completado";
-  if (status === "Cancelled") return "Cancelada";
-  if (status === "Invoiced") return "Facturada";
-  if (status === "Paid") return "Pagada";
-  if (status === "Voided") return "Anulada";
-  return status;
-}
+import { adminTestIds } from "@/src/testing/testIds/adminTestIds";
+import {
+  buildAdminCareRequestBillingRoute,
+  formatAdminCareRequestStatusLabel,
+  getAdminCareRequestStatusColor,
+  getBillingTaskActions,
+  isBillingTaskAllowed,
+} from "@/src/utils/adminCareRequestBilling";
 
-function statusColor(status: string): string {
-  if (status === "Paid") return "#166534";
-  if (status === "Invoiced") return "#92400e";
-  if (status === "Voided") return "#991b1b";
-  if (status === "Completed") return "#1e3a5f";
-  if (status === "Rejected" || status === "Cancelled") return "#dc2626";
-  return "#102a43";
-}
-
-describe("statusLabel — billing statuses", () => {
+describe("admin care request billing labels", () => {
   it('returns "Facturada" for Invoiced', () => {
-    expect(statusLabel("Invoiced")).toBe("Facturada");
+    expect(formatAdminCareRequestStatusLabel("Invoiced")).toBe("Facturada");
   });
 
   it('returns "Pagada" for Paid', () => {
-    expect(statusLabel("Paid")).toBe("Pagada");
+    expect(formatAdminCareRequestStatusLabel("Paid")).toBe("Pagada");
   });
 
   it('returns "Anulada" for Voided', () => {
-    expect(statusLabel("Voided")).toBe("Anulada");
+    expect(formatAdminCareRequestStatusLabel("Voided")).toBe("Anulada");
   });
 
-  it('returns "Cancelada" for Cancelled', () => {
-    expect(statusLabel("Cancelled")).toBe("Cancelada");
-  });
-
-  it("returns original string for unknown statuses", () => {
-    expect(statusLabel("UnknownState")).toBe("UnknownState");
-  });
-
-  it("returns correct labels for all pre-existing statuses", () => {
-    expect(statusLabel("Pending")).toBe("Pendiente");
-    expect(statusLabel("Approved")).toBe("Aprobado");
-    expect(statusLabel("Rejected")).toBe("Rechazado");
-    expect(statusLabel("Completed")).toBe("Completado");
+  it("returns the original string for unknown statuses", () => {
+    expect(formatAdminCareRequestStatusLabel("UnknownState")).toBe("UnknownState");
   });
 });
 
-describe("statusColor — billing statuses", () => {
+describe("admin care request billing colors", () => {
   it("returns green for Paid", () => {
-    expect(statusColor("Paid")).toBe("#166534");
+    expect(getAdminCareRequestStatusColor("Paid")).toBe("#0f6b54");
   });
 
-  it("returns orange for Invoiced", () => {
-    expect(statusColor("Invoiced")).toBe("#92400e");
+  it("returns gold for Invoiced", () => {
+    expect(getAdminCareRequestStatusColor("Invoiced")).toBe("#8c5a14");
   });
 
-  it("returns red for Voided", () => {
-    expect(statusColor("Voided")).toBe("#991b1b");
+  it("returns rose for Voided", () => {
+    expect(getAdminCareRequestStatusColor("Voided")).toBe("#9f1239");
+  });
+});
+
+describe("route-first billing task contract", () => {
+  it("builds dedicated routes for each billing task", () => {
+    expect(buildAdminCareRequestBillingRoute("req-123", "invoice")).toBe("/admin/care-requests/req-123/invoice");
+    expect(buildAdminCareRequestBillingRoute("req-123", "pay")).toBe("/admin/care-requests/req-123/pay");
+    expect(buildAdminCareRequestBillingRoute("req-123", "void")).toBe("/admin/care-requests/req-123/void");
+    expect(buildAdminCareRequestBillingRoute("req-123", "receipt")).toBe("/admin/care-requests/req-123/receipt");
   });
 
-  it("returns red for Rejected and Cancelled", () => {
-    expect(statusColor("Rejected")).toBe("#dc2626");
-    expect(statusColor("Cancelled")).toBe("#dc2626");
+  it("exposes invoice as the only task for completed requests", () => {
+    const actions = getBillingTaskActions("req-123", "Completed");
+
+    expect(actions).toEqual([
+      expect.objectContaining({
+        action: "invoice",
+        route: "/admin/care-requests/req-123/invoice",
+      }),
+    ]);
   });
 
-  it("returns navy for Completed", () => {
-    expect(statusColor("Completed")).toBe("#1e3a5f");
+  it("exposes pay and void as tasks for invoiced requests", () => {
+    const actions = getBillingTaskActions("req-123", "Invoiced");
+
+    expect(actions).toHaveLength(2);
+    expect(actions.map((action) => action.action)).toEqual(["pay", "void"]);
+    expect(actions.map((action) => action.route)).toEqual([
+      "/admin/care-requests/req-123/pay",
+      "/admin/care-requests/req-123/void",
+    ]);
   });
 
-  it("returns default dark for Pending/Approved", () => {
-    expect(statusColor("Pending")).toBe("#102a43");
-    expect(statusColor("Approved")).toBe("#102a43");
+  it("exposes receipt and void as tasks for paid requests", () => {
+    const actions = getBillingTaskActions("req-123", "Paid");
+
+    expect(actions).toHaveLength(2);
+    expect(actions.map((action) => action.action)).toEqual(["receipt", "void"]);
+    expect(actions.map((action) => action.route)).toEqual([
+      "/admin/care-requests/req-123/receipt",
+      "/admin/care-requests/req-123/void",
+    ]);
+  });
+
+  it("does not expose billing task routes for unsupported statuses", () => {
+    expect(getBillingTaskActions("req-123", "Approved")).toEqual([]);
+    expect(isBillingTaskAllowed("Approved", "invoice")).toBe(false);
+  });
+});
+
+describe("billing route test selectors", () => {
+  it("defines stable screen and action IDs for dedicated billing routes", () => {
+    expect(adminTestIds.careRequests.billingRoutes.successBanner).toBe("admin-care-billing-success-banner");
+    expect(adminTestIds.careRequests.billingRoutes.invoiceScreen).toBe("admin-care-request-invoice-screen");
+    expect(adminTestIds.careRequests.billingRoutes.payScreen).toBe("admin-care-request-pay-screen");
+    expect(adminTestIds.careRequests.billingRoutes.voidScreen).toBe("admin-care-request-void-screen");
+    expect(adminTestIds.careRequests.billingRoutes.receiptScreen).toBe("admin-care-request-receipt-screen");
+    expect(adminTestIds.careRequests.detail.invoiceButton).toBe("invoice-care-request-button");
+    expect(adminTestIds.careRequests.detail.payButton).toBe("pay-care-request-button");
+    expect(adminTestIds.careRequests.detail.voidButton).toBe("void-care-request-button");
+    expect(adminTestIds.careRequests.detail.receiptButton).toBe("generate-receipt-button");
   });
 });

@@ -25,24 +25,31 @@ export const mobileSecondarySurface = {
 
 export const mobilePrimaryButton = {
   backgroundColor: mobileTheme.colors.ink.accent,
-  borderRadius: mobileTheme.radius.md,
+  borderRadius: mobileTheme.radius.lg,
   alignItems: "center" as const,
+  justifyContent: "center" as const,
+  minHeight: 48,
+  ...mobileTheme.shadows.accent,
 } as const;
 
 export const mobileSecondaryButton = {
   backgroundColor: mobileTheme.colors.surface.primary,
-  borderRadius: mobileTheme.radius.md,
+  borderRadius: mobileTheme.radius.lg,
   borderWidth: 1,
   borderColor: mobileTheme.colors.border.strong,
   alignItems: "center" as const,
+  justifyContent: "center" as const,
+  minHeight: 48,
 } as const;
 
 export const mobileAdminActionButton = {
   backgroundColor: mobileTheme.colors.surface.secondary,
-  borderRadius: mobileTheme.radius.md,
+  borderRadius: mobileTheme.radius.lg,
   borderWidth: 1,
   borderColor: mobileTheme.colors.border.strong,
   alignItems: "center" as const,
+  justifyContent: "center" as const,
+  minHeight: 48,
 } as const;
 
 export const mobileAdminActionButtonText = {
