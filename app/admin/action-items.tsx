@@ -1,25 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { mobileSecondaryButton, mobileSecondarySurface, mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
 import { useAuth } from "@/src/context/AuthContext";
 import { getAdminActionItems, type AdminActionItemDto } from "@/src/services/adminPortalService";
-
-function resolveMobileDeepLink(path: string) {
-  if (path.includes("/admin/care-requests") && path.includes("selected=")) {
-    const id = path.split("selected=")[1]?.split("&")[0];
-    return id ? `/care-requests/${id}` : "/care-requests";
-  }
-  if (path.startsWith("/admin/care-requests/")) {
-    const id = path.replace("/admin/care-requests/", "").split("?")[0];
-    return `/care-requests/${id}`;
-  }
-  if (path.startsWith("/admin/care-requests")) {
-    return "/care-requests";
-  }
-  return "/admin";
-}
+import { adminTestIds } from "@/src/testing/testIds";
+import {
+  automationProps,
+  getAdminActionItemPrimaryLabel,
+  getAdminActionItemStatusLabel,
+  getAdminSeverityPresentation,
+  resolveAdminOperationalDeepLink,
+  sortAdminActionItems,
+} from "@/src/utils/adminOperationalUx";
 
 export default function AdminActionItemsScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
@@ -33,69 +28,226 @@ export default function AdminActionItemsScreen() {
     if (!roles.includes("ADMIN")) return void router.replace("/");
 
     void getAdminActionItems()
-      .then(setItems)
+      .then((response) => setItems(sortAdminActionItems(response)))
       .catch((nextError) => setError(nextError instanceof Error ? nextError.message : "No fue posible cargar acciones."));
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles]);
 
-  const unreadCount = useMemo(() => items.filter((item) => item.state === "Unread").length, [items]);
+  const unreadCount = items.filter((item) => item.state === "Unread").length;
+  const highSeverityCount = items.filter((item) => item.severity === "High").length;
+  const leadItem = items[0] ?? null;
 
   return (
     <MobileWorkspaceShell
       eyebrow="Cola administrativa"
       title="Acciones pendientes"
-      description="Elementos que requieren seguimiento administrativo."
-      actions={<Pressable style={styles.button} onPress={() => router.push("/admin")}><Text style={styles.buttonText}>Volver al panel</Text></Pressable>}
+      description="Prioriza lo urgente y abre cada caso en su ruta administrativa correcta."
+      actions={
+        <Pressable style={styles.button} onPress={() => router.push("/admin" as any)}>
+          <Text style={styles.buttonText}>Volver al panel</Text>
+        </Pressable>
+      }
     >
-      {!!error && <Text style={styles.error}>{error}</Text>}
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryLabel}>No leidas</Text>
-        <Text style={styles.summaryValue}>{unreadCount}</Text>
-      </View>
-      <View style={styles.list}>
-        {items.map((item) => (
-          <View key={item.id} style={styles.card}>
-            <Text style={styles.badge}>{item.severity} · {item.state}</Text>
-            <Text style={styles.title}>{item.summary}</Text>
-            <Text style={styles.body}>{item.requiredAction}</Text>
-            <Pressable style={styles.link} onPress={() => router.push(resolveMobileDeepLink(item.deepLinkPath) as never)}>
-              <Text style={styles.linkText}>Abrir entidad relacionada</Text>
-            </Pressable>
-          </View>
-        ))}
+      <View {...automationProps(adminTestIds.actionQueue.screen)} style={styles.screenRoot}>
+        {error ? (
+          <Text {...automationProps(adminTestIds.actionQueue.errorBanner)} style={styles.error}>
+            {error}
+          </Text>
+        ) : null}
+
+        <View {...automationProps(adminTestIds.actionQueue.statusChip)} style={styles.summaryCard}>
+          <Text style={styles.summaryLabel}>Triage activo</Text>
+          <Text style={styles.summaryValue}>{unreadCount}</Text>
+          <Text style={styles.summaryHelper}>
+            {highSeverityCount > 0 ? `${highSeverityCount} de alta prioridad · ` : ""}
+            {items.length} elementos en cola
+          </Text>
+        </View>
+
+        <Text style={styles.sectionTitle}>Trabajo priorizado</Text>
+
+        <Pressable
+          {...automationProps(adminTestIds.actionQueue.primaryAction)}
+          style={[styles.primaryLeadAction, styles.leadButton, !leadItem && styles.leadButtonDisabled]}
+          disabled={!leadItem}
+          onPress={() => {
+            if (!leadItem) return;
+            router.push(resolveAdminOperationalDeepLink(leadItem.deepLinkPath) as any);
+          }}
+        >
+          <Text style={styles.leadButtonText}>
+            {leadItem ? getAdminActionItemPrimaryLabel(leadItem) : "Sin acciones urgentes"}
+          </Text>
+        </Pressable>
+
+        <View style={styles.list}>
+          {items.map((item, index) => {
+            const presentation = getAdminSeverityPresentation(item.severity);
+            const isLead = index === 0;
+            return (
+              <View
+                key={item.id}
+                style={[
+                  styles.card,
+                  {
+                    backgroundColor: presentation.backgroundColor,
+                    borderColor: presentation.borderColor,
+                  },
+                ]}
+              >
+                <View style={styles.cardHeader}>
+                  <View style={styles.chipsRow}>
+                    <Text style={[styles.severityChip, { color: presentation.textColor }]}>
+                      {presentation.label}
+                    </Text>
+                    <Text style={styles.stateChip}>{getAdminActionItemStatusLabel(item)}</Text>
+                  </View>
+                  <Text style={styles.entityText}>{item.entityIdentifier}</Text>
+                </View>
+
+                <Text style={styles.title}>{item.summary}</Text>
+                <Text style={styles.body}>{item.requiredAction}</Text>
+
+                <Text style={styles.context}>{item.assignedOwner ?? "Sin responsable"} · {item.entityType}</Text>
+
+                <Pressable
+                  style={[styles.cardButton, isLead && styles.cardButtonLead]}
+                  onPress={() => router.push(resolveAdminOperationalDeepLink(item.deepLinkPath) as any)}
+                >
+                  <Text style={[styles.cardButtonText, isLead && styles.cardButtonTextLead]}>
+                    {getAdminActionItemPrimaryLabel(item)}
+                  </Text>
+                </Pressable>
+              </View>
+            );
+          })}
+        </View>
       </View>
     </MobileWorkspaceShell>
   );
 }
 
 const styles = StyleSheet.create({
-  list: { gap: 12 },
+  screenRoot: {
+    gap: 16,
+  },
   summaryCard: {
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 18,
+    ...mobileSurfaceCard,
     padding: 16,
+    gap: 4,
   },
-  summaryLabel: { color: "#6b7280", fontSize: 13, fontWeight: "600", marginBottom: 4 },
-  summaryValue: { color: "#111827", fontWeight: "800", fontSize: 28 },
+  summaryLabel: {
+    color: mobileTheme.colors.ink.secondary,
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  summaryValue: {
+    color: mobileTheme.colors.ink.primary,
+    fontWeight: "900",
+    fontSize: 30,
+    lineHeight: 34,
+  },
+  summaryHelper: {
+    color: mobileTheme.colors.ink.secondary,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  sectionTitle: {
+    color: mobileTheme.colors.ink.primary,
+    fontSize: 18,
+    fontWeight: "800",
+  },
+  list: {
+    gap: 12,
+  },
   card: {
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 18,
+    ...mobileSurfaceCard,
     padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.03,
-    shadowRadius: 12,
-    elevation: 2,
+    gap: 8,
   },
-  badge: { color: "#92400e", fontWeight: "800", marginBottom: 8, fontSize: 12, textTransform: "uppercase" },
-  title: { color: "#111827", fontWeight: "800", fontSize: 17, marginBottom: 6 },
-  body: { color: "#4b5563", marginBottom: 12, lineHeight: 20 },
-  link: { alignSelf: "flex-start", backgroundColor: "#ffffff", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: "#d1d5db" },
-  linkText: { color: "#007aff", fontWeight: "700" },
-  button: { backgroundColor: "#ffffff", borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: "#d1d5db" },
-  buttonText: { color: "#007aff", fontWeight: "700" },
-  error: { color: "#b91c1c", marginBottom: 12 },
+  cardHeader: {
+    gap: 8,
+  },
+  chipsRow: {
+    flexDirection: "row",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  severityChip: {
+    fontWeight: "800",
+    fontSize: 12,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  stateChip: {
+    color: mobileTheme.colors.ink.secondary,
+    fontWeight: "700",
+    fontSize: 12,
+  },
+  entityText: {
+    color: mobileTheme.colors.ink.secondary,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  title: {
+    color: mobileTheme.colors.ink.primary,
+    fontWeight: "800",
+    fontSize: 17,
+  },
+  body: {
+    color: mobileTheme.colors.ink.secondary,
+    lineHeight: 20,
+  },
+  context: {
+    color: mobileTheme.colors.ink.muted,
+    fontSize: 13,
+  },
+  cardButton: {
+    ...mobileSecondaryButton,
+    backgroundColor: mobileTheme.colors.surface.primary,
+    alignSelf: "stretch",
+    marginTop: 4,
+    paddingHorizontal: 18,
+  },
+  cardButtonLead: {
+    backgroundColor: mobileTheme.colors.ink.accent,
+    borderColor: mobileTheme.colors.ink.accentStrong,
+  },
+  cardButtonText: {
+    color: mobileTheme.colors.ink.accentStrong,
+    fontWeight: "800",
+  },
+  cardButtonTextLead: {
+    color: mobileTheme.colors.ink.inverse,
+  },
+  leadButton: {
+    alignSelf: "stretch",
+    paddingHorizontal: 18,
+  },
+  leadButtonDisabled: {
+    opacity: 0.65,
+  },
+  leadButtonText: {
+    color: mobileTheme.colors.ink.inverse,
+    fontWeight: "800",
+  },
+  primaryLeadAction: {
+    ...mobileSecondaryButton,
+    backgroundColor: mobileTheme.colors.ink.accent,
+  },
+  button: {
+    ...mobileSecondaryButton,
+    paddingHorizontal: 16,
+  },
+  buttonText: {
+    color: mobileTheme.colors.ink.accentStrong,
+    fontWeight: "700",
+  },
+  error: {
+    ...mobileSecondarySurface,
+    borderColor: mobileTheme.colors.border.danger,
+    color: mobileTheme.colors.status.dangerText,
+    padding: 14,
+    fontWeight: "700",
+  },
 });

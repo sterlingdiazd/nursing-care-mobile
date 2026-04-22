@@ -3,9 +3,16 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { mobileSecondaryButton, mobileSecondarySurface, mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
 import { useAuth } from "@/src/context/AuthContext";
 import { getAdminDashboard } from "@/src/services/adminPortalService";
 import { adminTestIds } from "@/src/testing/testIds";
+import {
+  automationProps,
+  buildAdminDashboardStatusSummary,
+  buildAdminDashboardTriage,
+  getAdminSeverityPresentation,
+} from "@/src/utils/adminOperationalUx";
 
 const adminSections = [
   { label: "Usuarios", path: "/admin/users" },
@@ -23,6 +30,7 @@ export default function AdminDashboardScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
   const [snapshot, setSnapshot] = useState<Awaited<ReturnType<typeof getAdminDashboard>> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [modulesOpen, setModulesOpen] = useState(false);
 
   useEffect(() => {
     if (!isReady) return;
@@ -46,24 +54,25 @@ export default function AdminDashboardScreen() {
       });
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles]);
 
+  const statusSummary = snapshot ? buildAdminDashboardStatusSummary(snapshot) : null;
+  const triageCards = snapshot ? buildAdminDashboardTriage(snapshot) : [];
+
   return (
     <MobileWorkspaceShell
       eyebrow="Administracion"
       title="Panel administrativo"
-      description="Supervisa pendientes y entra rapido a cada modulo."
+      description="Supervisa lo urgente primero y deja el resto como exploracion secundaria."
       actions={
         <>
           <Pressable
-            testID={adminTestIds.dashboard.actionsButton}
-            nativeID={adminTestIds.dashboard.actionsButton}
+            {...automationProps(adminTestIds.dashboard.primaryAction)}
             style={styles.primaryButton}
             onPress={() => router.push("/admin/action-items" as any)}
           >
             <Text style={styles.primaryButtonText}>Ver acciones</Text>
           </Pressable>
           <Pressable
-            testID={adminTestIds.dashboard.requestsButton}
-            nativeID={adminTestIds.dashboard.requestsButton}
+            {...automationProps(adminTestIds.dashboard.requestsButton)}
             style={styles.secondaryButton}
             onPress={() => router.push("/admin/care-requests" as any)}
           >
@@ -72,102 +81,193 @@ export default function AdminDashboardScreen() {
         </>
       }
     >
-      {error && <Text style={styles.error}>{error}</Text>}
-      {snapshot && (
-        <>
-          <View style={styles.metricsRow}>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>{snapshot.pendingNurseProfilesCount}</Text>
-              <Text style={styles.metricLabel}>Perfiles pendientes</Text>
-            </View>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>{snapshot.careRequestsWaitingForAssignmentCount}</Text>
-              <Text style={styles.metricLabel}>Sin asignar</Text>
-            </View>
-          </View>
+      <View {...automationProps(adminTestIds.dashboard.screen)} style={styles.screenRoot}>
+        {error ? (
+          <Text {...automationProps(adminTestIds.dashboard.errorBanner)} style={styles.error}>
+            {error}
+          </Text>
+        ) : null}
 
-          <View style={styles.metricsRow}>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>{snapshot.careRequestsWaitingForApprovalCount}</Text>
-              <Text style={styles.metricLabel}>Pendientes de aprobacion</Text>
-            </View>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>{snapshot.unreadAdminNotificationsCount}</Text>
-              <Text style={styles.metricLabel}>No leidas</Text>
-            </View>
+        {statusSummary ? (
+          <View {...automationProps(adminTestIds.dashboard.statusChip)} style={styles.statusBand}>
+            <Text style={styles.statusLabel}>{statusSummary.label}</Text>
+            <Text style={styles.statusHelper}>{statusSummary.helper}</Text>
           </View>
-        </>
-      )}
+        ) : null}
 
-      <View style={styles.sectionList}>
-        {adminSections.map((section) => (
-          <Pressable
-            key={section.path}
-            style={styles.sectionRow}
-            onPress={() => router.push(section.path as any)}
-          >
-            <Text style={styles.sectionLabel}>{section.label}</Text>
-            <Text style={styles.sectionChevron}>›</Text>
-          </Pressable>
-        ))}
+        {snapshot ? (
+          <>
+            <Text style={styles.sectionTitle}>Triage rapido</Text>
+            <View style={styles.triageGrid}>
+              {triageCards.map((card, index) => {
+                const presentation = getAdminSeverityPresentation(card.severity);
+                const testId =
+                  index === 0
+                    ? adminTestIds.dashboard.triageOverdueButton
+                    : index === 1
+                      ? adminTestIds.dashboard.triageUnassignedButton
+                      : adminTestIds.dashboard.triageApprovalsButton;
+
+                return (
+                  <Pressable
+                    key={card.key}
+                    {...automationProps(testId)}
+                    style={[
+                      styles.triageCard,
+                      {
+                        backgroundColor: presentation.backgroundColor,
+                        borderColor: presentation.borderColor,
+                      },
+                    ]}
+                    onPress={() => router.push(card.route as any)}
+                  >
+                    <Text style={[styles.triageLabel, { color: presentation.textColor }]}>{card.label}</Text>
+                    <Text style={[styles.triageValue, { color: presentation.textColor }]}>{card.value}</Text>
+                    <Text style={styles.triageHelper}>{card.helper}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <View style={styles.summaryStrip}>
+              <View style={styles.summaryPill}>
+                <Text style={styles.summaryPillLabel}>Perfiles pendientes</Text>
+                <Text style={styles.summaryPillValue}>{snapshot.pendingNurseProfilesCount}</Text>
+              </View>
+              <View style={styles.summaryPill}>
+                <Text style={styles.summaryPillLabel}>Notificaciones</Text>
+                <Text style={styles.summaryPillValue}>{snapshot.unreadAdminNotificationsCount}</Text>
+              </View>
+            </View>
+          </>
+        ) : null}
+
+        <Pressable
+          {...automationProps(adminTestIds.dashboard.modulesToggleButton)}
+          style={styles.modulesToggle}
+          onPress={() => setModulesOpen((current) => !current)}
+        >
+          <Text style={styles.modulesToggleText}>{modulesOpen ? "Ocultar otros modulos" : "Ver otros modulos"}</Text>
+        </Pressable>
+
+        {modulesOpen ? (
+          <View style={styles.sectionList}>
+            {adminSections.map((section) => (
+              <Pressable
+                key={section.path}
+                style={styles.sectionRow}
+                onPress={() => router.push(section.path as any)}
+              >
+                <Text style={styles.sectionLabel}>{section.label}</Text>
+                <Text style={styles.sectionChevron}>›</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
       </View>
     </MobileWorkspaceShell>
   );
 }
 
 const styles = StyleSheet.create({
-  metricsRow: {
+  screenRoot: {
+    gap: 16,
+  },
+  statusBand: {
+    ...mobileSurfaceCard,
+    padding: 16,
+    gap: 4,
+  },
+  statusLabel: {
+    color: mobileTheme.colors.ink.primary,
+    fontWeight: "800",
+    fontSize: 16,
+  },
+  statusHelper: {
+    color: mobileTheme.colors.ink.secondary,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  sectionTitle: {
+    color: mobileTheme.colors.ink.primary,
+    fontWeight: "800",
+    fontSize: 18,
+  },
+  triageGrid: {
+    gap: 12,
+  },
+  triageCard: {
+    ...mobileSurfaceCard,
+    padding: 16,
+    gap: 4,
+  },
+  triageLabel: {
+    fontWeight: "800",
+    fontSize: 14,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
+  triageValue: {
+    fontWeight: "900",
+    fontSize: 30,
+    lineHeight: 34,
+  },
+  triageHelper: {
+    color: mobileTheme.colors.ink.secondary,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  summaryStrip: {
     flexDirection: "row",
     gap: 12,
-    marginBottom: 12,
   },
-  metricCard: {
+  summaryPill: {
+    ...mobileSecondarySurface,
     flex: 1,
-    backgroundColor: "#ffffff",
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    padding: 16,
+    padding: 14,
   },
-  metricValue: {
-    color: "#111827",
-    fontWeight: "800",
-    fontSize: 28,
-    marginBottom: 6,
+  summaryPillLabel: {
+    color: mobileTheme.colors.ink.secondary,
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    marginBottom: 4,
   },
-  metricLabel: {
-    color: "#6b7280",
-    fontWeight: "600",
-    fontSize: 13,
+  summaryPillValue: {
+    color: mobileTheme.colors.ink.primary,
+    fontSize: 24,
+    fontWeight: "900",
   },
   primaryButton: {
-    backgroundColor: "#007aff",
-    borderRadius: 16,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
+    ...mobileSecondaryButton,
+    backgroundColor: mobileTheme.colors.ink.accent,
   },
   primaryButtonText: {
-    color: "#ffffff",
+    color: mobileTheme.colors.ink.inverse,
     fontWeight: "800",
   },
   secondaryButton: {
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
+    ...mobileSecondaryButton,
   },
   secondaryButtonText: {
-    color: "#007aff",
+    color: mobileTheme.colors.ink.accentStrong,
+    fontWeight: "700",
+  },
+  modulesToggle: {
+    ...mobileSecondaryButton,
+    alignSelf: "flex-start",
+    paddingHorizontal: 18,
+  },
+  modulesToggleText: {
+    color: mobileTheme.colors.ink.accentStrong,
     fontWeight: "700",
   },
   sectionList: {
     marginTop: 8,
-    backgroundColor: "#ffffff",
+    backgroundColor: mobileTheme.colors.surface.primary,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: mobileTheme.colors.border.subtle,
     overflow: "hidden",
   },
   sectionRow: {
@@ -177,17 +277,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
+    borderBottomColor: mobileTheme.colors.border.subtle,
   },
   sectionLabel: {
-    color: "#111827",
+    color: mobileTheme.colors.ink.primary,
     fontSize: 15,
     fontWeight: "600",
   },
   sectionChevron: {
-    color: "#9ca3af",
+    color: mobileTheme.colors.ink.muted,
     fontSize: 24,
     lineHeight: 24,
   },
-  error: { color: "#b91c1c", marginBottom: 12 },
+  error: {
+    ...mobileSecondarySurface,
+    borderColor: mobileTheme.colors.border.danger,
+    color: mobileTheme.colors.status.dangerText,
+    padding: 14,
+    fontWeight: "700",
+  },
 });
