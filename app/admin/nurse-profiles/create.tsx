@@ -10,6 +10,7 @@ import {
 } from "@/src/services/adminPortalService";
 import { FormInput } from "@/src/components/form";
 import { adminTestIds } from "@/src/testing/testIds";
+import { getAdminNurseCreateProgress } from "@/src/utils/adminCreationUx";
 
 const CATEGORIES = ["Auxiliar", "Técnico", "Profesional", "Especialista"];
 
@@ -96,6 +97,7 @@ export default function AdminCreateNurseProfileScreen() {
   };
 
   const activeCategoryIsCustom = !CATEGORIES.includes(form.category);
+  const createProgress = getAdminNurseCreateProgress(form);
 
   if (!isReady || !isAuthenticated || !roles.includes("ADMIN")) return null;
 
@@ -104,8 +106,21 @@ export default function AdminCreateNurseProfileScreen() {
       eyebrow="Crear Perfil"
       title="Nueva enfermera"
       description="Crear perfil rápido y configuraciones base."
+      testID={adminTestIds.nurses.create.screen}
+      nativeID={adminTestIds.nurses.create.screen}
     >
-      {!!error && <Text style={styles.error}>{error}</Text>}
+      <View style={styles.progressPanel}>
+        <Text
+          testID={adminTestIds.nurses.create.progressChip}
+          nativeID={adminTestIds.nurses.create.progressChip}
+          style={[styles.progressChip, createProgress.ready ? styles.progressChipSuccess : styles.progressChipWarning]}
+        >
+          {createProgress.status.label}
+        </Text>
+        <Text style={styles.progressHelper}>{createProgress.status.helper}</Text>
+      </View>
+
+      {!!error && <Text testID={adminTestIds.nurses.create.errorBanner} nativeID={adminTestIds.nurses.create.errorBanner} style={styles.error}>{error}</Text>}
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* === SECTION: PERSONAL === */}
@@ -247,6 +262,11 @@ export default function AdminCreateNurseProfileScreen() {
 
 const styles = StyleSheet.create({
   error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
+  progressPanel: { backgroundColor: "#f8fbff", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12, gap: 8 },
+  progressChip: { alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 12, fontWeight: "800" },
+  progressChipWarning: { backgroundColor: "#fef3c7", color: "#92400e" },
+  progressChipSuccess: { backgroundColor: "#dcfce7", color: "#166534" },
+  progressHelper: { color: "#52637a", fontSize: 13, lineHeight: 18 },
   scrollContent: { paddingBottom: 24 },
   card: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
   cardTitle: { fontSize: 18, fontWeight: "800", color: "#102a43", marginBottom: 6 },

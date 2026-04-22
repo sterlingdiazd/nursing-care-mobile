@@ -25,6 +25,7 @@ import { FormInput } from "@/src/components/form";
 import { adminTestIds } from "@/src/testing/testIds";
 import { getAvailableNurses } from "@/src/services/catalogOptionsService";
 import type { AvailableNurseOption } from "@/src/types/catalog";
+import { getAdminCareCreateProgress } from "@/src/utils/adminCreationUx";
 
 const CARE_TYPES = [
   "Cuidado Básico",
@@ -234,6 +235,8 @@ export default function CreateAdminCareRequestScreen() {
 
   // Check custom vs predefined care type
   const activeTypeIsCustom = !CARE_TYPES.includes(form.careRequestType);
+  const creationProgress = getAdminCareCreateProgress(form);
+  const advancedPricingLocked = !creationProgress.coreReady;
 
   if (!isReady || !isAuthenticated || !roles.includes("ADMIN")) return null;
 
@@ -242,8 +245,32 @@ export default function CreateAdminCareRequestScreen() {
       eyebrow="Crear Solicitud"
       title="Nueva solicitud de cuidado"
       description="Crear una solicitud de servicio en nombre de un cliente."
+      testID={adminTestIds.careRequests.create.screen}
+      nativeID={adminTestIds.careRequests.create.screen}
     >
-      {!!error && <Text style={styles.error}>{error}</Text>}
+      <View style={styles.progressCard}>
+        <Text
+          testID={adminTestIds.careRequests.create.stepState}
+          nativeID={adminTestIds.careRequests.create.stepState}
+          style={[
+            styles.statusChip,
+            creationProgress.status.tone === "success" ? styles.statusChipSuccess : styles.statusChipWarning,
+          ]}
+        >
+          {creationProgress.status.label}
+        </Text>
+        <Text style={styles.progressHelper}>{creationProgress.status.helper}</Text>
+      </View>
+
+      {!!error && (
+        <Text
+          testID={adminTestIds.careRequests.create.errorBanner}
+          nativeID={adminTestIds.careRequests.create.errorBanner}
+          style={styles.error}
+        >
+          {error}
+        </Text>
+      )}
 
       <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scrollContent}>
         
@@ -284,6 +311,7 @@ export default function CreateAdminCareRequestScreen() {
               )}
             </View>
           )}
+          {errors.clientUserId && <Text style={styles.errorText}>{errors.clientUserId}</Text>}
 
           <Text style={styles.label}>Fecha programada *</Text>
           {Platform.OS === "web" ? (
@@ -331,6 +359,7 @@ export default function CreateAdminCareRequestScreen() {
               </Text>
             </Pressable>
           )}
+          {errors.careRequestDate && <Text style={styles.errorText}>{errors.careRequestDate}</Text>}
 
           <Text style={styles.label}>Tipo de solicitud *</Text>
           <View style={styles.chipsContainer}>
@@ -345,8 +374,12 @@ export default function CreateAdminCareRequestScreen() {
             ))}
           </View>
           <FormInput
-            testID="admin-care-create-custom-type-input"
-            style={[styles.input, activeTypeIsCustom ? styles.inputActive : undefined]}
+            testID={adminTestIds.careRequests.create.customTypeInput}
+            style={[
+              styles.input,
+              activeTypeIsCustom ? styles.inputActive : undefined,
+              errors.careRequestType ? styles.inputError : undefined,
+            ]}
             placeholder="Otro tipo (especificar)"
             value={activeTypeIsCustom ? form.careRequestType : customCareType}
             onChangeText={(text) => {
@@ -359,6 +392,7 @@ export default function CreateAdminCareRequestScreen() {
               }
             }}
           />
+          {errors.careRequestType && <Text style={styles.errorText}>{errors.careRequestType}</Text>}
 
           <Text style={styles.label}>Unidades *</Text>
           <View style={styles.stepperContainer}>
@@ -366,6 +400,7 @@ export default function CreateAdminCareRequestScreen() {
             <Text style={styles.stepperValue}>{form.unit}</Text>
             <Pressable onPress={incrementUnit} style={styles.stepperBtn}><Text style={styles.stepperBtnText}>+</Text></Pressable>
           </View>
+          {errors.unit && <Text style={styles.errorText}>{errors.unit}</Text>}
 
           <Text style={styles.label}>Descripción de la solicitud *</Text>
           <FormInput
@@ -377,6 +412,7 @@ export default function CreateAdminCareRequestScreen() {
             multiline
             numberOfLines={3}
           />
+          {errors.careRequestDescription && <Text style={styles.errorText}>{errors.careRequestDescription}</Text>}
         </View>
 
         {/* === SECTION: NURSE (Optional) === */}
@@ -421,28 +457,63 @@ export default function CreateAdminCareRequestScreen() {
           )}
         </View>
 
+        <View style={styles.reviewCard}>
+          <Text style={styles.cardTitle}>Revision previa</Text>
+          <Text style={styles.reviewHelper}>
+            {creationProgress.coreReady
+              ? "Verifica estos datos antes de crear la solicitud."
+              : "Completa la informacion clave para desbloquear la revision y los ajustes de precio."}
+          </Text>
+          <View style={styles.reviewChecklist}>
+            {creationProgress.checklist.map((item) => (
+              <View key={item.key} style={styles.reviewChecklistItem}>
+                <Text
+                  style={[
+                    styles.reviewChecklistDot,
+                    item.complete ? styles.reviewChecklistDotComplete : styles.reviewChecklistDotPending,
+                  ]}
+                >
+                  {item.complete ? "●" : "○"}
+                </Text>
+                <Text style={styles.reviewChecklistText}>{item.label}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
         {/* === SECTION: ADVANCED PRICING (Accordion) === */}
         <View style={styles.accordionWrap}>
-          <Pressable style={styles.accordionHeader} onPress={() => setShowAdvancedPricing(!showAdvancedPricing)}>
+          <Pressable
+            style={[styles.accordionHeader, advancedPricingLocked ? styles.accordionHeaderDisabled : undefined]}
+            onPress={() => {
+              if (advancedPricingLocked) return;
+              setShowAdvancedPricing(!showAdvancedPricing);
+            }}
+          >
             <Text style={styles.accordionTitle}>Mostrar configuraciones de precio</Text>
             <Text style={styles.accordionIcon}>{showAdvancedPricing ? "▲" : "▼"}</Text>
           </Pressable>
+          {advancedPricingLocked ? (
+            <View style={styles.lockedAccordionNotice}>
+              <Text style={styles.lockedAccordionText}>Completa cliente, fecha, tipo, unidades y descripcion antes de ajustar precios.</Text>
+            </View>
+          ) : null}
 
           {showAdvancedPricing && (
             <View style={styles.accordionContent}>
               <Text style={styles.subtitle}>Estos valores sobreescriben la tarifa base calculada.</Text>
               
               <Text style={styles.label}>Precio base fijo (override)</Text>
-              <FormInput testID="admin-care-create-price-override-input" style={styles.input} placeholder="Ej: 1500" value={form.clientBasePriceOverride?.toString() || ""} onChangeText={(text) => setForm({ ...form, clientBasePriceOverride: parseFloat(text) || undefined })} keyboardType="numeric" />
+              <FormInput testID={adminTestIds.careRequests.create.priceOverrideInput} style={styles.input} placeholder="Ej: 1500" value={form.clientBasePriceOverride?.toString() || ""} onChangeText={(text) => setForm({ ...form, clientBasePriceOverride: parseFloat(text) || undefined })} keyboardType="numeric" />
 
               <Text style={styles.label}>Costo de insumos médicos</Text>
-              <FormInput testID="admin-care-create-medical-supplies-input" style={styles.input} placeholder="Costo extra" value={form.medicalSuppliesCost?.toString() || ""} onChangeText={(text) => setForm({ ...form, medicalSuppliesCost: parseFloat(text) || undefined })} keyboardType="numeric" />
+              <FormInput testID={adminTestIds.careRequests.create.medicalSuppliesInput} style={styles.input} placeholder="Costo extra" value={form.medicalSuppliesCost?.toString() || ""} onChangeText={(text) => setForm({ ...form, medicalSuppliesCost: parseFloat(text) || undefined })} keyboardType="numeric" />
 
               <Text style={styles.label}>Factor de distancia (Multiplicador)</Text>
-              <FormInput testID="admin-care-create-distance-factor-input" style={styles.input} placeholder="Ej: Cerca, Lejos..." value={form.distanceFactor} onChangeText={(text) => setForm({ ...form, distanceFactor: text })} />
+              <FormInput testID={adminTestIds.careRequests.create.distanceFactorInput} style={styles.input} placeholder="Ej: Cerca, Lejos..." value={form.distanceFactor} onChangeText={(text) => setForm({ ...form, distanceFactor: text })} />
 
               <Text style={styles.label}>Nivel de complejidad</Text>
-              <FormInput testID="admin-care-create-complexity-input" style={styles.input} placeholder="Ej: Avanzado" value={form.complexityLevel} onChangeText={(text) => setForm({ ...form, complexityLevel: text })} />
+              <FormInput testID={adminTestIds.careRequests.create.complexityInput} style={styles.input} placeholder="Ej: Avanzado" value={form.complexityLevel} onChangeText={(text) => setForm({ ...form, complexityLevel: text })} />
             </View>
           )}
         </View>
@@ -490,6 +561,11 @@ export default function CreateAdminCareRequestScreen() {
 
 const styles = StyleSheet.create({
   error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
+  progressCard: { backgroundColor: "#f8fbff", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12, gap: 8 },
+  statusChip: { alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 12, fontWeight: "800" },
+  statusChipWarning: { backgroundColor: "#fef3c7", color: "#92400e" },
+  statusChipSuccess: { backgroundColor: "#dcfce7", color: "#166534" },
+  progressHelper: { color: "#52637a", fontSize: 13, lineHeight: 18 },
   scrollContent: { paddingBottom: 24 },
   card: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
   cardTitle: { fontSize: 18, fontWeight: "800", color: "#102a43", marginBottom: 12 },
@@ -498,6 +574,7 @@ const styles = StyleSheet.create({
   input: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#cbd5e0", borderRadius: 12, padding: 12, fontSize: 15 },
   inputActive: { borderColor: "#3b82f6", borderWidth: 2 },
   inputError: { borderColor: "#dc2626" },
+  errorText: { color: "#dc2626", fontSize: 12, marginTop: 4 },
   textArea: { minHeight: 80, textAlignVertical: "top" },
   
   chipsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 },
@@ -513,9 +590,20 @@ const styles = StyleSheet.create({
 
   accordionWrap: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#cbd5e0", borderRadius: 18, overflow: "hidden", marginBottom: 12 },
   accordionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, backgroundColor: "#f8fafc" },
+  accordionHeaderDisabled: { opacity: 0.6 },
   accordionTitle: { fontSize: 15, fontWeight: "700", color: "#52637a" },
   accordionIcon: { fontSize: 14, color: "#52637a", fontWeight: "700" },
   accordionContent: { padding: 16, borderTopWidth: 1, borderTopColor: "#e2e8f0" },
+  lockedAccordionNotice: { paddingHorizontal: 16, paddingBottom: 16 },
+  lockedAccordionText: { color: "#7c2d12", fontSize: 13, lineHeight: 18 },
+  reviewCard: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
+  reviewHelper: { color: "#52637a", fontSize: 13, lineHeight: 18, marginBottom: 12 },
+  reviewChecklist: { gap: 8 },
+  reviewChecklistItem: { flexDirection: "row", alignItems: "center", gap: 8 },
+  reviewChecklistDot: { fontSize: 14, fontWeight: "800" },
+  reviewChecklistDotComplete: { color: "#16a34a" },
+  reviewChecklistDotPending: { color: "#92400e" },
+  reviewChecklistText: { color: "#102a43", fontSize: 14 },
 
   selectedClient: { backgroundColor: "#f0f4f8", borderRadius: 12, padding: 12, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   selectedClientName: { fontSize: 16, fontWeight: "700", color: "#102a43" },

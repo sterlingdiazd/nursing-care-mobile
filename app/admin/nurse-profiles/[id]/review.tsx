@@ -10,6 +10,10 @@ import {
   type NurseProfileAdminRecordDto,
   type CompleteNurseProfileRequest,
 } from "@/src/services/adminPortalService";
+import { adminTestIds } from "@/src/testing/testIds";
+import { getAdminNurseReviewProgress } from "@/src/utils/adminCreationUx";
+
+const CATEGORIES = ["Auxiliar", "Tecnico", "Profesional", "Especialista"];
 
 function formatDate(value: string | null | undefined) {
   if (!value) return "N/A";
@@ -40,6 +44,7 @@ export default function AdminReviewNurseProfileScreen() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const reviewProgress = getAdminNurseReviewProgress(form);
 
   const load = async () => {
     if (!id) return;
@@ -111,9 +116,22 @@ export default function AdminReviewNurseProfileScreen() {
       eyebrow="Revisar Perfil"
       title="Completar perfil de enfermera"
       description="Revisar la información pendiente y completar los campos requeridos."
+      testID={adminTestIds.nurses.review.screen}
+      nativeID={adminTestIds.nurses.review.screen}
     >
-      {!!loadError && <Text style={styles.error}>{loadError}</Text>}
-      {!!submitError && <Text style={styles.error}>{submitError}</Text>}
+      <View style={styles.statusPanel}>
+        <Text
+          testID={adminTestIds.nurses.review.statusChip}
+          nativeID={adminTestIds.nurses.review.statusChip}
+          style={[styles.statusChip, reviewProgress.ready ? styles.statusChipSuccess : styles.statusChipWarning]}
+        >
+          {reviewProgress.status.label}
+        </Text>
+        <Text style={styles.statusHelper}>{reviewProgress.status.helper}</Text>
+      </View>
+
+      {!!loadError && <Text testID={adminTestIds.nurses.review.errorBanner} nativeID={adminTestIds.nurses.review.errorBanner} style={styles.error}>{loadError}</Text>}
+      {!!submitError && <Text testID={adminTestIds.nurses.review.errorBanner} nativeID={adminTestIds.nurses.review.errorBanner} style={styles.error}>{submitError}</Text>}
       {loading && <Text style={styles.loading}>Cargando...</Text>}
 
       <ScrollView>
@@ -156,7 +174,25 @@ export default function AdminReviewNurseProfileScreen() {
         )}
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Completar Información</Text>
+          <Text style={styles.cardTitle}>Checklist de aprobacion</Text>
+          <Text style={styles.reviewNote}>
+            {reviewProgress.ready
+              ? "La informacion requerida esta completa y la enfermera puede quedar lista para asignaciones."
+              : "Completa estos campos antes de activar a la enfermera para trabajo operativo."}
+          </Text>
+          {reviewProgress.missingLabels.length > 0 ? (
+            <View style={styles.missingList}>
+              {reviewProgress.missingLabels.map((item) => (
+                <Text key={item} style={styles.missingItem}>• {item}</Text>
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.readyItem}>Todo listo para activar.</Text>
+          )}
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Completar Información Operativa</Text>
 
           <Text style={styles.label}>Especialidad *</Text>
           <TextInput
@@ -195,10 +231,21 @@ export default function AdminReviewNurseProfileScreen() {
           {errors.accountNumber && <Text style={styles.errorText}>{errors.accountNumber}</Text>}
 
           <Text style={styles.label}>Categoría *</Text>
+          <View style={styles.chipsContainer}>
+            {CATEGORIES.map((category) => (
+              <Pressable
+                key={category}
+                style={[styles.chip, form.category === category && styles.chipActive]}
+                onPress={() => setForm({ ...form, category })}
+              >
+                <Text style={[styles.chipText, form.category === category && styles.chipTextActive]}>{category}</Text>
+              </Pressable>
+            ))}
+          </View>
           <TextInput
             style={[styles.input, errors.category ? styles.inputError : undefined]}
-            placeholder="Categoría profesional"
-            value={form.category}
+            placeholder="Otra categoría profesional"
+            value={CATEGORIES.includes(form.category) ? "" : form.category}
             onChangeText={(text) => setForm({ ...form, category: text })}
           />
           {errors.category && <Text style={styles.errorText}>{errors.category}</Text>}
@@ -209,8 +256,16 @@ export default function AdminReviewNurseProfileScreen() {
         <Pressable style={styles.button} onPress={() => router.back()}>
           <Text style={styles.buttonText}>Cancelar</Text>
         </Pressable>
-        <Pressable style={styles.buttonPrimary} onPress={handleSubmit} disabled={submitting}>
-          <Text style={styles.buttonPrimaryText}>{submitting ? "Guardando..." : "Completar Perfil"}</Text>
+        <Pressable
+          testID={adminTestIds.nurses.review.submitButton}
+          nativeID={adminTestIds.nurses.review.submitButton}
+          style={styles.buttonPrimary}
+          onPress={handleSubmit}
+          disabled={submitting}
+        >
+          <Text style={styles.buttonPrimaryText}>
+            {submitting ? "Activando..." : reviewProgress.ready ? "Activar para asignaciones" : "Completar perfil pendiente"}
+          </Text>
         </Pressable>
       </View>
     </MobileWorkspaceShell>
@@ -220,8 +275,17 @@ export default function AdminReviewNurseProfileScreen() {
 const styles = StyleSheet.create({
   loading: { color: "#52637a", fontSize: 14, textAlign: "center", padding: 20 },
   error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
+  statusPanel: { backgroundColor: "#f8fbff", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12, gap: 8 },
+  statusChip: { alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 12, fontWeight: "800" },
+  statusChipWarning: { backgroundColor: "#fef3c7", color: "#92400e" },
+  statusChipSuccess: { backgroundColor: "#dcfce7", color: "#166534" },
+  statusHelper: { color: "#52637a", fontSize: 13, lineHeight: 18 },
   card: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
   cardTitle: { fontSize: 16, fontWeight: "800", color: "#102a43", marginBottom: 12 },
+  reviewNote: { color: "#52637a", fontSize: 13, lineHeight: 18, marginBottom: 10 },
+  missingList: { gap: 6 },
+  missingItem: { color: "#102a43", fontSize: 14 },
+  readyItem: { color: "#166534", fontSize: 14, fontWeight: "700" },
   field: { marginBottom: 8 },
   fieldLabel: { color: "#7c2d12", fontSize: 12, fontWeight: "800", textTransform: "uppercase", marginBottom: 2 },
   fieldValue: { color: "#102a43", fontSize: 15 },
@@ -229,6 +293,11 @@ const styles = StyleSheet.create({
   input: { borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 12, padding: 12, fontSize: 15, color: "#102a43", backgroundColor: "#fff" },
   inputError: { borderColor: "#c00" },
   errorText: { color: "#c00", fontSize: 12, marginTop: 4 },
+  chipsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 },
+  chip: { backgroundColor: "#f0f4f8", paddingVertical: 10, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: "#dbe5f3" },
+  chipActive: { backgroundColor: "#3b82f6", borderColor: "#2563eb" },
+  chipText: { color: "#52637a", fontWeight: "600", fontSize: 14 },
+  chipTextActive: { color: "#ffffff" },
   actions: { flexDirection: "row", gap: 8, marginTop: 16 },
   button: { flex: 1, backgroundColor: "#f0f4f8", borderRadius: 12, paddingVertical: 14, alignItems: "center" },
   buttonText: { color: "#102a43", fontWeight: "700", fontSize: 16 },

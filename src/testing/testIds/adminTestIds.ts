@@ -67,9 +67,16 @@ export const adminTestIds = {
     },
     create: {
       screen: "admin-care-create-screen",
+      stepState: "admin-care-create-step-state",
+      errorBanner: "admin-care-create-error-banner",
       clientSearchInput: "admin-care-create-client-search-input",
       descriptionInput: "admin-care-create-description-input",
       nurseInput: "admin-care-create-nurse-input",
+      customTypeInput: "admin-care-create-custom-type-input",
+      priceOverrideInput: "admin-care-create-price-override-input",
+      medicalSuppliesInput: "admin-care-create-medical-supplies-input",
+      distanceFactorInput: "admin-care-create-distance-factor-input",
+      complexityInput: "admin-care-create-complexity-input",
       submitButton: "admin-care-create-submit-button",
     },
   },
@@ -78,6 +85,8 @@ export const adminTestIds = {
     detailScreen: "admin-nurse-detail-screen",
     create: {
       screen: "admin-nurse-create-screen",
+      progressChip: "admin-nurse-create-progress-chip",
+      errorBanner: "admin-nurse-create-error-banner",
       nameInput: "admin-nurse-create-name-input",
       lastNameInput: "admin-nurse-create-lastname-input",
       identificationInput: "admin-nurse-create-identification-input",
@@ -92,6 +101,12 @@ export const adminTestIds = {
       accountNumberInput: "admin-nurse-create-account-number-input",
       categoryInput: "admin-nurse-create-category-input",
       submitButton: "admin-nurse-create-submit-button",
+    },
+    review: {
+      screen: "admin-nurse-review-screen",
+      statusChip: "admin-nurse-review-status-chip",
+      errorBanner: "admin-nurse-review-error-banner",
+      submitButton: "admin-nurse-review-submit-button",
     },
     edit: {
       screen: "admin-nurse-edit-screen",
