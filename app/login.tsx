@@ -3,11 +3,11 @@ import {
   View,
   Text,
   ScrollView,
-  ActivityIndicator,
-  Alert,
   StyleSheet,
   Image,
   Platform,
+  TouchableOpacity,
+  KeyboardAvoidingView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -15,15 +15,15 @@ import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import { useAuth } from "@/src/context/AuthContext";
 import { validateEmail } from "@/src/api/auth";
-import { AuthResponse } from "@/src/types/auth";
 import { resolvePostAuthRoute } from "@/src/utils/authRedirect";
 import { hapticFeedback } from "@/src/utils/haptics";
 import { authTestIds } from "@/src/testing/authTestIds";
 import { FormButton, FormInput } from "@/src/components/form";
+import { designTokens } from "@/src/design-system/tokens";
+import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import { testProps } from "@/src/testing/testIds";
 import {
   getGoogleOAuthStartUrl,
-  getLocalHttpsCertificateWarning,
 } from "@/src/services/authService";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -85,459 +85,260 @@ export default function LoginScreen() {
   // Handle login submission
   const handleSubmit = async () => {
     clearError();
-    // Validate all fields
+    validateEmailField(email);
+    validatePasswordField(password);
+
     if (emailError || passwordError || !email || !password) {
-      Alert.alert("Validacion", "Ingresa un correo valido y tu contrasena.");
+      hapticFeedback.error();
       return;
     }
 
     try {
+      hapticFeedback.selection();
       const response = await login(email.trim(), password);
       router.replace(resolvePostAuthRoute(response));
-
-      // Clear form
-      setEmail("");
-      setPassword("");
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : "No fue posible iniciar sesion";
-      Alert.alert("Error de inicio de sesion", errorMsg);
+    } catch (e) {
+      hapticFeedback.error();
     }
   };
 
-  useEffect(() => {
-    const handleOAuthParams = async (
-      rawParams: Record<string, string | string[] | undefined>,
-      sourceKey: string,
-    ) => {
-      if (lastHandledOauthPayloadRef.current === sourceKey) {
-        return;
-      }
-
-      const oauthStatus = getParamValue(rawParams.oauth);
-
-      if (!oauthStatus) {
-        return;
-      }
-
-      lastHandledOauthPayloadRef.current = sourceKey;
-
-      if (oauthStatus === "error") {
-        Alert.alert(
-          "Error con Google",
-          getParamValue(rawParams.message) || "No fue posible iniciar sesion con Google."
-        );
-        return;
-      }
-
-      const token = getParamValue(rawParams.token);
-      const refreshToken = getParamValue(rawParams.refreshToken);
-      const emailFromRedirect = getParamValue(rawParams.email);
-      const roles = (getParamValue(rawParams.roles) || "")
-        .split(",")
-        .map((role) => role.trim())
-        .filter(Boolean);
-
-      if (!token || !refreshToken || !emailFromRedirect || roles.length === 0) {
-        Alert.alert("Error con Google", "La respuesta de inicio de sesion de Google estaba incompleta.");
-        return;
-      }
-
-      const response: AuthResponse = {
-        token,
-        refreshToken,
-        expiresAtUtc: getParamValue(rawParams.expiresAtUtc) ?? null,
-        userId: getParamValue(rawParams.userId) ?? "",
-        email: emailFromRedirect,
-        roles,
-        requiresProfileCompletion: getParamValue(rawParams.requiresProfileCompletion) === "true",
-        requiresAdminReview: getParamValue(rawParams.requiresAdminReview) === "true",
-      };
-
-      await completeOAuthLogin(response);
-      const destination = resolvePostAuthRoute(response);
-
-      if (Platform.OS === "web") {
-        router.replace(destination);
-        return;
-      }
-
-      Alert.alert(
-        response.requiresProfileCompletion ? "Completa tu registro" : "Inicio de sesion exitoso",
-        response.requiresProfileCompletion
-          ? "Tu cuenta de Google quedo creada, pero debes completar el registro antes de usar la app."
-          : "Redirigiendo al panel...",
-        [
-          {
-            text: "Aceptar",
-            onPress: () => router.replace(destination),
-          },
-        ],
-      );
-    };
-
-    const handleOAuthUrl = async (url: string | null) => {
-      if (!url || lastHandledUrlRef.current === url) {
-        return;
-      }
-
-      lastHandledUrlRef.current = url;
-      const queryParams = readOauthParams(url);
-      const sourceKey = url;
-      await handleOAuthParams(queryParams, sourceKey);
-    };
-
-    const hasQueryOauth = Boolean(getParamValue(searchParams.oauth));
-    if (hasQueryOauth) {
-      const normalizedParams = Object.fromEntries(
-        Object.entries(searchParams).map(([key, value]) => [key, value]),
-      );
-      const sourceKey = JSON.stringify(normalizedParams);
-      void handleOAuthParams(normalizedParams, sourceKey);
-    } else {
-      Linking.getInitialURL()
-        .then((url) => handleOAuthUrl(url))
-        .catch((error) => {
-          console.error("Failed to process initial OAuth URL:", error);
-        });
+  const handleGoogleLogin = async () => {
+    try {
+      hapticFeedback.selection();
+      const authUrl = getGoogleOAuthStartUrl();
+      await WebBrowser.openAuthSessionAsync(authUrl, Linking.createURL("/login"));
+    } catch (err) {
+      hapticFeedback.error();
     }
+  };
+
+  // OAuth response handling
+  useEffect(() => {
+    const handleUrl = (url: string) => {
+      if (lastHandledUrlRef.current === url) return;
+      lastHandledUrlRef.current = url;
+
+      const params = readOauthParams(url);
+      if (params.token && params.roles) {
+        const payload = JSON.stringify(params);
+        if (lastHandledOauthPayloadRef.current === payload) return;
+        lastHandledOauthPayloadRef.current = payload;
+
+        completeOAuthLogin(params as any);
+        const nextRoute = resolvePostAuthRoute(params as any);
+        router.replace(nextRoute);
+      }
+    };
 
     const subscription = Linking.addEventListener("url", ({ url }) => {
-      void handleOAuthUrl(url);
+      handleUrl(url);
     });
 
-    return () => {
-      subscription.remove();
-    };
-  }, [completeOAuthLogin, router, searchParams]);
-
-  const handleGoogleSignIn = async () => {
-    const certificateWarning = getLocalHttpsCertificateWarning();
-
-    if (certificateWarning) {
-      Alert.alert("Certificado local requerido", certificateWarning);
-    }
-
-    try {
-      const redirectUrl = Linking.createURL("/login");
-      const startUrl = getGoogleOAuthStartUrl("mobile", redirectUrl);
-
-      if (Platform.OS === "web") {
-        await Linking.openURL(startUrl);
-        return;
-      }
-
-      const result = await WebBrowser.openAuthSessionAsync(startUrl, redirectUrl);
-
-      if (result.type === "success" && result.url) {
-        await Linking.openURL(result.url);
-        return;
-      }
-
-      if (result.type === "cancel" || result.type === "dismiss") {
-        return;
-      }
-
-      Alert.alert("Error con Google", "No fue posible completar el inicio de sesion en el navegador integrado.");
-    } catch (error) {
-      Alert.alert(
-        "Error con Google",
-        error instanceof Error ? error.message : "No fue posible abrir el acceso con Google."
-      );
-    }
-  };
+    return () => subscription.remove();
+  }, [completeOAuthLogin, router]);
 
   return (
-    <SafeAreaView style={styles.container} {...testProps(authTestIds.login.screen)}>
-      <ScrollView contentContainerStyle={styles.contentContainer}>
-      <View style={styles.logoHost}>
-        <Image 
-          source={require("@/assets/images/logo.png")} 
-          style={styles.logo}
-          resizeMode="contain"
-        />
-      </View>
-
-      {/* Title */}
-      <Text style={styles.title}>Sol y Luna</Text>
-      <Text style={styles.subtitle}>Cuidado profesional, calidad humana.</Text>
-
-      {/* Error Message */}
-      {error ? (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorMessage}>{error}</Text>
-        </View>
-      ) : null}
-
-      {/* Email Input */}
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Correo</Text>
-        <FormInput
-          testID={authTestIds.login.emailInput}
-          style={[styles.input, emailError ? styles.inputError : null]}
-          placeholder="tu@correo.com"
-          value={email}
-          onChangeText={(text) => {
-            setEmail(text);
-            if (error) clearError();
-          }}
-          onBlur={() => validateEmailField(email)}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          editable={!isLoading}
-          placeholderTextColor="#999"
-        />
-        {emailError ? <Text style={styles.errorText} {...testProps(authTestIds.login.emailError)}>{emailError}</Text> : null}
-      </View>
-
-      {/* Password Input */}
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Contrasena</Text>
-        <FormInput
-          testID={authTestIds.login.passwordInput}
-          style={[styles.input, passwordError ? styles.inputError : null]}
-          placeholder="Ingresa tu contrasena"
-          value={password}
-          onChangeText={(text) => {
-            setPassword(text);
-            if (error) clearError();
-          }}
-          onBlur={() => validatePasswordField(password)}
-          secureTextEntry
-          editable={!isLoading}
-          placeholderTextColor="#999"
-        />
-        {passwordError ? <Text style={styles.errorText} {...testProps(authTestIds.login.passwordError)}>{passwordError}</Text> : null}
-      </View>
-
-      <FormButton
-        testID={authTestIds.login.forgotPasswordLink}
-        onPress={() => {
-          hapticFeedback.light();
-          router.push("/forgot-password" as any);
-        }}
-        style={styles.forgotPasswordContainer}
-        disabled={isLoading}
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.flex}
       >
-        <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
-      </FormButton>
-
-      {/* Login Button */}
-      <FormButton
-        testID={authTestIds.login.submitButton}
-        style={[styles.button, isLoading ? styles.buttonDisabled : null]}
-        onPress={() => {
-          hapticFeedback.light();
-          void handleSubmit();
-        }}
-        disabled={isLoading}
-      >
-        {isLoading ? (
-          <ActivityIndicator color="white" size="small" />
-        ) : (
-          <Text style={styles.buttonText}>Iniciar sesion</Text>
-        )}
-      </FormButton>
-
-      <View style={styles.dividerContainer}>
-        <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>o</Text>
-        <View style={styles.dividerLine} />
-      </View>
-
-      <FormButton
-        testID={authTestIds.login.googleButton}
-        style={[styles.secondaryButton, isLoading ? styles.buttonDisabled : null]}
-        onPress={() => {
-          hapticFeedback.light();
-          void handleGoogleSignIn();
-        }}
-        disabled={isLoading}
-      >
-        <Text style={styles.secondaryButtonText}>Continuar con Google</Text>
-      </FormButton>
-
-      {/* Register Link */}
-      <View style={styles.registerLinkContainer}>
-        <Text style={styles.registerLinkText}>¿No tienes cuenta? </Text>
-        <FormButton
-          testID={authTestIds.login.registerLink}
-          onPress={() => {
-            hapticFeedback.light();
-            router.push("/register" as any);
-          }}
-          disabled={isLoading}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.registerLink}>Registrate</Text>
-        </FormButton>
-      </View>
-    </ScrollView>
-  </SafeAreaView>
-);
+          <View style={styles.header}>
+            <Image
+              source={require("../assets/images/icon.png")}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <Text style={styles.title}>Iniciar Sesión</Text>
+            <Text style={styles.subtitle}>
+              Bienvenido de nuevo a Nursing Care
+            </Text>
+          </View>
+
+          <View style={styles.card}>
+            {error ? (
+              <View style={styles.errorBanner}>
+                <Text style={styles.errorBannerText}>{error}</Text>
+              </View>
+            ) : null}
+
+            <FormInput
+              testID={authTestIds.login.emailInput}
+              label="Correo Electrónico"
+              placeholder="ejemplo@correo.com"
+              value={email}
+              onChangeText={(text) => {
+                setEmail(text);
+                if (emailError) validateEmailField(text);
+              }}
+              onBlur={() => validateEmailField(email)}
+              error={emailError}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+            />
+
+            <FormInput
+              testID={authTestIds.login.passwordInput}
+              label="Contraseña"
+              placeholder="••••••••"
+              value={password}
+              onChangeText={(text) => {
+                setPassword(text);
+                if (passwordError) validatePasswordField(text);
+              }}
+              onBlur={() => validatePasswordField(password)}
+              error={passwordError}
+              secureTextEntry
+              autoComplete="password"
+            />
+
+            <TouchableOpacity
+              onPress={() => router.push("/forgot-password")}
+              style={styles.forgotPassword}
+              {...testProps(authTestIds.login.forgotPasswordLink)}
+            >
+              <Text style={styles.forgotPasswordText}>
+                ¿Olvidaste tu contraseña?
+              </Text>
+            </TouchableOpacity>
+
+            <FormButton
+              testID={authTestIds.login.submitButton}
+              onPress={handleSubmit}
+              isLoading={isLoading}
+              style={styles.submitButton}
+            >
+              Entrar
+            </FormButton>
+
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>o</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <FormButton
+              testID={authTestIds.login.googleButton}
+              onPress={handleGoogleLogin}
+              variant="secondary"
+              style={styles.googleButton}
+            >
+              Continuar con Google
+            </FormButton>
+          </View>
+
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>¿No tienes una cuenta?</Text>
+            <TouchableOpacity
+              onPress={() => router.push("/register")}
+              {...testProps(authTestIds.login.registerLink)}
+            >
+              <Text style={styles.registerLink}>Regístrate</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: designTokens.color.surface.canvas,
   },
-  contentContainer: {
-    paddingHorizontal: 24,
-    paddingVertical: 60,
+  flex: {
+    flex: 1,
+  },
+  scrollContent: {
     flexGrow: 1,
+    padding: designTokens.spacing.xl,
     justifyContent: "center",
   },
-  title: {
-    fontSize: 32,
-    fontWeight: "800",
-    marginBottom: 8,
-    textAlign: "center",
-    color: "#1a1a1a",
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#6c757d",
-    textAlign: "center",
-    marginBottom: 40,
-    fontWeight: "500",
-  },
-  logoHost: {
+  header: {
     alignItems: "center",
-    marginTop: 40,
-    marginBottom: 20,
+    marginBottom: designTokens.spacing.xxl,
   },
   logo: {
-    width: 120,
-    height: 120,
-    borderRadius: 28,
+    width: 80,
+    height: 80,
+    marginBottom: designTokens.spacing.lg,
   },
-  formGroup: {
-    marginBottom: 20,
+  title: {
+    ...designTokens.typography.title,
+    color: designTokens.color.ink.primary,
+    marginBottom: designTokens.spacing.xs,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: "700",
-    marginBottom: 8,
-    color: "#4a4a4a",
-    marginLeft: 4,
+  subtitle: {
+    ...designTokens.typography.body,
+    color: designTokens.color.ink.secondary,
   },
-  input: {
+  card: {
+    ...mobileSurfaceCard,
+    padding: designTokens.spacing.xl,
+  },
+  errorBanner: {
+    backgroundColor: designTokens.color.status.dangerBg,
+    padding: designTokens.spacing.md,
+    borderRadius: designTokens.radius.md,
+    marginBottom: designTokens.spacing.lg,
     borderWidth: 1,
-    borderColor: "#e1e4e8",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: "#1a1a1a",
-    backgroundColor: "#ffffff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    borderColor: designTokens.color.border.danger,
   },
-  inputError: {
-    borderColor: "#ff3b30",
-    backgroundColor: "#fff5f5",
+  errorBannerText: {
+    ...designTokens.typography.body,
+    color: designTokens.color.status.dangerText,
+    fontWeight: "600",
+    textAlign: "center",
   },
-  errorText: {
-    color: "#ff3b30",
-    fontSize: 12,
-    marginTop: 6,
-    marginLeft: 4,
-  },
-  forgotPasswordContainer: {
+  forgotPassword: {
     alignSelf: "flex-end",
-    marginBottom: 24,
-    marginTop: -8,
+    marginBottom: designTokens.spacing.xl,
   },
   forgotPasswordText: {
-    fontSize: 14,
-    color: "#007aff",
+    ...designTokens.typography.body,
+    color: designTokens.color.ink.accent,
     fontWeight: "600",
   },
-  button: {
-    backgroundColor: "#007aff",
-    paddingVertical: 16,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#007aff",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+  submitButton: {
+    width: "100%",
   },
-  buttonDisabled: {
-    backgroundColor: "#b2d7ff",
-    shadowOpacity: 0,
-  },
-  buttonText: {
-    color: "#ffffff",
-    fontSize: 17,
-    fontWeight: "700",
-  },
-  dividerContainer: {
+  divider: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 32,
+    marginVertical: designTokens.spacing.xl,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: "#e1e4e8",
+    backgroundColor: designTokens.color.border.strong,
   },
   dividerText: {
-    marginHorizontal: 16,
-    color: "#8e8e93",
-    fontSize: 14,
-    fontWeight: "500",
+    ...designTokens.typography.body,
+    marginHorizontal: designTokens.spacing.md,
+    color: designTokens.color.ink.muted,
   },
-  secondaryButton: {
-    borderWidth: 1.5,
-    borderColor: "#007aff",
-    paddingVertical: 15,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "transparent",
-    marginBottom: 32,
+  googleButton: {
+    width: "100%",
   },
-  secondaryButtonText: {
-    color: "#007aff",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  registerLinkContainer: {
+  footer: {
     flexDirection: "row",
     justifyContent: "center",
-    alignItems: "center",
+    marginTop: designTokens.spacing.xxl,
   },
-  registerLinkText: {
-    fontSize: 15,
-    color: "#666",
+  footerText: {
+    ...designTokens.typography.body,
+    color: designTokens.color.ink.secondary,
   },
   registerLink: {
-    fontSize: 15,
-    color: "#007aff",
-    fontWeight: "700",
-  },
-  errorContainer: {
-    backgroundColor: "#fee",
-    borderColor: "#fcc",
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 20,
-  },
-  errorMessage: {
-    color: "#c33",
-    fontSize: 14,
-    textAlign: "center",
-    fontWeight: "500",
+    ...designTokens.typography.body,
+    color: designTokens.color.ink.accent,
+    fontWeight: "800",
+    marginLeft: designTokens.spacing.xs,
   },
 });
-
-function getParamValue(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
-}

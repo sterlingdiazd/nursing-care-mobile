@@ -3,9 +3,18 @@ import path from "node:path";
 
 export default defineConfig({
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "."),
-    },
+    alias: [
+      { find: "@", replacement: path.resolve(__dirname, ".") },
+      {
+        find: "@/assets/images/icon.png",
+        replacement: path.resolve(__dirname, "test/mocks/static-asset.ts"),
+      },
+      { find: "react-native", replacement: path.resolve(__dirname, "test/mocks/react-native.ts") },
+      {
+        find: /^react-native\/.+$/,
+        replacement: path.resolve(__dirname, "test/mocks/react-native-subpath.ts"),
+      },
+    ],
     extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
   },
   optimizeDeps: {
@@ -26,12 +35,15 @@ export default defineConfig({
     server: {
       deps: {
         inline: [
-          "react-native",
           "@testing-library/react-native",
+          "@react-native-picker/picker",
+          "react-native-worklets",
+          "@react-navigation",
           "expo",
           "expo-router",
           "expo-constants",
           "expo-linking",
+          "expo-web-browser",
           "react-native-safe-area-context",
           "src/services/payrollService",
           "src/services/payrollTypes",
@@ -40,4 +52,3 @@ export default defineConfig({
     },
   },
 });
-

@@ -1,6 +1,6 @@
 import * as Linking from "expo-linking";
-import { router } from "expo-router";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import { Alert, StyleSheet, Text, View, ScrollView, Platform } from "react-native";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
@@ -14,9 +14,12 @@ import { authTestIds } from "@/src/testing/authTestIds";
 import { testProps } from "@/src/testing/testIds";
 import { formatRoleLabels } from "@/src/utils/roleLabels";
 import { hapticFeedback } from "@/src/utils/haptics";
-import { mobilePrimaryButton, mobileSecondaryButton, mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
+import { designTokens } from "@/src/design-system/tokens";
+import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
+import { FormButton } from "@/src/components/form";
 
 export default function AccountScreen() {
+  const router = useRouter();
   const { email, isAuthenticated, logout, roles, token } = useAuth();
   const apiBaseUrl = getMobileApiBaseUrl();
 
@@ -28,13 +31,14 @@ export default function AccountScreen() {
     }
 
     try {
-      hapticFeedback.light();
+      hapticFeedback.selection();
       const authUrl = getGoogleOAuthStartUrl("mobile");
       logClientEvent("mobile.ui", "Google OAuth started from account screen", {
         authUrl,
       });
       await Linking.openURL(authUrl);
     } catch (error: any) {
+      hapticFeedback.error();
       Alert.alert(
         "No se pudo abrir Google",
         error?.message || "No fue posible abrir Google OAuth.",
@@ -42,166 +46,166 @@ export default function AccountScreen() {
     }
   };
 
+  const onLogout = async () => {
+    hapticFeedback.selection();
+    logClientEvent("mobile.ui", "Account screen logout tapped");
+    await logout();
+    router.replace("/");
+  };
+
   return (
     <MobileWorkspaceShell
       eyebrow="Cuenta"
-      title="Acceso y sesion"
-      description="Consulta el estado actual de tu cuenta y cambia de acceso cuando lo necesites."
+      title="Acceso y sesión"
+      description="Consulta el estado actual de tu cuenta y gestiona tu sesión."
     >
-      <View style={styles.card}>
-        <Text style={styles.sectionEyebrow}>Sesion</Text>
-        <Text style={styles.sectionTitle}>
-          {isAuthenticated ? "Tu sesion esta activa." : "No hay una sesion activa."}
-        </Text>
-        <Text style={styles.copy}>{email ?? "No hay correo cargado."}</Text>
-        <Text style={styles.copy}>
-          Roles: {formatRoleLabels(roles)}
-        </Text>
-        <Text style={styles.copy}>
-          Token: {token ? `${token.slice(0, 18)}...` : "Sin token cargado"}
-        </Text>
-        <Text style={styles.copy}>API: {apiBaseUrl}</Text>
-      </View>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Estado de Sesión</Text>
+          
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Usuario</Text>
+            <Text style={styles.infoValue}>{email ?? "No autenticado"}</Text>
+          </View>
 
-      <View style={styles.card}>
-        <Text style={styles.sectionEyebrow}>Acceso</Text>
-        <Text style={styles.sectionTitle}>
-          {isAuthenticated ? "Cambia o cierra la cuenta actual." : "Elige como entrar."}
-        </Text>
-        <Text style={styles.copy}>
-          Google sigue siendo el acceso principal. Tambien puedes abrir las pantallas completas de login.
-        </Text>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Roles</Text>
+            <Text style={styles.infoValue}>{formatRoleLabels(roles) || "Ninguno"}</Text>
+          </View>
 
-        <Pressable
-          {...testProps(authTestIds.account.googleButton)}
-          onPress={() => {
-            void onGoogleLogin();
-          }}
-          style={({ pressed }) => [
-            styles.primaryButton,
-            pressed && styles.buttonPressed,
-          ]}
-        >
-          <Text style={styles.primaryButtonText}>
-            {isAuthenticated ? "Cambiar cuenta con Google" : "Continuar con Google"}
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Servidor</Text>
+            <Text style={styles.infoValue}>{apiBaseUrl}</Text>
+          </View>
+
+          {token ? (
+            <View style={styles.tokenBox}>
+              <Text style={styles.tokenLabel}>Token de acceso</Text>
+              <Text style={styles.tokenValue}>{token.slice(0, 32)}...</Text>
+            </View>
+          ) : null}
+        </View>
+
+        <View style={[styles.card, styles.actionsCard]}>
+          <Text style={styles.sectionTitle}>Acciones</Text>
+          <Text style={styles.copy}>
+            Gestiona tu acceso utilizando los servicios vinculados o cambia de cuenta.
           </Text>
-        </Pressable>
 
-        {!isAuthenticated && (
-          <>
-            <Pressable
-              onPress={() => {
-                hapticFeedback.light();
-                router.push("/login");
-              }}
-              style={({ pressed }) => [
-                styles.secondaryButton,
-                pressed && styles.buttonPressed,
-              ]}
-            >
-              <Text style={styles.secondaryButtonText}>Iniciar sesion</Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() => {
-                hapticFeedback.light();
-                router.push("/register");
-              }}
-              style={({ pressed }) => [
-                styles.secondaryButton,
-                pressed && styles.buttonPressed,
-              ]}
-            >
-              <Text style={styles.secondaryButtonText}>Registrar</Text>
-            </Pressable>
-          </>
-        )}
-
-        {isAuthenticated && (
-          <Pressable
-            {...testProps(authTestIds.account.logoutButton)}
-            onPress={() => {
-              hapticFeedback.light();
-              logClientEvent("mobile.ui", "Account screen logout tapped");
-              void (async () => {
-                await logout();
-                router.replace("/");
-              })();
-            }}
-            style={({ pressed }) => [
-              styles.dangerButton,
-              pressed && styles.buttonPressed,
-            ]}
+          <FormButton
+            testID={authTestIds.account.googleButton}
+            onPress={onGoogleLogin}
+            variant="secondary"
+            style={styles.actionButton}
           >
-            <Text style={styles.dangerButtonText}>Cerrar sesion</Text>
-          </Pressable>
-        )}
-      </View>
+            {isAuthenticated ? "Cambiar cuenta con Google" : "Continuar con Google"}
+          </FormButton>
+
+          {!isAuthenticated && (
+            <>
+              <FormButton
+                testID="account-login-redirect"
+                onPress={() => {
+                  hapticFeedback.selection();
+                  router.push("/login");
+                }}
+                variant="secondary"
+                style={styles.actionButton}
+              >
+                Ir a Iniciar Sesión
+              </FormButton>
+
+              <FormButton
+                testID="account-register-redirect"
+                onPress={() => {
+                  hapticFeedback.selection();
+                  router.push("/register");
+                }}
+                variant="secondary"
+                style={styles.actionButton}
+              >
+                Ir a Registro
+              </FormButton>
+            </>
+          )}
+
+          {isAuthenticated && (
+            <FormButton
+              testID={authTestIds.account.logoutButton}
+              onPress={onLogout}
+              variant="danger"
+              style={styles.logoutButton}
+            >
+              Cerrar Sesión
+            </FormButton>
+          )}
+        </View>
+      </ScrollView>
     </MobileWorkspaceShell>
   );
 }
 
 const styles = StyleSheet.create({
+  scrollContent: {
+    paddingBottom: designTokens.spacing.xxl,
+  },
   card: {
     ...mobileSurfaceCard,
-    borderRadius: mobileTheme.radius.xl,
-    padding: 20,
+    padding: designTokens.spacing.xl,
+    marginBottom: designTokens.spacing.lg,
   },
-  sectionEyebrow: {
-    ...mobileTheme.typography.eyebrow,
-    color: mobileTheme.colors.ink.muted,
-    marginBottom: 8,
+  actionsCard: {
+    backgroundColor: designTokens.color.surface.secondary,
   },
   sectionTitle: {
-    ...mobileTheme.typography.title,
-    color: mobileTheme.colors.ink.primary,
-    marginBottom: 10,
+    ...designTokens.typography.sectionTitle,
+    color: designTokens.color.ink.primary,
+    marginBottom: designTokens.spacing.lg,
+  },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: designTokens.spacing.md,
+    paddingBottom: designTokens.spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: designTokens.color.border.subtle,
+  },
+  infoLabel: {
+    ...designTokens.typography.label,
+    color: designTokens.color.ink.secondary,
+  },
+  infoValue: {
+    ...designTokens.typography.body,
+    color: designTokens.color.ink.primary,
+    fontWeight: "600",
+  },
+  tokenBox: {
+    marginTop: designTokens.spacing.md,
+    padding: designTokens.spacing.md,
+    backgroundColor: designTokens.color.surface.tertiary,
+    borderRadius: designTokens.radius.md,
+  },
+  tokenLabel: {
+    ...designTokens.typography.eyebrow,
+    fontSize: 10,
+    color: designTokens.color.ink.muted,
+    marginBottom: 4,
+  },
+  tokenValue: {
+    ...designTokens.typography.body,
+    fontSize: 11,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    color: designTokens.color.ink.secondary,
   },
   copy: {
-    ...mobileTheme.typography.body,
-    color: mobileTheme.colors.ink.secondary,
-    marginBottom: 6,
+    ...designTokens.typography.body,
+    color: designTokens.color.ink.secondary,
+    marginBottom: designTokens.spacing.xl,
   },
-  primaryButton: {
-    marginTop: 14,
-    ...mobilePrimaryButton,
-    borderRadius: mobileTheme.radius.md,
-    paddingVertical: 15,
-    paddingHorizontal: 18,
+  actionButton: {
+    marginBottom: designTokens.spacing.md,
   },
-  secondaryButton: {
-    marginTop: 12,
-    ...mobileSecondaryButton,
-    borderRadius: mobileTheme.radius.md,
-    paddingVertical: 15,
-    paddingHorizontal: 18,
-  },
-  dangerButton: {
-    marginTop: 12,
-    backgroundColor: "#fff1f2",
-    borderRadius: 16,
-    paddingVertical: 15,
-    paddingHorizontal: 18,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#fecdd3",
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  secondaryButtonText: {
-    color: "#007aff",
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  dangerButtonText: {
-    color: "#be123c",
-    fontSize: 15,
-    fontWeight: "800",
-  },
-  buttonPressed: {
-    opacity: 0.88,
+  logoutButton: {
+    marginTop: designTokens.spacing.sm,
   },
 });

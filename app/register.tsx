@@ -4,19 +4,14 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  ActivityIndicator,
-  Alert,
   StyleSheet,
   SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth, UserProfileType } from "@/src/context/AuthContext";
 import { validateEmail, validatePassword } from "@/src/api/auth";
-import * as Linking from "expo-linking";
-import {
-  getGoogleOAuthStartUrl,
-  getLocalHttpsCertificateWarning,
-} from "@/src/services/authService";
 import {
   getExactDigitsFieldError,
   getOptionalDigitsFieldError,
@@ -31,6 +26,8 @@ import type { CatalogCodeNameOption } from "@/src/types/catalog";
 import { hapticFeedback } from "@/src/utils/haptics";
 import { authTestIds } from "@/src/testing/authTestIds";
 import { FormButton, FormInput } from "@/src/components/form";
+import { designTokens } from "@/src/design-system/tokens";
+import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import { testProps } from "@/src/testing/testIds";
 
 const clientProfileCopy =
@@ -38,6 +35,13 @@ const clientProfileCopy =
 
 const nurseProfileCopy =
   "Perfil de enfermeria seleccionado. Podras iniciar sesion al terminar el registro, pero el panel quedara en revision administrativa hasta que completen tu perfil.";
+
+enum RegisterStep {
+  IDENTITY = 0,
+  ROLE = 1,
+  CREDENTIALS = 2,
+  NURSE_DETAILS = 3,
+}
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -50,7 +54,10 @@ export default function RegisterScreen() {
     requiresProfileCompletion,
   } = useAuth();
 
+  const isProfileCompletionMode = isAuthenticated && requiresProfileCompletion;
+
   // Form state
+  const [step, setStep] = useState<RegisterStep>(RegisterStep.IDENTITY);
   const [name, setName] = useState("");
   const [lastName, setLastName] = useState("");
   const [identificationNumber, setIdentificationNumber] = useState("");
@@ -64,7 +71,7 @@ export default function RegisterScreen() {
   const [licenseId, setLicenseId] = useState("");
   const [bankName, setBankName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
-  const isProfileCompletionMode = isAuthenticated && requiresProfileCompletion;
+
   const isNurseRegistration = !isProfileCompletionMode && profileType === UserProfileType.NURSE;
   const effectiveEmail = isProfileCompletionMode ? authEmail ?? "" : email;
 
@@ -82,6 +89,7 @@ export default function RegisterScreen() {
   const [bankNameError, setBankNameError] = useState("");
   const [accountNumberError, setAccountNumberError] = useState("");
   const [specialtyOptions, setSpecialtyOptions] = useState<CatalogCodeNameOption[]>([]);
+  const [generalError, setGeneralError] = useState("");
 
   useEffect(() => {
     void getNurseProfileOptions()
@@ -90,116 +98,116 @@ export default function RegisterScreen() {
   }, []);
 
   const getEmailError = (value: string) => {
-    if (!value) {
-      return "El correo es obligatorio";
-    }
-
-    if (!validateEmail(value)) {
-      return "El formato del correo no es valido";
-    }
-
+    if (!value) return "El correo es obligatorio";
+    if (!validateEmail(value)) return "El formato del correo no es valido";
     return "";
   };
 
   const getPasswordError = (value: string) => {
-    if (!value) {
-      return "La contrasena es obligatoria";
-    }
-
+    if (!value) return "La contrasena es obligatoria";
     const validation = validatePassword(value);
     return validation.isValid ? "" : validation.message;
   };
 
   const getConfirmPasswordError = (value: string) => {
-    if (!value) {
-      return "Confirma tu contrasena";
-    }
-
-    if (value !== password) {
-      return "Las contrasenas no coinciden";
-    }
-
+    if (!value) return "Confirma tu contrasena";
+    if (value !== password) return "Las contrasenas no coinciden";
     return "";
   };
 
-  // Validation functions
-  const validateEmailField = (value: string) => {
-    setEmailError(getEmailError(value));
-  };
-
-  const validatePasswordField = (value: string) => {
-    setPasswordError(getPasswordError(value));
-  };
-
-  const validateConfirmPasswordField = (value: string) => {
-    setConfirmPasswordError(getConfirmPasswordError(value));
-  };
-
-  // Handle registration submission
-  const handleSubmit = async () => {
-    // Validate all fields
+  const validateIdentity = () => {
     const nextNameError = getTextOnlyFieldError(name, "El nombre");
     const nextLastNameError = getTextOnlyFieldError(lastName, "El apellido");
-    const nextIdentificationNumberError = getExactDigitsFieldError(
-      identificationNumber,
-      "La cedula",
-      11
-    );
+    const nextIdentificationNumberError = getExactDigitsFieldError(identificationNumber, "La cedula", 11);
     const nextPhoneError = getExactDigitsFieldError(phone, "El telefono", 10);
-    const nextEmailError = getEmailError(effectiveEmail);
-    const nextPasswordError = isProfileCompletionMode ? "" : getPasswordError(password);
-    const nextConfirmPasswordError = isProfileCompletionMode ? "" : getConfirmPasswordError(confirmPassword);
-    const nextHireDateError = isNurseRegistration && !hireDate.trim() ? "La fecha de contratacion es obligatoria" : "";
-    const nextSpecialtyError = isNurseRegistration && !specialty.trim() ? "La especialidad es obligatoria" : "";
-    const nextLicenseIdError = isNurseRegistration ? getOptionalDigitsFieldError(licenseId, "La licencia") : "";
-    const nextBankNameError = isNurseRegistration ? getTextOnlyFieldError(bankName, "El banco") : "";
-    const nextAccountNumberError = isNurseRegistration ? getOptionalDigitsFieldError(accountNumber, "El numero de cuenta") : "";
 
     setNameError(nextNameError);
     setLastNameError(nextLastNameError);
     setIdentificationNumberError(nextIdentificationNumberError);
     setPhoneError(nextPhoneError);
+
+    return !(nextNameError || nextLastNameError || nextIdentificationNumberError || nextPhoneError);
+  };
+
+  const validateCredentials = () => {
+    const nextEmailError = getEmailError(effectiveEmail);
+    const nextPasswordError = getPasswordError(password);
+    const nextConfirmPasswordError = getConfirmPasswordError(confirmPassword);
+
     setEmailError(nextEmailError);
     setPasswordError(nextPasswordError);
     setConfirmPasswordError(nextConfirmPasswordError);
+
+    return !(nextEmailError || nextPasswordError || nextConfirmPasswordError);
+  };
+
+  const validateNurseDetails = () => {
+    const nextHireDateError = !hireDate.trim() ? "La fecha de contratacion es obligatoria" : "";
+    const nextSpecialtyError = !specialty.trim() ? "La especialidad es obligatoria" : "";
+    const nextLicenseIdError = getOptionalDigitsFieldError(licenseId, "La licencia");
+    const nextBankNameError = getTextOnlyFieldError(bankName, "El banco");
+    const nextAccountNumberError = getOptionalDigitsFieldError(accountNumber, "El numero de cuenta");
+
     setHireDateError(nextHireDateError);
     setSpecialtyError(nextSpecialtyError);
     setLicenseIdError(nextLicenseIdError);
     setBankNameError(nextBankNameError);
     setAccountNumberError(nextAccountNumberError);
 
-    if (
-      nextNameError ||
-      nextLastNameError ||
-      nextIdentificationNumberError ||
-      nextPhoneError ||
-      nextEmailError ||
-      nextPasswordError ||
-      nextConfirmPasswordError ||
-      nextHireDateError ||
-      nextSpecialtyError ||
-      nextLicenseIdError ||
-      nextBankNameError ||
-      nextAccountNumberError
-    ) {
-      Alert.alert("Validacion", "Corrige los errores antes de enviar el formulario.");
-      return;
-    }
+    return !(nextHireDateError || nextSpecialtyError || nextLicenseIdError || nextBankNameError || nextAccountNumberError);
+  };
 
+  const handleNext = () => {
+    hapticFeedback.selection();
+    setGeneralError("");
+
+    if (step === RegisterStep.IDENTITY) {
+      if (validateIdentity()) {
+        if (isProfileCompletionMode) {
+          void handleSubmit();
+        } else {
+          setStep(RegisterStep.ROLE);
+        }
+      } else {
+        hapticFeedback.error();
+      }
+    } else if (step === RegisterStep.ROLE) {
+      setStep(RegisterStep.CREDENTIALS);
+    } else if (step === RegisterStep.CREDENTIALS) {
+      if (validateCredentials()) {
+        if (profileType === UserProfileType.NURSE) {
+          setStep(RegisterStep.NURSE_DETAILS);
+        } else {
+          void handleSubmit();
+        }
+      } else {
+        hapticFeedback.error();
+      }
+    } else if (step === RegisterStep.NURSE_DETAILS) {
+      if (validateNurseDetails()) {
+        void handleSubmit();
+      } else {
+        hapticFeedback.error();
+      }
+    }
+  };
+
+  const handleBack = () => {
+    hapticFeedback.selection();
+    if (step === RegisterStep.NURSE_DETAILS) {
+      setStep(RegisterStep.CREDENTIALS);
+    } else if (step === RegisterStep.CREDENTIALS) {
+      setStep(RegisterStep.ROLE);
+    } else if (step === RegisterStep.ROLE) {
+      setStep(RegisterStep.IDENTITY);
+    }
+  };
+
+  const handleSubmit = async () => {
     try {
       if (isProfileCompletionMode) {
-        await completeProfile(
-          name.trim(),
-          lastName.trim(),
-          identificationNumber.trim(),
-          phone.trim()
-        );
-        Alert.alert("Registro completado", "Tu cuenta ya esta activa y lista para usar.", [
-          {
-            text: "Continuar",
-            onPress: () => router.replace("/"),
-          },
-        ]);
+        await completeProfile(name.trim(), lastName.trim(), identificationNumber.trim(), phone.trim());
+        router.replace("/");
       } else {
         await register(
           name.trim(),
@@ -216,662 +224,461 @@ export default function RegisterScreen() {
           isNurseRegistration ? accountNumber.trim() || null : null,
           profileType
         );
-
-        // Show success message based on profile type
-        if (profileType === UserProfileType.NURSE) {
-          Alert.alert(
-            "Registro exitoso",
-            "Tu cuenta ya puede iniciar sesion, pero el panel mostrara que administracion debe completar tu perfil de enfermeria antes de habilitar el acceso operativo.",
-            [
-              {
-                text: "Aceptar",
-                onPress: () => router.replace("/"),
-              },
-            ]
-          );
-        } else {
-          Alert.alert(
-            "Registro exitoso",
-            "Tu cuenta ya entro al espacio autenticado.",
-            [
-              {
-                text: "Continuar",
-                onPress: () => router.replace("/"),
-              },
-            ]
-          );
-        }
+        router.replace("/");
       }
-
-      // Clear form
-      setName("");
-      setLastName("");
-      setIdentificationNumber("");
-      setPhone("");
-      setEmail("");
-      setPassword("");
-      setConfirmPassword("");
-      setHireDate("");
-      setSpecialty("");
-      setLicenseId("");
-      setBankName("");
-      setAccountNumber("");
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : "No fue posible completar el registro";
-      Alert.alert("Error de registro", errorMsg);
+      hapticFeedback.error();
+      setGeneralError(error instanceof Error ? error.message : "No fue posible completar el registro");
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    const certificateWarning = getLocalHttpsCertificateWarning();
+  const renderIdentityStep = () => (
+    <View style={styles.stepContainer}>
+      <Text style={styles.stepTitle}>Información Personal</Text>
+      <Text style={styles.stepSubtitle}>Cuéntanos un poco sobre ti</Text>
 
-    if (certificateWarning) {
-      Alert.alert("Certificado local requerido", certificateWarning);
-    }
+      <FormInput
+        testID={authTestIds.register.nameInput}
+        label="Nombre"
+        placeholder="Tu nombre"
+        value={name}
+        onChangeText={(val) => setName(sanitizeTextOnlyInput(val))}
+        error={nameError}
+      />
 
-    try {
-      await Linking.openURL(getGoogleOAuthStartUrl("mobile"));
-    } catch (error) {
-      Alert.alert(
-        "Error con Google",
-        error instanceof Error ? error.message : "No fue posible abrir el acceso con Google."
-      );
+      <FormInput
+        testID={authTestIds.register.lastNameInput}
+        label="Apellido"
+        placeholder="Tu apellido"
+        value={lastName}
+        onChangeText={(val) => setLastName(sanitizeTextOnlyInput(val))}
+        error={lastNameError}
+      />
+
+      <FormInput
+        testID={authTestIds.register.identificationInput}
+        label="Cédula"
+        placeholder="00112345678"
+        value={identificationNumber}
+        onChangeText={(val) => setIdentificationNumber(sanitizeDigitsOnlyInput(val, 11))}
+        error={identificationNumberError}
+        keyboardType="number-pad"
+        maxLength={11}
+      />
+
+      <FormInput
+        testID={authTestIds.register.phoneInput}
+        label="Teléfono"
+        placeholder="8095550101"
+        value={phone}
+        onChangeText={(val) => setPhone(sanitizeDigitsOnlyInput(val, 10))}
+        error={phoneError}
+        keyboardType="number-pad"
+        maxLength={10}
+      />
+    </View>
+  );
+
+  const renderRoleStep = () => (
+    <View style={styles.stepContainer}>
+      <Text style={styles.stepTitle}>Tipo de Perfil</Text>
+      <Text style={styles.stepSubtitle}>¿Cómo usarás Nursing Care?</Text>
+
+      <TouchableOpacity
+        style={[
+          styles.roleCard,
+          profileType === UserProfileType.CLIENT ? styles.roleCardActive : null,
+        ]}
+        onPress={() => {
+          hapticFeedback.selection();
+          setProfileType(UserProfileType.CLIENT);
+        }}
+        {...testProps(authTestIds.register.profileTypeClientRadio)}
+      >
+        <View style={styles.roleCardHeader}>
+          <Text style={styles.roleCardTitle}>Cliente</Text>
+          <View style={[
+            styles.radioCircle,
+            profileType === UserProfileType.CLIENT ? styles.radioCircleActive : null
+          ]} />
+        </View>
+        <Text style={styles.roleCardText}>{clientProfileCopy}</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[
+          styles.roleCard,
+          profileType === UserProfileType.NURSE ? styles.roleCardActive : null,
+        ]}
+        onPress={() => {
+          hapticFeedback.selection();
+          setProfileType(UserProfileType.NURSE);
+        }}
+        {...testProps(authTestIds.register.profileTypeNurseRadio)}
+      >
+        <View style={styles.roleCardHeader}>
+          <Text style={styles.roleCardTitle}>Enfermería</Text>
+          <View style={[
+            styles.radioCircle,
+            profileType === UserProfileType.NURSE ? styles.radioCircleActive : null
+          ]} />
+        </View>
+        <Text style={styles.roleCardText}>{nurseProfileCopy}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderCredentialsStep = () => (
+    <View style={styles.stepContainer}>
+      <Text style={styles.stepTitle}>Acceso</Text>
+      <Text style={styles.stepSubtitle}>Configura tu correo y contraseña</Text>
+
+      <FormInput
+        testID={authTestIds.register.emailInput}
+        label="Correo Electrónico"
+        placeholder="tu@correo.com"
+        value={email}
+        onChangeText={setEmail}
+        error={emailError}
+        keyboardType="email-address"
+        autoCapitalize="none"
+      />
+
+      <FormInput
+        testID={authTestIds.register.passwordInput}
+        label="Contraseña"
+        placeholder="Mínimo 6 caracteres"
+        value={password}
+        onChangeText={setPassword}
+        error={passwordError}
+        secureTextEntry
+      />
+
+      <FormInput
+        testID={authTestIds.register.confirmPasswordInput}
+        label="Confirmar Contraseña"
+        placeholder="Vuelve a escribir tu contraseña"
+        value={confirmPassword}
+        onChangeText={setConfirmPassword}
+        error={confirmPasswordError}
+        secureTextEntry
+      />
+    </View>
+  );
+
+  const renderNurseDetailsStep = () => (
+    <View style={styles.stepContainer}>
+      <Text style={styles.stepTitle}>Datos Profesionales</Text>
+      <Text style={styles.stepSubtitle}>Información para validación administrativa</Text>
+
+      <FormInput
+        testID={authTestIds.register.hireDateInput}
+        label="Fecha de Contratación"
+        placeholder="AAAA-MM-DD"
+        value={hireDate}
+        onChangeText={setHireDate}
+        error={hireDateError}
+      />
+
+      <View style={styles.fieldGroup}>
+        <Text style={styles.fieldLabel}>Especialidad</Text>
+        <View style={styles.chipGroup}>
+          {specialtyOptions.map((opt) => (
+            <TouchableOpacity
+              key={opt.code}
+              style={[
+                styles.chip,
+                specialty === opt.code ? styles.chipActive : null,
+              ]}
+              onPress={() => {
+                hapticFeedback.selection();
+                setSpecialty(opt.code);
+              }}
+            >
+              <Text style={[
+                styles.chipText,
+                specialty === opt.code ? styles.chipTextActive : null,
+              ]}>{opt.displayName}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        {specialtyError ? <Text style={styles.fieldError}>{specialtyError}</Text> : null}
+      </View>
+
+      <FormInput
+        testID="register-license-input"
+        label="Licencia"
+        placeholder="Opcional"
+        value={licenseId}
+        onChangeText={(val) => setLicenseId(sanitizeDigitsOnlyInput(val))}
+        error={licenseIdError}
+        keyboardType="number-pad"
+      />
+
+      <FormInput
+        testID="register-bank-name-input"
+        label="Banco"
+        placeholder="Nombre del banco"
+        value={bankName}
+        onChangeText={(val) => setBankName(sanitizeTextOnlyInput(val))}
+        error={bankNameError}
+      />
+
+      <FormInput
+        testID="register-account-number-input"
+        label="Número de Cuenta"
+        placeholder="Opcional"
+        value={accountNumber}
+        onChangeText={(val) => setAccountNumber(sanitizeDigitsOnlyInput(val))}
+        error={accountNumberError}
+        keyboardType="number-pad"
+      />
+    </View>
+  );
+
+  const renderStepContent = () => {
+    switch (step) {
+      case RegisterStep.IDENTITY: return renderIdentityStep();
+      case RegisterStep.ROLE: return renderRoleStep();
+      case RegisterStep.CREDENTIALS: return renderCredentialsStep();
+      case RegisterStep.NURSE_DETAILS: return renderNurseDetailsStep();
     }
+  };
+
+  const getStepProgress = () => {
+    const total = isNurseRegistration ? 4 : 3;
+    const current = step + 1;
+    return (current / total) * 100;
   };
 
   return (
-    <SafeAreaView style={styles.container} {...testProps(authTestIds.register.screen)}>
-      <ScrollView contentContainerStyle={styles.contentContainer}>
-      {/* Title */}
-      <Text style={styles.title}>{isProfileCompletionMode ? "Completar registro" : "Crear cuenta"}</Text>
-
-      {/* Email Input */}
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Nombre</Text>
-        <FormInput
-          testID={authTestIds.register.nameInput}
-          style={[styles.input, nameError ? styles.inputError : null]}
-          placeholder="Tu nombre"
-          value={name}
-          onChangeText={(value) => {
-            setName(sanitizeTextOnlyInput(value));
-            setNameError(getRejectedTextOnlyInputError(value, "El nombre"));
-          }}
-          onBlur={() => setNameError(getTextOnlyFieldError(name, "El nombre"))}
-          editable={!isLoading}
-          placeholderTextColor="#999"
-        />
-        {nameError ? <Text style={styles.errorText} {...testProps(authTestIds.register.nameError)}>{nameError}</Text> : null}
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Apellido</Text>
-        <FormInput
-          testID={authTestIds.register.lastNameInput}
-          style={[styles.input, lastNameError ? styles.inputError : null]}
-          placeholder="Tu apellido"
-          value={lastName}
-          onChangeText={(value) => {
-            setLastName(sanitizeTextOnlyInput(value));
-            setLastNameError(getRejectedTextOnlyInputError(value, "El apellido"));
-          }}
-          onBlur={() => setLastNameError(getTextOnlyFieldError(lastName, "El apellido"))}
-          editable={!isLoading}
-          placeholderTextColor="#999"
-        />
-        {lastNameError ? <Text style={styles.errorText} {...testProps(authTestIds.register.lastNameError)}>{lastNameError}</Text> : null}
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Cédula</Text>
-        <FormInput
-          testID={authTestIds.register.identificationInput}
-          style={[styles.input, identificationNumberError ? styles.inputError : null]}
-          placeholder="00112345678"
-          value={identificationNumber}
-          onChangeText={(value) => {
-            setIdentificationNumber(sanitizeDigitsOnlyInput(value, 11));
-            setIdentificationNumberError(getRejectedDigitsOnlyInputError(value, "La cedula", 11));
-          }}
-          onBlur={() => setIdentificationNumberError(getExactDigitsFieldError(identificationNumber, "La cedula", 11))}
-          keyboardType="number-pad"
-          maxLength={11}
-          editable={!isLoading}
-          placeholderTextColor="#999"
-        />
-        {identificationNumberError ? (
-          <Text style={styles.errorText} {...testProps(authTestIds.register.identificationError)}>{identificationNumberError}</Text>
-        ) : null}
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Telefono</Text>
-        <FormInput
-          testID={authTestIds.register.phoneInput}
-          style={[styles.input, phoneError ? styles.inputError : null]}
-          placeholder="8095550101"
-          value={phone}
-          onChangeText={(value) => {
-            setPhone(sanitizeDigitsOnlyInput(value, 10));
-            setPhoneError(getRejectedDigitsOnlyInputError(value, "El telefono", 10));
-          }}
-          onBlur={() => setPhoneError(getExactDigitsFieldError(phone, "El telefono", 10))}
-          keyboardType="number-pad"
-          maxLength={10}
-          editable={!isLoading}
-          placeholderTextColor="#999"
-        />
-        {phoneError ? <Text style={styles.errorText} {...testProps(authTestIds.register.phoneError)}>{phoneError}</Text> : null}
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Correo</Text>
-        <FormInput
-          testID={authTestIds.register.emailInput}
-          style={[styles.input, emailError ? styles.inputError : null]}
-          placeholder="tu@correo.com"
-          value={effectiveEmail}
-          onChangeText={setEmail}
-          onBlur={() => validateEmailField(effectiveEmail)}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          editable={!isLoading && !isProfileCompletionMode}
-          placeholderTextColor="#999"
-        />
-        {emailError ? <Text style={styles.errorText} {...testProps(authTestIds.register.emailError)}>{emailError}</Text> : null}
-      </View>
-
-      {!isProfileCompletionMode && (
-        <>
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Contrasena</Text>
-            <FormInput
-              testID={authTestIds.register.passwordInput}
-              style={[styles.input, passwordError ? styles.inputError : null]}
-              placeholder="Minimo 6 caracteres"
-              value={password}
-              onChangeText={setPassword}
-              onBlur={() => validatePasswordField(password)}
-              secureTextEntry
-              editable={!isLoading}
-              placeholderTextColor="#999"
-            />
-            {passwordError ? <Text style={styles.errorText} {...testProps(authTestIds.register.passwordError)}>{passwordError}</Text> : null}
-          </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Confirmar contrasena</Text>
-            <FormInput
-              testID={authTestIds.register.confirmPasswordInput}
-              style={[styles.input, confirmPasswordError ? styles.inputError : null]}
-              placeholder="Vuelve a escribir tu contrasena"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              onBlur={() => validateConfirmPasswordField(confirmPassword)}
-              secureTextEntry
-              editable={!isLoading}
-              placeholderTextColor="#999"
-            />
-            {confirmPasswordError ? <Text style={styles.errorText} {...testProps(authTestIds.register.confirmPasswordError)}>{confirmPasswordError}</Text> : null}
-          </View>
-        </>
-      )}
-
-      {!isProfileCompletionMode && (
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Registrarse como:</Text>
-          <View style={styles.radioGroup}>
-            <TouchableOpacity
-              style={styles.radioOption}
-              onPress={() => {
-                hapticFeedback.light();
-                setProfileType(UserProfileType.CLIENT);
-              }}
-              disabled={isLoading}
-            >
-              <View
-                style={[
-                  styles.radioButton,
-                  profileType === UserProfileType.CLIENT ? styles.radioButtonSelected : null,
-                ]}
-              />
-              <Text style={styles.radioLabel}>Cliente</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.radioOption}
-              onPress={() => {
-                hapticFeedback.light();
-                setProfileType(UserProfileType.NURSE);
-              }}
-              disabled={isLoading}
-            >
-              <View
-                style={[
-                  styles.radioButton,
-                  profileType === UserProfileType.NURSE ? styles.radioButtonSelected : null,
-                ]}
-              />
-              <Text style={styles.radioLabel}>Enfermeria (requiere completacion administrativa)</Text>
-            </TouchableOpacity>
-          </View>
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.flex}
+      >
+        <View style={styles.progressBar}>
+          <View style={[styles.progressFill, { width: `${getStepProgress()}%` }]} />
         </View>
-      )}
 
-      {!isProfileCompletionMode && (
-        <View
-          style={[
-            styles.profileInfoBox,
-            profileType === UserProfileType.NURSE ? styles.nurseInfoBox : styles.clientInfoBox,
-          ]}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.profileInfoTitle}>
-            {profileType === UserProfileType.NURSE ? "Perfil de enfermeria" : "Perfil de cliente"}
-          </Text>
-          <Text style={styles.profileInfoText}>
-            {profileType === UserProfileType.NURSE ? nurseProfileCopy : clientProfileCopy}
-          </Text>
-        </View>
-      )}
-
-      {isNurseRegistration ? (
-        <>
-          <View style={styles.sectionCard}>
-            <Text style={styles.sectionCardTitle}>Datos del perfil de enfermeria</Text>
-            <Text style={styles.sectionCardCopy}>
-              Completa estos datos para que administracion pueda terminar la configuracion del perfil.
+          <View style={styles.header}>
+            <Text style={styles.title}>
+              {isProfileCompletionMode ? "Completar Perfil" : "Nueva Cuenta"}
             </Text>
           </View>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Fecha de contratacion</Text>
-            <FormInput
-              testID={authTestIds.register.hireDateInput}
-              style={[styles.input, hireDateError ? styles.inputError : null]}
-              placeholder="2026-03-21"
-              value={hireDate}
-              onChangeText={setHireDate}
-              editable={!isLoading}
-              placeholderTextColor="#999"
-            />
-            {hireDateError ? <Text style={styles.errorText}>{hireDateError}</Text> : null}
-          </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Especialidad</Text>
-            <View style={styles.specialtyList}>
-              {specialtyOptions.map((option) => (
-                <TouchableOpacity
-                  key={option.code}
-                  style={[
-                    styles.specialtyChip,
-                    specialty === option.code ? styles.specialtyChipSelected : null,
-                  ]}
-                  onPress={() => {
-                    hapticFeedback.light();
-                    setSpecialty(option.code);
-                  }}
-                  disabled={isLoading}
-                >
-                  <Text
-                    style={[
-                      styles.specialtyChipText,
-                      specialty === option.code ? styles.specialtyChipTextSelected : null,
-                    ]}
-                  >
-                    {option.displayName}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+          {generalError ? (
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorBannerText}>{generalError}</Text>
             </View>
-            {specialtyError ? <Text style={styles.errorText}>{specialtyError}</Text> : null}
+          ) : null}
+
+          <View style={styles.card}>
+            {renderStepContent()}
           </View>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Licencia</Text>
-            <FormInput
-              testID="register-license-input"
-              style={[styles.input, licenseIdError ? styles.inputError : null]}
-              placeholder="Opcional"
-              value={licenseId}
-              onChangeText={(value) => {
-                setLicenseId(sanitizeDigitsOnlyInput(value));
-                setLicenseIdError(getRejectedDigitsOnlyInputError(value, "La licencia"));
-              }}
-              onBlur={() => setLicenseIdError(getOptionalDigitsFieldError(licenseId, "La licencia"))}
-              keyboardType="number-pad"
-              editable={!isLoading}
-              placeholderTextColor="#999"
-            />
-            {licenseIdError ? <Text style={styles.errorText}>{licenseIdError}</Text> : null}
+          <View style={styles.actions}>
+            {step > RegisterStep.IDENTITY ? (
+              <FormButton
+                testID="register-back-button"
+                variant="secondary"
+                onPress={handleBack}
+                style={styles.backButton}
+              >
+                Anterior
+              </FormButton>
+            ) : null}
+
+            <FormButton
+              testID={authTestIds.register.submitButton}
+              onPress={handleNext}
+              isLoading={isLoading}
+              style={styles.nextButton}
+            >
+              {step === (isNurseRegistration ? RegisterStep.NURSE_DETAILS : RegisterStep.CREDENTIALS) 
+                ? (isProfileCompletionMode ? "Completar" : "Registrarse")
+                : "Siguiente"}
+            </FormButton>
           </View>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Banco</Text>
-            <FormInput
-              testID="register-bank-name-input"
-              style={[styles.input, bankNameError ? styles.inputError : null]}
-              placeholder="Banco principal"
-              value={bankName}
-              onChangeText={(value) => {
-                setBankName(sanitizeTextOnlyInput(value));
-                setBankNameError(getRejectedTextOnlyInputError(value, "El banco"));
-              }}
-              onBlur={() => setBankNameError(getTextOnlyFieldError(bankName, "El banco"))}
-              editable={!isLoading}
-              placeholderTextColor="#999"
-            />
-            {bankNameError ? <Text style={styles.errorText}>{bankNameError}</Text> : null}
-          </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Numero de cuenta</Text>
-            <FormInput
-              testID="register-account-number-input"
-              style={[styles.input, accountNumberError ? styles.inputError : null]}
-              placeholder="Opcional"
-              value={accountNumber}
-              onChangeText={(value) => {
-                setAccountNumber(sanitizeDigitsOnlyInput(value));
-                setAccountNumberError(getRejectedDigitsOnlyInputError(value, "El numero de cuenta"));
-              }}
-              onBlur={() => setAccountNumberError(getOptionalDigitsFieldError(accountNumber, "El numero de cuenta"))}
-              keyboardType="number-pad"
-              editable={!isLoading}
-              placeholderTextColor="#999"
-            />
-            {accountNumberError ? <Text style={styles.errorText}>{accountNumberError}</Text> : null}
-          </View>
-        </>
-      ) : null}
-
-      {/* Info Alert */}
-      {!isProfileCompletionMode && profileType === UserProfileType.NURSE ? (
-        <View style={styles.infoBox}>
-          <Text style={styles.infoText}>
-            Despues del registro veras un panel autenticado que indica que administracion debe completar tu perfil antes de habilitar las acciones clinicas.
-          </Text>
-        </View>
-      ) : null}
-
-      {/* Submit Button */}
-      <FormButton
-        testID={authTestIds.register.submitButton}
-        style={[styles.button, isLoading ? styles.buttonDisabled : null]}
-        onPress={() => {
-          hapticFeedback.light();
-          void handleSubmit();
-        }}
-        disabled={isLoading}
-      >
-        {isLoading ? (
-          <ActivityIndicator color="white" size="small" />
-        ) : (
-          <Text style={styles.buttonText}>{isProfileCompletionMode ? "Completar registro" : "Crear cuenta"}</Text>
-        )}
-      </FormButton>
-
-      {!isProfileCompletionMode && (
-        <>
-          <View style={styles.dividerContainer}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>o</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <FormButton
-            testID={authTestIds.register.googleButton}
-            style={[styles.secondaryButton, isLoading ? styles.buttonDisabled : null]}
-            onPress={() => {
-              hapticFeedback.light();
-              void handleGoogleSignIn();
-            }}
-            disabled={isLoading}
-          >
-            <Text style={styles.secondaryButtonText}>Continuar con Google</Text>
-          </FormButton>
-
-          <Text style={styles.secondaryHint}>
-            Google te llevara a completar este mismo formulario antes de usar la app.
-          </Text>
-        </>
-      )}
-
-      {/* Login Link */}
-      {!isProfileCompletionMode && (
-        <View style={styles.loginLinkContainer}>
-          <Text style={styles.loginLinkText}>¿Ya tienes cuenta? </Text>
-          <TouchableOpacity 
-            onPress={() => {
-              hapticFeedback.light();
-              router.push("/login");
-            }} 
-            disabled={isLoading}
-          >
-            <Text style={styles.loginLink}>Inicia sesion</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </ScrollView>
-  </SafeAreaView>
+          {step === RegisterStep.IDENTITY && !isProfileCompletionMode ? (
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>¿Ya tienes cuenta?</Text>
+              <TouchableOpacity onPress={() => router.push("/login")}>
+                <Text style={styles.loginLink}>Inicia Sesión</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: designTokens.color.surface.canvas,
   },
-  contentContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 40,
+  flex: {
+    flex: 1,
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: designTokens.color.border.subtle,
+    width: "100%",
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: designTokens.color.ink.accent,
+  },
+  scrollContent: {
+    padding: designTokens.spacing.xl,
+  },
+  header: {
+    marginBottom: designTokens.spacing.xl,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
-    marginBottom: 30,
-    textAlign: "center",
-    color: "#000",
+    ...designTokens.typography.title,
+    color: designTokens.color.ink.primary,
   },
-  formGroup: {
-    marginBottom: 20,
+  card: {
+    ...mobileSurfaceCard,
+    padding: designTokens.spacing.xl,
+    marginBottom: designTokens.spacing.xl,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 8,
-    color: "#333",
+  stepContainer: {
+    width: "100%",
   },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: "#000",
-    backgroundColor: "#f9f9f9",
+  stepTitle: {
+    ...designTokens.typography.sectionTitle,
+    color: designTokens.color.ink.primary,
+    marginBottom: designTokens.spacing.xs,
   },
-  inputError: {
-    borderColor: "#d32f2f",
-    backgroundColor: "#ffebee",
+  stepSubtitle: {
+    ...designTokens.typography.body,
+    color: designTokens.color.ink.secondary,
+    marginBottom: designTokens.spacing.xl,
   },
-  errorText: {
-    color: "#d32f2f",
-    fontSize: 12,
-    marginTop: 4,
+  roleCard: {
+    backgroundColor: designTokens.color.surface.primary,
+    borderRadius: designTokens.radius.lg,
+    padding: designTokens.spacing.lg,
+    borderWidth: 2,
+    borderColor: designTokens.color.border.strong,
+    marginBottom: designTokens.spacing.lg,
   },
-  radioGroup: {
-    marginVertical: 10,
+  roleCardActive: {
+    borderColor: designTokens.color.ink.accent,
+    backgroundColor: designTokens.color.surface.accent,
   },
-  radioOption: {
+  roleCardHeader: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
-    paddingVertical: 8,
+    marginBottom: designTokens.spacing.sm,
   },
-  radioButton: {
+  roleCardTitle: {
+    ...designTokens.typography.label,
+    fontSize: 16,
+    color: designTokens.color.ink.primary,
+  },
+  roleCardText: {
+    ...designTokens.typography.body,
+    color: designTokens.color.ink.secondary,
+  },
+  radioCircle: {
     width: 20,
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: "#0066cc",
-    marginRight: 12,
+    borderColor: designTokens.color.border.strong,
   },
-  radioButtonSelected: {
-    backgroundColor: "#0066cc",
+  radioCircleActive: {
+    borderColor: designTokens.color.ink.accent,
+    backgroundColor: designTokens.color.ink.accent,
   },
-  radioLabel: {
-    fontSize: 14,
-    color: "#333",
-  },
-  specialtyList: {
+  actions: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
+    gap: designTokens.spacing.md,
   },
-  specialtyChip: {
-    borderWidth: 1,
-    borderColor: "#c9d8eb",
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: "#f4f7fb",
+  backButton: {
+    flex: 1,
   },
-  specialtyChipSelected: {
-    backgroundColor: "#0f4c81",
-    borderColor: "#0f4c81",
+  nextButton: {
+    flex: 2,
   },
-  specialtyChipText: {
-    color: "#24415b",
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  specialtyChipTextSelected: {
-    color: "#fff",
-  },
-  profileInfoBox: {
-    marginBottom: 16,
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  clientInfoBox: {
-    backgroundColor: "#ecfdf5",
-    borderColor: "#a7f3d0",
-  },
-  nurseInfoBox: {
-    backgroundColor: "#eff6ff",
-    borderColor: "#bfdbfe",
-  },
-  profileInfoTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#102a43",
-    marginBottom: 6,
-  },
-  profileInfoText: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#52637a",
-  },
-  sectionCard: {
-    marginBottom: 16,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: "#f8fafc",
-    borderWidth: 1,
-    borderColor: "#dbe5f3",
-  },
-  sectionCardTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#102a43",
-    marginBottom: 4,
-  },
-  sectionCardCopy: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#52637a",
-  },
-  infoBox: {
-    backgroundColor: "#e3f2fd",
-    borderLeftWidth: 4,
-    borderLeftColor: "#0066cc",
-    padding: 12,
-    marginBottom: 20,
-    borderRadius: 4,
-  },
-  infoText: {
-    fontSize: 13,
-    color: "#0066cc",
-    lineHeight: 18,
-  },
-  button: {
-    backgroundColor: "#0066cc",
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  loginLinkContainer: {
+  footer: {
     flexDirection: "row",
     justifyContent: "center",
-    alignItems: "center",
+    marginTop: designTokens.spacing.xxl,
   },
-  loginLinkText: {
-    fontSize: 14,
-    color: "#666",
+  footerText: {
+    ...designTokens.typography.body,
+    color: designTokens.color.ink.secondary,
   },
   loginLink: {
-    fontSize: 14,
-    color: "#0066cc",
-    fontWeight: "600",
+    ...designTokens.typography.body,
+    color: designTokens.color.ink.accent,
+    fontWeight: "800",
+    marginLeft: designTokens.spacing.xs,
   },
-  dividerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "#ddd",
-  },
-  dividerText: {
-    marginHorizontal: 12,
-    color: "#777",
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  secondaryButton: {
+  errorBanner: {
+    backgroundColor: designTokens.color.status.dangerBg,
+    padding: designTokens.spacing.md,
+    borderRadius: designTokens.radius.md,
+    marginBottom: designTokens.spacing.lg,
     borderWidth: 1,
-    borderColor: "#0066cc",
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 10,
-    backgroundColor: "#f5f9ff",
+    borderColor: designTokens.color.border.danger,
   },
-  secondaryButtonText: {
-    color: "#0066cc",
-    fontSize: 16,
+  errorBannerText: {
+    ...designTokens.typography.body,
+    color: designTokens.color.status.dangerText,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  fieldGroup: {
+    marginBottom: designTokens.spacing.lg,
+  },
+  fieldLabel: {
+    ...designTokens.typography.label,
+    color: designTokens.color.ink.primary,
+    marginBottom: designTokens.spacing.sm,
+  },
+  chipGroup: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: designTokens.spacing.sm,
+  },
+  chip: {
+    backgroundColor: designTokens.color.surface.secondary,
+    paddingHorizontal: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.sm,
+    borderRadius: designTokens.radius.pill,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.strong,
+  },
+  chipActive: {
+    backgroundColor: designTokens.color.ink.accent,
+    borderColor: designTokens.color.ink.accent,
+  },
+  chipText: {
+    ...designTokens.typography.body,
+    color: designTokens.color.ink.secondary,
     fontWeight: "600",
   },
-  secondaryHint: {
-    textAlign: "center",
-    color: "#666",
-    fontSize: 13,
-    marginBottom: 20,
+  chipTextActive: {
+    color: designTokens.color.ink.inverse,
+  },
+  fieldError: {
+    ...designTokens.typography.body,
+    fontSize: 12,
+    color: designTokens.color.ink.danger,
+    marginTop: designTokens.spacing.xs,
+    fontWeight: "600",
   },
 });

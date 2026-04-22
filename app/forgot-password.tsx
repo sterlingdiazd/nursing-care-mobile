@@ -3,9 +3,11 @@ import {
   View,
   Text,
   ScrollView,
-  ActivityIndicator,
   StyleSheet,
   SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { forgotPassword, validateEmail } from "@/src/api/auth";
@@ -20,6 +22,8 @@ import {
 } from "@/src/utils/passwordRecovery";
 import { authTestIds } from "@/src/testing/authTestIds";
 import { FormButton, FormInput } from "@/src/components/form";
+import { designTokens } from "@/src/design-system/tokens";
+import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import { testProps } from "@/src/testing/testIds";
 
 export default function ForgotPasswordScreen() {
@@ -32,14 +36,10 @@ export default function ForgotPasswordScreen() {
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
 
   useEffect(() => {
-    if (cooldownRemaining <= 0) {
-      return undefined;
-    }
-
+    if (cooldownRemaining <= 0) return undefined;
     const timer = setInterval(() => {
       setCooldownRemaining((current) => (current <= 1 ? 0 : current - 1));
     }, 1000);
-
     return () => clearInterval(timer);
   }, [cooldownRemaining]);
 
@@ -47,16 +47,18 @@ export default function ForgotPasswordScreen() {
     if (!value) {
       setEmailError("El correo es obligatorio");
     } else if (!validateEmail(value)) {
-      setEmailError("El formato del correo no es valido");
+      setEmailError("El formato del correo no es válido");
     } else {
       setEmailError("");
     }
   };
 
   const requestRecoveryCode = async () => {
+    hapticFeedback.selection();
     setRequestError("");
     validateEmailField(email);
     if (!email || !validateEmail(email)) {
+      hapticFeedback.error();
       return;
     }
 
@@ -66,261 +68,220 @@ export default function ForgotPasswordScreen() {
       setIsSuccess(true);
       setCooldownRemaining(PASSWORD_RECOVERY_RESEND_COOLDOWN_SECONDS);
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : "No fue posible procesar la solicitud";
-      setRequestError(errorMsg);
+      hapticFeedback.error();
+      setRequestError(error instanceof Error ? error.message : "No fue posible procesar la solicitud");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container} {...testProps(authTestIds.forgotPassword.screen)}>
-      <ScrollView contentContainerStyle={styles.contentContainer}>
-      <FormButton
-        testID="forgot-password-back-button"
-        style={styles.backButton}
-        onPress={() => {
-          hapticFeedback.light();
-          router.back();
-        }}
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.flex}
       >
-        <Text style={styles.backButtonText}>← Volver</Text>
-      </FormButton>
-
-      <Text style={styles.title}>Recuperar contraseña</Text>
-      <Text style={styles.subtitle}>
-        Ingresa tu correo electrónico y te enviaremos un código para restablecer tu acceso.
-      </Text>
-
-      {requestError ? <Text style={styles.errorBanner} {...testProps(authTestIds.forgotPassword.errorBanner)}>{requestError}</Text> : null}
-
-      {isSuccess ? (
-        <View style={styles.successCard} {...testProps(authTestIds.forgotPassword.successCard)}>
-          <Text style={styles.successTitle}>{FORGOT_PASSWORD_SUCCESS_TITLE}</Text>
-          <Text style={styles.successBody}>{FORGOT_PASSWORD_SUCCESS_BODY}</Text>
-          <Text style={styles.infoText}>{FORGOT_PASSWORD_SUCCESS_INFO}</Text>
-
-          <FormButton
-            testID={authTestIds.forgotPassword.enterCodeButton}
-            style={[styles.button, isLoading ? styles.buttonDisabled : null]}
-            onPress={() => router.push({
-              pathname: "/reset-password",
-              params: { email: email.trim() }
-            })}
-            disabled={isLoading}
-          >
-            <Text style={styles.buttonText}>Ingresar código</Text>
-          </FormButton>
-
-          <FormButton
-            testID={authTestIds.forgotPassword.resendButton}
-            style={[styles.secondaryButton, (isLoading || cooldownRemaining > 0) ? styles.buttonDisabled : null]}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <TouchableOpacity
             onPress={() => {
-              hapticFeedback.light();
-              void requestRecoveryCode();
+              hapticFeedback.selection();
+              router.back();
             }}
-            disabled={isLoading || cooldownRemaining > 0}
+            style={styles.backButton}
           >
-            {isLoading ? (
-              <ActivityIndicator color="#0066cc" size="small" />
-            ) : (
-              <Text style={styles.secondaryButtonText}>{getForgotPasswordResendLabel(cooldownRemaining)}</Text>
-            )}
-          </FormButton>
+            <Text style={styles.backButtonText}>← Volver</Text>
+          </TouchableOpacity>
 
-          <Text style={styles.infoText}>{getForgotPasswordResendInfo(cooldownRemaining)}</Text>
-        </View>
-      ) : (
-        <>
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Correo electrónico</Text>
-            <FormInput
-              testID={authTestIds.forgotPassword.emailInput}
-              style={[styles.input, emailError ? styles.inputError : null]}
-              placeholder="tu@correo.com"
-              value={email}
-              onChangeText={setEmail}
-              onBlur={() => validateEmailField(email)}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              editable={!isLoading}
-              placeholderTextColor="#999"
-            />
-            {emailError ? <Text style={styles.errorText} {...testProps(authTestIds.forgotPassword.emailError)}>{emailError}</Text> : null}
+          <View style={styles.header}>
+            <Text style={styles.title}>Recuperar Contraseña</Text>
+            <Text style={styles.subtitle}>
+              Te enviaremos un código para restablecer tu acceso.
+            </Text>
           </View>
 
-          <FormButton
-            testID={authTestIds.forgotPassword.submitButton}
-            style={[styles.button, isLoading ? styles.buttonDisabled : null]}
-            onPress={() => {
-              hapticFeedback.light();
-              void requestRecoveryCode();
-            }}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="white" size="small" />
-            ) : (
-              <Text style={styles.buttonText}>Enviar código</Text>
-            )}
-          </FormButton>
+          <View style={styles.card}>
+            {requestError ? (
+              <View style={styles.errorBanner}>
+                <Text style={styles.errorBannerText}>{requestError}</Text>
+              </View>
+            ) : null}
 
-          <FormButton
-            testID="forgot-password-enter-code-link"
-            onPress={() => {
-              hapticFeedback.light();
-              router.push({
-                pathname: "/reset-password",
-                params: { email: email.trim() }
-              });
-            }}
-            style={styles.linkContainer}
-          >
-            <Text style={styles.linkText}>¿Ya tienes un código? </Text>
-            <Text style={styles.link}>Ingrésalo aquí</Text>
-          </FormButton>
-        </>
-      )}
-    </ScrollView>
-  </SafeAreaView>
+            {isSuccess ? (
+              <View {...testProps(authTestIds.forgotPassword.successCard)}>
+                <View style={styles.successHeader}>
+                  <Text style={styles.successTitle}>{FORGOT_PASSWORD_SUCCESS_TITLE}</Text>
+                </View>
+                <Text style={styles.successBody}>{FORGOT_PASSWORD_SUCCESS_BODY}</Text>
+                <Text style={styles.infoText}>{FORGOT_PASSWORD_SUCCESS_INFO}</Text>
+
+                <FormButton
+                  testID={authTestIds.forgotPassword.enterCodeButton}
+                  onPress={() => router.push({
+                    pathname: "/reset-password",
+                    params: { email: email.trim() }
+                  })}
+                  style={styles.mainButton}
+                >
+                  Ingresar código
+                </FormButton>
+
+                <FormButton
+                  testID={authTestIds.forgotPassword.resendButton}
+                  variant="secondary"
+                  onPress={requestRecoveryCode}
+                  disabled={cooldownRemaining > 0}
+                  isLoading={isLoading}
+                >
+                  {getForgotPasswordResendLabel(cooldownRemaining)}
+                </FormButton>
+
+                <Text style={styles.resendInfo}>
+                  {getForgotPasswordResendInfo(cooldownRemaining)}
+                </Text>
+              </View>
+            ) : (
+              <>
+                <FormInput
+                  testID={authTestIds.forgotPassword.emailInput}
+                  label="Correo Electrónico"
+                  placeholder="ejemplo@correo.com"
+                  value={email}
+                  onChangeText={setEmail}
+                  onBlur={() => validateEmailField(email)}
+                  error={emailError}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  editable={!isLoading}
+                />
+
+                <FormButton
+                  testID={authTestIds.forgotPassword.submitButton}
+                  onPress={requestRecoveryCode}
+                  isLoading={isLoading}
+                  style={styles.mainButton}
+                >
+                  Enviar Código
+                </FormButton>
+
+                <TouchableOpacity
+                  onPress={() => {
+                    hapticFeedback.selection();
+                    router.push({
+                      pathname: "/reset-password",
+                      params: { email: email.trim() }
+                    });
+                  }}
+                  style={styles.hasCodeLink}
+                >
+                  <Text style={styles.hasCodeText}>
+                    ¿Ya tienes un código? <Text style={styles.accentText}>Ingrésalo aquí</Text>
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: designTokens.color.surface.canvas,
   },
-  contentContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 60,
+  flex: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: designTokens.spacing.xl,
   },
   backButton: {
-    marginBottom: 20,
+    marginBottom: designTokens.spacing.xl,
+    paddingVertical: designTokens.spacing.sm,
   },
   backButtonText: {
-    fontSize: 16,
-    color: "#0066cc",
+    ...designTokens.typography.body,
+    color: designTokens.color.ink.accent,
     fontWeight: "600",
+  },
+  header: {
+    marginBottom: designTokens.spacing.xxl,
   },
   title: {
-    fontSize: 26,
-    fontWeight: "700",
-    marginBottom: 10,
-    color: "#000",
+    ...designTokens.typography.title,
+    color: designTokens.color.ink.primary,
+    marginBottom: designTokens.spacing.xs,
   },
   subtitle: {
-    fontSize: 15,
-    color: "#666",
-    marginBottom: 30,
-    lineHeight: 22,
+    ...designTokens.typography.body,
+    color: designTokens.color.ink.secondary,
   },
-  formGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 8,
-    color: "#333",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: "#000",
-    backgroundColor: "#f9f9f9",
-  },
-  inputError: {
-    borderColor: "#d32f2f",
-    backgroundColor: "#ffebee",
-  },
-  errorText: {
-    color: "#d32f2f",
-    fontSize: 12,
-    marginTop: 4,
+  card: {
+    ...mobileSurfaceCard,
+    padding: designTokens.spacing.xl,
   },
   errorBanner: {
-    color: "#b00020",
-    backgroundColor: "#fdecea",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 18,
-    lineHeight: 20,
-  },
-  successCard: {
-    backgroundColor: "#f4f8fc",
-    borderRadius: 12,
-    padding: 18,
+    backgroundColor: designTokens.color.status.dangerBg,
+    padding: designTokens.spacing.md,
+    borderRadius: designTokens.radius.md,
+    marginBottom: designTokens.spacing.lg,
     borderWidth: 1,
-    borderColor: "#c9dff5",
+    borderColor: designTokens.color.border.danger,
+  },
+  errorBannerText: {
+    ...designTokens.typography.body,
+    color: designTokens.color.status.dangerText,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  successHeader: {
+    backgroundColor: designTokens.color.status.successBg,
+    padding: designTokens.spacing.md,
+    borderRadius: designTokens.radius.md,
+    marginBottom: designTokens.spacing.lg,
   },
   successTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#0f3a5d",
-    marginBottom: 10,
+    ...designTokens.typography.label,
+    color: designTokens.color.status.successText,
+    textAlign: "center",
   },
   successBody: {
-    fontSize: 14,
+    ...designTokens.typography.body,
+    color: designTokens.color.ink.primary,
+    marginBottom: designTokens.spacing.md,
     lineHeight: 22,
-    color: "#29465b",
-    marginBottom: 12,
   },
   infoText: {
+    ...designTokens.typography.body,
     fontSize: 13,
-    lineHeight: 20,
-    color: "#4c6478",
-    marginTop: 6,
-    marginBottom: 6,
+    color: designTokens.color.ink.secondary,
+    marginBottom: designTokens.spacing.xl,
   },
-  button: {
-    backgroundColor: "#0066cc",
-    paddingVertical: 14,
-    borderRadius: 8,
+  mainButton: {
+    marginBottom: designTokens.spacing.md,
+  },
+  resendInfo: {
+    ...designTokens.typography.body,
+    fontSize: 12,
+    color: designTokens.color.ink.muted,
+    textAlign: "center",
+    marginTop: designTokens.spacing.sm,
+  },
+  hasCodeLink: {
+    marginTop: designTokens.spacing.lg,
     alignItems: "center",
-    justifyContent: "center",
-    marginTop: 10,
-    marginBottom: 20,
   },
-  buttonDisabled: {
-    opacity: 0.6,
+  hasCodeText: {
+    ...designTokens.typography.body,
+    color: designTokens.color.ink.secondary,
   },
-  buttonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  secondaryButton: {
-    borderWidth: 1,
-    borderColor: "#0066cc",
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-    marginTop: 6,
-  },
-  secondaryButtonText: {
-    color: "#0066cc",
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  linkContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 10,
-  },
-  linkText: {
-    fontSize: 14,
-    color: "#666",
-  },
-  link: {
-    fontSize: 14,
-    color: "#0066cc",
-    fontWeight: "600",
+  accentText: {
+    color: designTokens.color.ink.accent,
+    fontWeight: "700",
   },
 });

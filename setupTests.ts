@@ -23,6 +23,7 @@ vi.mock('react-native', () => ({
   },
   View: createMockComponent('View'),
   Text: createMockComponent('Text'),
+  Image: createMockComponent('Image'),
   TouchableOpacity: createMockComponent('TouchableOpacity'),
   Pressable: createMockComponent('Pressable'),
   ScrollView: createMockComponent('ScrollView'),
@@ -30,6 +31,7 @@ vi.mock('react-native', () => ({
   FlatList: createMockComponent('FlatList'),
   SectionList: createMockComponent('SectionList'),
   StatusBar: createMockComponent('StatusBar'),
+  SafeAreaView: createMockComponent('SafeAreaView'),
   TextInput: createMockComponent('TextInput'),
   ActivityIndicator: createMockComponent('ActivityIndicator'),
   Modal: createMockComponent('Modal'),
@@ -76,6 +78,27 @@ vi.mock('expo-constants', () => ({
 vi.mock('expo-linking', () => ({
   createURL: vi.fn(),
   useURL: vi.fn(),
+  parse: vi.fn(() => ({ queryParams: {} })),
+  addEventListener: vi.fn(() => ({ remove: vi.fn() })),
+  openURL: vi.fn(),
+}));
+
+vi.mock('expo-web-browser', () => ({
+  maybeCompleteAuthSession: vi.fn(),
+  openAuthSessionAsync: vi.fn(),
+}));
+
+vi.mock('expo-haptics', () => ({
+  notificationAsync: vi.fn(),
+  impactAsync: vi.fn(),
+  selectionAsync: vi.fn(),
+  NotificationFeedbackType: {
+    Success: 'Success',
+    Error: 'Error',
+  },
+  ImpactFeedbackStyle: {
+    Light: 'Light',
+  },
 }));
 
 vi.mock('expo-file-system', () => ({
