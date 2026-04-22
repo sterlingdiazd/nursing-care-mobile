@@ -1,6 +1,12 @@
 import { vi } from 'vitest';
 import React from 'react';
 
+Object.defineProperty(globalThis, "__DEV__", {
+  value: false,
+  writable: true,
+  configurable: true,
+});
+
 // Mock React Native components
 const createMockComponent = (name: string) => {
   const component = (props: any) => {
@@ -70,6 +76,23 @@ vi.mock('expo-constants', () => ({
 vi.mock('expo-linking', () => ({
   createURL: vi.fn(),
   useURL: vi.fn(),
+}));
+
+vi.mock('expo-file-system', () => ({
+  documentDirectory: '/mock-documents/',
+  writeAsStringAsync: vi.fn(),
+  readAsStringAsync: vi.fn(),
+  deleteAsync: vi.fn(),
+  getInfoAsync: vi.fn(),
+  EncodingType: {
+    Base64: 'base64',
+    UTF8: 'utf8',
+  },
+}));
+
+vi.mock('expo-sharing', () => ({
+  isAvailableAsync: vi.fn().mockResolvedValue(true),
+  shareAsync: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Mock AsyncStorage
