@@ -133,11 +133,6 @@ export default function AdminCareRequestDetailScreen() {
         {...automationProps("admin-care-detail-page")}
         style={styles.pageRoot}
       >
-        <View
-          {...automationProps(adminTestIds.careRequests.detail.screen)}
-          style={styles.captureMarker}
-        />
-
         {!loading && detail && (
           <Text
             testID={adminTestIds.careRequests.detail.loadedMarker}
@@ -555,14 +550,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     padding: mobileTheme.spacing.xxl,
-  },
-  captureMarker: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: 2,
-    height: 2,
-    opacity: 0.01,
   },
   hiddenMarker: {
     height: 0,
