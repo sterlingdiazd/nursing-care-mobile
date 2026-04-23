@@ -6,6 +6,7 @@ import {
   type AdminClientDetailDto,
   type AdminClientCareRequestHistoryItemDto,
 } from "../services/adminPortalService";
+import { adminTestIds } from "../testing/testIds";
 
 vi.mock("../services/httpClient", () => ({
   requestJson: vi.fn(),
@@ -387,5 +388,14 @@ describe("Admin Client Detail Screen - Optimistic UI Updates for Toggle Active S
     await expect(updateAdminClientActiveState("client-abc-123", false)).rejects.toThrow(
       "No fue posible cambiar el estado del cliente.",
     );
+  });
+});
+
+describe("Admin Client Detail Screen - Selector Contract", () => {
+  it("defines stable selectors for the client detail route", () => {
+    expect(adminTestIds.clients.detailScreen).toBe("admin-client-detail-screen");
+    expect(adminTestIds.clients.detailPrimaryAction).toBe("admin-client-detail-primary-action");
+    expect(adminTestIds.clients.detailStatusChip).toBe("admin-client-detail-status-chip");
+    expect(adminTestIds.clients.detailErrorBanner).toBe("admin-client-detail-error-banner");
   });
 });

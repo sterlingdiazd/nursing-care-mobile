@@ -9,14 +9,20 @@ import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
+import { designTokens } from "@/src/design-system/tokens";
 import {
   getAdminClients,
   type AdminClientListItemDto,
   type AdminClientListStatus,
 } from "@/src/services/adminPortalService";
+import { adminTestIds } from "@/src/testing/testIds";
 
 function formatTimestamp(value: string) {
   return new Intl.DateTimeFormat("es-DO", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+}
+
+function getInactiveCount(items: AdminClientListItemDto[]) {
+  return items.filter((item) => !item.isActive).length;
 }
 
 export default function AdminClientsScreen() {
@@ -24,13 +30,14 @@ export default function AdminClientsScreen() {
   const [items, setItems] = useState<AdminClientListItemDto[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  // Filters
   const [statusFilter, setStatusFilter] = useState<AdminClientListStatus | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const canLoadClients = isReady && isAuthenticated && !requiresProfileCompletion && roles.includes("ADMIN");
 
   const load = async () => {
+    if (!canLoadClients) return;
+
     try {
       setError(null);
       setLoading(true);
@@ -54,37 +61,68 @@ export default function AdminClientsScreen() {
     void load();
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles, statusFilter]);
 
-  // Debounce search
   useEffect(() => {
+    if (!canLoadClients) return;
+
     const timer = setTimeout(() => {
-      if (searchQuery !== undefined) {
-        void load();
-      }
+      void load();
     }, 300);
+
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [searchQuery, canLoadClients]);
 
   if (!isReady || !isAuthenticated || !roles.includes("ADMIN")) {
     return null;
   }
 
+  const inactiveCount = getInactiveCount(items);
+  const activeCount = items.length - inactiveCount;
+
   return (
     <MobileWorkspaceShell
       eyebrow="Clientes"
-      title="Gestion de clientes"
-      description="Revisa cartera, estado y actividad de los clientes."
+      title="Gestión de clientes"
+      description="Prioriza seguimiento operativo y deja los filtros como apoyo progresivo."
+      testID={adminTestIds.clients.listScreen}
+      nativeID={adminTestIds.clients.listScreen}
       actions={(
         <View style={styles.headerActions}>
-          <Pressable style={styles.button} onPress={() => setShowFilters(!showFilters)}>
+          <Pressable style={styles.button} onPress={() => setShowFilters((current) => !current)}>
             <Text style={styles.buttonText}>{showFilters ? "Ocultar filtros" : "Filtros"}</Text>
           </Pressable>
-          <Pressable style={styles.buttonPrimary} onPress={() => router.push("/admin/clients/create" as never)}>
+          <Pressable
+            style={styles.buttonPrimary}
+            onPress={() => router.push("/admin/clients/create" as never)}
+            testID={adminTestIds.clients.primaryAction}
+            nativeID={adminTestIds.clients.primaryAction}
+          >
             <Text style={styles.buttonPrimaryText}>Crear</Text>
           </Pressable>
         </View>
       )}
     >
-      {!!error && <Text style={styles.error}>{error}</Text>}
+      <View style={styles.summaryCard}>
+        <Text
+          style={styles.summaryChip}
+          testID={adminTestIds.clients.statusChip}
+          nativeID={adminTestIds.clients.statusChip}
+        >
+          {inactiveCount > 0
+            ? `${inactiveCount} clientes inactivos requieren seguimiento`
+            : "Cartera estable sin alertas"}
+        </Text>
+        <Text style={styles.summaryText}>Activos: {activeCount} • Inactivos: {inactiveCount}</Text>
+      </View>
+
+      {!!error && (
+        <Text
+          style={styles.error}
+          testID={adminTestIds.clients.errorBanner}
+          nativeID={adminTestIds.clients.errorBanner}
+        >
+          {error}
+        </Text>
+      )}
 
       {showFilters && (
         <View style={styles.filtersCard}>
@@ -99,9 +137,7 @@ export default function AdminClientsScreen() {
                 onPress={() => setStatusFilter(status)}
               >
                 <Text style={[styles.chipText, statusFilter === status && styles.chipTextActive]}>
-                  {status === "all" && "Todos"}
-                  {status === "active" && "Activos"}
-                  {status === "inactive" && "Inactivos"}
+                  {status === "all" ? "Todos" : status === "active" ? "Activos" : "Inactivos"}
                 </Text>
               </Pressable>
             ))}
@@ -111,6 +147,7 @@ export default function AdminClientsScreen() {
           <TextInput
             style={styles.input}
             placeholder="Nombre, correo o número de identificación"
+            placeholderTextColor={designTokens.color.ink.muted}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
@@ -119,11 +156,11 @@ export default function AdminClientsScreen() {
 
       {loading && <Text style={styles.loading}>Cargando...</Text>}
 
-      {!loading && items.length === 0 && (
+      {!loading && items.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyStateText}>No se encontraron clientes.</Text>
         </View>
-      )}
+      ) : null}
 
       <ScrollView
         style={styles.list}
@@ -147,25 +184,30 @@ export default function AdminClientsScreen() {
             </View>
 
             <Text style={styles.cardMeta}>{item.email}</Text>
+            <Text style={styles.cardHint}>
+              {item.isActive
+                ? "Cuenta disponible para nuevas gestiones administrativas."
+                : "Revisar activación antes de crear nuevas solicitudes."}
+            </Text>
 
-            {item.identificationNumber && (
+            {item.identificationNumber ? (
               <View style={styles.cardRow}>
                 <Text style={styles.cardLabel}>Cédula:</Text>
                 <Text style={styles.cardValue}>{item.identificationNumber}</Text>
               </View>
-            )}
+            ) : null}
 
             <View style={styles.cardRow}>
               <Text style={styles.cardLabel}>Solicitudes:</Text>
               <Text style={styles.cardValue}>{item.ownedCareRequestsCount}</Text>
             </View>
 
-            {item.lastCareRequestAtUtc && (
+            {item.lastCareRequestAtUtc ? (
               <View style={styles.cardRow}>
                 <Text style={styles.cardLabel}>Última solicitud:</Text>
                 <Text style={styles.cardValue}>{formatTimestamp(item.lastCareRequestAtUtc)}</Text>
               </View>
-            )}
+            ) : null}
           </Pressable>
         ))}
       </ScrollView>
@@ -174,36 +216,136 @@ export default function AdminClientsScreen() {
 }
 
 const styles = StyleSheet.create({
-  headerActions: { flexDirection: "row", gap: 8 },
-  button: { backgroundColor: "#ffffff", borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: "#d1d5db" },
-  buttonText: { color: "#007aff", fontWeight: "700", fontSize: 14 },
-  buttonPrimary: { backgroundColor: "#007aff", borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10 },
-  buttonPrimaryText: { color: "#ffffff", fontWeight: "700", fontSize: 14 },
-  error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
-  loading: { color: "#52637a", fontSize: 14, textAlign: "center", padding: 20 },
-  filtersCard: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 18, padding: 16, marginBottom: 12 },
-  filtersTitle: { fontSize: 16, fontWeight: "800", color: "#111827", marginBottom: 12 },
-  filterLabel: { fontSize: 14, fontWeight: "700", color: "#6b7280", marginTop: 8, marginBottom: 6 },
-  filterChips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 },
-  chip: { backgroundColor: "#ffffff", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: "#d1d5db" },
-  chipActive: { backgroundColor: "#111827", borderColor: "#111827" },
-  chipText: { color: "#111827", fontSize: 12, fontWeight: "600" },
-  chipTextActive: { color: "#ffffff" },
-  input: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#d1d5db", borderRadius: 14, padding: 14, color: "#111827" },
-  emptyState: { padding: 40, alignItems: "center" },
-  emptyStateText: { color: "#52637a", fontSize: 16, textAlign: "center" },
-  list: { gap: 12 },
-  card: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 18, padding: 16, marginBottom: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 2 },
-  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
-  cardTitle: { color: "#111827", fontWeight: "800", fontSize: 18, flex: 1 },
-  statusBadge: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, marginLeft: 8 },
-  statusBadgeActive: { backgroundColor: "#d1fae5" },
-  statusBadgeInactive: { backgroundColor: "#fee2e2" },
+  headerActions: { flexDirection: "row", gap: designTokens.spacing.sm },
+  button: {
+    backgroundColor: designTokens.color.surface.primary,
+    borderRadius: designTokens.radius.md,
+    paddingHorizontal: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.sm,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.strong,
+  },
+  buttonText: { ...designTokens.typography.label, color: designTokens.color.ink.primary },
+  buttonPrimary: {
+    backgroundColor: designTokens.color.ink.accentStrong,
+    borderRadius: designTokens.radius.md,
+    paddingHorizontal: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.sm,
+  },
+  buttonPrimaryText: { ...designTokens.typography.label, color: designTokens.color.surface.primary },
+  summaryCard: {
+    backgroundColor: designTokens.color.surface.primary,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.subtle,
+    borderRadius: designTokens.radius.lg,
+    padding: designTokens.spacing.md,
+    marginBottom: designTokens.spacing.sm,
+  },
+  summaryChip: {
+    ...designTokens.typography.label,
+    alignSelf: "flex-start",
+    backgroundColor: designTokens.color.status.infoBg,
+    color: designTokens.color.status.infoText,
+    borderRadius: designTokens.radius.pill,
+    paddingHorizontal: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.xs,
+    marginBottom: designTokens.spacing.xs,
+  },
+  summaryText: { ...designTokens.typography.body, color: designTokens.color.ink.muted },
+  error: {
+    ...designTokens.typography.body,
+    backgroundColor: designTokens.color.surface.danger,
+    color: designTokens.color.ink.danger,
+    padding: designTokens.spacing.md,
+    borderRadius: designTokens.radius.md,
+    marginBottom: designTokens.spacing.md,
+  },
+  loading: {
+    ...designTokens.typography.body,
+    color: designTokens.color.ink.muted,
+    textAlign: "center",
+    padding: designTokens.spacing.lg,
+  },
+  filtersCard: {
+    backgroundColor: designTokens.color.surface.primary,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.subtle,
+    borderRadius: designTokens.radius.lg,
+    padding: designTokens.spacing.md,
+    marginBottom: designTokens.spacing.sm,
+  },
+  filtersTitle: { ...designTokens.typography.sectionTitle, fontSize: 16, marginBottom: designTokens.spacing.sm },
+  filterLabel: {
+    ...designTokens.typography.label,
+    marginTop: designTokens.spacing.xs,
+    marginBottom: designTokens.spacing.xs,
+  },
+  filterChips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: designTokens.spacing.sm,
+    marginBottom: designTokens.spacing.sm,
+  },
+  chip: {
+    backgroundColor: designTokens.color.surface.primary,
+    borderRadius: designTokens.radius.pill,
+    paddingHorizontal: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.xs,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.strong,
+  },
+  chipActive: { backgroundColor: designTokens.color.ink.primary, borderColor: designTokens.color.ink.primary },
+  chipText: { ...designTokens.typography.label, fontSize: 12 },
+  chipTextActive: { color: designTokens.color.surface.primary },
+  input: {
+    ...designTokens.typography.body,
+    backgroundColor: designTokens.color.surface.primary,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.strong,
+    borderRadius: designTokens.radius.md,
+    padding: designTokens.spacing.md,
+  },
+  emptyState: { padding: designTokens.spacing.xl, alignItems: "center" },
+  emptyStateText: { ...designTokens.typography.body, color: designTokens.color.ink.muted, textAlign: "center" },
+  list: { gap: designTokens.spacing.sm },
+  card: {
+    backgroundColor: designTokens.color.surface.primary,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.subtle,
+    borderRadius: designTokens.radius.lg,
+    padding: designTokens.spacing.md,
+    marginBottom: designTokens.spacing.sm,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: designTokens.spacing.xs,
+  },
+  cardTitle: { ...designTokens.typography.sectionTitle, flex: 1 },
+  statusBadge: {
+    borderRadius: designTokens.radius.pill,
+    paddingHorizontal: designTokens.spacing.sm,
+    paddingVertical: 2,
+    marginLeft: designTokens.spacing.sm,
+  },
+  statusBadgeActive: { backgroundColor: designTokens.color.surface.success },
+  statusBadgeInactive: { backgroundColor: designTokens.color.surface.danger },
   statusBadgeText: { fontSize: 11, fontWeight: "700" },
-  statusBadgeTextActive: { color: "#065f46" },
-  statusBadgeTextInactive: { color: "#991b1b" },
-  cardMeta: { color: "#6b7280", fontSize: 14, marginBottom: 8 },
-  cardRow: { flexDirection: "row", marginBottom: 4 },
-  cardLabel: { color: "#6b7280", fontSize: 13, fontWeight: "700", width: 120 },
-  cardValue: { color: "#111827", fontSize: 13, flex: 1 },
+  statusBadgeTextActive: { color: designTokens.color.status.successText },
+  statusBadgeTextInactive: { color: designTokens.color.ink.danger },
+  cardMeta: {
+    ...designTokens.typography.body,
+    fontSize: 14,
+    marginBottom: designTokens.spacing.xs,
+    color: designTokens.color.ink.muted,
+  },
+  cardHint: {
+    ...designTokens.typography.body,
+    color: designTokens.color.ink.muted,
+    marginBottom: designTokens.spacing.sm,
+  },
+  cardRow: { flexDirection: "row", marginBottom: designTokens.spacing.xs },
+  cardLabel: { ...designTokens.typography.label, width: 120, color: designTokens.color.ink.muted },
+  cardValue: { ...designTokens.typography.body, flex: 1 },
 });

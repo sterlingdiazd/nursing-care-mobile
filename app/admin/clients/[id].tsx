@@ -4,13 +4,14 @@ import { router, useLocalSearchParams } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
+import { designTokens } from "@/src/design-system/tokens";
 import {
   getAdminClientDetail,
   updateAdminClientActiveState,
   type AdminClientDetailDto,
   type AdminCareRequestStatus,
 } from "@/src/services/adminPortalService";
-import { mobileAdminActionButton, mobileAdminActionButtonText } from "@/src/design-system/mobileStyles";
+import { adminTestIds } from "@/src/testing/testIds";
 
 function formatTimestamp(value: string | null) {
   if (!value) return "N/A";
@@ -39,6 +40,7 @@ export default function AdminClientDetailScreen() {
 
   const load = async () => {
     if (!id) return;
+
     try {
       setError(null);
       setLoading(true);
@@ -57,20 +59,19 @@ export default function AdminClientDetailScreen() {
     if (requiresProfileCompletion) return void router.replace("/register");
     if (!roles.includes("ADMIN")) return void router.replace("/");
     void load();
-  }, [isReady, isAuthenticated, requiresProfileCompletion, roles, id]);
+  }, [id, isAuthenticated, isReady, requiresProfileCompletion, roles]);
 
   const handleToggleActiveState = async () => {
     if (!detail) return;
+
     try {
       setToggling(true);
-      const newState = !detail.isActive;
-      // Optimistic update
-      setDetail({ ...detail, isActive: newState });
-      await updateAdminClientActiveState(detail.userId, newState);
-    } catch (err) {
-      // Revert on failure
-      setDetail((prev) => prev ? { ...prev, isActive: !prev.isActive } : prev);
-      setError(err instanceof Error ? err.message : "No fue posible cambiar el estado del cliente.");
+      const nextState = !detail.isActive;
+      setDetail({ ...detail, isActive: nextState });
+      await updateAdminClientActiveState(detail.userId, nextState);
+    } catch (nextError) {
+      setDetail((current) => (current ? { ...current, isActive: !current.isActive } : current));
+      setError(nextError instanceof Error ? nextError.message : "No fue posible cambiar el estado del cliente.");
     } finally {
       setToggling(false);
     }
@@ -83,130 +84,122 @@ export default function AdminClientDetailScreen() {
   return (
     <MobileWorkspaceShell
       eyebrow="Clientes"
-      title={detail ? detail.displayName : "Cargando..."}
-      description="Información completa del cliente y su historial de solicitudes."
-      actions={(
+      title={detail?.displayName || "Cargando..."}
+      description="Consolida identidad, actividad y próximos pasos del cliente."
+      testID={adminTestIds.clients.detailScreen}
+      nativeID={adminTestIds.clients.detailScreen}
+      actions={detail ? (
         <View style={styles.headerActions}>
-          <Pressable style={styles.button} onPress={() => void load()}>
-            <Text style={styles.buttonText}>Actualizar</Text>
+          <Pressable style={styles.buttonSecondary} onPress={() => void load()}>
+            <Text style={styles.buttonSecondaryText}>Actualizar</Text>
+          </Pressable>
+          <Pressable
+            style={styles.buttonPrimary}
+            onPress={() => router.push(`/admin/clients/${id}/edit` as never)}
+            testID={adminTestIds.clients.detailPrimaryAction}
+            nativeID={adminTestIds.clients.detailPrimaryAction}
+          >
+            <Text style={styles.buttonPrimaryText}>Editar</Text>
           </Pressable>
         </View>
-      )}
+      ) : undefined}
     >
       {!!error && (
-        <View style={styles.errorCard}>
-          <Text style={styles.errorText}>{error}</Text>
-          <Pressable onPress={() => void load()} style={styles.retryButton}>
-            <Text style={styles.retryButtonText}>Reintentar</Text>
-          </Pressable>
-        </View>
+        <Text
+          style={styles.errorBanner}
+          testID={adminTestIds.clients.detailErrorBanner}
+          nativeID={adminTestIds.clients.detailErrorBanner}
+        >
+          {error}
+        </Text>
       )}
+
       {loading && <Text style={styles.loading}>Cargando...</Text>}
 
-      {detail && (
-        <ScrollView>
-          {/* Personal Info */}
+      {detail ? (
+        <ScrollView contentContainerStyle={styles.container}>
+          <View style={styles.summaryCard}>
+            <Text
+              style={styles.summaryChip}
+              testID={adminTestIds.clients.detailStatusChip}
+              nativeID={adminTestIds.clients.detailStatusChip}
+            >
+              {detail.isActive ? "Cuenta activa" : "Cuenta inactiva"} • {detail.ownedCareRequestsCount} solicitudes
+            </Text>
+            <Text style={styles.summaryText}>
+              {detail.lastCareRequestAtUtc
+                ? `Última solicitud ${formatTimestamp(detail.lastCareRequestAtUtc)}`
+                : "Sin solicitudes registradas todavía."}
+            </Text>
+          </View>
+
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Información Personal</Text>
+            <Text style={styles.sectionTitle}>Identidad y contacto</Text>
+
             <View style={styles.field}>
-              <Text style={styles.fieldLabel}>Nombre completo</Text>
+              <Text style={styles.fieldLabel}>Nombre</Text>
               <Text style={styles.fieldValue}>{detail.displayName}</Text>
             </View>
-            {detail.name && (
-              <View style={styles.field}>
-                <Text style={styles.fieldLabel}>Nombre</Text>
-                <Text style={styles.fieldValue}>{detail.name}</Text>
-              </View>
-            )}
-            {detail.lastName && (
-              <View style={styles.field}>
-                <Text style={styles.fieldLabel}>Apellido</Text>
-                <Text style={styles.fieldValue}>{detail.lastName}</Text>
-              </View>
-            )}
-            {detail.identificationNumber && (
-              <View style={styles.field}>
-                <Text style={styles.fieldLabel}>Cédula</Text>
-                <Text style={styles.fieldValue}>{detail.identificationNumber}</Text>
-              </View>
-            )}
-          </View>
 
-          {/* Contact Info */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Información de Contacto</Text>
             <View style={styles.field}>
-              <Text style={styles.fieldLabel}>Correo electrónico</Text>
+              <Text style={styles.fieldLabel}>Correo</Text>
               <Text style={styles.fieldValue}>{detail.email}</Text>
             </View>
-            {detail.phone && (
-              <View style={styles.field}>
+
+            <View style={styles.fieldRow}>
+              <View style={styles.fieldColumn}>
+                <Text style={styles.fieldLabel}>Cédula</Text>
+                <Text style={styles.fieldValue}>{detail.identificationNumber || "N/A"}</Text>
+              </View>
+              <View style={styles.fieldColumn}>
                 <Text style={styles.fieldLabel}>Teléfono</Text>
-                <Text style={styles.fieldValue}>{detail.phone}</Text>
+                <Text style={styles.fieldValue}>{detail.phone || "N/A"}</Text>
               </View>
-            )}
-          </View>
+            </View>
 
-          {/* Account Status */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Estado de la Cuenta</Text>
-            <View style={styles.field}>
-              <Text style={styles.fieldLabel}>Estado</Text>
-              <View style={[styles.statusBadge, detail.isActive ? styles.statusBadgeActive : styles.statusBadgeInactive]}>
-                <Text style={[styles.statusBadgeText, detail.isActive ? styles.statusBadgeTextActive : styles.statusBadgeTextInactive]}>
-                  {detail.isActive ? "Activo" : "Inactivo"}
-                </Text>
+            <View style={styles.fieldRow}>
+              <View style={styles.fieldColumn}>
+                <Text style={styles.fieldLabel}>Registro</Text>
+                <Text style={styles.fieldValue}>{formatTimestamp(detail.createdAtUtc)}</Text>
               </View>
-            </View>
-            <View style={styles.field}>
-              <Text style={styles.fieldLabel}>Total de solicitudes</Text>
-              <Text style={styles.fieldValue}>{detail.ownedCareRequestsCount}</Text>
-            </View>
-            {detail.lastCareRequestAtUtc && (
-              <View style={styles.field}>
-                <Text style={styles.fieldLabel}>Última solicitud</Text>
-                <Text style={styles.fieldValue}>{formatTimestamp(detail.lastCareRequestAtUtc)}</Text>
+              <View style={styles.fieldColumn}>
+                <Text style={styles.fieldLabel}>Estado</Text>
+                <View style={[styles.statusBadge, detail.isActive ? styles.statusBadgeActive : styles.statusBadgeInactive]}>
+                  <Text style={[styles.statusBadgeText, detail.isActive ? styles.statusBadgeTextActive : styles.statusBadgeTextInactive]}>
+                    {detail.isActive ? "Activo" : "Inactivo"}
+                  </Text>
+                </View>
               </View>
-            )}
-            <View style={styles.field}>
-              <Text style={styles.fieldLabel}>Fecha de registro</Text>
-              <Text style={styles.fieldValue}>{formatTimestamp(detail.createdAtUtc)}</Text>
             </View>
           </View>
 
-          {/* Actions */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Acciones</Text>
-            <Pressable
-              style={styles.buttonSecondary}
-              onPress={() => router.push(`/admin/clients/${id}/edit` as never)}
-            >
-              <Text style={styles.buttonSecondaryText}>Editar cliente</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.toggleButton, toggling && styles.buttonDisabled]}
-              onPress={handleToggleActiveState}
-              disabled={toggling}
-            >
-              <Text style={styles.toggleButtonText}>
-                {toggling ? "Cambiando..." : detail.isActive ? "Desactivar cliente" : "Activar cliente"}
+            <Text style={styles.sectionTitle}>Acciones operativas</Text>
+            <Text style={styles.actionHint}>
+              Actualiza el estado del cliente o crea una nueva solicitud directamente desde esta ficha.
+            </Text>
+
+            <Pressable style={styles.buttonToggle} onPress={handleToggleActiveState} disabled={toggling}>
+              <Text style={styles.buttonToggleText}>
+                {toggling ? "Actualizando..." : detail.isActive ? "Desactivar cliente" : "Activar cliente"}
               </Text>
             </Pressable>
-            {detail.canAdminCreateCareRequest && (
+
+            {detail.canAdminCreateCareRequest ? (
               <Pressable
                 style={styles.buttonPrimary}
                 onPress={() => router.push(`/admin/care-requests/create?clientUserId=${detail.userId}` as never)}
               >
-                <Text style={styles.buttonPrimaryText}>Crear solicitud de cuidado</Text>
+                <Text style={styles.buttonPrimaryText}>Crear solicitud</Text>
               </Pressable>
-            )}
+            ) : null}
           </View>
 
-          {/* Care Request History */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Historial de Solicitudes</Text>
+            <Text style={styles.sectionTitle}>Historial</Text>
+
             {detail.careRequestHistory.length === 0 ? (
-              <Text style={styles.emptyText}>No hay solicitudes registradas.</Text>
+              <Text style={styles.emptyState}>No hay solicitudes registradas.</Text>
             ) : (
               detail.careRequestHistory.map((item) => (
                 <Pressable
@@ -215,54 +208,31 @@ export default function AdminClientDetailScreen() {
                   onPress={() => router.push(`/admin/care-requests/${item.careRequestId}` as never)}
                 >
                   <View style={styles.historyHeader}>
-                    <Text style={styles.historyDescription} numberOfLines={2}>{item.careRequestDescription}</Text>
+                    <Text style={styles.historyTitle}>{item.careRequestDescription}</Text>
                     <View style={[styles.statusBadge, getStatusStyle(item.status)]}>
-                      <Text style={[styles.statusBadgeText, getStatusTextStyle(item.status)]}>
-                        {statusLabel(item.status)}
-                      </Text>
+                      <Text style={[styles.statusBadgeText, getStatusTextStyle(item.status)]}>{statusLabel(item.status)}</Text>
                     </View>
                   </View>
-                  <View style={styles.historyRow}>
-                    <Text style={styles.historyLabel}>Tipo:</Text>
-                    <Text style={styles.historyValue}>{item.careRequestType}</Text>
-                  </View>
-                  <View style={styles.historyRow}>
-                    <Text style={styles.historyLabel}>Total:</Text>
-                    <Text style={styles.historyValue}>{formatCurrency(item.total)}</Text>
-                  </View>
-                  {item.careRequestDate && (
-                    <View style={styles.historyRow}>
-                      <Text style={styles.historyLabel}>Fecha programada:</Text>
-                      <Text style={styles.historyValue}>{formatTimestamp(item.careRequestDate)}</Text>
-                    </View>
-                  )}
-                  {item.assignedNurseDisplayName && (
-                    <View style={styles.historyRow}>
-                      <Text style={styles.historyLabel}>Enfermera:</Text>
-                      <Text style={styles.historyValue}>{item.assignedNurseDisplayName}</Text>
-                    </View>
-                  )}
-                  <View style={styles.historyRow}>
-                    <Text style={styles.historyLabel}>Creada:</Text>
-                    <Text style={styles.historyValue}>{formatTimestamp(item.createdAtUtc)}</Text>
-                  </View>
-
-                  <Text style={styles.historyTapHint}>Toca para ver detalles →</Text>
+                  <Text style={styles.historyMeta}>
+                    {item.careRequestDate ? formatTimestamp(item.careRequestDate) : "Fecha pendiente"} • {formatCurrency(item.total)}
+                  </Text>
+                  {item.assignedNurseDisplayName ? (
+                    <Text style={styles.historyNurse}>Enfermera: {item.assignedNurseDisplayName}</Text>
+                  ) : null}
                 </Pressable>
               ))
             )}
           </View>
 
-          {/* System Info */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Información del Sistema</Text>
+            <Text style={styles.sectionTitle}>Sistema</Text>
             <View style={styles.field}>
               <Text style={styles.fieldLabel}>ID de usuario</Text>
               <Text style={styles.fieldValueMono}>{detail.userId}</Text>
             </View>
           </View>
         </ScrollView>
-      )}
+      ) : null}
     </MobileWorkspaceShell>
   );
 }
@@ -282,45 +252,118 @@ function getStatusTextStyle(status: AdminCareRequestStatus) {
 }
 
 const styles = StyleSheet.create({
-  headerActions: { flexDirection: "row", gap: 8 },
-  button: { backgroundColor: "#f0f4f8", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },
-  buttonText: { color: "#102a43", fontWeight: "700", fontSize: 14 },
-  buttonPrimary: { ...mobileAdminActionButton, paddingVertical: 12, marginTop: 8 },
-  buttonPrimaryText: { ...mobileAdminActionButtonText },
-  buttonSecondary: { ...mobileAdminActionButton, paddingVertical: 12, marginTop: 4 },
-  buttonSecondaryText: { ...mobileAdminActionButtonText },
-  buttonDisabled: { opacity: 0.5 },
-  toggleButton: { ...mobileAdminActionButton, paddingVertical: 12, marginTop: 8 },
-  toggleButtonText: { ...mobileAdminActionButtonText },
-  errorCard: { backgroundColor: "#fee", borderRadius: 12, padding: 12, marginBottom: 12 },
-  errorText: { color: "#c00", fontSize: 14, marginBottom: 8 },
-  retryButton: { backgroundColor: "#c00", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12, alignSelf: "flex-start" },
-  retryButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 13 },
-  loading: { color: "#52637a", fontSize: 14, textAlign: "center", padding: 20 },
-  card: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
-  cardTitle: { fontSize: 16, fontWeight: "800", color: "#102a43", marginBottom: 12 },
-  field: { marginBottom: 8 },
-  fieldLabel: { color: "#7c2d12", fontSize: 12, fontWeight: "800", textTransform: "uppercase", marginBottom: 2 },
-  fieldValue: { color: "#102a43", fontSize: 15 },
-  fieldValueMono: { color: "#102a43", fontSize: 13, fontFamily: "monospace" },
-  emptyText: { color: "#52637a", fontSize: 14, fontStyle: "italic" },
-  statusBadge: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, alignSelf: "flex-start" },
-  statusBadgeActive: { backgroundColor: "#d1fae5" },
-  statusBadgeInactive: { backgroundColor: "#fee2e2" },
-  statusBadgeDanger: { backgroundColor: "#fee2e2" },
-  statusBadgePending: { backgroundColor: "#fef3c7" },
-  statusBadgeCompleted: { backgroundColor: "#dbeafe" },
+  container: { padding: designTokens.spacing.md },
+  headerActions: { flexDirection: "row", gap: designTokens.spacing.sm },
+  summaryCard: {
+    backgroundColor: designTokens.color.surface.primary,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.subtle,
+    borderRadius: designTokens.radius.lg,
+    padding: designTokens.spacing.md,
+    marginBottom: designTokens.spacing.md,
+  },
+  summaryChip: {
+    ...designTokens.typography.label,
+    alignSelf: "flex-start",
+    backgroundColor: designTokens.color.status.infoBg,
+    color: designTokens.color.status.infoText,
+    borderRadius: designTokens.radius.pill,
+    paddingHorizontal: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.xs,
+    marginBottom: designTokens.spacing.xs,
+  },
+  summaryText: { ...designTokens.typography.body, color: designTokens.color.ink.muted },
+  card: {
+    backgroundColor: designTokens.color.surface.primary,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.subtle,
+    borderRadius: designTokens.radius.lg,
+    padding: designTokens.spacing.md,
+    marginBottom: designTokens.spacing.md,
+  },
+  sectionTitle: { ...designTokens.typography.sectionTitle, fontSize: 16, marginBottom: designTokens.spacing.sm },
+  field: { marginBottom: designTokens.spacing.sm },
+  fieldRow: { flexDirection: "row", gap: designTokens.spacing.md },
+  fieldColumn: { flex: 1 },
+  fieldLabel: {
+    ...designTokens.typography.label,
+    color: designTokens.color.ink.muted,
+    marginBottom: designTokens.spacing.xs,
+  },
+  fieldValue: { ...designTokens.typography.body, fontWeight: "600" },
+  fieldValueMono: { ...designTokens.typography.body, fontFamily: "monospace" },
+  actionHint: {
+    ...designTokens.typography.body,
+    color: designTokens.color.ink.muted,
+    marginBottom: designTokens.spacing.sm,
+  },
+  buttonPrimary: {
+    flex: 1,
+    backgroundColor: designTokens.color.ink.accentStrong,
+    borderRadius: designTokens.radius.md,
+    paddingVertical: designTokens.spacing.sm,
+    alignItems: "center",
+  },
+  buttonPrimaryText: { ...designTokens.typography.label, color: designTokens.color.surface.primary },
+  buttonSecondary: {
+    flex: 1,
+    backgroundColor: designTokens.color.surface.primary,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.strong,
+    borderRadius: designTokens.radius.md,
+    paddingVertical: designTokens.spacing.sm,
+    alignItems: "center",
+  },
+  buttonSecondaryText: { ...designTokens.typography.label, color: designTokens.color.ink.primary },
+  buttonToggle: {
+    backgroundColor: designTokens.color.surface.primary,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.strong,
+    borderRadius: designTokens.radius.md,
+    paddingVertical: designTokens.spacing.sm,
+    alignItems: "center",
+    marginBottom: designTokens.spacing.sm,
+  },
+  buttonToggleText: { ...designTokens.typography.label, color: designTokens.color.ink.primary },
+  historyItem: {
+    borderTopWidth: 1,
+    borderTopColor: designTokens.color.border.subtle,
+    paddingTop: designTokens.spacing.sm,
+    marginTop: designTokens.spacing.sm,
+  },
+  historyHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  historyTitle: { ...designTokens.typography.body, fontWeight: "700", flex: 1, marginRight: designTokens.spacing.sm },
+  historyMeta: { ...designTokens.typography.body, fontSize: 12, color: designTokens.color.ink.muted, marginTop: designTokens.spacing.xs },
+  historyNurse: { ...designTokens.typography.body, fontSize: 12, color: designTokens.color.ink.primary, marginTop: designTokens.spacing.xs },
+  emptyState: { ...designTokens.typography.body, color: designTokens.color.ink.muted },
+  statusBadge: {
+    borderRadius: designTokens.radius.pill,
+    paddingHorizontal: designTokens.spacing.sm,
+    paddingVertical: 2,
+  },
+  statusBadgeActive: { backgroundColor: designTokens.color.surface.success },
+  statusBadgeInactive: { backgroundColor: designTokens.color.surface.danger },
+  statusBadgeDanger: { backgroundColor: designTokens.color.surface.danger },
+  statusBadgePending: { backgroundColor: designTokens.color.surface.warning },
+  statusBadgeCompleted: { backgroundColor: designTokens.color.status.infoBg },
   statusBadgeText: { fontSize: 11, fontWeight: "700" },
-  statusBadgeTextActive: { color: "#065f46" },
-  statusBadgeTextInactive: { color: "#991b1b" },
-  statusBadgeTextDanger: { color: "#991b1b" },
-  statusBadgeTextPending: { color: "#92400e" },
-  statusBadgeTextCompleted: { color: "#1e40af" },
-  historyItem: { backgroundColor: "#f8fafc", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 12, padding: 12, marginBottom: 10 },
-  historyHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8, gap: 8 },
-  historyDescription: { color: "#102a43", fontSize: 14, fontWeight: "700", flex: 1 },
-  historyRow: { flexDirection: "row", marginBottom: 4 },
-  historyLabel: { color: "#7c2d12", fontSize: 12, fontWeight: "700", width: 130 },
-  historyValue: { color: "#102a43", fontSize: 12, flex: 1 },
-  historyTapHint: { color: "#3b82f6", fontSize: 11, marginTop: 6, textAlign: "right" },
+  statusBadgeTextActive: { color: designTokens.color.status.successText },
+  statusBadgeTextInactive: { color: designTokens.color.ink.danger },
+  statusBadgeTextDanger: { color: designTokens.color.ink.danger },
+  statusBadgeTextPending: { color: designTokens.color.ink.warning },
+  statusBadgeTextCompleted: { color: designTokens.color.status.infoText },
+  errorBanner: {
+    ...designTokens.typography.body,
+    backgroundColor: designTokens.color.surface.danger,
+    color: designTokens.color.ink.danger,
+    padding: designTokens.spacing.md,
+    borderRadius: designTokens.radius.md,
+    marginBottom: designTokens.spacing.md,
+  },
+  loading: {
+    ...designTokens.typography.body,
+    textAlign: "center",
+    padding: designTokens.spacing.xl,
+    color: designTokens.color.ink.muted,
+  },
 });

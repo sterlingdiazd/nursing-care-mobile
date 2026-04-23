@@ -1,13 +1,24 @@
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { validateEmail } from "@/src/api/auth";
 import { useAuth } from "@/src/context/AuthContext";
+import { FormInput } from "@/src/components/form";
+import { adminTestIds } from "@/src/testing/testIds";
 import {
   createAdminAccount,
   type CreateAdminAccountRequest,
 } from "@/src/services/adminPortalService";
+import {
+  getExactDigitsFieldError,
+  getRejectedDigitsOnlyInputError,
+  getRejectedTextOnlyInputError,
+  getTextOnlyFieldError,
+  sanitizeDigitsOnlyInput,
+  sanitizeTextOnlyInput,
+} from "@/src/utils/identityValidation";
 
 export default function AdminCreateAdminAccountScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
@@ -25,6 +36,20 @@ export default function AdminCreateAdminAccountScreen() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const identityComplete = Boolean(
+    form.name.trim()
+      && form.lastName.trim()
+      && form.identificationNumber.trim()
+      && form.phone.trim(),
+  );
+  const accessComplete = Boolean(
+    form.email.trim()
+      && form.password.trim()
+      && form.confirmPassword.trim(),
+  );
+  const reviewLabel = identityComplete && accessComplete
+    ? "Privilegios listos para revisión"
+    : `${Number(identityComplete) + Number(accessComplete)}/2 bloques listos`;
 
   useEffect(() => {
     if (!isReady) return;
@@ -35,21 +60,54 @@ export default function AdminCreateAdminAccountScreen() {
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!form.name.trim()) newErrors.name = "El nombre es obligatorio";
-    if (!form.lastName.trim()) newErrors.lastName = "El apellido es obligatorio";
-    if (!form.identificationNumber.trim()) newErrors.identificationNumber = "El número de identificación es obligatorio";
-    if (!form.phone.trim()) newErrors.phone = "El teléfono es obligatorio";
+
+    const nameInputError = getRejectedTextOnlyInputError(form.name, "El nombre");
+    if (nameInputError) newErrors.name = nameInputError;
+    else {
+      const nextNameError = getTextOnlyFieldError(form.name, "El nombre");
+      if (nextNameError) newErrors.name = nextNameError;
+    }
+
+    const lastNameInputError = getRejectedTextOnlyInputError(form.lastName, "El apellido");
+    if (lastNameInputError) newErrors.lastName = lastNameInputError;
+    else {
+      const nextLastNameError = getTextOnlyFieldError(form.lastName, "El apellido");
+      if (nextLastNameError) newErrors.lastName = nextLastNameError;
+    }
+
+    const identificationInputError = getRejectedDigitsOnlyInputError(
+      form.identificationNumber,
+      "La cedula",
+      11,
+    );
+    if (identificationInputError) newErrors.identificationNumber = identificationInputError;
+    else {
+      const nextIdentificationError = getExactDigitsFieldError(form.identificationNumber, "La cedula", 11);
+      if (nextIdentificationError) newErrors.identificationNumber = nextIdentificationError;
+    }
+
+    const phoneInputError = getRejectedDigitsOnlyInputError(form.phone, "El telefono", 10);
+    if (phoneInputError) newErrors.phone = phoneInputError;
+    else {
+      const nextPhoneError = getExactDigitsFieldError(form.phone, "El telefono", 10);
+      if (nextPhoneError) newErrors.phone = nextPhoneError;
+    }
+
     if (!form.email.trim()) newErrors.email = "El correo electrónico es obligatorio";
-    else if (!form.email.includes("@")) newErrors.email = "El correo debe ser válido";
+    else if (!validateEmail(form.email.trim())) newErrors.email = "El correo debe ser válido";
     if (!form.password.trim()) newErrors.password = "La contraseña es obligatoria";
     else if (form.password.length < 8) newErrors.password = "La contraseña debe tener al menos 8 caracteres";
-    if (form.password && form.confirmPassword !== form.password) newErrors.confirmPassword = "Las contraseñas no coinciden";
+    if (!form.confirmPassword.trim()) newErrors.confirmPassword = "Debes confirmar la contraseña";
+    else if (form.password && form.confirmPassword !== form.password) newErrors.confirmPassword = "Las contraseñas no coinciden";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
-    if (!validate()) return;
+    if (!validate()) {
+      setError("Corrige los campos marcados antes de crear la cuenta administrativa.");
+      return;
+    }
 
     try {
       setError(null);
@@ -71,53 +129,92 @@ export default function AdminCreateAdminAccountScreen() {
     <MobileWorkspaceShell
       eyebrow="Crear Administrador"
       title="Nueva cuenta de administrador"
-      description="Crear una cuenta con privilegios administrativos."
+      description="Crea la cuenta en bloques y confirma el alcance privilegiado antes del alta."
+      testID={adminTestIds.adminAccounts.create.screen}
+      nativeID={adminTestIds.adminAccounts.create.screen}
     >
-      {!!error && <Text style={styles.error}>{error}</Text>}
+      {!!error && (
+        <View
+          style={styles.error}
+          testID={adminTestIds.adminAccounts.create.errorBanner}
+          nativeID={adminTestIds.adminAccounts.create.errorBanner}
+        >
+          <Text style={styles.errorTitle}>La cuenta administrativa requiere revisión</Text>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
+
+      <View style={styles.reviewCard}>
+        <Text style={styles.reviewEyebrow}>Revisión</Text>
+        <Text
+          style={styles.reviewChip}
+          testID={adminTestIds.adminAccounts.create.reviewChip}
+          nativeID={adminTestIds.adminAccounts.create.reviewChip}
+        >
+          {reviewLabel}
+        </Text>
+        <Text style={styles.reviewText}>
+          Antes de crear la cuenta, confirma identidad, acceso y el impacto de otorgar permisos administrativos.
+        </Text>
+      </View>
 
       <ScrollView>
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Información Personal</Text>
+          <Text style={styles.cardTitle}>Paso 1. Identidad</Text>
+          <Text style={styles.cardDescription}>Registra primero la persona que recibirá el acceso administrativo.</Text>
 
           <Text style={styles.label}>Nombre *</Text>
-          <TextInput
+          <FormInput
+            testID={adminTestIds.adminAccounts.create.nameInput}
             style={[styles.input, errors.name ? styles.inputError : undefined]}
             placeholder="Nombre del administrador"
             value={form.name}
-            onChangeText={(text) => setForm({ ...form, name: text })}
+            onChangeText={(text) => setForm({ ...form, name: sanitizeTextOnlyInput(text) })}
           />
           {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
 
           <Text style={styles.label}>Apellido *</Text>
-          <TextInput
+          <FormInput
+            testID={adminTestIds.adminAccounts.create.lastNameInput}
             style={[styles.input, errors.lastName ? styles.inputError : undefined]}
             placeholder="Apellido del administrador"
             value={form.lastName}
-            onChangeText={(text) => setForm({ ...form, lastName: text })}
+            onChangeText={(text) => setForm({ ...form, lastName: sanitizeTextOnlyInput(text) })}
           />
           {errors.lastName && <Text style={styles.errorText}>{errors.lastName}</Text>}
 
           <Text style={styles.label}>Número de identificación *</Text>
-          <TextInput
+          <FormInput
+            testID={adminTestIds.adminAccounts.create.identificationInput}
             style={[styles.input, errors.identificationNumber ? styles.inputError : undefined]}
             placeholder="Número de identificación"
             value={form.identificationNumber}
-            onChangeText={(text) => setForm({ ...form, identificationNumber: text })}
+            onChangeText={(text) => setForm({ ...form, identificationNumber: sanitizeDigitsOnlyInput(text, 11) })}
+            keyboardType="number-pad"
+            maxLength={11}
           />
           {errors.identificationNumber && <Text style={styles.errorText}>{errors.identificationNumber}</Text>}
 
           <Text style={styles.label}>Teléfono *</Text>
-          <TextInput
+          <FormInput
+            testID={adminTestIds.adminAccounts.create.phoneInput}
             style={[styles.input, errors.phone ? styles.inputError : undefined]}
             placeholder="Número de teléfono"
             value={form.phone}
-            onChangeText={(text) => setForm({ ...form, phone: text })}
+            onChangeText={(text) => setForm({ ...form, phone: sanitizeDigitsOnlyInput(text, 10) })}
             keyboardType="phone-pad"
+            maxLength={10}
           />
           {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Paso 2. Acceso y revisión final</Text>
+          <Text style={styles.cardDescription}>Estas credenciales abren un perfil con permisos altos dentro del portal.</Text>
 
           <Text style={styles.label}>Correo electrónico *</Text>
-          <TextInput
+          <FormInput
+            testID={adminTestIds.adminAccounts.create.emailInput}
             style={[styles.input, errors.email ? styles.inputError : undefined]}
             placeholder="correo@ejemplo.com"
             value={form.email}
@@ -128,17 +225,19 @@ export default function AdminCreateAdminAccountScreen() {
           {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
 
           <Text style={styles.label}>Contraseña *</Text>
-          <TextInput
+          <FormInput
             style={[styles.input, errors.password ? styles.inputError : undefined]}
             placeholder="Mínimo 8 caracteres"
             value={form.password}
             onChangeText={(text) => setForm({ ...form, password: text })}
             secureTextEntry
+            testID={adminTestIds.adminAccounts.create.passwordInput}
           />
           {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
 
           <Text style={styles.label}>Confirmar contraseña *</Text>
-          <TextInput
+          <FormInput
+            testID={adminTestIds.adminAccounts.create.confirmPasswordInput}
             style={[styles.input, errors.confirmPassword ? styles.inputError : undefined]}
             placeholder="Repetir contraseña"
             value={form.confirmPassword}
@@ -146,11 +245,24 @@ export default function AdminCreateAdminAccountScreen() {
             secureTextEntry
           />
           {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
+
+          <View style={styles.warningCard}>
+            <Text style={styles.warningTitle}>Acción privilegiada</Text>
+            <Text style={styles.warningText}>
+              Esta cuenta podrá administrar usuarios, revisar operaciones y afectar datos sensibles del sistema.
+            </Text>
+          </View>
         </View>
       </ScrollView>
 
       <View style={styles.actions}>
-        <Pressable style={styles.buttonPrimary} onPress={handleSubmit} disabled={submitting}>
+        <Pressable
+          style={styles.buttonPrimary}
+          onPress={handleSubmit}
+          disabled={submitting}
+          testID={adminTestIds.adminAccounts.create.submitButton}
+          nativeID={adminTestIds.adminAccounts.create.submitButton}
+        >
           <Text style={styles.buttonPrimaryText}>{submitting ? "Creando..." : "Crear administrador"}</Text>
         </Pressable>
       </View>
@@ -159,13 +271,22 @@ export default function AdminCreateAdminAccountScreen() {
 }
 
 const styles = StyleSheet.create({
-  error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
+  error: { backgroundColor: "#fff1f2", borderWidth: 1, borderColor: "#fecdd3", padding: 14, borderRadius: 16, marginBottom: 12 },
+  errorTitle: { color: "#9f1239", fontSize: 13, fontWeight: "800", marginBottom: 4 },
   card: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
   cardTitle: { fontSize: 18, fontWeight: "800", color: "#102a43", marginBottom: 8 },
+  cardDescription: { color: "#52637a", fontSize: 13, lineHeight: 18, marginBottom: 4 },
   label: { fontSize: 14, fontWeight: "700", color: "#7c2d12", marginTop: 12, marginBottom: 6 },
   input: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#cbd5e0", borderRadius: 12, padding: 12, fontSize: 15 },
   inputError: { borderColor: "#c00" },
   errorText: { color: "#dc2626", fontSize: 12, marginTop: 4 },
+  reviewCard: { backgroundColor: "#f8fafc", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
+  reviewEyebrow: { color: "#7c2d12", fontSize: 12, fontWeight: "800", textTransform: "uppercase", marginBottom: 6 },
+  reviewChip: { alignSelf: "flex-start", backgroundColor: "#102a43", color: "#ffffff", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 13, fontWeight: "800", marginBottom: 8 },
+  reviewText: { color: "#52637a", fontSize: 13, lineHeight: 18 },
+  warningCard: { backgroundColor: "#fff7ed", borderWidth: 1, borderColor: "#fed7aa", borderRadius: 14, padding: 12, marginTop: 14 },
+  warningTitle: { color: "#9a3412", fontSize: 13, fontWeight: "800", marginBottom: 4 },
+  warningText: { color: "#9a3412", fontSize: 13, lineHeight: 18 },
   actions: { marginTop: 16 },
   buttonPrimary: { backgroundColor: "#3b82f6", borderRadius: 12, paddingVertical: 14, alignItems: "center" },
   buttonPrimaryText: { color: "#ffffff", fontWeight: "700", fontSize: 16 },

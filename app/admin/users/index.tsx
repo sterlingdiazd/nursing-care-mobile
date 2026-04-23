@@ -9,6 +9,7 @@ import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
+import { adminTestIds } from "@/src/testing/testIds";
 import {
   getAdminUsers,
   type AdminUserListItemDto,
@@ -50,6 +51,10 @@ function statusBadgeStyle(status: AdminUserAccountStatus) {
     case "Inactive": return { bg: "#fee2e2", text: "#991b1b" };
     default: return { bg: "#fef3c7", text: "#92400e" };
   }
+}
+
+function getAttentionCount(items: AdminUserListItemDto[]) {
+  return items.filter((item) => item.accountStatus !== "Active").length;
 }
 
 export default function AdminUsersScreen() {
@@ -109,16 +114,46 @@ export default function AdminUsersScreen() {
     <MobileWorkspaceShell
       eyebrow="Usuarios"
       title="Gestion de usuarios"
-      description="Consulta cuentas, estados y perfiles desde una sola lista."
+      description="Prioriza cuentas con riesgo operativo y deja los filtros como apoyo progresivo."
+      testID={adminTestIds.users.listScreen}
+      nativeID={adminTestIds.users.listScreen}
       actions={(
         <View style={styles.headerActions}>
-          <Pressable style={styles.button} onPress={() => setShowFilters(!showFilters)}>
+          <Pressable
+            style={styles.button}
+            onPress={() => setShowFilters(!showFilters)}
+            testID={adminTestIds.users.primaryAction}
+            nativeID={adminTestIds.users.primaryAction}
+          >
             <Text style={styles.buttonText}>{showFilters ? "Ocultar filtros" : "Filtros"}</Text>
           </Pressable>
         </View>
       )}
     >
-      {!!error && <Text style={styles.error}>{error}</Text>}
+      <View style={styles.summaryCard}>
+        <Text
+          style={styles.summaryChip}
+          testID={adminTestIds.users.statusChip}
+          nativeID={adminTestIds.users.statusChip}
+        >
+          {getAttentionCount(items) > 0
+            ? `${getAttentionCount(items)} cuentas requieren atención`
+            : "Sin alertas operativas"}
+        </Text>
+        <Text style={styles.summaryText}>
+          Usa los filtros solo cuando necesites acotar la revisión; la lista debe dejar visibles primero los estados sensibles.
+        </Text>
+      </View>
+
+      {!!error && (
+        <Text
+          style={styles.error}
+          testID={adminTestIds.users.errorBanner}
+          nativeID={adminTestIds.users.errorBanner}
+        >
+          {error}
+        </Text>
+      )}
 
       {showFilters && (
         <View style={styles.filtersCard}>
@@ -211,6 +246,11 @@ export default function AdminUsersScreen() {
               </View>
 
               <Text style={styles.cardMeta}>{item.email}</Text>
+              <Text style={styles.cardHint}>
+                {item.accountStatus === "Active"
+                  ? "Cuenta lista para gestión normal."
+                  : "Revisar estado, roles o activación antes de continuar."}
+              </Text>
 
               <View style={styles.cardRow}>
                 <Text style={styles.cardLabel}>Roles:</Text>
@@ -247,6 +287,9 @@ const styles = StyleSheet.create({
   headerActions: { flexDirection: "row", gap: 8 },
   button: { backgroundColor: "#ffffff", borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: "#d1d5db" },
   buttonText: { color: "#007aff", fontWeight: "700", fontSize: 14 },
+  summaryCard: { backgroundColor: "#f8fafc", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 16, marginBottom: 12 },
+  summaryChip: { alignSelf: "flex-start", backgroundColor: "#102a43", color: "#ffffff", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 13, fontWeight: "800", marginBottom: 8 },
+  summaryText: { color: "#52637a", fontSize: 13, lineHeight: 18 },
   error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
   loading: { color: "#52637a", fontSize: 14, textAlign: "center", padding: 20 },
   filtersCard: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 18, padding: 16, marginBottom: 12 },
@@ -267,6 +310,7 @@ const styles = StyleSheet.create({
   statusBadge: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, marginLeft: 8 },
   statusBadgeText: { fontSize: 11, fontWeight: "700" },
   cardMeta: { color: "#6b7280", fontSize: 14, marginBottom: 8 },
+  cardHint: { color: "#52637a", fontSize: 13, marginBottom: 10 },
   cardRow: { flexDirection: "row", marginBottom: 4 },
   cardLabel: { color: "#6b7280", fontSize: 13, fontWeight: "700", width: 120 },
   cardValue: { color: "#111827", fontSize: 13, flex: 1 },

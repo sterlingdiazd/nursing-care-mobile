@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { validateEmail } from "@/src/api/auth";
-import { useAuth } from "@/src/context/AuthContext";
 import { FormInput } from "@/src/components/form";
-import { adminTestIds } from "@/src/testing/testIds";
+import { useAuth } from "@/src/context/AuthContext";
+import { designTokens } from "@/src/design-system/tokens";
 import {
   createAdminClient,
   type CreateAdminClientRequest,
 } from "@/src/services/adminPortalService";
+import { adminTestIds } from "@/src/testing/testIds";
 import {
   getExactDigitsFieldError,
   getRejectedDigitsOnlyInputError,
@@ -24,7 +25,6 @@ export default function AdminCreateClientScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-
   const [form, setForm] = useState<CreateAdminClientRequest>({
     name: "",
     lastName: "",
@@ -34,7 +34,6 @@ export default function AdminCreateClientScreen() {
     password: "",
     confirmPassword: "",
   });
-
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -62,21 +61,17 @@ export default function AdminCreateClientScreen() {
       if (nextLastNameError) newErrors.lastName = nextLastNameError;
     }
 
-    const identificationInputError = getRejectedDigitsOnlyInputError(
-      form.identificationNumber,
-      "La cedula",
-      11,
-    );
+    const identificationInputError = getRejectedDigitsOnlyInputError(form.identificationNumber, "La cédula", 11);
     if (identificationInputError) newErrors.identificationNumber = identificationInputError;
     else {
-      const nextIdentificationError = getExactDigitsFieldError(form.identificationNumber, "La cedula", 11);
+      const nextIdentificationError = getExactDigitsFieldError(form.identificationNumber, "La cédula", 11);
       if (nextIdentificationError) newErrors.identificationNumber = nextIdentificationError;
     }
 
-    const phoneInputError = getRejectedDigitsOnlyInputError(form.phone, "El telefono", 10);
+    const phoneInputError = getRejectedDigitsOnlyInputError(form.phone, "El teléfono", 10);
     if (phoneInputError) newErrors.phone = phoneInputError;
     else {
-      const nextPhoneError = getExactDigitsFieldError(form.phone, "El telefono", 10);
+      const nextPhoneError = getExactDigitsFieldError(form.phone, "El teléfono", 10);
       if (nextPhoneError) newErrors.phone = nextPhoneError;
     }
 
@@ -120,8 +115,8 @@ export default function AdminCreateClientScreen() {
         ],
         { cancelable: false },
       );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No fue posible crear el cliente.");
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : "No fue posible crear el cliente.");
     } finally {
       setSubmitting(false);
     }
@@ -133,143 +128,209 @@ export default function AdminCreateClientScreen() {
 
   return (
     <MobileWorkspaceShell
-      eyebrow="Crear Cliente"
+      eyebrow="Clientes"
       title="Nuevo cliente"
-      description="Crear una cuenta de cliente con todos los datos requeridos."
+      description="Registra identidad y credenciales para habilitar la gestión administrativa."
+      testID={adminTestIds.clients.create.screen}
+      nativeID={adminTestIds.clients.create.screen}
     >
-      {!!error && <Text style={styles.error}>{error}</Text>}
+      <Text
+        style={styles.progressChip}
+        testID={adminTestIds.clients.create.progressChip}
+        nativeID={adminTestIds.clients.create.progressChip}
+      >
+        Paso 1 de 1 • Validar identidad y acceso
+      </Text>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Información Personal</Text>
+      {!!error && (
+        <Text
+          style={styles.errorBanner}
+          testID={adminTestIds.clients.create.errorBanner}
+          nativeID={adminTestIds.clients.create.errorBanner}
+        >
+          {error}
+        </Text>
+      )}
 
-          <View style={styles.row}>
-            <View style={styles.col}>
-              <Text style={styles.label}>Nombre *</Text>
-              <FormInput
-                testID={adminTestIds.clients.create.nameInput}
-                style={[styles.input, errors.name ? styles.inputError : undefined]}
-                placeholder="Nombre"
-                value={form.name}
-                onChangeText={(text) => setForm({ ...form, name: sanitizeTextOnlyInput(text) })}
-              />
-            </View>
-            <View style={styles.col}>
-              <Text style={styles.label}>Apellido *</Text>
-              <FormInput
-                testID={adminTestIds.clients.create.lastNameInput}
-                style={[styles.input, errors.lastName ? styles.inputError : undefined]}
-                placeholder="Apellido"
-                value={form.lastName}
-                onChangeText={(text) => setForm({ ...form, lastName: sanitizeTextOnlyInput(text) })}
-              />
-            </View>
+      <View style={styles.card}>
+        <Text style={styles.sectionHeading}>Información personal</Text>
+
+        <View style={styles.row}>
+          <View style={styles.col}>
+            <Text style={styles.label}>Nombre *</Text>
+            <FormInput
+              testID={adminTestIds.clients.create.nameInput}
+              style={[styles.input, errors.name ? styles.inputError : undefined]}
+              placeholder="Nombre"
+              value={form.name}
+              onChangeText={(text) => setForm({ ...form, name: sanitizeTextOnlyInput(text) })}
+            />
+            {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
           </View>
-          {(errors.name || errors.lastName) && (
-            <Text style={styles.errorText}>Tanto el nombre como el apellido son obligatorios y deben ser válidos.</Text>
-          )}
 
-          <Text style={styles.label}>Número de identificación *</Text>
-          <FormInput
-            testID={adminTestIds.clients.create.identificationInput}
-            style={[styles.input, errors.identificationNumber ? styles.inputError : undefined]}
-            placeholder="Número de cédula/pasaporte"
-            value={form.identificationNumber}
-            onChangeText={(text) => setForm({ ...form, identificationNumber: sanitizeDigitsOnlyInput(text, 11) })}
-            keyboardType="number-pad"
-            maxLength={11}
-          />
-          {errors.identificationNumber && <Text style={styles.errorText}>{errors.identificationNumber}</Text>}
-
-          <Text style={styles.label}>Teléfono *</Text>
-          <FormInput
-            testID={adminTestIds.clients.create.phoneInput}
-            style={[styles.input, errors.phone ? styles.inputError : undefined]}
-            placeholder="Ej: 8091234567"
-            value={form.phone}
-            onChangeText={(text) => setForm({ ...form, phone: sanitizeDigitsOnlyInput(text, 10) })}
-            keyboardType="phone-pad"
-            maxLength={10}
-          />
-          {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
-
-          <Text style={styles.label}>Correo electrónico *</Text>
-          <FormInput
-            testID={adminTestIds.clients.create.emailInput}
-            style={[styles.input, errors.email ? styles.inputError : undefined]}
-            placeholder="correo@ejemplo.com"
-            value={form.email}
-            onChangeText={(text) => setForm({ ...form, email: text })}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
-
-          <View style={styles.row}>
-             <View style={styles.col}>
-                <Text style={styles.label}>Contraseña *</Text>
-                <FormInput
-                  testID={adminTestIds.clients.create.passwordInput}
-                  style={[styles.input, errors.password ? styles.inputError : undefined]}
-                  placeholder="Mínimo 8"
-                  value={form.password}
-                  onChangeText={(text) => setForm({ ...form, password: text })}
-                  secureTextEntry
-                />
-             </View>
-             <View style={styles.col}>
-                <Text style={styles.label}>Confirmar *</Text>
-                <FormInput
-                  testID={adminTestIds.clients.create.confirmPasswordInput}
-                  style={[styles.input, errors.confirmPassword ? styles.inputError : undefined]}
-                  placeholder="Confirmar"
-                  value={form.confirmPassword}
-                  onChangeText={(text) => setForm({ ...form, confirmPassword: text })}
-                  secureTextEntry
-                />
-             </View>
+          <View style={styles.col}>
+            <Text style={styles.label}>Apellido *</Text>
+            <FormInput
+              testID={adminTestIds.clients.create.lastNameInput}
+              style={[styles.input, errors.lastName ? styles.inputError : undefined]}
+              placeholder="Apellido"
+              value={form.lastName}
+              onChangeText={(text) => setForm({ ...form, lastName: sanitizeTextOnlyInput(text) })}
+            />
+            {errors.lastName ? <Text style={styles.errorText}>{errors.lastName}</Text> : null}
           </View>
-          {(errors.password || errors.confirmPassword) && (
-            <Text style={styles.errorText}>Revise que las contraseñas coincidan y tengan mínimo 8 caracteres.</Text>
-          )}
-
         </View>
 
-        {/* Spacer for sticky footer */}
-        <View style={{height: 80}} />
-      </ScrollView>
+        <Text style={styles.label}>Cédula *</Text>
+        <FormInput
+          testID={adminTestIds.clients.create.identificationInput}
+          style={[styles.input, errors.identificationNumber ? styles.inputError : undefined]}
+          placeholder="00112345678"
+          value={form.identificationNumber}
+          onChangeText={(text) => setForm({ ...form, identificationNumber: sanitizeDigitsOnlyInput(text, 11) })}
+          keyboardType="number-pad"
+          maxLength={11}
+        />
+        {errors.identificationNumber ? <Text style={styles.errorText}>{errors.identificationNumber}</Text> : null}
 
-      {/* STICKY FOOTER */}
-      <View style={styles.stickyFooter}>
-        <Pressable
-          testID={adminTestIds.clients.create.submitButton}
-          nativeID={adminTestIds.clients.create.submitButton}
-          style={styles.buttonPrimary}
-          onPress={handleSubmit}
-          disabled={submitting}
-        >
-          <Text style={styles.buttonPrimaryText}>{submitting ? "Procesando..." : "Registrar Cliente"}</Text>
-        </Pressable>
+        <Text style={styles.label}>Teléfono *</Text>
+        <FormInput
+          testID={adminTestIds.clients.create.phoneInput}
+          style={[styles.input, errors.phone ? styles.inputError : undefined]}
+          placeholder="8091234567"
+          value={form.phone}
+          onChangeText={(text) => setForm({ ...form, phone: sanitizeDigitsOnlyInput(text, 10) })}
+          keyboardType="phone-pad"
+          maxLength={10}
+        />
+        {errors.phone ? <Text style={styles.errorText}>{errors.phone}</Text> : null}
       </View>
+
+      <View style={styles.card}>
+        <Text style={styles.sectionHeading}>Credenciales de acceso</Text>
+
+        <Text style={styles.label}>Correo electrónico *</Text>
+        <FormInput
+          testID={adminTestIds.clients.create.emailInput}
+          style={[styles.input, errors.email ? styles.inputError : undefined]}
+          placeholder="correo@ejemplo.com"
+          value={form.email}
+          onChangeText={(text) => setForm({ ...form, email: text })}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
+
+        <View style={styles.row}>
+          <View style={styles.col}>
+            <Text style={styles.label}>Contraseña *</Text>
+            <FormInput
+              testID={adminTestIds.clients.create.passwordInput}
+              style={[styles.input, errors.password ? styles.inputError : undefined]}
+              placeholder="Mínimo 8 caracteres"
+              value={form.password}
+              onChangeText={(text) => setForm({ ...form, password: text })}
+              secureTextEntry
+            />
+            {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
+          </View>
+
+          <View style={styles.col}>
+            <Text style={styles.label}>Confirmar *</Text>
+            <FormInput
+              testID={adminTestIds.clients.create.confirmPasswordInput}
+              style={[styles.input, errors.confirmPassword ? styles.inputError : undefined]}
+              placeholder="Confirmar contraseña"
+              value={form.confirmPassword}
+              onChangeText={(text) => setForm({ ...form, confirmPassword: text })}
+              secureTextEntry
+            />
+            {errors.confirmPassword ? <Text style={styles.errorText}>{errors.confirmPassword}</Text> : null}
+          </View>
+        </View>
+      </View>
+
+      <Pressable
+        style={[styles.submitButton, submitting ? styles.submitButtonDisabled : undefined]}
+        onPress={handleSubmit}
+        disabled={submitting}
+        testID={adminTestIds.clients.create.submitButton}
+        nativeID={adminTestIds.clients.create.submitButton}
+      >
+        <Text style={styles.submitButtonText}>{submitting ? "Procesando..." : "Registrar cliente"}</Text>
+      </Pressable>
     </MobileWorkspaceShell>
   );
 }
 
 const styles = StyleSheet.create({
-  error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
-  scrollContent: { paddingBottom: 24 },
-  card: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
-  cardTitle: { fontSize: 18, fontWeight: "800", color: "#102a43", marginBottom: 6 },
-  label: { fontSize: 14, fontWeight: "700", color: "#7c2d12", marginTop: 12, marginBottom: 6 },
-  input: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#cbd5e0", borderRadius: 12, padding: 12, fontSize: 15 },
-  inputError: { borderColor: "#c00" },
-  errorText: { color: "#dc2626", fontSize: 12, marginTop: 4 },
-  
-  row: { flexDirection: "row", gap: 8 },
+  progressChip: {
+    ...designTokens.typography.label,
+    alignSelf: "flex-start",
+    backgroundColor: designTokens.color.status.infoBg,
+    color: designTokens.color.status.infoText,
+    borderRadius: designTokens.radius.pill,
+    paddingHorizontal: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.xs,
+    marginBottom: designTokens.spacing.md,
+  },
+  errorBanner: {
+    ...designTokens.typography.body,
+    backgroundColor: designTokens.color.surface.danger,
+    color: designTokens.color.ink.danger,
+    padding: designTokens.spacing.md,
+    borderRadius: designTokens.radius.md,
+    marginBottom: designTokens.spacing.md,
+  },
+  card: {
+    backgroundColor: designTokens.color.surface.primary,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.subtle,
+    borderRadius: designTokens.radius.lg,
+    padding: designTokens.spacing.md,
+    marginBottom: designTokens.spacing.md,
+  },
+  sectionHeading: {
+    ...designTokens.typography.sectionTitle,
+    fontSize: 16,
+    marginBottom: designTokens.spacing.sm,
+  },
+  label: {
+    ...designTokens.typography.label,
+    marginTop: designTokens.spacing.sm,
+    marginBottom: designTokens.spacing.xs,
+  },
+  input: {
+    ...designTokens.typography.body,
+    backgroundColor: designTokens.color.surface.primary,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.strong,
+    borderRadius: designTokens.radius.md,
+    padding: designTokens.spacing.md,
+  },
+  inputError: { borderColor: designTokens.color.border.danger },
+  errorText: {
+    ...designTokens.typography.body,
+    fontSize: 12,
+    color: designTokens.color.ink.danger,
+    marginTop: designTokens.spacing.xs,
+  },
+  row: {
+    flexDirection: "row",
+    gap: designTokens.spacing.sm,
+  },
   col: { flex: 1 },
-
-  stickyFooter: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingTop: 12, paddingBottom: Platform.OS === "ios" ? 32 : 16, backgroundColor: "#ffffff", borderTopWidth: 1, borderTopColor: "#e2e8f0", shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 12 },
-  buttonPrimary: { backgroundColor: "#3b82f6", borderRadius: 12, paddingVertical: 16, alignItems: "center" },
-  buttonPrimaryText: { color: "#ffffff", fontWeight: "800", fontSize: 16 },
+  submitButton: {
+    backgroundColor: designTokens.color.ink.accentStrong,
+    borderRadius: designTokens.radius.md,
+    paddingVertical: designTokens.spacing.md,
+    alignItems: "center",
+  },
+  submitButtonDisabled: { opacity: 0.7 },
+  submitButtonText: {
+    ...designTokens.typography.label,
+    color: designTokens.color.surface.primary,
+    fontSize: 16,
+  },
 });

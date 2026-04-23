@@ -5,10 +5,23 @@ import {
   type AdminClientListItemDto,
   type AdminClientListStatus,
 } from "../services/adminPortalService";
+import { adminTestIds } from "../testing/testIds";
 
 vi.mock("../services/httpClient", () => ({
   requestJson: vi.fn(),
 }));
+
+function canLoadAdminClientList(authState: {
+  isReady: boolean;
+  isAuthenticated: boolean;
+  requiresProfileCompletion: boolean;
+  roles: string[];
+}) {
+  return authState.isReady
+    && authState.isAuthenticated
+    && !authState.requiresProfileCompletion
+    && authState.roles.includes("ADMIN");
+}
 
 // ─── Access Control Logic ────────────────────────────────────────────────────
 
@@ -66,6 +79,14 @@ describe("adminClientsScreen", () => {
     mockReplace("/login");
 
     expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it("should not load protected clients data until the user is authenticated as Admin", () => {
+    expect(canLoadAdminClientList({ isReady: false, isAuthenticated: false, requiresProfileCompletion: false, roles: [] })).toBe(false);
+    expect(canLoadAdminClientList({ isReady: true, isAuthenticated: false, requiresProfileCompletion: false, roles: [] })).toBe(false);
+    expect(canLoadAdminClientList({ isReady: true, isAuthenticated: true, requiresProfileCompletion: true, roles: ["ADMIN"] })).toBe(false);
+    expect(canLoadAdminClientList({ isReady: true, isAuthenticated: true, requiresProfileCompletion: false, roles: ["CLIENT"] })).toBe(false);
+    expect(canLoadAdminClientList({ isReady: true, isAuthenticated: true, requiresProfileCompletion: false, roles: ["ADMIN"] })).toBe(true);
   });
 });
 
@@ -252,6 +273,15 @@ describe("Admin Clients Screen - Spanish Status Labels", () => {
 
   it("should label inactive clients as Inactivo", () => {
     expect(activeLabel(false)).toBe("Inactivo");
+  });
+});
+
+describe("Admin Clients Screen - Selector Contract", () => {
+  it("defines stable selectors for the client list route", () => {
+    expect(adminTestIds.clients.listScreen).toBe("admin-client-list-screen");
+    expect(adminTestIds.clients.primaryAction).toBe("admin-client-list-primary-action");
+    expect(adminTestIds.clients.statusChip).toBe("admin-client-list-status-chip");
+    expect(adminTestIds.clients.errorBanner).toBe("admin-client-list-error-banner");
   });
 });
 

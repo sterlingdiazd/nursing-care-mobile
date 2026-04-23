@@ -15,6 +15,7 @@ import {
   type AdminUserProfileType,
 } from "@/src/services/adminPortalService";
 import { mobileAdminActionButton, mobileAdminActionButtonText, mobileTheme } from "@/src/design-system/mobileStyles";
+import { adminTestIds } from "@/src/testing/testIds";
 
 function translateRole(role: AdminUserRoleName): string {
   switch (role) {
@@ -156,7 +157,9 @@ export default function AdminUserDetailScreen() {
     <MobileWorkspaceShell
       eyebrow="Usuarios"
       title={detail ? detail.displayName : "Cargando..."}
-      description="Información completa de la cuenta de usuario."
+      description="Muestra primero el estado y la siguiente acción segura antes del resto del perfil."
+      testID={adminTestIds.users.detailScreen}
+      nativeID={adminTestIds.users.detailScreen}
       actions={(
         <View style={styles.headerActions}>
           <Pressable style={styles.button} onPress={() => void load()}>
@@ -167,7 +170,13 @@ export default function AdminUserDetailScreen() {
     >
       {!!error && (
         <View style={styles.errorCard}>
-          <Text style={styles.errorText}>{error}</Text>
+          <Text
+            style={styles.errorText}
+            testID={adminTestIds.users.detailErrorBanner}
+            nativeID={adminTestIds.users.detailErrorBanner}
+          >
+            {error}
+          </Text>
           <Pressable onPress={() => void load()} style={styles.retryButton}>
             <Text style={styles.retryButtonText}>Reintentar</Text>
           </Pressable>
@@ -177,6 +186,22 @@ export default function AdminUserDetailScreen() {
 
       {detail && (
         <ScrollView>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryEyebrow}>Resumen operativo</Text>
+            <Text
+              style={styles.summaryChip}
+              testID={adminTestIds.users.detailStatusChip}
+              nativeID={adminTestIds.users.detailStatusChip}
+            >
+              {translateAccountStatus(detail.accountStatus)}
+            </Text>
+            <Text style={styles.summaryText}>
+              {detail.isActive
+                ? "La cuenta está activa. Revisa roles o sesiones solo si hay riesgo operativo."
+                : "La cuenta está inactiva. Confirma la razón antes de reactivarla o ajustar permisos."}
+            </Text>
+          </View>
+
           {/* Personal Info */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Información Personal</Text>
@@ -327,6 +352,8 @@ export default function AdminUserDetailScreen() {
                 setRolesError(null);
                 setShowRolesModal(true);
               }}
+              testID={adminTestIds.users.detailPrimaryAction}
+              nativeID={adminTestIds.users.detailPrimaryAction}
             >
               <Text style={styles.buttonPrimaryText}>Gestionar roles</Text>
             </Pressable>
@@ -429,6 +456,10 @@ const styles = StyleSheet.create({
   toggleButtonText: { ...mobileAdminActionButtonText },
   errorCard: { backgroundColor: "#fee", borderRadius: 12, padding: 12, marginBottom: 12 },
   errorText: { color: "#c00", fontSize: 14, marginBottom: 8 },
+  summaryCard: { backgroundColor: "#f8fafc", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 16, marginBottom: 12 },
+  summaryEyebrow: { color: "#7c2d12", fontSize: 12, fontWeight: "800", textTransform: "uppercase", marginBottom: 6 },
+  summaryChip: { alignSelf: "flex-start", backgroundColor: "#102a43", color: "#ffffff", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 13, fontWeight: "800", marginBottom: 8 },
+  summaryText: { color: "#52637a", fontSize: 13, lineHeight: 18 },
   retryButton: { backgroundColor: "#c00", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12, alignSelf: "flex-start" },
   retryButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 13 },
   loading: { color: "#52637a", fontSize: 14, textAlign: "center", padding: 20 },
