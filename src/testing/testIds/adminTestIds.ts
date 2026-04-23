@@ -158,7 +158,7 @@ export const adminTestIds = {
     // UC-008: Nurse Payroll Detail
     periodDetailPage: "admin-payroll-period-detail-page",
     periodDetailLoaded: "payroll-period-detail-loaded",
-    periodStatusBadge: "payroll-period-status-badge",
+    periodStatusBadge: "admin-payroll-period-status-badge",
     nurseSummaryTable: "payroll-nurse-summary-table",
     nurseRow: "payroll-nurse-row",
     nurseDetailPanel: "nurse-payroll-detail-panel",

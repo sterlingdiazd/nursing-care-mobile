@@ -16,6 +16,7 @@ import {
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import type { AdminPayrollPeriodDetail, AdminPayrollLineItem } from "@/src/services/payrollService";
+import { adminTestIds } from "@/src/testing/testIds/adminTestIds";
 import {
   getPayrollPeriodExportUrl,
   submitPayrollLineOverride,
@@ -29,6 +30,7 @@ interface PeriodDetailProps {
   period: AdminPayrollPeriodDetail;
   onClose: () => Promise<void>;
   onBack: () => void;
+  onPrepareRecalculate?: () => void;
 }
 
 async function downloadAndShare(url: string, filename: string): Promise<void> {
@@ -53,7 +55,7 @@ async function downloadAndShare(url: string, filename: string): Promise<void> {
   }
 }
 
-export function PeriodDetail({ period, onClose, onBack }: PeriodDetailProps) {
+export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: PeriodDetailProps) {
   const isOpen = period.status === "Open";
 
   // CSV export state
@@ -259,16 +261,28 @@ export function PeriodDetail({ period, onClose, onBack }: PeriodDetailProps) {
             <Text style={styles.backButtonText}>Volver</Text>
           </TouchableOpacity>
 
+          <View style={styles.reviewBanner}>
+            <Text style={styles.reviewEyebrow}>Revision operativa</Text>
+            <Text style={styles.reviewTitle}>Periodo listo para decision financiera</Text>
+            <Text style={styles.reviewDescription}>
+              Revisa el estado, los totales y las consecuencias antes de cerrar el periodo o recalcular la nomina.
+            </Text>
+          </View>
+
           <View style={styles.statusRow}>
             <Text style={styles.dates}>
               {period.startDate} - {period.endDate}
             </Text>
             <View
               style={[styles.statusBadge, isOpen ? styles.statusOpen : styles.statusClosed]}
-              testID="payroll-period-status-badge"
-              nativeID="payroll-period-status-badge"
+              testID={adminTestIds.payroll.periodStatusBadge}
+              nativeID={adminTestIds.payroll.periodStatusBadge}
             >
-              <Text style={[styles.statusText, isOpen ? styles.statusTextOpen : styles.statusTextClosed]}>
+              <Text
+                style={[styles.statusText, isOpen ? styles.statusTextOpen : styles.statusTextClosed]}
+                testID="payroll-period-status-badge"
+                nativeID="payroll-period-status-badge"
+              >
                 {isOpen ? "Abierto" : "Cerrado"}
               </Text>
             </View>
@@ -276,6 +290,15 @@ export function PeriodDetail({ period, onClose, onBack }: PeriodDetailProps) {
 
           {/* Header action bar: CSV export + bulk vouchers */}
           <View style={styles.headerActions}>
+            {isOpen && onPrepareRecalculate ? (
+              <Pressable
+                style={[styles.headerActionButton, styles.headerActionButtonWarning]}
+                onPress={onPrepareRecalculate}
+              >
+                <Text style={styles.headerActionButtonText}>Preparar recálculo</Text>
+              </Pressable>
+            ) : null}
+
             <Pressable
               style={[styles.headerActionButton, exporting && styles.buttonDisabled]}
               onPress={handleExport}
@@ -704,6 +727,32 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 8,
   },
+  reviewBanner: {
+    backgroundColor: "#ecfeff",
+    borderWidth: 1,
+    borderColor: "#a5f3fc",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+  },
+  reviewEyebrow: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#0f766e",
+    textTransform: "uppercase",
+    marginBottom: 6,
+  },
+  reviewTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#0f172a",
+  },
+  reviewDescription: {
+    marginTop: 6,
+    color: "#334155",
+    fontSize: 14,
+    lineHeight: 20,
+  },
   statusBadge: {
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -742,6 +791,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#f0fdfa",
     borderWidth: 1,
     borderColor: "#0f766e",
+  },
+  headerActionButtonWarning: {
+    backgroundColor: "#0f766e",
   },
   headerActionButtonText: {
     color: "#fff",

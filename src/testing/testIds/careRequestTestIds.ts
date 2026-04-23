@@ -3,7 +3,13 @@ export const careRequestTestIds = {
     screen: "care-request-list-screen",
   },
   detail: {
-    screen: "care-request-detail-screen",
+    screen: "care-detail-page",
+    statusChip: "care-detail-status-chip",
+    errorBanner: "care-detail-error-banner",
+    primaryAction: "price-breakdown-verify-button",
+    pricingReviewPanel: "price-verification-modal",
+    pricingReviewConfirmButton: "price-verification-confirm-button",
+    pricingBreakdownToggle: "care-detail-pricing-breakdown-toggle",
   },
   create: {
     screen: "care-request-create-screen",

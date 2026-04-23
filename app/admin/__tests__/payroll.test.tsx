@@ -63,7 +63,7 @@ describe("AdminPayrollScreen", () => {
     expect(vi.mocked(getPayrollPeriods)).toHaveBeenCalledTimes(1);
   });
 
-  it("opens confirmation modal and renders summary after recalculation", async () => {
+  it("opens the in-route review state and renders summary after recalculation", async () => {
     const {
       getPayrollPeriods,
       getCompensationRules,
@@ -93,13 +93,14 @@ describe("AdminPayrollScreen", () => {
       await Promise.resolve();
     });
 
-    // Open confirmation dialog
+    // Open the dedicated review step
     const recalcButton = component.root.findByProps({ testID: "admin-payroll-recalculate-button" });
     await act(async () => {
       recalcButton.props.onPress();
     });
 
     expect(component.root.findByProps({ testID: "admin-payroll-recalculate-confirm-dialog" })).toBeTruthy();
+    expect(component.root.findAllByProps({ children: "Reglas" })).toHaveLength(0);
 
     // Confirm
     const confirmCta = component.root.findByProps({ testID: "admin-payroll-recalculate-confirm-cta" });

@@ -15,16 +15,15 @@ const getApiBaseUrl = (): string => {
   const apiPort = process.env.EXPO_PUBLIC_API_PORT || "5050";
   const defaultLocalUrl = `http://localhost:${apiPort}`;
 
-  // Priority 1: Web platform uses localhost (Expo web = dev/automation only)
-  if (Platform.OS === "web") {
-    return defaultLocalUrl;
+  // Priority 1: Explicit environment override (web automation and device testing)
+  const explicitEnvUrl = process.env.EXPO_PUBLIC_API_BASE_URL || process.env.EXPO_PUBLIC_API_URL;
+  if (explicitEnvUrl?.trim()) {
+    return explicitEnvUrl.trim();
   }
 
-  // Priority 2: User-set environment variable (mobile devices)
-  // Only use if it's explicitly set and not empty
-  const envUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
-  if (envUrl && envUrl.trim() && envUrl.trim() !== defaultLocalUrl) {
-    return envUrl.trim();
+  // Priority 2: Web platform uses localhost when no explicit override is present
+  if (Platform.OS === "web") {
+    return defaultLocalUrl;
   }
 
   // Priority 3: Dynamic detection of the development machine IP

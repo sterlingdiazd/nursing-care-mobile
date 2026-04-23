@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity, RefreshControl, Alert, Modal, Pressable, AccessibilityInfo } from "react-native";
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, RefreshControl, Alert, Pressable } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
@@ -78,6 +78,7 @@ export default function AdminPayrollScreen() {
   
   const [periodList, setPeriodList] = useState<AdminPayrollPeriodListResult | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<AdminPayrollPeriodDetail | null>(null);
+  const [selectedPeriodLoading, setSelectedPeriodLoading] = useState(false);
   const [periodsLoading, setPeriodsLoading] = useState(true);
   const [periodsError, setPeriodsError] = useState<string | null>(null);
   const [showCreatePeriodModal, setShowCreatePeriodModal] = useState(false);
@@ -102,7 +103,7 @@ export default function AdminPayrollScreen() {
   const [showCreateAdjustmentModal, setShowCreateAdjustmentModal] = useState(false);
   const [adjustmentsRefreshing, setAdjustmentsRefreshing] = useState(false);
 
-  const [showRecalculateConfirmModal, setShowRecalculateConfirmModal] = useState(false);
+  const [showRecalculateReview, setShowRecalculateReview] = useState(false);
   const [recalculateLoading, setRecalculateLoading] = useState(false);
   const [recalculateResult, setRecalculateResult] = useState<RecalculatePayrollResult | null>(null);
 
@@ -204,12 +205,22 @@ export default function AdminPayrollScreen() {
     }
   }, [activeTab, loadPeriods, loadRules, loadDeductions, loadAdjustments]);
 
-  const handlePeriodPress = useCallback((period: { id: string }) => {
-    getPayrollPeriodById(period.id).then(setSelectedPeriod);
+  const handlePeriodPress = useCallback(async (period: { id: string }) => {
+    try {
+      setSelectedPeriodLoading(true);
+      const detail = await getPayrollPeriodById(period.id);
+      setSelectedPeriod(detail);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "No fue posible abrir el período.";
+      Alert.alert("Error", message);
+    } finally {
+      setSelectedPeriodLoading(false);
+    }
   }, []);
 
   const handleBackToList = useCallback(() => {
     setSelectedPeriod(null);
+    setShowRecalculateReview(false);
     void loadPeriods();
   }, [loadPeriods]);
 
@@ -287,7 +298,7 @@ export default function AdminPayrollScreen() {
     try {
       const result = await recalculatePayroll({});
       setRecalculateResult(result);
-      setShowRecalculateConfirmModal(false);
+      setShowRecalculateReview(false);
       // Refresh periods so any derived totals stay current.
       void loadPeriods();
     } catch (e) {
@@ -298,13 +309,74 @@ export default function AdminPayrollScreen() {
     }
   }, [loadPeriods]);
 
+  const openRecalculateReview = useCallback(() => {
+    setShowRecalculateReview(true);
+  }, []);
+
   const renderPeriodsTab = () => {
+    const openPeriodsCount = periodList?.items.filter((period) => period.status === "Open").length ?? 0;
+    const selectedPeriodLabel = selectedPeriod
+      ? `${selectedPeriod.startDate} - ${selectedPeriod.endDate}`
+      : openPeriodsCount > 0
+        ? `${openPeriodsCount} período(s) abierto(s)`
+        : "No hay períodos abiertos";
+
+    if (selectedPeriodLoading) {
+      return <LoadingView message="Preparando revisión del período..." />;
+    }
+
+    if (showRecalculateReview) {
+      return (
+        <ScrollView style={styles.content}>
+          <View
+            style={styles.reviewCard}
+            testID="admin-payroll-recalculate-confirm-dialog"
+            nativeID="admin-payroll-recalculate-confirm-dialog"
+          >
+            <Text style={styles.reviewEyebrow}>Revisión previa</Text>
+            <Text style={styles.reviewTitle}>Confirma el recálculo antes de ejecutar</Text>
+            <Text style={styles.reviewDescription}>
+              Solo se recalculan los períodos abiertos. Las modificaciones manuales aprobadas se mantienen y el resultado se registra con contexto auditable.
+            </Text>
+
+            <View style={styles.reviewChecklist}>
+              <Text style={styles.reviewChecklistItem}>• Contexto activo: {selectedPeriodLabel}</Text>
+              <Text style={styles.reviewChecklistItem}>• El cierre de períodos no cambia durante este paso.</Text>
+              <Text style={styles.reviewChecklistItem}>• Revisa el resumen resultante antes de salir del flujo.</Text>
+            </View>
+
+            <View style={styles.reviewActions}>
+              <TouchableOpacity
+                style={[styles.reviewActionButton, styles.reviewActionButtonSecondary]}
+                onPress={() => setShowRecalculateReview(false)}
+                disabled={recalculateLoading}
+              >
+                <Text style={[styles.reviewActionText, styles.reviewActionTextSecondary]}>Volver</Text>
+              </TouchableOpacity>
+              <Pressable
+                style={[styles.reviewActionButton, recalculateLoading ? styles.reviewActionButtonDisabled : undefined]}
+                onPress={handleRecalculate}
+                disabled={recalculateLoading}
+                testID="admin-payroll-recalculate-confirm-cta"
+                nativeID="admin-payroll-recalculate-confirm-cta"
+              >
+                <Text style={styles.reviewActionText}>
+                  {recalculateLoading ? "Procesando..." : "Confirmar recálculo"}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </ScrollView>
+      );
+    }
+
     if (selectedPeriod) {
       return (
         <PeriodDetail
           period={selectedPeriod}
           onClose={handleClosePeriod}
           onBack={handleBackToList}
+          onPrepareRecalculate={openRecalculateReview}
         />
       );
     }
@@ -317,15 +389,33 @@ export default function AdminPayrollScreen() {
         }
       >
         {!periodsLoading && (
-          <Text testID="admin-payroll-loaded" nativeID="admin-payroll-loaded" style={styles.hiddenMarker}>
+          <Text testID="admin-payroll-loaded" nativeID="admin-payroll-loaded" style={styles.readyMarker}>
             {" "}
           </Text>
         )}
 
+        <View style={styles.overviewCard}>
+          <Text style={styles.overviewEyebrow}>Ruta operativa</Text>
+          <Text style={styles.overviewTitle}>Revisión financiera por período</Text>
+          <Text style={styles.overviewDescription}>
+            Abre un período para revisar su contexto completo y usa el recálculo desde un paso dedicado, no desde una confirmación fugaz.
+          </Text>
+          <View style={styles.overviewStats}>
+            <View style={styles.overviewStat}>
+              <Text style={styles.overviewStatLabel}>Abiertos</Text>
+              <Text style={styles.overviewStatValue}>{openPeriodsCount}</Text>
+            </View>
+            <View style={styles.overviewStat}>
+              <Text style={styles.overviewStatLabel}>Totales cargados</Text>
+              <Text style={styles.overviewStatValue}>{periodList?.totalCount ?? 0}</Text>
+            </View>
+          </View>
+        </View>
+
         <View style={styles.toolbar}>
           <Pressable
             style={[styles.toolbarButton, recalculateLoading ? styles.toolbarButtonDisabled : undefined]}
-            onPress={() => setShowRecalculateConfirmModal(true)}
+            onPress={openRecalculateReview}
             disabled={recalculateLoading}
             testID="admin-payroll-recalculate-button"
             nativeID="admin-payroll-recalculate-button"
@@ -549,6 +639,8 @@ export default function AdminPayrollScreen() {
     }
   };
 
+  const shouldHideTabs = activeTab === "periods" && (selectedPeriodLoading || selectedPeriod !== null || showRecalculateReview);
+
   return (
     <MobileWorkspaceShell
       eyebrow="Nómina"
@@ -556,52 +648,9 @@ export default function AdminPayrollScreen() {
       description="Administra períodos, reglas y compensaciones"
     >
       <View style={styles.screen} testID="admin-payroll-screen" nativeID="admin-payroll-screen">
-        <PayrollTabs activeTab={activeTab} onTabChange={setActiveTab} />
+        {!shouldHideTabs ? <PayrollTabs activeTab={activeTab} onTabChange={setActiveTab} /> : null}
         {renderContent()}
       </View>
-
-      <Modal
-        transparent
-        visible={showRecalculateConfirmModal}
-        animationType="fade"
-        onRequestClose={() => setShowRecalculateConfirmModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View
-            style={styles.modalCard}
-            testID="admin-payroll-recalculate-confirm-dialog"
-            nativeID="admin-payroll-recalculate-confirm-dialog"
-            accessibilityViewIsModal={true}
-            accessibilityRole="alert"
-          >
-            <Text style={styles.modalTitle}>Confirmar recalculo</Text>
-            <Text style={styles.modalBody}>
-              Solo se recalculan los períodos abiertos. Las modificaciones manuales aprobadas se mantienen y no se recalculan.
-            </Text>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonSecondary]}
-                onPress={() => setShowRecalculateConfirmModal(false)}
-                disabled={recalculateLoading}
-              >
-                <Text style={[styles.modalButtonText, styles.modalButtonTextSecondary]}>Cancelar</Text>
-              </TouchableOpacity>
-              <Pressable
-                style={[styles.modalButton, recalculateLoading ? styles.modalButtonDisabled : undefined]}
-                onPress={handleRecalculate}
-                disabled={recalculateLoading}
-                testID="admin-payroll-recalculate-confirm-cta"
-                nativeID="admin-payroll-recalculate-confirm-cta"
-              >
-                <Text style={styles.modalButtonText}>
-                  {recalculateLoading ? "Procesando..." : "Confirmar"}
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
 
       <CreatePeriodModal
         visible={showCreatePeriodModal}
@@ -646,6 +695,126 @@ const styles = StyleSheet.create({
     height: 0,
     width: 0,
     opacity: 0,
+  },
+  readyMarker: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    height: 1,
+    width: 1,
+    opacity: 0,
+  },
+  overviewCard: {
+    margin: 16,
+    marginBottom: 8,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: "#eff6ff",
+    borderWidth: 1,
+    borderColor: "#bfdbfe",
+  },
+  overviewEyebrow: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#1d4ed8",
+    textTransform: "uppercase",
+    marginBottom: 6,
+  },
+  overviewTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#0f172a",
+  },
+  overviewDescription: {
+    marginTop: 6,
+    color: "#334155",
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  overviewStats: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 14,
+  },
+  overviewStat: {
+    flex: 1,
+    backgroundColor: "#ffffff",
+    borderRadius: 10,
+    padding: 12,
+  },
+  overviewStatLabel: {
+    fontSize: 12,
+    color: "#475569",
+    marginBottom: 4,
+  },
+  overviewStatValue: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#0f172a",
+  },
+  reviewCard: {
+    margin: 16,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: "#fff7ed",
+    borderWidth: 1,
+    borderColor: "#fdba74",
+  },
+  reviewEyebrow: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#c2410c",
+    textTransform: "uppercase",
+    marginBottom: 6,
+  },
+  reviewTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#0f172a",
+  },
+  reviewDescription: {
+    marginTop: 6,
+    color: "#334155",
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  reviewChecklist: {
+    marginTop: 16,
+    gap: 8,
+  },
+  reviewChecklistItem: {
+    fontSize: 14,
+    color: "#7c2d12",
+    lineHeight: 20,
+  },
+  reviewActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 18,
+  },
+  reviewActionButton: {
+    flex: 1,
+    backgroundColor: "#c2410c",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  reviewActionButtonSecondary: {
+    backgroundColor: "#ffedd5",
+    borderWidth: 1,
+    borderColor: "#fdba74",
+  },
+  reviewActionButtonDisabled: {
+    opacity: 0.7,
+  },
+  reviewActionText: {
+    color: "#fff",
+    fontWeight: "800",
+    fontSize: 14,
+  },
+  reviewActionTextSecondary: {
+    color: "#9a3412",
   },
   toolbar: {
     padding: 16,

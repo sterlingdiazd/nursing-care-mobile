@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useLocalSearchParams, router } from "expo-router";
 import {
   ActivityIndicator,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -23,6 +22,7 @@ import {
   type PricingVerificationResult,
 } from "@/src/services/careRequestService";
 import { CareRequestDto, CareRequestTransitionAction } from "@/src/types/careRequest";
+import { careRequestTestIds } from "@/src/testing/testIds";
 
 function getStatusColors(status: CareRequestDto["status"]) {
   switch (status) {
@@ -64,7 +64,8 @@ export default function CareRequestDetailScreen() {
   const [isActing, setIsActing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [pricingModalVisible, setPricingModalVisible] = useState(false);
+  const [showPricingReview, setShowPricingReview] = useState(false);
+  const [showPricingBreakdown, setShowPricingBreakdown] = useState(false);
   const [pricingResult, setPricingResult] = useState<PricingVerificationResult | null>(null);
   const [isPricingLoading, setIsPricingLoading] = useState(false);
   const [pricingError, setPricingError] = useState<string | null>(null);
@@ -165,7 +166,6 @@ export default function CareRequestDetailScreen() {
     setIsPricingLoading(true);
     setPricingError(null);
     setPricingResult(null);
-    setPricingModalVisible(true);
     try {
       const result = await verifyCareRequestPricing(id);
       setPricingResult(result);
@@ -174,6 +174,17 @@ export default function CareRequestDetailScreen() {
     } finally {
       setIsPricingLoading(false);
     }
+  };
+
+  const openPricingReview = () => {
+    setShowPricingReview(true);
+    setShowPricingBreakdown(true);
+    setPricingError(null);
+    setPricingResult(null);
+  };
+
+  const closePricingReview = () => {
+    setShowPricingReview(false);
   };
 
   const canManageAssignment = roles.includes("ADMIN");
@@ -219,15 +230,18 @@ export default function CareRequestDetailScreen() {
     careRequest.price != null ||
     careRequest.categoryFactorSnapshot != null ||
     careRequest.lineBeforeVolumeDiscount != null;
+  const primaryActionLabel = roles.includes("ADMIN")
+    ? "Preparar verificación de precios"
+    : "Consultar desglose tarifario";
 
   return (
     <>
     <MobileWorkspaceShell
-      testID="care-detail-page"
-      nativeID="care-detail-page"
+      testID={careRequestTestIds.detail.screen}
+      nativeID={careRequestTestIds.detail.screen}
       eyebrow="Detalle de solicitud"
       title="Revisa contexto, estado y transiciones."
-      description="El detalle concentra la lectura operativa y las acciones permitidas segun el rol actual."
+      description="Mantén el estado visible y entra en revisiones profundas solo cuando el flujo lo pida."
       actions={
         <Pressable
           onPress={() => router.back()}
@@ -240,14 +254,166 @@ export default function CareRequestDetailScreen() {
         </Pressable>
       }
     >
-      <View style={styles.card} testID="care-detail-page" nativeID="care-detail-page">
+      <View style={styles.card} testID={careRequestTestIds.detail.screen} nativeID={careRequestTestIds.detail.screen}>
         <Text style={styles.eyebrow}>Detalle de solicitud</Text>
         <View style={styles.headerRow}>
           <Text style={styles.title}>{careRequest.careRequestDescription}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: colors.bg }]} testID="care-detail-status-chip" nativeID="care-detail-status-chip">
+          <View
+            style={[styles.statusBadge, { backgroundColor: colors.bg }]}
+            testID={careRequestTestIds.detail.statusChip}
+            nativeID={careRequestTestIds.detail.statusChip}
+          >
             <Text style={[styles.statusText, { color: colors.fg }]}>{statusLabel}</Text>
           </View>
         </View>
+
+        <View style={styles.summaryCard}>
+          <Text style={styles.sectionEyebrow}>Historia operativa</Text>
+          <Text style={styles.summaryTitle}>Estado y próximo paso visibles antes del detalle técnico</Text>
+          <Text style={styles.summaryCopy}>
+            Revisa el estado actual, confirma la enfermera asignada y abre la verificación de precios solo cuando necesites comparar el cálculo guardado con el actual.
+          </Text>
+          <View style={styles.summaryGrid}>
+            <View style={styles.summaryMetric}>
+              <Text style={styles.summaryLabel}>Estado actual</Text>
+              <Text style={styles.summaryValue}>{statusLabel}</Text>
+            </View>
+            <View style={styles.summaryMetric}>
+              <Text style={styles.summaryLabel}>Fecha del servicio</Text>
+              <Text style={styles.summaryValue}>{careRequest.careRequestDate ?? "Sin fecha"}</Text>
+            </View>
+            <View style={styles.summaryMetric}>
+              <Text style={styles.summaryLabel}>Enfermera asignada</Text>
+              <Text style={styles.summaryValue}>{assignedNurseLabel}</Text>
+            </View>
+            <View style={styles.summaryMetric}>
+              <Text style={styles.summaryLabel}>Total estimado</Text>
+              <Text style={styles.summaryValue}>{formatCurrency(careRequest.total)}</Text>
+            </View>
+          </View>
+        </View>
+
+        {successMessage ? <Text style={styles.successText}>{successMessage}</Text> : null}
+        {error ? (
+          <Text
+            style={styles.errorBanner}
+            testID={careRequestTestIds.detail.errorBanner}
+            nativeID={careRequestTestIds.detail.errorBanner}
+          >
+            {error}
+          </Text>
+        ) : null}
+
+        <View style={styles.actionRail}>
+          {hasPricingData ? (
+            <Pressable
+              onPress={showPricingReview ? closePricingReview : openPricingReview}
+              testID={careRequestTestIds.detail.primaryAction}
+              nativeID={careRequestTestIds.detail.primaryAction}
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                styles.pricingButton,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              <Text style={styles.pricingButtonText}>
+                {showPricingReview ? "Cerrar revisión de precios" : primaryActionLabel}
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
+
+        {showPricingReview ? (
+          <View
+            style={styles.reviewCard}
+            testID={careRequestTestIds.detail.pricingReviewPanel}
+            nativeID={careRequestTestIds.detail.pricingReviewPanel}
+          >
+            <Text style={styles.sectionEyebrow}>Revisión guiada</Text>
+            <Text style={styles.reviewTitle}>Confirma el cálculo antes de comparar valores</Text>
+            <Text style={styles.reviewCopy}>
+              Esta revisión mantiene el contexto operativo visible y evita abrir una ventana separada. Ejecuta la validación solo cuando estés listo para contrastar el cálculo guardado con el actual.
+            </Text>
+            <View style={styles.reviewChecklist}>
+              <Text style={styles.reviewChecklistItem}>• El estado actual permanece visible durante la revisión.</Text>
+              <Text style={styles.reviewChecklistItem}>• Las acciones sensibles siguen debajo del resumen principal.</Text>
+              <Text style={styles.reviewChecklistItem}>• El desglose profundo permanece dentro de este mismo recorrido.</Text>
+            </View>
+            <View style={styles.reviewActions}>
+              <Pressable
+                onPress={() => setShowPricingBreakdown((current) => !current)}
+                testID={careRequestTestIds.detail.pricingBreakdownToggle}
+                nativeID={careRequestTestIds.detail.pricingBreakdownToggle}
+                style={({ pressed }) => [
+                  styles.secondaryButton,
+                  styles.reviewSecondaryButton,
+                  pressed && styles.buttonPressed,
+                ]}
+              >
+                <Text style={styles.reviewSecondaryButtonText}>
+                  {showPricingBreakdown ? "Ocultar desglose" : "Mostrar desglose"}
+                </Text>
+              </Pressable>
+              {roles.includes("ADMIN") ? (
+                <Pressable
+                  onPress={runPricingVerification}
+                  disabled={isPricingLoading}
+                  testID={careRequestTestIds.detail.pricingReviewConfirmButton}
+                  nativeID={careRequestTestIds.detail.pricingReviewConfirmButton}
+                  style={({ pressed }) => [
+                    styles.primaryButton,
+                    isPricingLoading && styles.disabledButton,
+                    pressed && styles.buttonPressed,
+                  ]}
+                >
+                  <Text style={styles.primaryButtonText}>
+                    {isPricingLoading ? "Verificando..." : "Ejecutar verificación"}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+
+            {isPricingLoading ? (
+              <View style={styles.pricingLoadingRow}>
+                <ActivityIndicator color="#1d4ed8" />
+                <Text style={styles.pricingLoadingText}>Verificando precios...</Text>
+              </View>
+            ) : null}
+
+            {pricingError ? <Text style={styles.pricingErrorText}>{pricingError}</Text> : null}
+
+            {pricingResult && pricingResult.matches ? (
+              <View style={styles.pricingSuccessCard} testID="price-verification-success" nativeID="price-verification-success">
+                <Text style={styles.pricingSuccessText}>Todos los valores coinciden</Text>
+                {pricingResult.limitationNotes.length > 0 ? (
+                  <View style={styles.pricingNotesList} testID="price-verification-limitation" nativeID="price-verification-limitation">
+                    {pricingResult.limitationNotes.map((note, i) => (
+                      <Text key={i} style={styles.pricingNoteItem}>{note}</Text>
+                    ))}
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
+
+            {pricingResult && !pricingResult.matches ? (
+              <View style={styles.pricingDiscrepancyCard} testID="price-verification-discrepancies" nativeID="price-verification-discrepancies">
+                <Text style={styles.pricingDiscrepancyTitle}>Discrepancias encontradas</Text>
+                <View style={styles.pricingTableHeader}>
+                  <Text style={[styles.pricingTableCell, styles.pricingTableHeaderText]}>Campo</Text>
+                  <Text style={[styles.pricingTableCell, styles.pricingTableHeaderText]}>Guardado</Text>
+                  <Text style={[styles.pricingTableCell, styles.pricingTableHeaderText]}>Actual</Text>
+                </View>
+                {pricingResult.discrepancies.map((d, i) => (
+                  <View key={i} style={styles.pricingTableRow}>
+                    <Text style={styles.pricingTableCell}>{d.fieldName}</Text>
+                    <Text style={styles.pricingTableCell}>{d.storedValue}</Text>
+                    <Text style={styles.pricingTableCell}>{d.currentValue}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
 
         <View style={styles.metaGroup} testID="care-detail-info-section" nativeID="care-detail-info-section">
           <Text style={styles.metaText}>ID de solicitud: {careRequest.id}</Text>
@@ -294,7 +460,7 @@ export default function CareRequestDetailScreen() {
           )}
         </View>
 
-        {hasPricingData && (
+        {hasPricingData && showPricingBreakdown ? (
           <View style={styles.pricingBreakdown} testID="care-detail-pricing-breakdown" nativeID="care-detail-pricing-breakdown">
             <Text style={styles.sectionEyebrow}>Desglose de precios</Text>
             <View testID="price-breakdown-category" nativeID="price-breakdown-category" style={styles.pricingRow}>
@@ -346,10 +512,7 @@ export default function CareRequestDetailScreen() {
               <Text style={[styles.pricingValue, styles.pricingTotalValue]}>{formatCurrency(careRequest.total)}</Text>
             </View>
           </View>
-        )}
-
-        {successMessage && <Text style={styles.successText}>{successMessage}</Text>}
-        {error && <Text style={styles.errorText}>{error}</Text>}
+        ) : null}
 
         {canManageAssignment && (
           <View style={styles.assignmentCard}>
@@ -402,23 +565,6 @@ export default function CareRequestDetailScreen() {
               <Text style={styles.primaryButtonText}>
                 {careRequest.assignedNurse ? "Reasignar enfermera" : "Asignar enfermera"}
               </Text>
-            </Pressable>
-          </View>
-        )}
-
-        {roles.includes("ADMIN") && (
-          <View style={styles.pricingSection}>
-            <Pressable
-              onPress={runPricingVerification}
-              testID="price-breakdown-verify-button"
-              nativeID="price-breakdown-verify-button"
-              style={({ pressed }) => [
-                styles.secondaryButton,
-                styles.pricingButton,
-                pressed && styles.buttonPressed,
-              ]}
-            >
-              <Text style={styles.pricingButtonText}>Verificar precios</Text>
             </Pressable>
           </View>
         )}
@@ -488,71 +634,6 @@ export default function CareRequestDetailScreen() {
         </View>
       </View>
     </MobileWorkspaceShell>
-
-    <Modal
-      visible={pricingModalVisible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={() => setPricingModalVisible(false)}
-    >
-      <View style={styles.pricingModalContainer} testID="price-verification-modal" nativeID="price-verification-modal">
-        <View style={styles.pricingModalHeader}>
-          <Text style={styles.pricingModalTitle}>Verificacion de precios</Text>
-          <Pressable
-            onPress={() => setPricingModalVisible(false)}
-            testID="price-verification-close-button"
-            nativeID="price-verification-close-button"
-            style={({ pressed }) => [pressed && styles.buttonPressed]}
-          >
-            <Text style={styles.pricingModalClose}>Cerrar</Text>
-          </Pressable>
-        </View>
-
-        <ScrollView style={styles.pricingModalBody}>
-          {isPricingLoading && (
-            <View style={styles.pricingLoadingRow}>
-              <ActivityIndicator color="#1d4ed8" />
-              <Text style={styles.pricingLoadingText}>Verificando precios...</Text>
-            </View>
-          )}
-
-          {pricingError && (
-            <Text style={styles.pricingErrorText}>{pricingError}</Text>
-          )}
-
-          {pricingResult && pricingResult.matches && (
-            <View style={styles.pricingSuccessCard} testID="price-verification-success" nativeID="price-verification-success">
-              <Text style={styles.pricingSuccessText}>Todos los valores coinciden</Text>
-              {pricingResult.limitationNotes.length > 0 && (
-                <View style={styles.pricingNotesList} testID="price-verification-limitation" nativeID="price-verification-limitation">
-                  {pricingResult.limitationNotes.map((note, i) => (
-                    <Text key={i} style={styles.pricingNoteItem}>{note}</Text>
-                  ))}
-                </View>
-              )}
-            </View>
-          )}
-
-          {pricingResult && !pricingResult.matches && (
-            <View style={styles.pricingDiscrepancyCard} testID="price-verification-discrepancies" nativeID="price-verification-discrepancies">
-              <Text style={styles.pricingDiscrepancyTitle}>Discrepancias encontradas</Text>
-              <View style={styles.pricingTableHeader}>
-                <Text style={[styles.pricingTableCell, styles.pricingTableHeaderText]}>Campo</Text>
-                <Text style={[styles.pricingTableCell, styles.pricingTableHeaderText]}>Guardado</Text>
-                <Text style={[styles.pricingTableCell, styles.pricingTableHeaderText]}>Actual</Text>
-              </View>
-              {pricingResult.discrepancies.map((d, i) => (
-                <View key={i} style={styles.pricingTableRow}>
-                  <Text style={styles.pricingTableCell}>{d.fieldName}</Text>
-                  <Text style={styles.pricingTableCell}>{d.storedValue}</Text>
-                  <Text style={styles.pricingTableCell}>{d.currentValue}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-        </ScrollView>
-      </View>
-    </Modal>
     </>
   );
 }
@@ -597,6 +678,49 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 18,
   },
+  summaryCard: {
+    backgroundColor: "#eff6ff",
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: "#bfdbfe",
+    gap: 14,
+    marginBottom: 18,
+  },
+  summaryTitle: {
+    color: "#102a43",
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: "800",
+  },
+  summaryCopy: {
+    color: "#334e68",
+    lineHeight: 21,
+  },
+  summaryGrid: {
+    gap: 12,
+  },
+  summaryMetric: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#dbeafe",
+  },
+  summaryLabel: {
+    color: "#52637a",
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+    marginBottom: 6,
+  },
+  summaryValue: {
+    color: "#0f172a",
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: "700",
+  },
   title: {
     color: "#102a43",
     fontSize: 27,
@@ -616,6 +740,48 @@ const styles = StyleSheet.create({
   },
   metaGroup: {
     gap: 10,
+  },
+  actionRail: {
+    gap: 12,
+    marginBottom: 18,
+  },
+  reviewCard: {
+    backgroundColor: "#fff7ed",
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: "#fdba74",
+    gap: 14,
+    marginBottom: 18,
+  },
+  reviewTitle: {
+    color: "#102a43",
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: "800",
+  },
+  reviewCopy: {
+    color: "#7c2d12",
+    lineHeight: 21,
+  },
+  reviewChecklist: {
+    gap: 8,
+  },
+  reviewChecklistItem: {
+    color: "#9a3412",
+    lineHeight: 21,
+  },
+  reviewActions: {
+    gap: 12,
+  },
+  reviewSecondaryButton: {
+    borderColor: "#fdba74",
+    backgroundColor: "#ffedd5",
+  },
+  reviewSecondaryButtonText: {
+    color: "#9a3412",
+    fontWeight: "800",
+    fontSize: 16,
   },
   assignmentCard: {
     marginTop: 24,
@@ -713,14 +879,27 @@ const styles = StyleSheet.create({
   },
   successText: {
     color: "#166534",
-    marginTop: 16,
+    marginBottom: 16,
     lineHeight: 21,
     fontWeight: "700",
+    backgroundColor: "#dcfce7",
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   errorText: {
     color: "#be123c",
-    marginTop: 16,
     lineHeight: 21,
+    textAlign: "center",
+  },
+  errorBanner: {
+    color: "#be123c",
+    marginBottom: 16,
+    lineHeight: 21,
+    backgroundColor: "#fff1f2",
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   cancelButton: {
     borderColor: "#e2e8f0",
@@ -773,12 +952,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#1d4ed8",
   },
-  pricingSection: {
-    marginTop: 20,
-    paddingTop: 18,
-    borderTopWidth: 1,
-    borderTopColor: "#e2e8f0",
-  },
   pricingButton: {
     borderColor: "#bfdbfe",
     backgroundColor: "#eff6ff",
@@ -788,38 +961,11 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     fontSize: 16,
   },
-  pricingModalContainer: {
-    flex: 1,
-    backgroundColor: "#f8fafc",
-  },
-  pricingModalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e2e8f0",
-  },
-  pricingModalTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#102a43",
-  },
-  pricingModalClose: {
-    fontSize: 16,
-    color: "#2563eb",
-    fontWeight: "600",
-  },
-  pricingModalBody: {
-    flex: 1,
-    padding: 20,
-  },
   pricingLoadingRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    paddingVertical: 24,
+    paddingVertical: 12,
   },
   pricingLoadingText: {
     color: "#52637a",
