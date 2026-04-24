@@ -422,7 +422,7 @@ export default function CreateCareRequestScreen() {
 
             {catalogLoading ? (
               <View style={styles.warningBox}>
-                <ActivityIndicator color="#132d75" />
+                <ActivityIndicator color="#132d75" accessibilityLabel="Cargando..." />
                 <Text style={styles.warningText}>Cargando catalogo de precios...</Text>
               </View>
             ) : null}
@@ -542,8 +542,11 @@ export default function CreateCareRequestScreen() {
             ) : (
               <View style={styles.chipsContainer}>
                 {(catalogOptions?.careRequestTypes ?? []).map(row => (
-                  <Pressable 
+                  <Pressable
                     key={row.code}
+                    accessibilityRole="button"
+                    accessibilityLabel={row.displayName}
+                    accessibilityState={{ selected: form.careRequestType === row.code }}
                     onPress={() => setForm({ ...form, careRequestType: row.code })}
                     style={[styles.chip, form.careRequestType === row.code && styles.chipActive]}
                   >
@@ -557,9 +560,9 @@ export default function CreateCareRequestScreen() {
 
             <Text style={styles.label}>Cantidad *</Text>
             <View style={styles.stepperContainer}>
-              <Pressable onPress={decrementUnit} style={styles.stepperBtn}><Text style={styles.stepperBtnText}>-</Text></Pressable>
+              <Pressable accessibilityRole="button" accessibilityLabel="Disminuir cantidad" onPress={decrementUnit} style={styles.stepperBtn}><Text style={styles.stepperBtnText}>-</Text></Pressable>
               <Text style={styles.stepperValue}>{form.unit}</Text>
-              <Pressable onPress={incrementUnit} style={styles.stepperBtn}><Text style={styles.stepperBtnText}>+</Text></Pressable>
+              <Pressable accessibilityRole="button" accessibilityLabel="Aumentar cantidad" onPress={incrementUnit} style={styles.stepperBtn}><Text style={styles.stepperBtnText}>+</Text></Pressable>
             </View>
 
             <Text style={styles.label}>Descripcion de la solicitud</Text>
@@ -607,7 +610,7 @@ export default function CreateCareRequestScreen() {
                 >
                   {nurseLookupLoading ? (
                     <View style={styles.autocompleteLoadingRow}>
-                      <ActivityIndicator color="#132d75" />
+                      <ActivityIndicator color="#132d75" accessibilityLabel="Cargando..." />
                       <Text style={styles.autocompleteHelperText}>Buscando enfermeras activas...</Text>
                     </View>
                   ) : nurseLookupError ? (
@@ -693,7 +696,13 @@ export default function CreateCareRequestScreen() {
           </View>
       </View>
       <View style={styles.stickyFooter}>
-        <Pressable style={styles.buttonPrimary} onPress={onSubmit} disabled={isLoading || !canCreateRequest}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Generar Solicitud de Cuidado"
+          style={styles.buttonPrimary}
+          onPress={onSubmit}
+          disabled={isLoading || !canCreateRequest}
+        >
           <Text style={styles.buttonPrimaryText}>{isLoading ? "Creando Solicitud..." : "Generar Solicitud de Cuidado"}</Text>
         </Pressable>
       </View>

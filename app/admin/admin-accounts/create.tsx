@@ -6,6 +6,7 @@ import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { validateEmail } from "@/src/api/auth";
 import { useAuth } from "@/src/context/AuthContext";
 import { FormInput } from "@/src/components/form";
+import { designTokens } from "@/src/design-system/tokens";
 import { adminTestIds } from "@/src/testing/testIds";
 import {
   createAdminAccount,
@@ -257,6 +258,8 @@ export default function AdminCreateAdminAccountScreen() {
 
       <View style={styles.actions}>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Crear administrador"
           style={styles.buttonPrimary}
           onPress={handleSubmit}
           disabled={submitting}
@@ -271,23 +274,23 @@ export default function AdminCreateAdminAccountScreen() {
 }
 
 const styles = StyleSheet.create({
-  error: { backgroundColor: "#fff1f2", borderWidth: 1, borderColor: "#fecdd3", padding: 14, borderRadius: 16, marginBottom: 12 },
-  errorTitle: { color: "#9f1239", fontSize: 13, fontWeight: "800", marginBottom: 4 },
-  card: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
-  cardTitle: { fontSize: 18, fontWeight: "800", color: "#102a43", marginBottom: 8 },
-  cardDescription: { color: "#52637a", fontSize: 13, lineHeight: 18, marginBottom: 4 },
-  label: { fontSize: 14, fontWeight: "700", color: "#7c2d12", marginTop: 12, marginBottom: 6 },
-  input: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#cbd5e0", borderRadius: 12, padding: 12, fontSize: 15 },
-  inputError: { borderColor: "#c00" },
-  errorText: { color: "#dc2626", fontSize: 12, marginTop: 4 },
-  reviewCard: { backgroundColor: "#f8fafc", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
-  reviewEyebrow: { color: "#7c2d12", fontSize: 12, fontWeight: "800", textTransform: "uppercase", marginBottom: 6 },
-  reviewChip: { alignSelf: "flex-start", backgroundColor: "#102a43", color: "#ffffff", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 13, fontWeight: "800", marginBottom: 8 },
-  reviewText: { color: "#52637a", fontSize: 13, lineHeight: 18 },
-  warningCard: { backgroundColor: "#fff7ed", borderWidth: 1, borderColor: "#fed7aa", borderRadius: 14, padding: 12, marginTop: 14 },
-  warningTitle: { color: "#9a3412", fontSize: 13, fontWeight: "800", marginBottom: 4 },
-  warningText: { color: "#9a3412", fontSize: 13, lineHeight: 18 },
+  error: { backgroundColor: designTokens.color.surface.danger, borderWidth: 1, borderColor: designTokens.color.border.strong, padding: 14, borderRadius: 16, marginBottom: 12 },
+  errorTitle: { color: designTokens.color.status.dangerText, fontSize: 13, fontWeight: "800", marginBottom: 4 },
+  card: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 14, marginBottom: 12 },
+  cardTitle: { fontSize: 18, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 8 },
+  cardDescription: { color: designTokens.color.ink.secondary, fontSize: 13, lineHeight: 18, marginBottom: 4 },
+  label: { fontSize: 14, fontWeight: "700", color: designTokens.color.status.dangerText, marginTop: 12, marginBottom: 6 },
+  input: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.strong, borderRadius: 12, padding: 12, fontSize: 15 },
+  inputError: { borderColor: designTokens.color.ink.danger },
+  errorText: { color: designTokens.color.ink.danger, fontSize: 12, marginTop: 4 },
+  reviewCard: { backgroundColor: designTokens.color.surface.canvas, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 14, marginBottom: 12 },
+  reviewEyebrow: { color: designTokens.color.status.dangerText, fontSize: 12, fontWeight: "800", textTransform: "uppercase", marginBottom: 6 },
+  reviewChip: { alignSelf: "flex-start", backgroundColor: designTokens.color.ink.primary, color: designTokens.color.ink.inverse, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 13, fontWeight: "800", marginBottom: 8 },
+  reviewText: { color: designTokens.color.ink.secondary, fontSize: 13, lineHeight: 18 },
+  warningCard: { backgroundColor: designTokens.color.surface.warning, borderWidth: 1, borderColor: designTokens.color.border.strong, borderRadius: 14, padding: 12, marginTop: 14 },
+  warningTitle: { color: designTokens.color.status.dangerText, fontSize: 13, fontWeight: "800", marginBottom: 4 },
+  warningText: { color: designTokens.color.status.dangerText, fontSize: 13, lineHeight: 18 },
   actions: { marginTop: 16 },
-  buttonPrimary: { backgroundColor: "#3b82f6", borderRadius: 12, paddingVertical: 14, alignItems: "center" },
-  buttonPrimaryText: { color: "#ffffff", fontWeight: "700", fontSize: 16 },
+  buttonPrimary: { backgroundColor: designTokens.color.ink.accent, borderRadius: 12, paddingVertical: 14, alignItems: "center" },
+  buttonPrimaryText: { color: designTokens.color.ink.inverse, fontWeight: "700", fontSize: 16 },
 });

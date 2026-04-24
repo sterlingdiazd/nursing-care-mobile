@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View, TouchableOpacity, ActivityIndicator } from "react-native";
+import { designTokens } from "@/src/design-system/tokens";
 
 interface ErrorViewProps {
   message: string;
@@ -10,13 +11,18 @@ export function ErrorView({ message, onRetry, loading }: ErrorViewProps) {
   return (
     <View style={styles.container}>
       {loading ? (
-        <ActivityIndicator size="large" color="#1976d2" />
+        <ActivityIndicator size="large" color={designTokens.color.ink.accentStrong} accessibilityLabel="Cargando..." />
       ) : (
         <>
-          <Text style={styles.icon}>⚠️</Text>
+          <Text style={styles.icon}>!</Text>
           <Text style={styles.message}>{message}</Text>
           {onRetry && (
-            <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={onRetry}
+              accessibilityRole="button"
+              accessibilityLabel="Reintentar"
+            >
               <Text style={styles.retryButtonText}>Reintentar</Text>
             </TouchableOpacity>
           )}
@@ -36,21 +42,23 @@ const styles = StyleSheet.create({
   icon: {
     fontSize: 48,
     marginBottom: 16,
+    color: designTokens.color.ink.danger,
+    fontWeight: "800",
   },
   message: {
     fontSize: 15,
-    color: "#666",
+    color: designTokens.color.ink.muted,
     textAlign: "center",
     marginBottom: 16,
   },
   retryButton: {
-    backgroundColor: "#1976d2",
+    backgroundColor: designTokens.color.ink.accentStrong,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
   retryButtonText: {
-    color: "#fff",
+    color: designTokens.color.ink.inverse,
     fontSize: 15,
     fontWeight: "600",
   },

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { designTokens } from "@/src/design-system/tokens";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
@@ -48,6 +49,8 @@ export default function ToolsScreen() {
         />
 
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Guardar token manual"
           onPress={onSaveToken}
           style={({ pressed }) => [
             styles.primaryButton,
@@ -84,13 +87,13 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: "#d1d5db",
+    borderColor: designTokens.color.border.strong,
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: "#111827",
-    backgroundColor: "#ffffff",
+    color: designTokens.color.ink.primary,
+    backgroundColor: designTokens.color.ink.inverse,
   },
   tokenInput: {
     minHeight: 180,
@@ -103,7 +106,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
   },
   primaryButtonText: {
-    color: "#fff",
+    color: designTokens.color.ink.inverse,
     fontSize: 16,
     fontWeight: "800",
   },

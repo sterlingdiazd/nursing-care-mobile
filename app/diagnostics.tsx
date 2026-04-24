@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { designTokens } from "@/src/design-system/tokens";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import {
@@ -48,6 +49,8 @@ export default function DiagnosticsScreen() {
         </Text>
 
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Probar conexion con backend"
           onPress={onCheckBackend}
           disabled={isCheckingBackend}
           style={({ pressed }) => [
@@ -57,7 +60,7 @@ export default function DiagnosticsScreen() {
           ]}
         >
           {isCheckingBackend ? (
-            <ActivityIndicator color="#1d4ed8" />
+            <ActivityIndicator color={designTokens.color.ink.accentStrong} accessibilityLabel="Cargando..." />
           ) : (
             <Text style={styles.secondaryButtonText}>Probar conexion con backend</Text>
           )}
@@ -87,6 +90,8 @@ export default function DiagnosticsScreen() {
             <Text style={styles.sectionTitle}>Logs recientes del cliente</Text>
           </View>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Limpiar logs"
             onPress={() => clearClientLogs()}
             style={({ pressed }) => [
               styles.secondaryButton,
@@ -152,7 +157,7 @@ const styles = StyleSheet.create({
     minWidth: 132,
   },
   secondaryButtonText: {
-    color: "#007aff",
+    color: designTokens.color.ink.accent,
     fontSize: 15,
     fontWeight: "700",
     textAlign: "center",
@@ -166,29 +171,29 @@ const styles = StyleSheet.create({
   successCard: {
     marginTop: 14,
     borderRadius: 16,
-    backgroundColor: "#ecfdf5",
+    backgroundColor: designTokens.color.surface.success,
     borderWidth: 1,
-    borderColor: "#bbf7d0",
+    borderColor: designTokens.color.border.subtle,
     padding: 14,
   },
   errorCard: {
     marginTop: 14,
     borderRadius: 16,
-    backgroundColor: "#fff7ed",
+    backgroundColor: designTokens.color.surface.warning,
     borderWidth: 1,
-    borderColor: "#fed7aa",
+    borderColor: designTokens.color.border.strong,
     padding: 14,
   },
   statusTitle: {
     fontSize: 15,
     fontWeight: "800",
-    color: "#111827",
+    color: designTokens.color.ink.primary,
     marginBottom: 6,
   },
   statusText: {
     fontSize: 14,
     lineHeight: 20,
-    color: "#4b5563",
+    color: designTokens.color.ink.secondary,
   },
   logHeader: {
     flexDirection: "row",
@@ -202,29 +207,29 @@ const styles = StyleSheet.create({
   },
   logEntry: {
     borderTopWidth: 1,
-    borderTopColor: "#e2e8f0",
+    borderTopColor: designTokens.color.border.subtle,
     paddingTop: 12,
     marginTop: 12,
   },
   logMeta: {
     fontSize: 11,
-    color: "#6b7280",
+    color: designTokens.color.ink.muted,
     marginBottom: 4,
   },
   logCorrelation: {
     fontSize: 12,
-    color: "#007aff",
+    color: designTokens.color.ink.accent,
     marginBottom: 4,
   },
   logMessage: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#111827",
+    color: designTokens.color.ink.primary,
     marginBottom: 4,
   },
   logData: {
     fontSize: 12,
     lineHeight: 18,
-    color: "#4b5563",
+    color: designTokens.color.ink.secondary,
   },
 });

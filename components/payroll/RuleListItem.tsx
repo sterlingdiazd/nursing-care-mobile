@@ -1,5 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type { AdminCompensationRuleListItem } from "@/src/services/payrollService";
+import { designTokens } from "@/src/design-system/tokens";
 
 interface RuleListItemProps {
   rule: AdminCompensationRuleListItem;
@@ -19,9 +20,11 @@ export function RuleListItem({ rule, onPress }: RuleListItemProps) {
   const formatPercent = (value: number) => `${value}%`;
 
   return (
-    <TouchableOpacity 
-      style={styles.container} 
+    <TouchableOpacity
+      style={styles.container}
       onPress={() => onPress(rule)}
+      accessibilityRole="button"
+      accessibilityLabel={`Regla ${rule.name}`}
     >
       <View style={styles.header}>
         <View style={styles.titleRow}>
@@ -34,7 +37,7 @@ export function RuleListItem({ rule, onPress }: RuleListItemProps) {
         </View>
         <Text style={styles.employmentType}>{employmentTypeLabel(rule.employmentType)}</Text>
       </View>
-      
+
       <View style={styles.percents}>
         <View style={styles.percentItem}>
           <Text style={styles.percentLabel}>Base</Text>
@@ -59,7 +62,7 @@ export function RuleListItem({ rule, onPress }: RuleListItemProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#f9f9f9",
+    backgroundColor: designTokens.color.surface.secondary,
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
@@ -76,7 +79,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
+    color: designTokens.color.ink.secondary,
     flex: 1,
   },
   statusBadge: {
@@ -86,30 +89,30 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   statusActive: {
-    backgroundColor: "#e8f5e9",
+    backgroundColor: designTokens.color.surface.success,
   },
   statusInactive: {
-    backgroundColor: "#f5f5f5",
+    backgroundColor: designTokens.color.surface.tertiary,
   },
   statusText: {
     fontSize: 11,
     fontWeight: "500",
   },
   statusTextActive: {
-    color: "#2e7d32",
+    color: designTokens.color.status.successText,
   },
   statusTextInactive: {
-    color: "#666",
+    color: designTokens.color.ink.muted,
   },
   employmentType: {
     fontSize: 12,
-    color: "#666",
+    color: designTokens.color.ink.muted,
   },
   percents: {
     flexDirection: "row",
     justifyContent: "space-between",
     borderTopWidth: 1,
-    borderTopColor: "#eee",
+    borderTopColor: designTokens.color.border.subtle,
     paddingTop: 8,
   },
   percentItem: {
@@ -117,12 +120,12 @@ const styles = StyleSheet.create({
   },
   percentLabel: {
     fontSize: 10,
-    color: "#666",
+    color: designTokens.color.ink.muted,
     marginBottom: 2,
   },
   percentValue: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#1976d2",
+    color: designTokens.color.ink.accentStrong,
   },
 });

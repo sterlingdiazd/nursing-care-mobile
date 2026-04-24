@@ -1,5 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native";
 import type { AdminDeductionListItem } from "@/src/services/payrollService";
+import { designTokens } from "@/src/design-system/tokens";
 
 interface DeductionListItemProps {
   deduction: AdminDeductionListItem;
@@ -28,8 +29,8 @@ export function DeductionListItem({ deduction, onDelete }: DeductionListItemProp
       `¿Estás seguro de eliminar la deducción "${deduction.label}"?`,
       [
         { text: "Cancelar", style: "cancel" },
-        { 
-          text: "Eliminar", 
+        {
+          text: "Eliminar",
           style: "destructive",
           onPress: () => onDelete(deduction)
         },
@@ -44,7 +45,7 @@ export function DeductionListItem({ deduction, onDelete }: DeductionListItemProp
           <Text style={styles.label}>{deduction.label}</Text>
           <Text style={styles.amount}>{formatCurrency(deduction.amount)}</Text>
         </View>
-        
+
         <View style={styles.details}>
           <Text style={styles.nurse}>{deduction.nurseDisplayName}</Text>
           <View style={styles.typeBadge}>
@@ -52,12 +53,14 @@ export function DeductionListItem({ deduction, onDelete }: DeductionListItemProp
           </View>
         </View>
       </View>
-      
-      <TouchableOpacity 
+
+      <TouchableOpacity
         style={styles.deleteButton}
         onPress={handleDelete}
+        accessibilityRole="button"
+        accessibilityLabel={`Eliminar deduccion ${deduction.label}`}
       >
-        <Text style={styles.deleteButtonText}>×</Text>
+        <Text style={styles.deleteButtonText}>x</Text>
       </TouchableOpacity>
     </View>
   );
@@ -65,7 +68,7 @@ export function DeductionListItem({ deduction, onDelete }: DeductionListItemProp
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#f9f9f9",
+    backgroundColor: designTokens.color.surface.secondary,
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
@@ -84,13 +87,13 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#333",
+    color: designTokens.color.ink.secondary,
     flex: 1,
   },
   amount: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#dc2626",
+    color: designTokens.color.ink.danger,
     marginLeft: 8,
   },
   details: {
@@ -99,32 +102,32 @@ const styles = StyleSheet.create({
   },
   nurse: {
     fontSize: 13,
-    color: "#666",
+    color: designTokens.color.ink.muted,
     flex: 1,
   },
   typeBadge: {
-    backgroundColor: "#e3f2fd",
+    backgroundColor: designTokens.color.surface.accent,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
   },
   typeText: {
     fontSize: 11,
-    color: "#1976d2",
+    color: designTokens.color.ink.accentStrong,
     fontWeight: "500",
   },
   deleteButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#fee2e2",
+    backgroundColor: designTokens.color.surface.danger,
     justifyContent: "center",
     alignItems: "center",
     marginLeft: 8,
   },
   deleteButtonText: {
     fontSize: 20,
-    color: "#dc2626",
+    color: designTokens.color.ink.danger,
     fontWeight: "bold",
     marginTop: -2,
   },

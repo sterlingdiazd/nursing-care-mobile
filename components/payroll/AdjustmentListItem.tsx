@@ -1,5 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native";
 import type { AdminCompensationAdjustmentListItem } from "@/src/services/payrollService";
+import { designTokens } from "@/src/design-system/tokens";
 
 interface AdjustmentListItemProps {
   adjustment: AdminCompensationAdjustmentListItem;
@@ -17,9 +18,9 @@ function formatCurrency(amount: number) {
 function formatDate(dateString: string): string {
   try {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat("es-DO", { 
-      dateStyle: "medium", 
-      timeStyle: "short" 
+    return new Intl.DateTimeFormat("es-DO", {
+      dateStyle: "medium",
+      timeStyle: "short"
     }).format(date);
   } catch {
     return dateString;
@@ -35,8 +36,8 @@ export function AdjustmentListItem({ adjustment, onDelete }: AdjustmentListItemP
       `¿Estás seguro de eliminar el ajuste "${adjustment.label}"?`,
       [
         { text: "Cancelar", style: "cancel" },
-        { 
-          text: "Eliminar", 
+        {
+          text: "Eliminar",
           style: "destructive",
           onPress: () => onDelete(adjustment)
         },
@@ -53,18 +54,20 @@ export function AdjustmentListItem({ adjustment, onDelete }: AdjustmentListItemP
             {formatCurrency(adjustment.amount)}
           </Text>
         </View>
-        
+
         <View style={styles.details}>
           <Text style={styles.nurse}>{adjustment.nurseDisplayName}</Text>
           <Text style={styles.date}>{formatDate(adjustment.createdAtUtc)}</Text>
         </View>
       </View>
-      
-      <TouchableOpacity 
+
+      <TouchableOpacity
         style={styles.deleteButton}
         onPress={handleDelete}
+        accessibilityRole="button"
+        accessibilityLabel={`Eliminar ajuste ${adjustment.label}`}
       >
-        <Text style={styles.deleteButtonText}>×</Text>
+        <Text style={styles.deleteButtonText}>x</Text>
       </TouchableOpacity>
     </View>
   );
@@ -72,7 +75,7 @@ export function AdjustmentListItem({ adjustment, onDelete }: AdjustmentListItemP
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#f9f9f9",
+    backgroundColor: designTokens.color.surface.secondary,
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
@@ -91,7 +94,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#333",
+    color: designTokens.color.ink.secondary,
     flex: 1,
   },
   amount: {
@@ -100,10 +103,10 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   amountPositive: {
-    color: "#2e7d32",
+    color: designTokens.color.status.successText,
   },
   amountNegative: {
-    color: "#dc2626",
+    color: designTokens.color.ink.danger,
   },
   details: {
     flexDirection: "row",
@@ -111,24 +114,24 @@ const styles = StyleSheet.create({
   },
   nurse: {
     fontSize: 13,
-    color: "#666",
+    color: designTokens.color.ink.muted,
   },
   date: {
     fontSize: 12,
-    color: "#999",
+    color: designTokens.color.ink.muted,
   },
   deleteButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#fee2e2",
+    backgroundColor: designTokens.color.surface.danger,
     justifyContent: "center",
     alignItems: "center",
     marginLeft: 8,
   },
   deleteButtonText: {
     fontSize: 20,
-    color: "#dc2626",
+    color: designTokens.color.ink.danger,
     fontWeight: "bold",
     marginTop: -2,
   },

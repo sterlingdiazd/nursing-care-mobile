@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from "react-native";
+import { designTokens } from "@/src/design-system/tokens";
 
 interface PayrollTabsProps {
   activeTab: string;
@@ -15,8 +16,8 @@ export function PayrollTabs({ activeTab, onTabChange }: PayrollTabsProps) {
 
   return (
     <View style={styles.container}>
-      <ScrollView 
-        horizontal 
+      <ScrollView
+        horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
@@ -28,6 +29,9 @@ export function PayrollTabs({ activeTab, onTabChange }: PayrollTabsProps) {
               activeTab === tab.key && styles.activeTab,
             ]}
             onPress={() => onTabChange(tab.key)}
+            accessibilityRole="tab"
+            accessibilityLabel={tab.label}
+            accessibilityState={{ selected: activeTab === tab.key }}
           >
             <Text
               style={[
@@ -46,9 +50,9 @@ export function PayrollTabs({ activeTab, onTabChange }: PayrollTabsProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#fff",
+    backgroundColor: designTokens.color.ink.inverse,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: designTokens.color.border.subtle,
   },
   scrollContent: {
     paddingHorizontal: 8,
@@ -60,14 +64,14 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     borderBottomWidth: 2,
-    borderBottomColor: "#1976d2",
+    borderBottomColor: designTokens.color.ink.accentStrong,
   },
   tabText: {
     fontSize: 14,
-    color: "#666",
+    color: designTokens.color.ink.muted,
   },
   activeTabText: {
-    color: "#1976d2",
+    color: designTokens.color.ink.accentStrong,
     fontWeight: "600",
   },
 });

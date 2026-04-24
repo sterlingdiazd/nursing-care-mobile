@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
+import { designTokens } from "@/src/design-system/tokens";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
@@ -181,6 +182,8 @@ export default function HomeScreen() {
           {hasOperationalAccess ? (
             <>
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Crear solicitud"
                 onPress={() => {
                   logClientEvent("mobile.ui", "Home hero opened create care request");
                   if (canCreateRequest) {
@@ -197,6 +200,8 @@ export default function HomeScreen() {
               </Pressable>
 
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Abrir cola de solicitudes"
                 onPress={() => {
                   logClientEvent("mobile.ui", "Home hero opened care requests queue");
                   if (!isNurseUnderReview) {
@@ -215,6 +220,8 @@ export default function HomeScreen() {
           ) : isAnonymous ? (
             <>
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Iniciar sesion"
                 onPress={() => {
                   logClientEvent("mobile.ui", "Home hero opened login");
                   router.push("/login");
@@ -228,6 +235,8 @@ export default function HomeScreen() {
               </Pressable>
 
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Registrar cuenta"
                 onPress={() => {
                   logClientEvent("mobile.ui", "Home hero opened register");
                   router.push("/register");
@@ -242,6 +251,8 @@ export default function HomeScreen() {
             </>
           ) : (
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Abrir cuenta"
               onPress={() => {
                 logClientEvent("mobile.ui", "Home hero opened account");
                 router.push("/account");
@@ -261,6 +272,8 @@ export default function HomeScreen() {
         {quickSectionsToShow.map((section) => (
           <Pressable
             key={section.path}
+            accessibilityRole="button"
+            accessibilityLabel={section.title}
             onPress={() => {
               hapticFeedback.light();
               logClientEvent("mobile.ui", "Home quick section opened", {
@@ -292,13 +305,13 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: designTokens.color.ink.inverse,
     borderRadius: 18,
     paddingHorizontal: 18,
     paddingVertical: 16,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    shadowColor: "#000",
+    borderColor: designTokens.color.border.subtle,
+    shadowColor: designTokens.color.ink.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.03,
     shadowRadius: 12,
@@ -313,20 +326,20 @@ const styles = StyleSheet.create({
   cardTitleSmall: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#111827",
+    color: designTokens.color.ink.primary,
     marginBottom: 4,
   },
   cardBodySmall: {
     fontSize: 13,
-    color: "#6b7280",
+    color: designTokens.color.ink.muted,
   },
   primaryButton: {
-    backgroundColor: "#007aff",
+    backgroundColor: designTokens.color.ink.accent,
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 20,
     alignItems: "center",
-    shadowColor: "#007aff",
+    shadowColor: designTokens.color.ink.accent,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.16,
     shadowRadius: 12,
@@ -336,17 +349,17 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: designTokens.color.ink.inverse,
     borderWidth: 1,
-    borderColor: "#d1d5db",
+    borderColor: designTokens.color.border.strong,
   },
   primaryButtonText: {
-    color: "#ffffff",
+    color: designTokens.color.ink.inverse,
     fontSize: 16,
     fontWeight: "800",
   },
   secondaryButtonText: {
-    color: "#007aff",
+    color: designTokens.color.ink.accent,
     fontSize: 15,
     fontWeight: "700",
   },
@@ -360,7 +373,7 @@ const styles = StyleSheet.create({
   cardChevron: {
     fontSize: 24,
     lineHeight: 24,
-    color: "#9ca3af",
+    color: designTokens.color.ink.muted,
     fontWeight: "400",
   },
 });

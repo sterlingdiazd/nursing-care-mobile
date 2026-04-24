@@ -9,6 +9,7 @@ import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
+import { designTokens } from "@/src/design-system/tokens";
 import {
   listAdminSettings,
   updateAdminSetting,
@@ -117,6 +118,8 @@ export default function AdminSettingsScreen() {
       nativeID="admin-settings-screen"
       actions={(
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Actualizar configuracion"
           style={styles.button}
           onPress={() => void load()}
           testID="admin-settings-refresh-btn"
@@ -151,6 +154,8 @@ export default function AdminSettingsScreen() {
             {items.map((setting) => (
               <View key={setting.key}>
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Editar parametro ${setting.key}`}
                   style={styles.settingCard}
                   onPress={() => editTarget?.key === setting.key ? handleCloseEdit() : handleOpenEdit(setting)}
                   testID={`admin-setting-card-${setting.key}`}
@@ -255,6 +260,8 @@ export default function AdminSettingsScreen() {
 
                     <View style={styles.editActions}>
                       <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Guardar parametro"
                         style={[styles.buttonPrimary, saveLoading && styles.buttonDisabled]}
                         onPress={() => void handleSave()}
                         disabled={saveLoading}
@@ -267,6 +274,8 @@ export default function AdminSettingsScreen() {
                       </Pressable>
 
                       <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Cancelar edicion"
                         style={styles.button}
                         onPress={handleCloseEdit}
                         testID="admin-setting-cancel-btn"
@@ -287,36 +296,36 @@ export default function AdminSettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  button: { backgroundColor: "#ffffff", borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: "#d1d5db" },
-  buttonText: { color: "#007aff", fontWeight: "700", fontSize: 14 },
-  buttonPrimary: { backgroundColor: "#007aff", borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, flex: 1 },
-  buttonPrimaryText: { color: "#ffffff", fontWeight: "700", fontSize: 15, textAlign: "center" },
+  button: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: designTokens.color.border.strong },
+  buttonText: { color: designTokens.color.ink.accent, fontWeight: "700", fontSize: 14 },
+  buttonPrimary: { backgroundColor: designTokens.color.ink.accent, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, flex: 1 },
+  buttonPrimaryText: { color: designTokens.color.ink.inverse, fontWeight: "700", fontSize: 15, textAlign: "center" },
   buttonDisabled: { opacity: 0.5 },
-  error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
-  loadingText: { color: "#52637a", fontSize: 14, textAlign: "center", padding: 20 },
+  error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: 12, borderRadius: 12, marginBottom: 12 },
+  loadingText: { color: designTokens.color.ink.secondary, fontSize: 14, textAlign: "center", padding: 20 },
   emptyState: { padding: 40, alignItems: "center" },
-  emptyStateText: { color: "#52637a", fontSize: 16 },
+  emptyStateText: { color: designTokens.color.ink.secondary, fontSize: 16 },
   categorySection: { marginBottom: 20 },
-  categoryTitle: { fontSize: 13, fontWeight: "800", color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10, paddingHorizontal: 4 },
-  settingCard: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 18, padding: 16, marginBottom: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 2 },
+  categoryTitle: { fontSize: 13, fontWeight: "800", color: designTokens.color.ink.muted, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10, paddingHorizontal: 4 },
+  settingCard: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, marginBottom: 4, shadowColor: designTokens.color.ink.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 2 },
   settingCardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
-  settingKey: { color: "#111827", fontWeight: "800", fontSize: 15, flex: 1 },
-  settingEditHint: { color: "#007aff", fontSize: 13, fontWeight: "700" },
-  settingValue: { color: "#374151", fontSize: 14, fontFamily: "monospace", marginBottom: 4 },
-  settingDescription: { color: "#6b7280", fontSize: 13, marginBottom: 4 },
-  settingModified: { color: "#9ca3af", fontSize: 11, marginTop: 2 },
-  editPanel: { backgroundColor: "#f8fafc", borderWidth: 1, borderColor: "#bfdbfe", borderRadius: 16, padding: 16, marginBottom: 10, gap: 12 },
+  settingKey: { color: designTokens.color.ink.primary, fontWeight: "800", fontSize: 15, flex: 1 },
+  settingEditHint: { color: designTokens.color.ink.accent, fontSize: 13, fontWeight: "700" },
+  settingValue: { color: designTokens.color.ink.secondary, fontSize: 14, fontFamily: "monospace", marginBottom: 4 },
+  settingDescription: { color: designTokens.color.ink.muted, fontSize: 13, marginBottom: 4 },
+  settingModified: { color: designTokens.color.ink.muted, fontSize: 11, marginTop: 2 },
+  editPanel: { backgroundColor: designTokens.color.surface.canvas, borderWidth: 1, borderColor: designTokens.color.status.infoBg, borderRadius: 16, padding: 16, marginBottom: 10, gap: 12 },
   editActions: { flexDirection: "row", gap: 8, marginTop: 4 },
   detailField: { gap: 4 },
-  detailLabel: { color: "#6b7280", fontSize: 12, fontWeight: "800", textTransform: "uppercase" },
-  detailValue: { color: "#111827", fontSize: 15 },
-  detailValueSecondary: { color: "#4b5563", fontSize: 14 },
+  detailLabel: { color: designTokens.color.ink.muted, fontSize: 12, fontWeight: "800", textTransform: "uppercase" },
+  detailValue: { color: designTokens.color.ink.primary, fontSize: 15 },
+  detailValueSecondary: { color: designTokens.color.ink.secondary, fontSize: 14 },
   allowedValuesChips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 },
-  chip: { backgroundColor: "#ffffff", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: "#d1d5db" },
-  chipActive: { backgroundColor: "#111827", borderColor: "#111827" },
-  chipText: { color: "#111827", fontSize: 12, fontWeight: "600" },
-  chipTextActive: { color: "#ffffff" },
-  input: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#d1d5db", borderRadius: 14, padding: 14, color: "#111827", fontSize: 14 },
-  successBanner: { backgroundColor: "#d1fae5", borderRadius: 12, padding: 12 },
-  successBannerText: { color: "#065f46", fontWeight: "700", fontSize: 14, textAlign: "center" },
+  chip: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: designTokens.color.border.strong },
+  chipActive: { backgroundColor: designTokens.color.ink.primary, borderColor: designTokens.color.ink.primary },
+  chipText: { color: designTokens.color.ink.primary, fontSize: 12, fontWeight: "600" },
+  chipTextActive: { color: designTokens.color.ink.inverse },
+  input: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.strong, borderRadius: 14, padding: 14, color: designTokens.color.ink.primary, fontSize: 14 },
+  successBanner: { backgroundColor: designTokens.color.surface.success, borderRadius: 12, padding: 12 },
+  successBannerText: { color: designTokens.color.status.successText, fontWeight: "700", fontSize: 14, textAlign: "center" },
 });
