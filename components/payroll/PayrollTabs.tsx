@@ -58,9 +58,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   tab: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 10,
     paddingVertical: 12,
-    marginHorizontal: 4,
+    marginHorizontal: 2,
+    flexShrink: 1,
   },
   activeTab: {
     borderBottomWidth: 2,

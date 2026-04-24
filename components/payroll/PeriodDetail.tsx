@@ -388,15 +388,15 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
           <View style={styles.summaryGrid}>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Líneas</Text>
-              <Text style={styles.summaryValue}>{period.lines.length}</Text>
+              <Text style={styles.summaryValue} numberOfLines={1} adjustsFontSizeToFit>{period.lines.length}</Text>
             </View>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Bruto</Text>
-              <Text style={styles.summaryValue}>{formatCurrency(totalGross)}</Text>
+              <Text style={styles.summaryValue} numberOfLines={1} adjustsFontSizeToFit>{formatCurrency(totalGross)}</Text>
             </View>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Neto</Text>
-              <Text style={[styles.summaryValue, styles.summaryValueGreen]}>{formatCurrency(totalNet)}</Text>
+              <Text style={[styles.summaryValue, styles.summaryValueGreen]} numberOfLines={1} adjustsFontSizeToFit>{formatCurrency(totalNet)}</Text>
             </View>
           </View>
         </View>
@@ -885,6 +885,8 @@ const styles = StyleSheet.create({
   summaryItem: {
     flex: 1,
     alignItems: "center",
+    overflow: "hidden",
+    paddingHorizontal: 4,
   },
   summaryLabel: {
     fontSize: 12,

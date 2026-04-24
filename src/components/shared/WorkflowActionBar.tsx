@@ -63,14 +63,14 @@ const styles = StyleSheet.create({
   button: {
     borderRadius: mobileTheme.radius.lg,
     paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
     alignItems: "center",
     justifyContent: "center",
     minHeight: 48,
   },
   primaryButton: {
     ...mobilePrimaryButton,
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
   },
   dangerButton: {
     backgroundColor: mobileTheme.colors.surface.danger,
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     ...mobileSecondaryButton,
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
   },
   disabledButton: {
     opacity: 0.45,
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   buttonText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700",
   },
   primaryButtonText: {
