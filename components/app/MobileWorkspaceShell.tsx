@@ -2,7 +2,6 @@ import { ReactNode } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -18,6 +17,7 @@ interface MobileWorkspaceShellProps {
   description: string;
   actions?: ReactNode;
   children: ReactNode;
+  footer?: ReactNode;
   testID?: string;
   nativeID?: string;
 }
@@ -28,6 +28,7 @@ export default function MobileWorkspaceShell({
   description,
   actions,
   children,
+  footer,
   testID,
   nativeID,
 }: MobileWorkspaceShellProps) {
@@ -49,22 +50,17 @@ export default function MobileWorkspaceShell({
           </BlurView>
 
           <View style={styles.container}>
-            <ScrollView
-              style={styles.scroll}
-              contentContainerStyle={styles.scrollContent}
-              showsVerticalScrollIndicator={false}
-            >
-              <View style={styles.hero}>
-                <Text style={styles.eyebrow}>{eyebrow}</Text>
-                <Text style={styles.title}>{title}</Text>
-                <Text style={styles.description}>{description}</Text>
-                {actions ? <View style={styles.actions}>{actions}</View> : null}
-              </View>
+            <View style={styles.hero}>
+              <Text style={styles.eyebrow}>{eyebrow}</Text>
+              <Text style={styles.title}>{title}</Text>
+              <Text style={styles.description}>{description}</Text>
+              {actions ? <View style={styles.actions}>{actions}</View> : null}
+            </View>
 
-              <View style={styles.body}>{children}</View>
-            </ScrollView>
+            <View style={styles.body}>{children}</View>
           </View>
         </KeyboardAvoidingView>
+        {footer ?? null}
       </View>
     </SafeAreaView>
   );
@@ -82,7 +78,7 @@ const styles = StyleSheet.create({
   main: {
     flex: 1,
     paddingHorizontal: 18,
-    paddingBottom: 24,
+    paddingBottom: 0,
   },
   topBar: {
     marginTop: 10,
@@ -102,17 +98,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 36,
-    gap: 18,
-  },
   hero: {
     ...mobileSurfaceCard,
     borderRadius: mobileTheme.radius.xl,
     padding: 24,
+    marginBottom: 18,
   },
   eyebrow: {
     ...mobileTheme.typography.eyebrow,
@@ -136,6 +126,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   body: {
-    gap: 18,
+    flex: 1,
   },
 });
