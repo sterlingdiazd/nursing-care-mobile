@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { CollapsibleSection } from "@/src/components/shared/CollapsibleSection";
 import { designTokens } from "@/src/design-system/tokens";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
@@ -244,8 +245,8 @@ export default function CareRequestDetailScreen() {
       testID={careRequestTestIds.detail.screen}
       nativeID={careRequestTestIds.detail.screen}
       eyebrow="Detalle de solicitud"
-      title="Revisa contexto, estado y transiciones."
-      description="Mantén el estado visible y entra en revisiones profundas solo cuando el flujo lo pida."
+      title="Detalle de Solicitud"
+      description="Informacion completa de la solicitud de servicio."
       actions={
         <Pressable
           onPress={() => router.back()}
@@ -431,8 +432,6 @@ export default function CareRequestDetailScreen() {
         ) : null}
 
         <View style={styles.metaGroup} testID="care-detail-info-section" nativeID="care-detail-info-section">
-          <Text style={styles.metaText}>ID de solicitud: {careRequest.id}</Text>
-          <Text style={styles.metaText}>ID de usuario: {careRequest.userID}</Text>
           <Text style={styles.metaText}>
             Enfermera asignada: {assignedNurseLabel}
           </Text>
@@ -443,19 +442,19 @@ export default function CareRequestDetailScreen() {
             Fecha del servicio: {careRequest.careRequestDate ?? "Sin fecha"}
           </Text>
           <Text style={styles.metaText}>
-            Creada: {new Date(careRequest.createdAtUtc).toLocaleString()}
+            Creada: {new Date(careRequest.createdAtUtc).toLocaleString("es-DO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
           </Text>
           <Text style={styles.metaText}>
-            Actualizada: {new Date(careRequest.updatedAtUtc).toLocaleString()}
+            Actualizada: {new Date(careRequest.updatedAtUtc).toLocaleString("es-DO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
           </Text>
           {careRequest.approvedAtUtc && (
             <Text style={styles.metaText}>
-              Aprobada: {new Date(careRequest.approvedAtUtc).toLocaleString()}
+              Aprobada: {new Date(careRequest.approvedAtUtc).toLocaleString("es-DO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
             </Text>
           )}
           {careRequest.rejectedAtUtc && (
             <Text style={styles.metaText}>
-              Rechazada: {new Date(careRequest.rejectedAtUtc).toLocaleString()}
+              Rechazada: {new Date(careRequest.rejectedAtUtc).toLocaleString("es-DO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
             </Text>
           )}
           {careRequest.rejectionReason && (
@@ -465,12 +464,12 @@ export default function CareRequestDetailScreen() {
           )}
           {careRequest.completedAtUtc && (
             <Text style={styles.metaText}>
-              Completada: {new Date(careRequest.completedAtUtc).toLocaleString()}
+              Completada: {new Date(careRequest.completedAtUtc).toLocaleString("es-DO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
             </Text>
           )}
           {careRequest.cancelledAtUtc && (
             <Text style={styles.metaText}>
-              Cancelada: {new Date(careRequest.cancelledAtUtc).toLocaleString()}
+              Cancelada: {new Date(careRequest.cancelledAtUtc).toLocaleString("es-DO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
             </Text>
           )}
         </View>
@@ -478,54 +477,82 @@ export default function CareRequestDetailScreen() {
         {hasPricingData && showPricingBreakdown ? (
           <View style={styles.pricingBreakdown} testID="care-detail-pricing-breakdown" nativeID="care-detail-pricing-breakdown">
             <Text style={styles.sectionEyebrow}>Desglose de precios</Text>
-            <View testID="price-breakdown-category" nativeID="price-breakdown-category" style={styles.pricingRow}>
-              <Text style={styles.pricingLabel}>Categoria</Text>
-              <Text style={styles.pricingValue}>{careRequest.pricingCategoryCode ?? careRequest.careRequestType ?? "N/A"}</Text>
-            </View>
-            <View testID="price-breakdown-base-price" nativeID="price-breakdown-base-price" style={styles.pricingRow}>
-              <Text style={styles.pricingLabel}>Precio base</Text>
-              <Text style={styles.pricingValue}>{formatCurrency(careRequest.price)}</Text>
-            </View>
-            <View testID="price-breakdown-category-factor" nativeID="price-breakdown-category-factor" style={styles.pricingRow}>
-              <Text style={styles.pricingLabel}>Factor de categoria</Text>
-              <Text style={styles.pricingValue}>{formatFactor(careRequest.categoryFactorSnapshot)}</Text>
-            </View>
-            <View testID="price-breakdown-distance-factor" nativeID="price-breakdown-distance-factor" style={styles.pricingRow}>
-              <Text style={styles.pricingLabel}>Factor de distancia</Text>
-              <Text style={styles.pricingValue}>{formatFactor(careRequest.distanceFactorMultiplierSnapshot)}</Text>
-            </View>
-            <View testID="price-breakdown-complexity-factor" nativeID="price-breakdown-complexity-factor" style={styles.pricingRow}>
-              <Text style={styles.pricingLabel}>Factor de complejidad</Text>
-              <Text style={styles.pricingValue}>{formatFactor(careRequest.complexityMultiplierSnapshot)}</Text>
-            </View>
-            <View testID="price-breakdown-client-base-price" nativeID="price-breakdown-client-base-price" style={styles.pricingRow}>
-              <Text style={styles.pricingLabel}>Precio base del cliente</Text>
-              <Text style={styles.pricingValue}>{formatCurrency(careRequest.clientBasePrice)}</Text>
-            </View>
-            <View testID="price-breakdown-line-before-discount" nativeID="price-breakdown-line-before-discount" style={styles.pricingRow}>
-              <Text style={styles.pricingLabel}>Linea antes de descuento</Text>
-              <Text style={styles.pricingValue}>{formatCurrency(careRequest.lineBeforeVolumeDiscount)}</Text>
-            </View>
-            <View testID="price-breakdown-volume-discount" nativeID="price-breakdown-volume-discount" style={styles.pricingRow}>
-              <Text style={styles.pricingLabel}>Descuento por volumen</Text>
-              <Text style={styles.pricingValue}>{formatPercent(careRequest.volumeDiscountPercentSnapshot)}</Text>
-            </View>
-            <View testID="price-breakdown-unit-price-after-discount" nativeID="price-breakdown-unit-price-after-discount" style={styles.pricingRow}>
-              <Text style={styles.pricingLabel}>Precio unitario tras descuento</Text>
-              <Text style={styles.pricingValue}>{formatCurrency(careRequest.unitPriceAfterVolumeDiscount)}</Text>
-            </View>
-            <View testID="price-breakdown-subtotal-before-supplies" nativeID="price-breakdown-subtotal-before-supplies" style={styles.pricingRow}>
-              <Text style={styles.pricingLabel}>Subtotal antes de insumos</Text>
-              <Text style={styles.pricingValue}>{formatCurrency(careRequest.subtotalBeforeSupplies)}</Text>
-            </View>
-            <View testID="price-breakdown-medical-supplies" nativeID="price-breakdown-medical-supplies" style={styles.pricingRow}>
-              <Text style={styles.pricingLabel}>Insumos medicos</Text>
-              <Text style={styles.pricingValue}>{formatCurrency(careRequest.medicalSuppliesCost)}</Text>
-            </View>
+
+            {/* Always visible: Total */}
             <View testID="price-breakdown-total" nativeID="price-breakdown-total" style={[styles.pricingRow, styles.pricingTotalRow]}>
               <Text style={[styles.pricingLabel, styles.pricingTotalLabel]}>Total</Text>
               <Text style={[styles.pricingValue, styles.pricingTotalValue]}>{formatCurrency(careRequest.total)}</Text>
             </View>
+
+            {/* Always visible: Precio base */}
+            <View testID="price-breakdown-base-price" nativeID="price-breakdown-base-price" style={styles.pricingRow}>
+              <Text style={styles.pricingLabel}>Precio base</Text>
+              <Text style={styles.pricingValue}>{formatCurrency(careRequest.price)}</Text>
+            </View>
+
+            {/* Conditional: factor de categoria (show if != 1) */}
+            {careRequest.categoryFactorSnapshot != null && careRequest.categoryFactorSnapshot !== 1 && (
+              <View testID="price-breakdown-category-factor" nativeID="price-breakdown-category-factor" style={styles.pricingRow}>
+                <Text style={styles.pricingLabel}>Factor de categoria</Text>
+                <Text style={styles.pricingValue}>{formatFactor(careRequest.categoryFactorSnapshot)}</Text>
+              </View>
+            )}
+
+            {/* Conditional: factor de distancia (show if != 1) */}
+            {careRequest.distanceFactorMultiplierSnapshot != null && careRequest.distanceFactorMultiplierSnapshot !== 1 && (
+              <View testID="price-breakdown-distance-factor" nativeID="price-breakdown-distance-factor" style={styles.pricingRow}>
+                <Text style={styles.pricingLabel}>Factor de distancia</Text>
+                <Text style={styles.pricingValue}>{formatFactor(careRequest.distanceFactorMultiplierSnapshot)}</Text>
+              </View>
+            )}
+
+            {/* Conditional: factor de complejidad (show if != 1) */}
+            {careRequest.complexityMultiplierSnapshot != null && careRequest.complexityMultiplierSnapshot !== 1 && (
+              <View testID="price-breakdown-complexity-factor" nativeID="price-breakdown-complexity-factor" style={styles.pricingRow}>
+                <Text style={styles.pricingLabel}>Factor de complejidad</Text>
+                <Text style={styles.pricingValue}>{formatFactor(careRequest.complexityMultiplierSnapshot)}</Text>
+              </View>
+            )}
+
+            {/* Conditional: descuento por volumen (show if > 0) */}
+            {careRequest.volumeDiscountPercentSnapshot != null && careRequest.volumeDiscountPercentSnapshot > 0 && (
+              <View testID="price-breakdown-volume-discount" nativeID="price-breakdown-volume-discount" style={styles.pricingRow}>
+                <Text style={styles.pricingLabel}>Descuento por volumen</Text>
+                <Text style={styles.pricingValue}>{formatPercent(careRequest.volumeDiscountPercentSnapshot)}</Text>
+              </View>
+            )}
+
+            {/* Conditional: insumos medicos (show if > 0) */}
+            {careRequest.medicalSuppliesCost != null && careRequest.medicalSuppliesCost > 0 && (
+              <View testID="price-breakdown-medical-supplies" nativeID="price-breakdown-medical-supplies" style={styles.pricingRow}>
+                <Text style={styles.pricingLabel}>Insumos medicos</Text>
+                <Text style={styles.pricingValue}>{formatCurrency(careRequest.medicalSuppliesCost)}</Text>
+              </View>
+            )}
+
+            {/* Collapsed section: detailed breakdown */}
+            <CollapsibleSection title="Ver desglose completo">
+              <View testID="price-breakdown-category" nativeID="price-breakdown-category" style={styles.pricingRow}>
+                <Text style={styles.pricingLabel}>Categoria</Text>
+                <Text style={styles.pricingValue}>{careRequest.pricingCategoryCode ?? careRequest.careRequestType ?? "N/A"}</Text>
+              </View>
+              <View testID="price-breakdown-client-base-price" nativeID="price-breakdown-client-base-price" style={styles.pricingRow}>
+                <Text style={styles.pricingLabel}>Precio base del cliente</Text>
+                <Text style={styles.pricingValue}>{formatCurrency(careRequest.clientBasePrice)}</Text>
+              </View>
+              <View testID="price-breakdown-line-before-discount" nativeID="price-breakdown-line-before-discount" style={styles.pricingRow}>
+                <Text style={styles.pricingLabel}>Linea antes de descuento</Text>
+                <Text style={styles.pricingValue}>{formatCurrency(careRequest.lineBeforeVolumeDiscount)}</Text>
+              </View>
+              <View testID="price-breakdown-unit-price-after-discount" nativeID="price-breakdown-unit-price-after-discount" style={styles.pricingRow}>
+                <Text style={styles.pricingLabel}>Precio unitario tras descuento</Text>
+                <Text style={styles.pricingValue}>{formatCurrency(careRequest.unitPriceAfterVolumeDiscount)}</Text>
+              </View>
+              <View testID="price-breakdown-subtotal-before-supplies" nativeID="price-breakdown-subtotal-before-supplies" style={styles.pricingRow}>
+                <Text style={styles.pricingLabel}>Subtotal antes de insumos</Text>
+                <Text style={styles.pricingValue}>{formatCurrency(careRequest.subtotalBeforeSupplies)}</Text>
+              </View>
+            </CollapsibleSection>
           </View>
         ) : null}
 

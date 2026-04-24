@@ -8,7 +8,8 @@
     "ios": "node scripts/release-port.mjs 8081 && expo start --port 8081 --ios",
     "web": "node scripts/release-port.mjs 8081 && expo start --port 8081 --web",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "validate-design": "npx tsx scripts/design-validator.ts"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

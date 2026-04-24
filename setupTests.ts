@@ -43,6 +43,21 @@ vi.mock('react-native', () => ({
     OS: 'ios',
     select: (obj: any) => obj.ios,
   },
+  Animated: {
+    Value: class {
+      constructor(_v: number) {}
+      setValue(_v: number) {}
+      interpolate(_config: any) { return this; }
+    },
+    timing: (_value: any, _config: any) => ({ start: vi.fn() }),
+    spring: (_value: any, _config: any) => ({ start: vi.fn() }),
+    parallel: (_animations: any[]) => ({ start: vi.fn() }),
+    sequence: (_animations: any[]) => ({ start: vi.fn() }),
+    View: createMockComponent('Animated.View'),
+    Text: createMockComponent('Animated.Text'),
+    Image: createMockComponent('Animated.Image'),
+    createAnimatedComponent: (comp: any) => comp,
+  },
 }));
 
 // Mock Expo Router

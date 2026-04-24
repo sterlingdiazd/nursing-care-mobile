@@ -6,6 +6,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import { CollapsibleSection } from "@/src/components/shared/CollapsibleSection";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import WorkflowActionBar from "@/src/components/shared/WorkflowActionBar";
@@ -41,7 +42,15 @@ function automationProps(testId: string) {
 
 function formatTimestamp(value: string | null | undefined) {
   if (!value) return "N/A";
-  return new Intl.DateTimeFormat("es-DO", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+  return new Date(value).toLocaleString("es-DO", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
 }
 
 function formatCurrency(value: number) {
@@ -116,19 +125,31 @@ export default function AdminCareRequestDetailScreen() {
   return (
     <MobileWorkspaceShell
       eyebrow="Solicitud de Cuidado"
-      title={detail ? `Solicitud #${detail.id.substring(0, 8)}` : "Cargando..."}
+      title="Detalle de Solicitud"
       description="Detalles completos de la solicitud y tareas administrativas relacionadas."
       actions={(
-        <Pressable
-          testID={adminTestIds.careRequests.detail.updateButton}
-          nativeID={adminTestIds.careRequests.detail.updateButton}
-          style={styles.refreshButton}
-          onPress={() => void load()}
-          accessibilityRole="button"
-          accessibilityLabel="Actualizar detalle de solicitud"
-        >
-          <Text style={styles.refreshButtonText}>Actualizar</Text>
-        </Pressable>
+        <View style={styles.headerActions}>
+          <Pressable
+            testID="admin-care-detail-back-btn"
+            nativeID="admin-care-detail-back-btn"
+            style={styles.backButton}
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel="Volver a la lista de solicitudes"
+          >
+            <Text style={styles.backButtonText}>Volver</Text>
+          </Pressable>
+          <Pressable
+            testID={adminTestIds.careRequests.detail.updateButton}
+            nativeID={adminTestIds.careRequests.detail.updateButton}
+            style={styles.refreshButton}
+            onPress={() => void load()}
+            accessibilityRole="button"
+            accessibilityLabel="Actualizar detalle de solicitud"
+          >
+            <Text style={styles.refreshButtonText}>Actualizar</Text>
+          </Pressable>
+        </View>
       )}
     >
       <View
@@ -363,60 +384,82 @@ export default function AdminCareRequestDetailScreen() {
 
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Desglose de Precios</Text>
-              <View style={styles.field}>
-                <Text style={styles.fieldLabel}>Categoría</Text>
-                <Text style={styles.fieldValue}>{detail.pricingBreakdown.category}</Text>
+
+              {/* Always visible: Total */}
+              <View {...automationProps("price-breakdown-total")} style={styles.field}>
+                <Text style={styles.fieldLabel}>Total</Text>
+                <Text style={[styles.fieldValue, styles.totalValue]}>{formatCurrency(detail.pricingBreakdown.total)}</Text>
               </View>
+
+              {/* Always visible: Precio base */}
               <View style={styles.field}>
                 <Text style={styles.fieldLabel}>Precio base</Text>
                 <Text style={styles.fieldValue}>{formatCurrency(detail.pricingBreakdown.basePrice)}</Text>
               </View>
-              <View style={styles.field}>
-                <Text style={styles.fieldLabel}>Factor de categoría</Text>
-                <Text style={styles.fieldValue}>{detail.pricingBreakdown.categoryFactor}</Text>
-              </View>
-              {detail.pricingBreakdown.distanceFactor && (
+
+              {/* Conditional: factor de categoria (show if != 1) */}
+              {detail.pricingBreakdown.categoryFactor != null && Number(detail.pricingBreakdown.categoryFactor) !== 1 && (
+                <View style={styles.field}>
+                  <Text style={styles.fieldLabel}>Factor de categoria</Text>
+                  <Text style={styles.fieldValue}>{detail.pricingBreakdown.categoryFactor}</Text>
+                </View>
+              )}
+
+              {/* Conditional: factor de distancia (show if != 1) */}
+              {detail.pricingBreakdown.distanceFactor && Number(detail.pricingBreakdown.distanceFactorValue) !== 1 && (
                 <View style={styles.field}>
                   <Text style={styles.fieldLabel}>Factor de distancia</Text>
-                  <Text style={styles.fieldValue}>{detail.pricingBreakdown.distanceFactor} (×{detail.pricingBreakdown.distanceFactorValue})</Text>
+                  <Text style={styles.fieldValue}>{detail.pricingBreakdown.distanceFactor} (x{detail.pricingBreakdown.distanceFactorValue})</Text>
                 </View>
               )}
-              {detail.pricingBreakdown.complexityLevel && (
+
+              {/* Conditional: factor de complejidad (show if != 1) */}
+              {detail.pricingBreakdown.complexityLevel && Number(detail.pricingBreakdown.complexityFactorValue) !== 1 && (
                 <View style={styles.field}>
-                  <Text style={styles.fieldLabel}>Nivel de complejidad</Text>
-                  <Text style={styles.fieldValue}>{detail.pricingBreakdown.complexityLevel} (×{detail.pricingBreakdown.complexityFactorValue})</Text>
+                  <Text style={styles.fieldLabel}>Factor de complejidad</Text>
+                  <Text style={styles.fieldValue}>{detail.pricingBreakdown.complexityLevel} (x{detail.pricingBreakdown.complexityFactorValue})</Text>
                 </View>
               )}
+
+              {/* Conditional: descuento por volumen (show if > 0) */}
               {detail.pricingBreakdown.volumeDiscountPercent > 0 && (
                 <View style={styles.field}>
                   <Text style={styles.fieldLabel}>Descuento por volumen</Text>
                   <Text style={styles.fieldValue}>{detail.pricingBreakdown.volumeDiscountPercent}%</Text>
                 </View>
               )}
-              <View {...automationProps("price-breakdown-line-before-discount")} style={styles.field}>
-                <Text style={styles.fieldLabel}>Linea antes de descuento</Text>
-                <Text style={styles.fieldValue}>
-                  {formatCurrencyOrNA(detail.pricingBreakdown.lineBeforeVolumeDiscount)}
-                </Text>
-              </View>
-              <View {...automationProps("price-breakdown-unit-price-after-discount")} style={styles.field}>
-                <Text style={styles.fieldLabel}>Precio unitario tras descuento</Text>
-                <Text style={styles.fieldValue}>
-                  {formatCurrencyOrNA(detail.pricingBreakdown.unitPriceAfterVolumeDiscount)}
-                </Text>
-              </View>
-              <View {...automationProps("price-breakdown-subtotal-before-supplies")} style={styles.field}>
-                <Text style={styles.fieldLabel}>Subtotal antes de suministros</Text>
-                <Text style={styles.fieldValue}>{formatCurrency(detail.pricingBreakdown.subtotalBeforeSupplies)}</Text>
-              </View>
-              <View {...automationProps("price-breakdown-medical-supplies")} style={styles.field}>
-                <Text style={styles.fieldLabel}>Costo de suministros médicos</Text>
-                <Text style={styles.fieldValue}>{formatCurrency(detail.pricingBreakdown.medicalSuppliesCost)}</Text>
-              </View>
-              <View {...automationProps("price-breakdown-total")} style={styles.field}>
-                <Text style={styles.fieldLabel}>Total</Text>
-                <Text style={[styles.fieldValue, styles.totalValue]}>{formatCurrency(detail.pricingBreakdown.total)}</Text>
-              </View>
+
+              {/* Conditional: insumos medicos (show if > 0) */}
+              {detail.pricingBreakdown.medicalSuppliesCost > 0 && (
+                <View {...automationProps("price-breakdown-medical-supplies")} style={styles.field}>
+                  <Text style={styles.fieldLabel}>Insumos medicos</Text>
+                  <Text style={styles.fieldValue}>{formatCurrency(detail.pricingBreakdown.medicalSuppliesCost)}</Text>
+                </View>
+              )}
+
+              {/* Collapsed: detailed breakdown */}
+              <CollapsibleSection title="Ver desglose completo">
+                <View style={styles.field}>
+                  <Text style={styles.fieldLabel}>Categoria</Text>
+                  <Text style={styles.fieldValue}>{detail.pricingBreakdown.category}</Text>
+                </View>
+                <View {...automationProps("price-breakdown-line-before-discount")} style={styles.field}>
+                  <Text style={styles.fieldLabel}>Linea antes de descuento</Text>
+                  <Text style={styles.fieldValue}>
+                    {formatCurrencyOrNA(detail.pricingBreakdown.lineBeforeVolumeDiscount)}
+                  </Text>
+                </View>
+                <View {...automationProps("price-breakdown-unit-price-after-discount")} style={styles.field}>
+                  <Text style={styles.fieldLabel}>Precio unitario tras descuento</Text>
+                  <Text style={styles.fieldValue}>
+                    {formatCurrencyOrNA(detail.pricingBreakdown.unitPriceAfterVolumeDiscount)}
+                  </Text>
+                </View>
+                <View {...automationProps("price-breakdown-subtotal-before-supplies")} style={styles.field}>
+                  <Text style={styles.fieldLabel}>Subtotal antes de insumos</Text>
+                  <Text style={styles.fieldValue}>{formatCurrency(detail.pricingBreakdown.subtotalBeforeSupplies)}</Text>
+                </View>
+              </CollapsibleSection>
             </View>
 
             <View style={styles.card}>
@@ -542,6 +585,22 @@ export default function AdminCareRequestDetailScreen() {
 const styles = StyleSheet.create({
   pageRoot: {
     flex: 1,
+  },
+  headerActions: {
+    flexDirection: "row",
+    gap: mobileTheme.spacing.sm,
+    alignItems: "center",
+  },
+  backButton: {
+    ...mobileSecondarySurface,
+    paddingHorizontal: mobileTheme.spacing.lg,
+    paddingVertical: 10,
+    alignSelf: "flex-start",
+  },
+  backButtonText: {
+    color: mobileTheme.colors.ink.primary,
+    fontWeight: "700",
+    fontSize: 14,
   },
   refreshButton: {
     ...mobileSecondarySurface,
