@@ -8,7 +8,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
-  Alert,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { resetPassword, validateEmail, validatePassword } from "@/src/api/auth";
@@ -22,9 +21,11 @@ import { FormButton, FormInput } from "@/src/components/form";
 import { designTokens } from "@/src/design-system/tokens";
 import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import { testProps } from "@/src/testing/testIds";
+import { useToast } from "@/src/components/shared/ToastProvider";
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
+  const { showToast } = useToast();
   const { email: initialEmail } = useLocalSearchParams<{ email: string }>();
   const [email, setEmail] = useState(initialEmail || "");
   const [code, setCode] = useState("");
@@ -81,15 +82,8 @@ export default function ResetPasswordScreen() {
       hapticFeedback.selection();
       const response = await resetPassword(email.trim(), code.trim(), newPassword);
       const successAlert = buildPasswordResetSuccessAlert(response.message);
-
-      Alert.alert(successAlert.title, successAlert.message, [
-        {
-          text: successAlert.actionLabel,
-          onPress: () => {
-            router.replace(successAlert.redirectPath);
-          },
-        },
-      ]);
+      showToast({ variant: "success", message: successAlert.message });
+      router.replace(successAlert.redirectPath);
     } catch (error) {
       hapticFeedback.error();
       setGeneralError(error instanceof Error ? error.message : "No fue posible restablecer la contraseña");
@@ -114,6 +108,8 @@ export default function ResetPasswordScreen() {
               router.back();
             }}
             style={styles.backButton}
+            accessibilityRole="button"
+            accessibilityLabel="Volver"
           >
             <Text style={styles.backButtonText}>← Volver</Text>
           </TouchableOpacity>
@@ -138,6 +134,7 @@ export default function ResetPasswordScreen() {
 
             <FormInput
               testID={authTestIds.resetPassword.emailInput}
+              accessibilityLabel="Correo electrónico"
               label="Correo Electrónico"
               placeholder="tu@correo.com"
               value={email}
@@ -150,6 +147,7 @@ export default function ResetPasswordScreen() {
 
             <FormInput
               testID={authTestIds.resetPassword.codeInput}
+              accessibilityLabel="Código de verificación"
               label="Código de Verificación"
               placeholder="123456"
               value={code}
@@ -162,6 +160,7 @@ export default function ResetPasswordScreen() {
 
             <FormInput
               testID={authTestIds.resetPassword.newPasswordInput}
+              accessibilityLabel="Nueva contraseña"
               label="Nueva Contraseña"
               placeholder="Mínimo 6 caracteres"
               value={newPassword}
@@ -172,6 +171,7 @@ export default function ResetPasswordScreen() {
 
             <FormInput
               testID={authTestIds.resetPassword.confirmPasswordInput}
+              accessibilityLabel="Confirmar nueva contraseña"
               label="Confirmar Nueva Contraseña"
               placeholder="Repite la contraseña"
               value={confirmPassword}

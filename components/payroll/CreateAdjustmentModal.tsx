@@ -1,16 +1,16 @@
 import { useState, useEffect } from "react";
-import { 
-  Modal, 
-  View, 
-  Text, 
-  StyleSheet, 
-  TextInput, 
+import {
+  Modal,
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert 
 } from "react-native";
+import { designTokens } from "@/src/design-system/tokens";
 import type { CreateCompensationAdjustmentRequest } from "@/src/services/payrollService";
 
 interface CreateAdjustmentModalProps {
@@ -35,7 +35,7 @@ export function CreateAdjustmentModal({ visible, onClose, onSubmit }: CreateAdju
     }
   }, [visible]);
 
-  const isValid = label.trim().length > 0 && 
+  const isValid = label.trim().length > 0 &&
                   parseFloat(amount) !== 0 &&
                   serviceExecutionId.trim().length > 0;
 
@@ -53,17 +53,17 @@ export function CreateAdjustmentModal({ visible, onClose, onSubmit }: CreateAdju
 
   const handleSubmit = async () => {
     if (!isValid) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const data: CreateCompensationAdjustmentRequest = {
         label: label.trim(),
         amount: parseFloat(amount),
         serviceExecutionId: serviceExecutionId.trim(),
       };
-      
+
       await onSubmit(data);
       handleClose();
     } catch (e) {
@@ -78,6 +78,8 @@ export function CreateAdjustmentModal({ visible, onClose, onSubmit }: CreateAdju
     return clean;
   };
 
+  const parsedAmount = parseFloat(amount);
+
   return (
     <Modal
       visible={visible}
@@ -85,18 +87,25 @@ export function CreateAdjustmentModal({ visible, onClose, onSubmit }: CreateAdju
       presentationStyle="pageSheet"
       onRequestClose={handleClose}
     >
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <View style={styles.header}>
-          <TouchableOpacity onPress={handleClose}>
+          <TouchableOpacity
+            onPress={handleClose}
+            accessibilityRole="button"
+            accessibilityLabel="Cancelar creación de ajuste"
+          >
             <Text style={styles.cancelButton}>Cancelar</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Nuevo Ajuste</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={handleSubmit}
             disabled={!isValid || loading}
+            accessibilityRole="button"
+            accessibilityLabel={loading ? "Creando ajuste" : "Crear ajuste de compensación"}
+            accessibilityState={{ busy: loading, disabled: !isValid || loading }}
           >
             <Text style={[
               styles.submitButton,
@@ -122,6 +131,7 @@ export function CreateAdjustmentModal({ visible, onClose, onSubmit }: CreateAdju
               onChangeText={setServiceExecutionId}
               placeholder="GUID de la ejecución"
               autoCapitalize="none"
+              accessibilityLabel="Identificador de la ejecución de servicio"
             />
             <Text style={styles.hint}>El ID de la ejecución de servicio de la línea de nómina</Text>
           </View>
@@ -134,6 +144,7 @@ export function CreateAdjustmentModal({ visible, onClose, onSubmit }: CreateAdju
               onChangeText={setLabel}
               placeholder="ej. Bonificación especial"
               autoCapitalize="words"
+              accessibilityLabel="Etiqueta del ajuste"
             />
           </View>
 
@@ -145,6 +156,7 @@ export function CreateAdjustmentModal({ visible, onClose, onSubmit }: CreateAdju
               onChangeText={(text) => setAmount(parseAmount(text))}
               placeholder="500 o -500"
               keyboardType="decimal-pad"
+              accessibilityLabel="Monto del ajuste, positivo para bonificación o negativo para deducción"
             />
           </View>
 
@@ -152,9 +164,9 @@ export function CreateAdjustmentModal({ visible, onClose, onSubmit }: CreateAdju
             <Text style={styles.previewLabel}>Vista previa:</Text>
             <Text style={[
               styles.previewAmount,
-              parseFloat(amount) >= 0 ? styles.previewPositive : styles.previewNegative
+              parsedAmount >= 0 ? styles.previewPositive : styles.previewNegative
             ]}>
-              {parseFloat(amount) >= 0 ? "+" : ""}{parseFloat(amount) || 0} DOP
+              {parsedAmount >= 0 ? "+" : ""}{parsedAmount || 0} DOP
             </Text>
           </View>
         </ScrollView>
@@ -166,7 +178,7 @@ export function CreateAdjustmentModal({ visible, onClose, onSubmit }: CreateAdju
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: designTokens.color.surface.primary,
   },
   header: {
     flexDirection: "row",
@@ -174,36 +186,37 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: designTokens.color.border.subtle,
   },
   cancelButton: {
     fontSize: 16,
-    color: "#666",
+    color: designTokens.color.ink.muted,
   },
   title: {
     fontSize: 17,
     fontWeight: "600",
+    color: designTokens.color.ink.primary,
   },
   submitButton: {
     fontSize: 16,
-    color: "#1976d2",
+    color: designTokens.color.ink.accentStrong,
     fontWeight: "600",
   },
   submitButtonDisabled: {
-    color: "#ccc",
+    color: designTokens.color.border.strong,
   },
   form: {
     flex: 1,
     padding: 16,
   },
   errorCard: {
-    backgroundColor: "#fee2e2",
+    backgroundColor: designTokens.color.surface.danger,
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
   },
   errorText: {
-    color: "#991b1b",
+    color: designTokens.color.status.dangerText,
   },
   inputGroup: {
     marginBottom: 16,
@@ -211,23 +224,24 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#333",
+    color: designTokens.color.ink.primary,
     marginBottom: 6,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: designTokens.color.border.subtle,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
+    color: designTokens.color.ink.primary,
   },
   hint: {
     fontSize: 12,
-    color: "#666",
+    color: designTokens.color.ink.muted,
     marginTop: 4,
   },
   preview: {
-    backgroundColor: "#f5f5f5",
+    backgroundColor: designTokens.color.surface.secondary,
     padding: 16,
     borderRadius: 8,
     alignItems: "center",
@@ -235,7 +249,7 @@ const styles = StyleSheet.create({
   },
   previewLabel: {
     fontSize: 13,
-    color: "#666",
+    color: designTokens.color.ink.muted,
     marginBottom: 4,
   },
   previewAmount: {
@@ -243,9 +257,9 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   previewPositive: {
-    color: "#2e7d32",
+    color: designTokens.color.status.successText,
   },
   previewNegative: {
-    color: "#dc2626",
+    color: designTokens.color.ink.danger,
   },
 });

@@ -1,27 +1,29 @@
 import { useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { designTokens } from "@/src/design-system/tokens";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { logClientEvent } from "@/src/logging/clientLogger";
 import { mobilePrimaryButton, mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
+import { useToast } from "@/src/components/shared/ToastProvider";
 
 export default function ToolsScreen() {
   const { setTokenManually } = useAuth();
+  const { showToast } = useToast();
   const [manualToken, setManualToken] = useState("");
 
   const onSaveToken = () => {
     if (!manualToken.trim()) {
       logClientEvent("mobile.ui", "Manual token save blocked by empty value");
-      Alert.alert("Falta el token", "Pega primero el JWT generado en Swagger.");
+      showToast({ variant: "error", message: "Pega primero el JWT generado en Swagger." });
       return;
     }
 
     setTokenManually(manualToken);
     setManualToken("");
     logClientEvent("mobile.ui", "Manual token saved from tools screen");
-    Alert.alert("Token guardado", "La app mobile usara este Bearer token en adelante.");
+    showToast({ variant: "success", message: "La app mobile usara este Bearer token en adelante." });
   };
 
   return (

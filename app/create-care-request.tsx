@@ -15,6 +15,7 @@ import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/dat
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { FormInput } from "@/src/components/form";
+import { designTokens } from "@/src/design-system/tokens";
 import { careRequestTestIds } from "@/src/testing/testIds";
 import { useAuth } from "@/src/context/AuthContext";
 import { createCorrelationId, logClientEvent } from "@/src/logging/clientLogger";
@@ -396,7 +397,11 @@ export default function CreateCareRequestScreen() {
           {!!formError && (
             <View style={styles.errorBanner}>
               <Text style={styles.errorBannerText}>{formError}</Text>
-              <Pressable onPress={() => setFormError(null)}>
+              <Pressable
+                onPress={() => setFormError(null)}
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar mensaje de error"
+              >
                 <Text style={styles.errorBannerDismiss}>✕</Text>
               </Pressable>
             </View>
@@ -422,7 +427,7 @@ export default function CreateCareRequestScreen() {
 
             {catalogLoading ? (
               <View style={styles.warningBox}>
-                <ActivityIndicator color="#132d75" accessibilityLabel="Cargando..." />
+                <ActivityIndicator color={designTokens.color.ink.accentStrong} accessibilityLabel="Cargando..." />
                 <Text style={styles.warningText}>Cargando catalogo de precios...</Text>
               </View>
             ) : null}
@@ -457,8 +462,8 @@ export default function CreateCareRequestScreen() {
                   style: {
                     padding: "12px",
                     borderRadius: "12px",
-                    border: "1px solid #cbd5e0",
-                    backgroundColor: isLoading ? "#f1f5f9" : "#ffffff",
+                    border: `1px solid ${designTokens.color.border.subtle}`,
+                    backgroundColor: isLoading ? designTokens.color.surface.secondary : designTokens.color.ink.inverse,
                     fontSize: "15px",
                     minHeight: "48px",
                     width: "100%",
@@ -470,20 +475,24 @@ export default function CreateCareRequestScreen() {
                 })}
                 {!isLoading && (
                   <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
-                    <Pressable 
-                      style={{ flex: 1, backgroundColor: "#f0f4f8", padding: 8, borderRadius: 8, alignItems: "center" }}
+                    <Pressable
+                      style={{ flex: 1, backgroundColor: designTokens.color.surface.secondary, padding: 8, borderRadius: 8, alignItems: "center" }}
                       onPress={() => setForm((prev) => ({ ...prev, careRequestDate: formatDateToIso(new Date()) }))}
+                      accessibilityRole="button"
+                      accessibilityLabel="Seleccionar hoy como fecha del servicio"
                     >
-                      <Text style={{ fontSize: 13, color: "#102a43", fontWeight: "600" }}>Hoy</Text>
+                      <Text style={{ fontSize: 13, color: designTokens.color.ink.primary, fontWeight: "600" }}>Hoy</Text>
                     </Pressable>
-                    <Pressable 
-                      style={{ flex: 1, backgroundColor: "#f0f4f8", padding: 8, borderRadius: 8, alignItems: "center" }}
+                    <Pressable
+                      style={{ flex: 1, backgroundColor: designTokens.color.surface.secondary, padding: 8, borderRadius: 8, alignItems: "center" }}
                       onPress={() => {
                         const d = new Date(); d.setDate(d.getDate() + 1);
                         setForm((prev) => ({ ...prev, careRequestDate: formatDateToIso(d) }));
                       }}
+                      accessibilityRole="button"
+                      accessibilityLabel="Seleccionar mañana como fecha del servicio"
                     >
-                      <Text style={{ fontSize: 13, color: "#102a43", fontWeight: "600" }}>Mañana</Text>
+                      <Text style={{ fontSize: 13, color: designTokens.color.ink.primary, fontWeight: "600" }}>Mañana</Text>
                     </Pressable>
                   </View>
                 )}
@@ -538,7 +547,7 @@ export default function CreateCareRequestScreen() {
 
             <Text style={styles.label}>Servicio *</Text>
             {catalogLoading ? (
-               <ActivityIndicator color="#132d75" style={{ alignSelf: "flex-start", marginVertical: 8 }} />
+               <ActivityIndicator color={designTokens.color.ink.accentStrong} style={{ alignSelf: "flex-start", marginVertical: 8 }} />
             ) : (
               <View style={styles.chipsContainer}>
                 {(catalogOptions?.careRequestTypes ?? []).map(row => (
@@ -610,7 +619,7 @@ export default function CreateCareRequestScreen() {
                 >
                   {nurseLookupLoading ? (
                     <View style={styles.autocompleteLoadingRow}>
-                      <ActivityIndicator color="#132d75" accessibilityLabel="Cargando..." />
+                      <ActivityIndicator color={designTokens.color.ink.accentStrong} accessibilityLabel="Cargando..." />
                       <Text style={styles.autocompleteHelperText}>Buscando enfermeras activas...</Text>
                     </View>
                   ) : nurseLookupError ? (
@@ -746,26 +755,26 @@ const styles = StyleSheet.create({
   flow: {
     gap: 16,
   },
-  subtitle: { fontSize: 13, color: "#5f7280", marginBottom: 12 },
+  subtitle: { fontSize: 13, color: designTokens.color.ink.secondary, marginBottom: 12 },
   chipsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 },
-  chip: { backgroundColor: "#f4f2ec", paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: "rgba(23, 48, 66, 0.15)" },
-  chipActive: { backgroundColor: "#1f4b6e", borderColor: "#173042" },
-  chipText: { color: "#5f7280", fontWeight: "600", fontSize: 14 },
-  chipTextActive: { color: "#ffffff" },
-  
-  stepperContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "#f4f2ec", borderRadius: 12, alignSelf: "flex-start", borderWidth: 1, borderColor: "rgba(23, 48, 66, 0.15)", marginBottom: 18 },
-  stepperBtn: { paddingHorizontal: 20, paddingVertical: 12 },
-  stepperBtnText: { fontSize: 20, fontWeight: "700", color: "#173042" },
-  stepperValue: { fontSize: 16, fontWeight: "800", color: "#173042", minWidth: 40, textAlign: "center" },
+  chip: { backgroundColor: designTokens.color.surface.secondary, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: "rgba(23, 48, 66, 0.15)" },
+  chipActive: { backgroundColor: designTokens.color.ink.accentStrong, borderColor: designTokens.color.ink.primary },
+  chipText: { color: designTokens.color.ink.secondary, fontWeight: "600", fontSize: 14 },
+  chipTextActive: { color: designTokens.color.ink.inverse },
 
-  stickyFooter: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingTop: 12, paddingBottom: Platform.OS === "ios" ? 32 : 16, backgroundColor: "#ffffff", borderTopWidth: 1, borderTopColor: "#e2e8f0", shadowColor: "#152230", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 12 },
-  buttonPrimary: { backgroundColor: "#1f4b6e", borderRadius: 12, paddingVertical: 16, alignItems: "center" },
-  buttonPrimaryText: { color: "#ffffff", fontWeight: "800", fontSize: 16 },
+  stepperContainer: { flexDirection: "row", alignItems: "center", backgroundColor: designTokens.color.surface.secondary, borderRadius: 12, alignSelf: "flex-start", borderWidth: 1, borderColor: "rgba(23, 48, 66, 0.15)", marginBottom: 18 },
+  stepperBtn: { paddingHorizontal: 20, paddingVertical: 12 },
+  stepperBtnText: { fontSize: 20, fontWeight: "700", color: designTokens.color.ink.primary },
+  stepperValue: { fontSize: 16, fontWeight: "800", color: designTokens.color.ink.primary, minWidth: 40, textAlign: "center" },
+
+  stickyFooter: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingTop: 12, paddingBottom: Platform.OS === "ios" ? 32 : 16, backgroundColor: designTokens.color.ink.inverse, borderTopWidth: 1, borderTopColor: designTokens.color.border.subtle, shadowColor: designTokens.color.ink.primary, shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 12 },
+  buttonPrimary: { backgroundColor: designTokens.color.ink.accentStrong, borderRadius: 12, paddingVertical: 16, alignItems: "center" },
+  buttonPrimaryText: { color: designTokens.color.ink.inverse, fontWeight: "800", fontSize: 16 },
   card: {
-    backgroundColor: "#fffdf8",
+    backgroundColor: designTokens.color.surface.primary,
     borderRadius: 12,
     padding: 16,
-    shadowColor: "#152230",
+    shadowColor: "#000", /* RN shadow requires raw hex */
     shadowOpacity: 0.06,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 8,
@@ -779,31 +788,31 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#173042",
+    color: designTokens.color.ink.primary,
     marginBottom: 6,
   },
   sectionCopy: {
     fontSize: 14,
     lineHeight: 22,
-    color: "#5f7280",
+    color: designTokens.color.ink.secondary,
   },
   warningBox: {
-    backgroundColor: "#fff5f5",
+    backgroundColor: designTokens.color.surface.danger,
     borderRadius: 12,
     padding: 14,
     marginBottom: 18,
     borderWidth: 1,
-    borderColor: "#fed7d7",
+    borderColor: designTokens.color.border.subtle,
   },
   warningText: {
-    color: "#b91c1c",
+    color: designTokens.color.ink.danger,
     lineHeight: 20,
     fontWeight: "600",
   },
   label: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#173042",
+    color: designTokens.color.ink.primary,
     marginBottom: 8,
   },
   input: {
@@ -814,8 +823,8 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     marginBottom: 18,
     fontSize: 16,
-    color: "#173042",
-    backgroundColor: "#ffffff",
+    color: designTokens.color.ink.primary,
+    backgroundColor: designTokens.color.ink.inverse,
   },
   textArea: {
     minHeight: 120,
@@ -825,11 +834,11 @@ const styles = StyleSheet.create({
   },
   dateValue: {
     fontSize: 16,
-    color: "#173042",
+    color: designTokens.color.ink.primary,
   },
   datePlaceholder: {
     fontSize: 16,
-    color: "#5f7280",
+    color: designTokens.color.ink.secondary,
   },
   dateActionsRow: {
     flexDirection: "row",
@@ -846,18 +855,18 @@ const styles = StyleSheet.create({
   },
   datePrimaryAction: {
     borderColor: "rgba(31, 75, 110, 0.2)",
-    backgroundColor: "#f4f2ec",
+    backgroundColor: designTokens.color.surface.secondary,
   },
   dateSecondaryAction: {
     borderColor: "rgba(23, 48, 66, 0.15)",
-    backgroundColor: "#ffffff",
+    backgroundColor: designTokens.color.ink.inverse,
   },
   datePrimaryActionText: {
-    color: "#1f4b6e",
+    color: designTokens.color.ink.accentStrong,
     fontWeight: "700",
   },
   dateSecondaryActionText: {
-    color: "#5f7280",
+    color: designTokens.color.ink.secondary,
     fontWeight: "700",
   },
   dateModalBackdrop: {
@@ -866,7 +875,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   dateModalContent: {
-    backgroundColor: "#ffffff",
+    backgroundColor: designTokens.color.ink.inverse,
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
     paddingHorizontal: 18,
@@ -877,7 +886,7 @@ const styles = StyleSheet.create({
   dateModalTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#173042",
+    color: designTokens.color.ink.primary,
     textAlign: "center",
   },
   dateModalActions: {
@@ -894,25 +903,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   dateModalCancelText: {
-    color: "#5f7280",
+    color: designTokens.color.ink.secondary,
     fontWeight: "700",
   },
   dateModalConfirmButton: {
     flex: 1,
     borderRadius: 10,
-    backgroundColor: "#1f4b6e",
+    backgroundColor: designTokens.color.ink.accentStrong,
     paddingVertical: 12,
     alignItems: "center",
   },
   dateModalConfirmText: {
-    color: "#ffffff",
+    color: designTokens.color.ink.inverse,
     fontWeight: "800",
   },
   helperText: {
     marginTop: -10,
     marginBottom: 16,
     fontSize: 13,
-    color: "#5f7280",
+    color: designTokens.color.ink.secondary,
   },
   inputDisabled: {
     opacity: 0.65,
@@ -923,7 +932,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(23, 48, 66, 0.15)",
     borderRadius: 12,
-    backgroundColor: "#ffffff",
+    backgroundColor: designTokens.color.ink.inverse,
     overflow: "hidden",
     zIndex: 20,
     elevation: 6,
@@ -942,24 +951,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#f4f2ec",
+    borderBottomColor: designTokens.color.surface.secondary,
   },
   autocompletePrimaryText: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#173042",
+    color: designTokens.color.ink.primary,
   },
   autocompleteSecondaryText: {
     marginTop: 4,
     fontSize: 13,
-    color: "#5f7280",
+    color: designTokens.color.ink.secondary,
   },
   autocompleteHelperText: {
     fontSize: 13,
-    color: "#5f7280",
+    color: designTokens.color.ink.secondary,
   },
   checklist: {
-    backgroundColor: "#f4f2ec",
+    backgroundColor: designTokens.color.surface.secondary,
     borderRadius: 10,
     padding: 16,
     marginBottom: 16,
@@ -969,7 +978,7 @@ const styles = StyleSheet.create({
   checklistTitle: {
     fontSize: 13,
     fontWeight: "800",
-    color: "#1f4b6e",
+    color: designTokens.color.ink.accentStrong,
     textTransform: "uppercase",
     letterSpacing: 1,
     marginBottom: 10,
@@ -977,7 +986,7 @@ const styles = StyleSheet.create({
   checkItem: {
     fontSize: 14,
     lineHeight: 22,
-    color: "#173042",
+    color: designTokens.color.ink.primary,
     marginBottom: 6,
   },
   buttonDisabled: {
@@ -987,9 +996,9 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   },
   errorBanner: {
-    backgroundColor: "#fef2f2",
+    backgroundColor: designTokens.color.surface.danger,
     borderWidth: 1,
-    borderColor: "#fca5a5",
+    borderColor: designTokens.color.border.subtle,
     borderRadius: 12,
     padding: 14,
     flexDirection: "row",
@@ -998,27 +1007,27 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   errorBannerText: {
-    color: "#991b1b",
+    color: designTokens.color.ink.danger,
     fontWeight: "700",
     fontSize: 14,
     lineHeight: 20,
     flex: 1,
   },
   errorBannerDismiss: {
-    color: "#991b1b",
+    color: designTokens.color.ink.danger,
     fontSize: 18,
     fontWeight: "800",
     paddingHorizontal: 4,
   },
   successBanner: {
-    backgroundColor: "#f0fdf4",
+    backgroundColor: designTokens.color.surface.success,
     borderWidth: 1,
-    borderColor: "#86efac",
+    borderColor: designTokens.color.border.subtle,
     borderRadius: 12,
     padding: 14,
   },
   successBannerText: {
-    color: "#166534",
+    color: designTokens.color.status.successText,
     fontWeight: "700",
     fontSize: 14,
     lineHeight: 20,

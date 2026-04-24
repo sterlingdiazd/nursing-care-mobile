@@ -4,6 +4,8 @@ import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
+import { useToast } from "@/src/components/shared/ToastProvider";
+import { designTokens } from "@/src/design-system/tokens";
 import {
   getPayrollPeriods,
   getPayrollPeriodById,
@@ -33,10 +35,10 @@ import {
   type CreateCompensationAdjustmentRequest,
   type RecalculatePayrollResult,
 } from "@/src/services/payrollService";
-import { 
-  PeriodListItem, 
-  CreatePeriodModal, 
-  PeriodDetail, 
+import {
+  PeriodListItem,
+  CreatePeriodModal,
+  PeriodDetail,
   PayrollTabs,
   RuleListItem,
   CreateRuleModal,
@@ -67,6 +69,7 @@ function formatTriggeredAt(value: string) {
 
 export default function AdminPayrollScreen() {
   const { roles, isReady, isAuthenticated, requiresProfileCompletion } = useAuth();
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState("periods");
 
   useEffect(() => {
@@ -75,7 +78,7 @@ export default function AdminPayrollScreen() {
     if (requiresProfileCompletion) return void router.replace("/register" as any);
     if (!roles.includes("ADMIN")) return void router.replace("/" as any);
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles]);
-  
+
   const [periodList, setPeriodList] = useState<AdminPayrollPeriodListResult | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<AdminPayrollPeriodDetail | null>(null);
   const [selectedPeriodLoading, setSelectedPeriodLoading] = useState(false);
@@ -181,7 +184,7 @@ export default function AdminPayrollScreen() {
     setRulesRefreshing(true);
     setDeductionsRefreshing(true);
     setAdjustmentsRefreshing(true);
-    
+
     try {
       switch (activeTab) {
         case "periods":
@@ -205,18 +208,18 @@ export default function AdminPayrollScreen() {
     }
   }, [activeTab, loadPeriods, loadRules, loadDeductions, loadAdjustments]);
 
-  const handlePeriodPress = useCallback(async (period: { id: string }) => {
+  const handlePeriodPress = useCallback(async (id: string) => {
     try {
       setSelectedPeriodLoading(true);
-      const detail = await getPayrollPeriodById(period.id);
+      const detail = await getPayrollPeriodById(id);
       setSelectedPeriod(detail);
     } catch (e) {
       const message = e instanceof Error ? e.message : "No fue posible abrir el período.";
-      Alert.alert("Error", message);
+      showToast({ message, variant: "error" });
     } finally {
       setSelectedPeriodLoading(false);
     }
-  }, []);
+  }, [showToast]);
 
   const handleBackToList = useCallback(() => {
     setSelectedPeriod(null);
@@ -227,18 +230,18 @@ export default function AdminPayrollScreen() {
   const handleCreatePeriod = useCallback(async (data: CreatePayrollPeriodRequest) => {
     await createPayrollPeriod(data);
     setShowCreatePeriodModal(false);
-    Alert.alert("Éxito", "Período de nómina creado correctamente");
+    showToast({ message: "Período de nómina creado correctamente", variant: "success" });
     void loadPeriods();
-  }, [loadPeriods]);
+  }, [loadPeriods, showToast]);
 
   const handleClosePeriod = useCallback(async () => {
     if (!selectedPeriod) return;
     await closePayrollPeriod(selectedPeriod.id);
     const detail = await getPayrollPeriodById(selectedPeriod.id);
     setSelectedPeriod(detail);
-    Alert.alert("Éxito", "Período de nómina cerrado correctamente");
+    showToast({ message: "Período de nómina cerrado correctamente", variant: "success" });
     void loadPeriods();
-  }, [selectedPeriod, loadPeriods]);
+  }, [selectedPeriod, loadPeriods, showToast]);
 
   const handleRulePress = useCallback((rule: AdminCompensationRuleListItem) => {
     setSelectedRule(rule);
@@ -248,50 +251,50 @@ export default function AdminPayrollScreen() {
   const handleCreateRule = useCallback(async (data: CreateCompensationRuleRequest | UpdateCompensationRuleRequest) => {
     if ("employmentType" in data) {
       await createCompensationRule(data as CreateCompensationRuleRequest);
-      Alert.alert("Éxito", "Regla de compensación creada correctamente");
+      showToast({ message: "Regla de compensación creada correctamente", variant: "success" });
     } else if (selectedRule) {
       await updateCompensationRule(selectedRule.id, data);
-      Alert.alert("Éxito", "Regla de compensación actualizada correctamente");
+      showToast({ message: "Regla de compensación actualizada correctamente", variant: "success" });
     }
     setShowCreateRuleModal(false);
     setSelectedRule(null);
     void loadRules();
-  }, [selectedRule, loadRules]);
+  }, [selectedRule, loadRules, showToast]);
 
   const handleDeactivateRule = useCallback(async () => {
     if (!selectedRule) return;
     await deactivateCompensationRule(selectedRule.id);
     setShowCreateRuleModal(false);
     setSelectedRule(null);
-    Alert.alert("Éxito", "Regla de compensación desactivada correctamente");
+    showToast({ message: "Regla de compensación desactivada correctamente", variant: "success" });
     void loadRules();
-  }, [selectedRule, loadRules]);
+  }, [selectedRule, loadRules, showToast]);
 
   const handleDeleteDeduction = useCallback(async (deduction: { id: string }) => {
     await deleteDeduction(deduction.id);
-    Alert.alert("Éxito", "Deducción eliminada correctamente");
+    showToast({ message: "Deducción eliminada correctamente", variant: "success" });
     void loadDeductions();
-  }, [loadDeductions]);
+  }, [loadDeductions, showToast]);
 
   const handleCreateDeduction = useCallback(async (data: CreateDeductionRequest) => {
     await createDeduction(data);
     setShowCreateDeductionModal(false);
-    Alert.alert("Éxito", "Deducción creada correctamente");
+    showToast({ message: "Deducción creada correctamente", variant: "success" });
     void loadDeductions();
-  }, [loadDeductions]);
+  }, [loadDeductions, showToast]);
 
   const handleDeleteAdjustment = useCallback(async (adjustment: { id: string }) => {
     await deleteAdjustment(adjustment.id);
-    Alert.alert("Éxito", "Ajuste eliminado correctamente");
+    showToast({ message: "Ajuste eliminado correctamente", variant: "success" });
     void loadAdjustments();
-  }, [loadAdjustments]);
+  }, [loadAdjustments, showToast]);
 
   const handleCreateAdjustment = useCallback(async (data: CreateCompensationAdjustmentRequest) => {
     await createAdjustment(data);
     setShowCreateAdjustmentModal(false);
-    Alert.alert("Éxito", "Ajuste de compensación creado correctamente");
+    showToast({ message: "Ajuste de compensación creado correctamente", variant: "success" });
     void loadAdjustments();
-  }, [loadAdjustments]);
+  }, [loadAdjustments, showToast]);
 
   const handleRecalculate = useCallback(async () => {
     setRecalculateLoading(true);
@@ -303,11 +306,11 @@ export default function AdminPayrollScreen() {
       void loadPeriods();
     } catch (e) {
       const message = e instanceof Error ? e.message : "No fue posible recalcular la nómina.";
-      Alert.alert("Error", message);
+      showToast({ message, variant: "error" });
     } finally {
       setRecalculateLoading(false);
     }
-  }, [loadPeriods]);
+  }, [loadPeriods, showToast]);
 
   const openRecalculateReview = useCallback(() => {
     setShowRecalculateReview(true);
@@ -350,6 +353,8 @@ export default function AdminPayrollScreen() {
                 style={[styles.reviewActionButton, styles.reviewActionButtonSecondary]}
                 onPress={() => setShowRecalculateReview(false)}
                 disabled={recalculateLoading}
+                accessibilityRole="button"
+                accessibilityLabel="Volver sin recalcular"
               >
                 <Text style={[styles.reviewActionText, styles.reviewActionTextSecondary]}>Volver</Text>
               </TouchableOpacity>
@@ -359,6 +364,9 @@ export default function AdminPayrollScreen() {
                 disabled={recalculateLoading}
                 testID="admin-payroll-recalculate-confirm-cta"
                 nativeID="admin-payroll-recalculate-confirm-cta"
+                accessibilityRole="button"
+                accessibilityLabel={recalculateLoading ? "Procesando recálculo" : "Confirmar recálculo de nómina"}
+                accessibilityState={{ busy: recalculateLoading }}
               >
                 <Text style={styles.reviewActionText}>
                   {recalculateLoading ? "Procesando..." : "Confirmar recálculo"}
@@ -419,6 +427,7 @@ export default function AdminPayrollScreen() {
             disabled={recalculateLoading}
             testID="admin-payroll-recalculate-button"
             nativeID="admin-payroll-recalculate-button"
+            accessibilityRole="button"
             accessibilityLabel={recalculateLoading ? "Recalculando nómina" : "Recalcular nómina"}
             accessibilityState={{ busy: recalculateLoading }}
           >
@@ -457,8 +466,8 @@ export default function AdminPayrollScreen() {
         ) : periodsLoading ? (
           <LoadingView message="Cargando períodos..." />
         ) : periodList?.items.length === 0 ? (
-          <EmptyView 
-            title="No hay períodos de nómina" 
+          <EmptyView
+            title="No hay períodos de nómina"
             subtitle="Crea un nuevo período para comenzar"
             actionLabel="+ Nuevo Período"
             onAction={() => setShowCreatePeriodModal(true)}
@@ -480,6 +489,8 @@ export default function AdminPayrollScreen() {
             <TouchableOpacity
               style={styles.createButton}
               onPress={() => setShowCreatePeriodModal(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Crear nuevo período de nómina"
             >
               <Text style={styles.createButtonText}>+ Nuevo Período</Text>
             </TouchableOpacity>
@@ -501,7 +512,7 @@ export default function AdminPayrollScreen() {
       ) : rulesLoading ? (
         <LoadingView message="Cargando reglas..." />
       ) : rules?.items.length === 0 ? (
-        <EmptyView 
+        <EmptyView
           title="No hay reglas de compensación"
           subtitle="Crea una nueva regla para comenzar"
           actionLabel="+ Nueva Regla"
@@ -530,6 +541,8 @@ export default function AdminPayrollScreen() {
               setSelectedRule(null);
               setShowCreateRuleModal(true);
             }}
+            accessibilityRole="button"
+            accessibilityLabel="Crear nueva regla de compensación"
           >
             <Text style={styles.createButtonText}>+ Nueva Regla</Text>
           </TouchableOpacity>
@@ -550,7 +563,7 @@ export default function AdminPayrollScreen() {
       ) : deductionsLoading ? (
         <LoadingView message="Cargando deducciones..." />
       ) : deductions?.items.length === 0 ? (
-        <EmptyView 
+        <EmptyView
           title="No hay deducciones"
           subtitle="Agrega una deducción para comenzar"
           actionLabel="+ Nueva Deducción"
@@ -573,6 +586,8 @@ export default function AdminPayrollScreen() {
           <TouchableOpacity
             style={styles.createButton}
             onPress={() => setShowCreateDeductionModal(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Crear nueva deducción"
           >
             <Text style={styles.createButtonText}>+ Nueva Deducción</Text>
           </TouchableOpacity>
@@ -593,7 +608,7 @@ export default function AdminPayrollScreen() {
       ) : adjustmentsLoading ? (
         <LoadingView message="Cargando ajustes..." />
       ) : adjustments?.items.length === 0 ? (
-        <EmptyView 
+        <EmptyView
           title="No hay ajustes"
           subtitle="Agrega un ajuste para comenzar"
           actionLabel="+ Nuevo Ajuste"
@@ -616,6 +631,8 @@ export default function AdminPayrollScreen() {
           <TouchableOpacity
             style={styles.createButton}
             onPress={() => setShowCreateAdjustmentModal(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Crear nuevo ajuste"
           >
             <Text style={styles.createButtonText}>+ Nuevo Ajuste</Text>
           </TouchableOpacity>
@@ -709,25 +726,25 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     padding: 16,
     borderRadius: 12,
-    backgroundColor: "#eff6ff",
+    backgroundColor: designTokens.color.surface.accent,
     borderWidth: 1,
-    borderColor: "#bfdbfe",
+    borderColor: designTokens.color.border.strong,
   },
   overviewEyebrow: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#1d4ed8",
+    color: designTokens.color.ink.accentStrong,
     textTransform: "uppercase",
     marginBottom: 6,
   },
   overviewTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#0f172a",
+    color: designTokens.color.ink.primary,
   },
   overviewDescription: {
     marginTop: 6,
-    color: "#334155",
+    color: designTokens.color.ink.secondary,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -738,43 +755,43 @@ const styles = StyleSheet.create({
   },
   overviewStat: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: designTokens.color.surface.primary,
     borderRadius: 10,
     padding: 12,
   },
   overviewStatLabel: {
     fontSize: 12,
-    color: "#475569",
+    color: designTokens.color.ink.secondary,
     marginBottom: 4,
   },
   overviewStatValue: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#0f172a",
+    color: designTokens.color.ink.primary,
   },
   reviewCard: {
     margin: 16,
     padding: 16,
     borderRadius: 12,
-    backgroundColor: "#fff7ed",
+    backgroundColor: designTokens.color.surface.warning,
     borderWidth: 1,
-    borderColor: "#fdba74",
+    borderColor: designTokens.color.border.strong,
   },
   reviewEyebrow: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#c2410c",
+    color: designTokens.color.status.dangerText,
     textTransform: "uppercase",
     marginBottom: 6,
   },
   reviewTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#0f172a",
+    color: designTokens.color.ink.primary,
   },
   reviewDescription: {
     marginTop: 6,
-    color: "#334155",
+    color: designTokens.color.ink.secondary,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -784,7 +801,7 @@ const styles = StyleSheet.create({
   },
   reviewChecklistItem: {
     fontSize: 14,
-    color: "#7c2d12",
+    color: designTokens.color.status.dangerText,
     lineHeight: 20,
   },
   reviewActions: {
@@ -794,34 +811,34 @@ const styles = StyleSheet.create({
   },
   reviewActionButton: {
     flex: 1,
-    backgroundColor: "#c2410c",
+    backgroundColor: designTokens.color.ink.danger,
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderRadius: 10,
     alignItems: "center",
   },
   reviewActionButtonSecondary: {
-    backgroundColor: "#ffedd5",
+    backgroundColor: designTokens.color.surface.warning,
     borderWidth: 1,
-    borderColor: "#fdba74",
+    borderColor: designTokens.color.border.strong,
   },
   reviewActionButtonDisabled: {
     opacity: 0.7,
   },
   reviewActionText: {
-    color: "#fff",
+    color: designTokens.color.ink.inverse,
     fontWeight: "800",
     fontSize: 14,
   },
   reviewActionTextSecondary: {
-    color: "#9a3412",
+    color: designTokens.color.status.dangerText,
   },
   toolbar: {
     padding: 16,
     paddingBottom: 8,
   },
   toolbarButton: {
-    backgroundColor: "#0f766e",
+    backgroundColor: designTokens.color.ink.accentStrong,
     padding: 12,
     borderRadius: 10,
     alignItems: "center",
@@ -830,7 +847,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   toolbarButtonText: {
-    color: "#fff",
+    color: designTokens.color.ink.inverse,
     fontSize: 15,
     fontWeight: "700",
   },
@@ -839,24 +856,24 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     padding: 14,
     borderRadius: 12,
-    backgroundColor: "#f0fdfa",
+    backgroundColor: designTokens.color.surface.success,
     borderWidth: 1,
-    borderColor: "#99f6e4",
+    borderColor: designTokens.color.border.subtle,
   },
   summaryTitle: {
     fontSize: 15,
     fontWeight: "800",
-    color: "#0f172a",
+    color: designTokens.color.ink.primary,
     marginBottom: 6,
   },
   summaryRow: {
-    color: "#0f172a",
+    color: designTokens.color.ink.primary,
     fontSize: 13,
     marginTop: 4,
   },
   summaryValue: {
     fontWeight: "700",
-    color: "#0f172a",
+    color: designTokens.color.ink.primary,
   },
   list: {
     padding: 16,
@@ -866,13 +883,13 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   createButton: {
-    backgroundColor: "#1976d2",
+    backgroundColor: designTokens.color.ink.accentStrong,
     padding: 14,
     borderRadius: 8,
     alignItems: "center",
   },
   createButtonText: {
-    color: "#fff",
+    color: designTokens.color.ink.inverse,
     fontSize: 16,
     fontWeight: "600",
   },
@@ -883,18 +900,18 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   modalCard: {
-    backgroundColor: "#fff",
+    backgroundColor: designTokens.color.surface.primary,
     borderRadius: 14,
     padding: 16,
   },
   modalTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#0f172a",
+    color: designTokens.color.ink.primary,
     marginBottom: 8,
   },
   modalBody: {
-    color: "#334155",
+    color: designTokens.color.ink.secondary,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -905,23 +922,23 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   modalButton: {
-    backgroundColor: "#0f766e",
+    backgroundColor: designTokens.color.ink.accentStrong,
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 10,
   },
   modalButtonSecondary: {
-    backgroundColor: "#e2e8f0",
+    backgroundColor: designTokens.color.surface.tertiary,
   },
   modalButtonDisabled: {
     opacity: 0.7,
   },
   modalButtonText: {
-    color: "#fff",
+    color: designTokens.color.ink.inverse,
     fontWeight: "800",
     fontSize: 14,
   },
   modalButtonTextSecondary: {
-    color: "#0f172a",
+    color: designTokens.color.ink.primary,
   },
 });

@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
+import { designTokens } from "@/src/design-system/tokens";
 import {
   getNurseProfileForAdmin,
   completeNurseProfileForAdmin,
@@ -198,6 +199,7 @@ export default function AdminReviewNurseProfileScreen() {
           <TextInput
             testID={adminTestIds.nurses.review.specialtyInput}
             nativeID={adminTestIds.nurses.review.specialtyInput}
+            accessibilityLabel="Especialidad de la enfermera"
             style={[styles.input, errors.specialty ? styles.inputError : undefined]}
             placeholder="Especialidad de la enfermera"
             value={form.specialty}
@@ -209,6 +211,7 @@ export default function AdminReviewNurseProfileScreen() {
           <TextInput
             testID={adminTestIds.nurses.review.licenseInput}
             nativeID={adminTestIds.nurses.review.licenseInput}
+            accessibilityLabel="Número de licencia profesional"
             style={[styles.input, errors.licenseId ? styles.inputError : undefined]}
             placeholder="Número de licencia profesional"
             value={form.licenseId ?? ""}
@@ -220,6 +223,7 @@ export default function AdminReviewNurseProfileScreen() {
           <TextInput
             testID={adminTestIds.nurses.review.bankNameInput}
             nativeID={adminTestIds.nurses.review.bankNameInput}
+            accessibilityLabel="Nombre del banco"
             style={[styles.input, errors.bankName ? styles.inputError : undefined]}
             placeholder="Nombre del banco"
             value={form.bankName}
@@ -231,6 +235,7 @@ export default function AdminReviewNurseProfileScreen() {
           <TextInput
             testID={adminTestIds.nurses.review.accountNumberInput}
             nativeID={adminTestIds.nurses.review.accountNumberInput}
+            accessibilityLabel="Número de cuenta bancaria"
             style={[styles.input, errors.accountNumber ? styles.inputError : undefined]}
             placeholder="Número de cuenta bancaria"
             value={form.accountNumber ?? ""}
@@ -245,6 +250,9 @@ export default function AdminReviewNurseProfileScreen() {
                 key={category}
                 style={[styles.chip, form.category === category && styles.chipActive]}
                 onPress={() => setForm({ ...form, category })}
+                accessibilityRole="button"
+                accessibilityLabel={`Categoría: ${category}`}
+                accessibilityState={{ selected: form.category === category }}
               >
                 <Text style={[styles.chipText, form.category === category && styles.chipTextActive]}>{category}</Text>
               </Pressable>
@@ -253,6 +261,7 @@ export default function AdminReviewNurseProfileScreen() {
           <TextInput
             testID={adminTestIds.nurses.review.categoryInput}
             nativeID={adminTestIds.nurses.review.categoryInput}
+            accessibilityLabel="Especificar otra categoría profesional"
             style={[styles.input, errors.category ? styles.inputError : undefined]}
             placeholder="Otra categoría profesional"
             value={CATEGORIES.includes(form.category) ? "" : form.category}
@@ -263,7 +272,12 @@ export default function AdminReviewNurseProfileScreen() {
       </ScrollView>
 
       <View style={styles.actions}>
-        <Pressable style={styles.button} onPress={() => router.back()}>
+        <Pressable
+          style={styles.button}
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Cancelar y volver"
+        >
           <Text style={styles.buttonText}>Cancelar</Text>
         </Pressable>
         <Pressable
@@ -272,6 +286,9 @@ export default function AdminReviewNurseProfileScreen() {
           style={styles.buttonPrimary}
           onPress={handleSubmit}
           disabled={submitting}
+          accessibilityRole="button"
+          accessibilityLabel={submitting ? "Activando perfil" : reviewProgress.ready ? "Activar para asignaciones" : "Completar perfil pendiente"}
+          accessibilityState={{ busy: submitting }}
         >
           <Text style={styles.buttonPrimaryText}>
             {submitting ? "Activando..." : reviewProgress.ready ? "Activar para asignaciones" : "Completar perfil pendiente"}
@@ -283,34 +300,34 @@ export default function AdminReviewNurseProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  loading: { color: "#52637a", fontSize: 14, textAlign: "center", padding: 20 },
-  error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
-  statusPanel: { backgroundColor: "#f8fbff", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12, gap: 8 },
+  loading: { color: designTokens.color.ink.secondary, fontSize: 14, textAlign: "center", padding: 20 },
+  error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: 12, borderRadius: 12, marginBottom: 12 },
+  statusPanel: { backgroundColor: designTokens.color.surface.canvas, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 14, marginBottom: 12, gap: 8 },
   statusChip: { alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 12, fontWeight: "800" },
-  statusChipWarning: { backgroundColor: "#fef3c7", color: "#92400e" },
-  statusChipSuccess: { backgroundColor: "#dcfce7", color: "#166534" },
-  statusHelper: { color: "#52637a", fontSize: 13, lineHeight: 18 },
-  card: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
-  cardTitle: { fontSize: 16, fontWeight: "800", color: "#102a43", marginBottom: 12 },
-  reviewNote: { color: "#52637a", fontSize: 13, lineHeight: 18, marginBottom: 10 },
+  statusChipWarning: { backgroundColor: designTokens.color.status.warningBg, color: designTokens.color.status.warningText },
+  statusChipSuccess: { backgroundColor: designTokens.color.status.successBg, color: designTokens.color.status.successText },
+  statusHelper: { color: designTokens.color.ink.secondary, fontSize: 13, lineHeight: 18 },
+  card: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 14, marginBottom: 12 },
+  cardTitle: { fontSize: 16, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 12 },
+  reviewNote: { color: designTokens.color.ink.secondary, fontSize: 13, lineHeight: 18, marginBottom: 10 },
   missingList: { gap: 6 },
-  missingItem: { color: "#102a43", fontSize: 14 },
-  readyItem: { color: "#166534", fontSize: 14, fontWeight: "700" },
+  missingItem: { color: designTokens.color.ink.primary, fontSize: 14 },
+  readyItem: { color: designTokens.color.status.successText, fontSize: 14, fontWeight: "700" },
   field: { marginBottom: 8 },
-  fieldLabel: { color: "#7c2d12", fontSize: 12, fontWeight: "800", textTransform: "uppercase", marginBottom: 2 },
-  fieldValue: { color: "#102a43", fontSize: 15 },
-  label: { fontSize: 14, fontWeight: "700", color: "#7c2d12", marginTop: 12, marginBottom: 6 },
-  input: { borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 12, padding: 12, fontSize: 15, color: "#102a43", backgroundColor: "#fff" },
-  inputError: { borderColor: "#c00" },
-  errorText: { color: "#c00", fontSize: 12, marginTop: 4 },
+  fieldLabel: { color: designTokens.color.status.dangerText, fontSize: 12, fontWeight: "800", textTransform: "uppercase", marginBottom: 2 },
+  fieldValue: { color: designTokens.color.ink.primary, fontSize: 15 },
+  label: { fontSize: 14, fontWeight: "700", color: designTokens.color.status.dangerText, marginTop: 12, marginBottom: 6 },
+  input: { borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 12, padding: 12, fontSize: 15, color: designTokens.color.ink.primary, backgroundColor: designTokens.color.surface.primary },
+  inputError: { borderColor: designTokens.color.ink.danger },
+  errorText: { color: designTokens.color.ink.danger, fontSize: 12, marginTop: 4 },
   chipsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 },
-  chip: { backgroundColor: "#f0f4f8", paddingVertical: 10, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: "#dbe5f3" },
-  chipActive: { backgroundColor: "#3b82f6", borderColor: "#2563eb" },
-  chipText: { color: "#52637a", fontWeight: "600", fontSize: 14 },
-  chipTextActive: { color: "#ffffff" },
+  chip: { backgroundColor: designTokens.color.surface.secondary, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: designTokens.color.border.subtle },
+  chipActive: { backgroundColor: designTokens.color.ink.accent, borderColor: designTokens.color.ink.accentStrong },
+  chipText: { color: designTokens.color.ink.secondary, fontWeight: "600", fontSize: 14 },
+  chipTextActive: { color: designTokens.color.ink.inverse },
   actions: { flexDirection: "row", gap: 8, marginTop: 16 },
-  button: { flex: 1, backgroundColor: "#f0f4f8", borderRadius: 12, paddingVertical: 14, alignItems: "center" },
-  buttonText: { color: "#102a43", fontWeight: "700", fontSize: 16 },
-  buttonPrimary: { flex: 1, backgroundColor: "#3b82f6", borderRadius: 12, paddingVertical: 14, alignItems: "center" },
-  buttonPrimaryText: { color: "#ffffff", fontWeight: "700", fontSize: 16 },
+  button: { flex: 1, backgroundColor: designTokens.color.surface.secondary, borderRadius: 12, paddingVertical: 14, alignItems: "center" },
+  buttonText: { color: designTokens.color.ink.primary, fontWeight: "700", fontSize: 16 },
+  buttonPrimary: { flex: 1, backgroundColor: designTokens.color.ink.accent, borderRadius: 12, paddingVertical: 14, alignItems: "center" },
+  buttonPrimaryText: { color: designTokens.color.ink.inverse, fontWeight: "700", fontSize: 16 },
 });

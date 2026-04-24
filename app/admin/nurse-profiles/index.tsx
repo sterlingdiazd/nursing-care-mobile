@@ -4,11 +4,12 @@
 // @do-not-edit: false
 
 import { useEffect, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
+import { designTokens } from "@/src/design-system/tokens";
 import {
   getPendingNurseProfiles,
   getActiveNurseProfiles,
@@ -78,6 +79,8 @@ export default function AdminNurseProfilesScreen() {
           nativeID={adminTestIds.nurses.listCreateButton}
           style={styles.buttonPrimary}
           onPress={() => router.push("/admin/nurse-profiles/create" as any)}
+          accessibilityRole="button"
+          accessibilityLabel="Crear perfil de enfermera"
         >
           <Text style={styles.buttonPrimaryText}>Crear</Text>
         </Pressable>
@@ -107,6 +110,9 @@ export default function AdminNurseProfilesScreen() {
         <Pressable
           style={[styles.tab, tab === "pending" && styles.tabActive]}
           onPress={() => setTab("pending")}
+          accessibilityRole="tab"
+          accessibilityLabel="Pestaña de enfermeras pendientes"
+          accessibilityState={{ selected: tab === "pending" }}
         >
           <Text style={[styles.tabText, tab === "pending" && styles.tabTextActive]}>
             Pendientes ({pendingItems.length})
@@ -115,6 +121,9 @@ export default function AdminNurseProfilesScreen() {
         <Pressable
           style={[styles.tab, tab === "active" && styles.tabActive]}
           onPress={() => setTab("active")}
+          accessibilityRole="tab"
+          accessibilityLabel="Pestaña de enfermeras activas"
+          accessibilityState={{ selected: tab === "active" }}
         >
           <Text style={[styles.tabText, tab === "active" && styles.tabTextActive]}>
             Activas ({activeItems.length})
@@ -123,6 +132,9 @@ export default function AdminNurseProfilesScreen() {
         <Pressable
           style={[styles.tab, tab === "inactive" && styles.tabActive]}
           onPress={() => setTab("inactive")}
+          accessibilityRole="tab"
+          accessibilityLabel="Pestaña de enfermeras inactivas"
+          accessibilityState={{ selected: tab === "inactive" }}
         >
           <Text style={[styles.tabText, tab === "inactive" && styles.tabTextActive]}>
             Inactivas ({inactiveItems.length})
@@ -130,7 +142,13 @@ export default function AdminNurseProfilesScreen() {
         </Pressable>
       </View>
 
-      {loading && <Text style={styles.loading}>Cargando...</Text>}
+      {loading && (
+        <ActivityIndicator
+          color={designTokens.color.ink.accent}
+          accessibilityLabel="Cargando perfiles de enfermeras"
+          style={{ margin: 20 }}
+        />
+      )}
 
       {!loading && currentItems.length === 0 && (
         <View style={styles.emptyState}>
@@ -149,6 +167,8 @@ export default function AdminNurseProfilesScreen() {
             style={[styles.card, styles.cardPending]}
             testID={`admin-nurse-profile-pending-card-${item.userId}`}
             nativeID={`admin-nurse-profile-pending-card-${item.userId}`}
+            accessibilityRole="button"
+            accessibilityLabel={`Perfil pendiente de ${item.name} ${item.lastName}`}
           >
             <View style={styles.pendingBadge}>
               <Text style={styles.pendingBadgeText}>Pendiente de revisión</Text>
@@ -167,6 +187,8 @@ export default function AdminNurseProfilesScreen() {
             <Pressable
               style={styles.reviewButton}
               onPress={() => router.push(`/admin/nurse-profiles/${item.userId}/review` as any)}
+              accessibilityRole="button"
+              accessibilityLabel={`Revisar perfil de ${item.name} ${item.lastName}`}
             >
               <Text style={styles.reviewButtonText}>Revisar Perfil</Text>
             </Pressable>
@@ -180,6 +202,8 @@ export default function AdminNurseProfilesScreen() {
             style={styles.card}
             testID={`admin-nurse-profile-${tab}-card-${item.userId}`}
             nativeID={`admin-nurse-profile-${tab}-card-${item.userId}`}
+            accessibilityRole="button"
+            accessibilityLabel={`Perfil de ${item.name} ${item.lastName}`}
           >
             <Text style={styles.cardTitle}>{item.name} {item.lastName}</Text>
             <Text style={styles.cardMeta}>{item.email}</Text>
@@ -229,38 +253,37 @@ export default function AdminNurseProfilesScreen() {
 }
 
 const styles = StyleSheet.create({
-  buttonPrimary: { backgroundColor: "#007aff", borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10 },
-  buttonPrimaryText: { color: "#ffffff", fontWeight: "700", fontSize: 14 },
-  error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
-  loading: { color: "#52637a", fontSize: 14, textAlign: "center", padding: 20 },
+  buttonPrimary: { backgroundColor: designTokens.color.ink.accent, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10 },
+  buttonPrimaryText: { color: designTokens.color.ink.inverse, fontWeight: "700", fontSize: 14 },
+  error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: 12, borderRadius: 12, marginBottom: 12 },
   summaryRow: { marginBottom: 10 },
-  summaryChip: { alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 12, fontWeight: "800", backgroundColor: "#f8fbff", borderWidth: 1, borderColor: "#dbe5f3", color: "#102a43" },
+  summaryChip: { alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 12, fontWeight: "800", backgroundColor: designTokens.color.surface.secondary, borderWidth: 1, borderColor: designTokens.color.border.subtle, color: designTokens.color.ink.primary },
   tabs: { flexDirection: "row", gap: 8, marginBottom: 12 },
-  tab: { flex: 1, backgroundColor: "#ffffff", borderRadius: 14, paddingVertical: 12, alignItems: "center", borderWidth: 1, borderColor: "#d1d5db" },
-  tabActive: { backgroundColor: "#111827", borderColor: "#111827" },
-  tabText: { color: "#111827", fontSize: 14, fontWeight: "700" },
-  tabTextActive: { color: "#ffffff" },
+  tab: { flex: 1, backgroundColor: designTokens.color.ink.inverse, borderRadius: 14, paddingVertical: 12, alignItems: "center", borderWidth: 1, borderColor: designTokens.color.border.subtle },
+  tabActive: { backgroundColor: designTokens.color.ink.primary, borderColor: designTokens.color.ink.primary },
+  tabText: { color: designTokens.color.ink.primary, fontSize: 14, fontWeight: "700" },
+  tabTextActive: { color: designTokens.color.ink.inverse },
   emptyState: { padding: 40, alignItems: "center" },
-  emptyStateText: { color: "#52637a", fontSize: 16, textAlign: "center" },
+  emptyStateText: { color: designTokens.color.ink.secondary, fontSize: 16, textAlign: "center" },
   list: { gap: 12 },
-  card: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 18, padding: 16, marginBottom: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 2 },
-  cardPending: { borderColor: "#f59e0b", borderWidth: 1.5 },
-  pendingBadge: { backgroundColor: "#fff7ed", borderRadius: 10, padding: 8, marginBottom: 8, alignSelf: "flex-start" },
-  pendingBadgeText: { color: "#92400e", fontSize: 12, fontWeight: "700", textAlign: "center" },
-  cardTitle: { color: "#111827", fontWeight: "800", fontSize: 18, marginBottom: 4 },
-  cardMeta: { color: "#6b7280", fontSize: 14, marginBottom: 8 },
-  cardDetail: { color: "#4b5563", fontSize: 13, marginBottom: 4 },
+  card: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, marginBottom: 12, shadowColor: "#000" /* RN shadow requires raw hex */, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 2 },
+  cardPending: { borderColor: designTokens.color.ink.warning, borderWidth: 1.5 },
+  pendingBadge: { backgroundColor: designTokens.color.surface.warning, borderRadius: 10, padding: 8, marginBottom: 8, alignSelf: "flex-start" },
+  pendingBadgeText: { color: designTokens.color.status.warningText, fontSize: 12, fontWeight: "700", textAlign: "center" },
+  cardTitle: { color: designTokens.color.ink.primary, fontWeight: "800", fontSize: 18, marginBottom: 4 },
+  cardMeta: { color: designTokens.color.ink.muted, fontSize: 14, marginBottom: 8 },
+  cardDetail: { color: designTokens.color.ink.muted, fontSize: 13, marginBottom: 4 },
   cardRow: { flexDirection: "row", marginBottom: 4 },
-  cardLabel: { color: "#6b7280", fontSize: 13, fontWeight: "700", width: 100 },
-  cardValue: { color: "#111827", fontSize: 13, flex: 1 },
-  workloadSection: { backgroundColor: "#f8fafc", borderRadius: 10, padding: 10, marginTop: 8, borderWidth: 1, borderColor: "#e5e7eb" },
-  workloadTitle: { color: "#6b7280", fontSize: 12, fontWeight: "800", marginBottom: 4, textTransform: "uppercase" },
-  workloadText: { color: "#111827", fontSize: 12 },
+  cardLabel: { color: designTokens.color.ink.muted, fontSize: 13, fontWeight: "700", width: 100 },
+  cardValue: { color: designTokens.color.ink.primary, fontSize: 13, flex: 1 },
+  workloadSection: { backgroundColor: designTokens.color.surface.secondary, borderRadius: 10, padding: 10, marginTop: 8, borderWidth: 1, borderColor: designTokens.color.border.subtle },
+  workloadTitle: { color: designTokens.color.ink.muted, fontSize: 12, fontWeight: "800", marginBottom: 4, textTransform: "uppercase" },
+  workloadText: { color: designTokens.color.ink.primary, fontSize: 12 },
   statusRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 8 },
-  badge: { backgroundColor: "#dbeafe", borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  badgeText: { color: "#1e40af", fontSize: 11, fontWeight: "700" },
-  badgeSuccess: { backgroundColor: "#d1fae5", borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  badgeTextSuccess: { color: "#065f46", fontSize: 11, fontWeight: "700" },
-  reviewButton: { backgroundColor: "#007aff", borderRadius: 14, paddingVertical: 10, marginTop: 12 },
-  reviewButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 14, textAlign: "center" },
+  badge: { backgroundColor: designTokens.color.surface.accent, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
+  badgeText: { color: designTokens.color.ink.accentStrong, fontSize: 11, fontWeight: "700" },
+  badgeSuccess: { backgroundColor: designTokens.color.surface.success, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
+  badgeTextSuccess: { color: designTokens.color.status.successText, fontSize: 11, fontWeight: "700" },
+  reviewButton: { backgroundColor: designTokens.color.ink.accent, borderRadius: 14, paddingVertical: 10, marginTop: 12 },
+  reviewButtonText: { color: designTokens.color.ink.inverse, fontWeight: "700", fontSize: 14, textAlign: "center" },
 });

@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { designTokens } from "@/src/design-system/tokens";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
@@ -18,13 +19,13 @@ import { canAccessCareRequests } from "@/src/utils/authRedirect";
 function getStatusColors(status: CareRequestDto["status"]) {
   switch (status) {
     case "Approved":
-      return { bg: "#dcfce7", fg: "#166534" };
+      return { bg: designTokens.color.surface.success, fg: designTokens.color.status.successText };
     case "Rejected":
-      return { bg: "#fee2e2", fg: "#991b1b" };
+      return { bg: designTokens.color.surface.danger, fg: designTokens.color.status.dangerText };
     case "Completed":
-      return { bg: "#dbeafe", fg: "#1d4ed8" };
+      return { bg: designTokens.color.status.infoBg, fg: designTokens.color.ink.accentStrong };
     default:
-      return { bg: "#fef3c7", fg: "#92400e" };
+      return { bg: designTokens.color.surface.warning, fg: designTokens.color.status.warningText };
   }
 }
 
@@ -118,6 +119,8 @@ export default function CareRequestsScreen() {
               styles.secondaryButton,
               pressed && styles.buttonPressed,
             ]}
+            accessibilityRole="button"
+            accessibilityLabel="Actualizar cola de solicitudes"
           >
             <Text style={styles.secondaryButtonText}>Actualizar cola</Text>
           </Pressable>
@@ -129,6 +132,8 @@ export default function CareRequestsScreen() {
                 styles.primaryButton,
                 pressed && styles.buttonPressed,
               ]}
+              accessibilityRole="button"
+              accessibilityLabel="Crear nueva solicitud de cuidado"
             >
               <Text style={styles.primaryButtonText}>Crear nueva solicitud</Text>
             </Pressable>
@@ -145,7 +150,10 @@ export default function CareRequestsScreen() {
 
       {isLoading && careRequests.length === 0 ? (
         <View style={styles.loadingState}>
-          <ActivityIndicator color="#1d4ed8" />
+          <ActivityIndicator
+            color={designTokens.color.ink.accentStrong}
+            accessibilityLabel="Cargando..."
+          />
         </View>
       ) : (
         <View style={styles.list}>
@@ -159,6 +167,7 @@ export default function CareRequestsScreen() {
                 testID={`care-request-card-${careRequest.id}`}
                 nativeID={`care-request-card-${careRequest.id}`}
                 accessibilityRole="link"
+                accessibilityLabel={`Ver detalle de solicitud: ${careRequest.careRequestDescription}`}
                 onPress={() =>
                   router.push({
                     pathname: "/care-requests/[id]",
@@ -192,14 +201,14 @@ export default function CareRequestsScreen() {
 
 const styles = StyleSheet.create({
   primaryButton: {
-    backgroundColor: "#007aff",
+    backgroundColor: designTokens.color.ink.accent,
     borderRadius: 16,
     paddingVertical: 15,
     paddingHorizontal: 18,
     alignItems: "center",
   },
   primaryButtonText: {
-    color: "#ffffff",
+    color: designTokens.color.ink.inverse,
     fontWeight: "800",
     fontSize: 16,
   },
@@ -209,11 +218,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#d1d5db",
-    backgroundColor: "#ffffff",
+    borderColor: designTokens.color.border.subtle,
+    backgroundColor: designTokens.color.ink.inverse,
   },
   secondaryButtonText: {
-    color: "#007aff",
+    color: designTokens.color.ink.accent,
     fontWeight: "700",
     fontSize: 15,
   },
@@ -221,19 +230,19 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   },
   errorCard: {
-    backgroundColor: "#fff1f2",
+    backgroundColor: designTokens.color.surface.danger,
     borderRadius: 20,
     padding: 16,
     marginBottom: 18,
   },
   errorTitle: {
-    color: "#be123c",
+    color: designTokens.color.ink.danger,
     fontWeight: "800",
     fontSize: 15,
     marginBottom: 6,
   },
   errorBody: {
-    color: "#9f1239",
+    color: designTokens.color.status.dangerText,
     lineHeight: 20,
   },
   loadingState: {
@@ -244,12 +253,12 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: designTokens.color.ink.inverse,
     borderRadius: 20,
     padding: 18,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    shadowColor: "#000",
+    borderColor: designTokens.color.border.subtle,
+    shadowColor: designTokens.color.ink.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.03,
     shadowRadius: 12,
@@ -263,7 +272,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     flex: 1,
-    color: "#111827",
+    color: designTokens.color.ink.primary,
     fontSize: 18,
     lineHeight: 24,
     fontWeight: "800",
@@ -280,7 +289,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   cardMeta: {
-    color: "#4b5563",
+    color: designTokens.color.ink.muted,
     fontSize: 13,
     lineHeight: 19,
   },

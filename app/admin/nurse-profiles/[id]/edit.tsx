@@ -356,9 +356,9 @@ export default function AdminEditNurseProfileScreen() {
 const styles = StyleSheet.create({
   loading: { color: designTokens.color.ink.secondary, fontSize: 14, textAlign: "center", padding: 20 },
   error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: 12, borderRadius: 12, marginBottom: 12 },
-  stepIndicator: { backgroundColor: designTokens.color.surface.canvas, borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 12, padding: 12, marginBottom: 12 },
+  stepIndicator: { backgroundColor: designTokens.color.surface.canvas, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 12, padding: 12, marginBottom: 12 },
   stepText: { color: designTokens.color.ink.primary, fontSize: 14, fontWeight: "700", textAlign: "center" },
-  card: { backgroundColor: designTokens.color.surface.canvas, borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
+  card: { backgroundColor: designTokens.color.surface.canvas, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 14, marginBottom: 12 },
   cardTitle: { fontSize: 18, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 8 },
   actions: { flexDirection: "row", gap: 8, marginTop: 16 },
   button: { flex: 1, backgroundColor: designTokens.color.surface.secondary, borderRadius: 12, paddingVertical: 14, alignItems: "center" },

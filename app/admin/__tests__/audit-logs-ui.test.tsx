@@ -3,6 +3,12 @@ import React from "react";
 import renderer, { act } from "react-test-renderer";
 import AdminAuditLogsScreen from "../audit-logs";
 
+vi.mock("@/src/services/adminPortalService", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/src/services/adminPortalService")>()),
+  searchAuditLogs: vi.fn().mockResolvedValue({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 }),
+  getAuditLogDetail: vi.fn().mockResolvedValue({}),
+}));
+
 describe("AdminAuditLogsScreen", () => {
   const flushEffects = async () => {
     await act(async () => {

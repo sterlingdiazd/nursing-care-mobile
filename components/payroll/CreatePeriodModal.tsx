@@ -1,16 +1,16 @@
 import { useState } from "react";
-import { 
-  Modal, 
-  View, 
-  Text, 
-  StyleSheet, 
-  TextInput, 
+import {
+  Modal,
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert 
 } from "react-native";
+import { designTokens } from "@/src/design-system/tokens";
 
 interface CreatePeriodModalProps {
   visible: boolean;
@@ -31,9 +31,9 @@ export function CreatePeriodModal({ visible, onClose, onSubmit }: CreatePeriodMo
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isValid = startDate.length >= 8 && 
-                 endDate.length >= 8 && 
-                 cutoffDate.length >= 8 && 
+  const isValid = startDate.length >= 8 &&
+                 endDate.length >= 8 &&
+                 cutoffDate.length >= 8 &&
                  paymentDate.length >= 8;
 
   const resetForm = () => {
@@ -51,10 +51,10 @@ export function CreatePeriodModal({ visible, onClose, onSubmit }: CreatePeriodMo
 
   const handleSubmit = async () => {
     if (!isValid) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       await onSubmit({
         startDate,
@@ -84,18 +84,25 @@ export function CreatePeriodModal({ visible, onClose, onSubmit }: CreatePeriodMo
       presentationStyle="pageSheet"
       onRequestClose={handleClose}
     >
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <View style={styles.header}>
-          <TouchableOpacity onPress={handleClose}>
+          <TouchableOpacity
+            onPress={handleClose}
+            accessibilityRole="button"
+            accessibilityLabel="Cancelar creación de período"
+          >
             <Text style={styles.cancelButton}>Cancelar</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Nuevo Período</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={handleSubmit}
             disabled={!isValid || loading}
+            accessibilityRole="button"
+            accessibilityLabel={loading ? "Creando período" : "Crear período de nómina"}
+            accessibilityState={{ busy: loading, disabled: !isValid || loading }}
           >
             <Text style={[
               styles.submitButton,
@@ -126,6 +133,7 @@ export function CreatePeriodModal({ visible, onClose, onSubmit }: CreatePeriodMo
               placeholder="DD/MM/AAAA"
               keyboardType="numeric"
               maxLength={10}
+              accessibilityLabel="Fecha de inicio del período"
             />
           </View>
 
@@ -138,6 +146,7 @@ export function CreatePeriodModal({ visible, onClose, onSubmit }: CreatePeriodMo
               placeholder="DD/MM/AAAA"
               keyboardType="numeric"
               maxLength={10}
+              accessibilityLabel="Fecha de fin del período"
             />
           </View>
 
@@ -150,6 +159,7 @@ export function CreatePeriodModal({ visible, onClose, onSubmit }: CreatePeriodMo
               placeholder="DD/MM/AAAA"
               keyboardType="numeric"
               maxLength={10}
+              accessibilityLabel="Fecha de corte del período"
             />
           </View>
 
@@ -162,6 +172,7 @@ export function CreatePeriodModal({ visible, onClose, onSubmit }: CreatePeriodMo
               placeholder="DD/MM/AAAA"
               keyboardType="numeric"
               maxLength={10}
+              accessibilityLabel="Fecha de pago del período"
             />
           </View>
 
@@ -179,7 +190,7 @@ export function CreatePeriodModal({ visible, onClose, onSubmit }: CreatePeriodMo
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: designTokens.color.surface.primary,
   },
   header: {
     flexDirection: "row",
@@ -187,40 +198,41 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: designTokens.color.border.subtle,
   },
   cancelButton: {
     fontSize: 16,
-    color: "#666",
+    color: designTokens.color.ink.muted,
   },
   title: {
     fontSize: 17,
     fontWeight: "600",
+    color: designTokens.color.ink.primary,
   },
   submitButton: {
     fontSize: 16,
-    color: "#1976d2",
+    color: designTokens.color.ink.accentStrong,
     fontWeight: "600",
   },
   submitButtonDisabled: {
-    color: "#ccc",
+    color: designTokens.color.border.strong,
   },
   form: {
     flex: 1,
     padding: 16,
   },
   errorCard: {
-    backgroundColor: "#fee2e2",
+    backgroundColor: designTokens.color.surface.danger,
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
   },
   errorText: {
-    color: "#991b1b",
+    color: designTokens.color.status.dangerText,
   },
   hint: {
     fontSize: 13,
-    color: "#666",
+    color: designTokens.color.ink.muted,
     marginBottom: 16,
   },
   inputGroup: {
@@ -229,19 +241,20 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#333",
+    color: designTokens.color.ink.primary,
     marginBottom: 6,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: designTokens.color.border.subtle,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
+    color: designTokens.color.ink.primary,
   },
   validationHint: {
     fontSize: 13,
-    color: "#666",
+    color: designTokens.color.ink.muted,
     marginTop: 8,
   },
 });

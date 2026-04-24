@@ -30,7 +30,7 @@ export default function SearchFilterBar({
         <TextInput
           style={styles.input}
           placeholder={searchPlaceholder}
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor={mobileTheme.colors.ink.muted}
           value={searchValue}
           onChangeText={onSearchChange}
           onSubmitEditing={onSearch}
@@ -44,6 +44,8 @@ export default function SearchFilterBar({
             onPress={onClear}
             testID="search-filter-bar-clear"
             nativeID="search-filter-bar-clear"
+            accessibilityRole="button"
+            accessibilityLabel="Limpiar búsqueda"
           >
             <Text style={styles.clearButtonText}>Limpiar</Text>
           </Pressable>
@@ -53,6 +55,8 @@ export default function SearchFilterBar({
           onPress={onSearch}
           testID="search-filter-bar-search"
           nativeID="search-filter-bar-search"
+          accessibilityRole="button"
+          accessibilityLabel="Buscar"
         >
           <Text style={styles.searchButtonText}>Buscar</Text>
         </Pressable>

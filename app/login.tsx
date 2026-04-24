@@ -168,6 +168,7 @@ export default function LoginScreen() {
 
             <FormInput
               testID={authTestIds.login.emailInput}
+              accessibilityLabel="Correo electrónico"
               label="Correo Electrónico"
               placeholder="ejemplo@correo.com"
               value={email}
@@ -184,6 +185,7 @@ export default function LoginScreen() {
 
             <FormInput
               testID={authTestIds.login.passwordInput}
+              accessibilityLabel="Contraseña"
               label="Contraseña"
               placeholder="••••••••"
               value={password}
@@ -200,6 +202,8 @@ export default function LoginScreen() {
             <TouchableOpacity
               onPress={() => router.push("/forgot-password")}
               style={styles.forgotPassword}
+              accessibilityRole="link"
+              accessibilityLabel="¿Olvidaste tu contraseña?"
               {...testProps(authTestIds.login.forgotPasswordLink)}
             >
               <Text style={styles.forgotPasswordText}>
@@ -209,6 +213,7 @@ export default function LoginScreen() {
 
             <FormButton
               testID={authTestIds.login.submitButton}
+              accessibilityLabel="Entrar"
               onPress={handleSubmit}
               isLoading={isLoading}
               style={styles.submitButton}
@@ -224,6 +229,7 @@ export default function LoginScreen() {
 
             <FormButton
               testID={authTestIds.login.googleButton}
+              accessibilityLabel="Continuar con Google"
               onPress={handleGoogleLogin}
               variant="secondary"
               style={styles.googleButton}
@@ -236,6 +242,8 @@ export default function LoginScreen() {
             <Text style={styles.footerText}>¿No tienes una cuenta?</Text>
             <TouchableOpacity
               onPress={() => router.push("/register")}
+              accessibilityRole="link"
+              accessibilityLabel="Regístrate"
               {...testProps(authTestIds.login.registerLink)}
             >
               <Text style={styles.registerLink}>Regístrate</Text>

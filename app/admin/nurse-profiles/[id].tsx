@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
+import { designTokens } from "@/src/design-system/tokens";
 import {
   getNurseProfileForAdmin,
   setNurseOperationalAccessForAdmin,
@@ -74,7 +75,12 @@ export default function AdminNurseProfileDetailScreen() {
       nativeID={adminTestIds.nurses.detailScreen}
       actions={(
         <View style={styles.headerActions}>
-          <Pressable style={styles.button} onPress={() => void load()}>
+          <Pressable
+            style={styles.button}
+            onPress={() => void load()}
+            accessibilityRole="button"
+            accessibilityLabel="Actualizar perfil de enfermera"
+          >
             <Text style={styles.buttonText}>Actualizar</Text>
           </Pressable>
           {detail && (
@@ -83,6 +89,8 @@ export default function AdminNurseProfileDetailScreen() {
               nativeID={adminTestIds.nurses.detailPrimaryAction}
               style={styles.buttonPrimary}
               onPress={() => router.push(`/admin/nurse-profiles/${id}/edit` as any)}
+              accessibilityRole="button"
+              accessibilityLabel="Editar perfil de enfermera"
             >
               <Text style={styles.buttonPrimaryText}>Editar</Text>
             </Pressable>
@@ -295,26 +303,26 @@ export default function AdminNurseProfileDetailScreen() {
 
 const styles = StyleSheet.create({
   headerActions: { flexDirection: "row", gap: 8 },
-  button: { backgroundColor: "#f0f4f8", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },
-  buttonText: { color: "#102a43", fontWeight: "700", fontSize: 14 },
+  button: { backgroundColor: designTokens.color.surface.secondary, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },
+  buttonText: { color: designTokens.color.ink.primary, fontWeight: "700", fontSize: 14 },
   buttonPrimary: { ...mobileAdminActionButton, paddingHorizontal: 16, paddingVertical: 10 },
   buttonPrimaryText: { ...mobileAdminActionButtonText },
-  error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
-  loading: { color: "#52637a", fontSize: 14, textAlign: "center", padding: 20 },
-  statusCard: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
+  error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: 12, borderRadius: 12, marginBottom: 12 },
+  loading: { color: designTokens.color.ink.secondary, fontSize: 14, textAlign: "center", padding: 20 },
+  statusCard: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 14, marginBottom: 12 },
   statusRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  statusChip: { marginTop: 10, alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 12, fontWeight: "800", backgroundColor: "#f8fbff", borderWidth: 1, borderColor: "#dbe5f3", color: "#102a43" },
-  badgeSuccess: { backgroundColor: "#d1fae5", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6 },
-  badgeTextSuccess: { color: "#065f46", fontSize: 12, fontWeight: "700" },
-  badgeWarning: { backgroundColor: "#fef3c7", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6 },
-  badgeTextWarning: { color: "#92400e", fontSize: 12, fontWeight: "700" },
-  card: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
-  cardTitle: { fontSize: 16, fontWeight: "800", color: "#102a43", marginBottom: 12 },
+  statusChip: { marginTop: 10, alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 12, fontWeight: "800", backgroundColor: designTokens.color.surface.secondary, borderWidth: 1, borderColor: designTokens.color.border.subtle, color: designTokens.color.ink.primary },
+  badgeSuccess: { backgroundColor: designTokens.color.surface.success, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6 },
+  badgeTextSuccess: { color: designTokens.color.status.successText, fontSize: 12, fontWeight: "700" },
+  badgeWarning: { backgroundColor: designTokens.color.surface.warning, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6 },
+  badgeTextWarning: { color: designTokens.color.status.warningText, fontSize: 12, fontWeight: "700" },
+  card: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 14, marginBottom: 12 },
+  cardTitle: { fontSize: 16, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 12 },
   field: { marginBottom: 8 },
-  fieldLabel: { color: "#7c2d12", fontSize: 12, fontWeight: "800", textTransform: "uppercase", marginBottom: 2 },
-  fieldValue: { color: "#102a43", fontSize: 15 },
-  fieldValueMono: { color: "#102a43", fontSize: 13, fontFamily: "monospace" },
-  emptyText: { color: "#52637a", fontSize: 14, fontStyle: "italic" },
+  fieldLabel: { color: designTokens.color.status.dangerText, fontSize: 12, fontWeight: "800", textTransform: "uppercase", marginBottom: 2 },
+  fieldValue: { color: designTokens.color.ink.primary, fontSize: 15 },
+  fieldValueMono: { color: designTokens.color.ink.primary, fontSize: 13, fontFamily: "monospace" },
+  emptyText: { color: designTokens.color.ink.secondary, fontSize: 14, fontStyle: "italic" },
   toggleButton: { ...mobileAdminActionButton, paddingVertical: 12, marginTop: 12 },
   toggleButtonDisabled: { opacity: 0.5 },
   toggleButtonText: { ...mobileAdminActionButtonText },

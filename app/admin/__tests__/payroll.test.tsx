@@ -2,8 +2,13 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import React from "react";
 import renderer, { act } from "react-test-renderer";
 import AdminPayrollScreen from "../payroll";
+import { ToastProvider } from "@/src/components/shared/ToastProvider";
 
 // Mock dependencies are already set up in setupTests.ts
+
+function renderWithProviders(element: React.ReactElement) {
+  return renderer.create(<ToastProvider>{element}</ToastProvider>);
+}
 
 describe("AdminPayrollScreen", () => {
   beforeEach(() => {
@@ -20,7 +25,7 @@ describe("AdminPayrollScreen", () => {
     vi.mocked(getDeductions).mockResolvedValue({ items: [], totalCount: 0 });
     vi.mocked(getAdjustments).mockResolvedValue({ items: [], totalCount: 0 });
 
-    expect(() => renderer.create(<AdminPayrollScreen />)).not.toThrow();
+    expect(() => renderWithProviders(<AdminPayrollScreen />)).not.toThrow();
   });
 
   it("renders payroll tabs after loading", async () => {
@@ -33,7 +38,7 @@ describe("AdminPayrollScreen", () => {
 
     let component: any;
     await act(async () => {
-      component = renderer.create(<AdminPayrollScreen />);
+      component = renderWithProviders(<AdminPayrollScreen />);
     });
     await act(async () => {
       await Promise.resolve();
@@ -54,7 +59,7 @@ describe("AdminPayrollScreen", () => {
     vi.mocked(getAdjustments).mockResolvedValue({ items: [], totalCount: 0 });
 
     await act(async () => {
-      renderer.create(<AdminPayrollScreen />);
+      renderWithProviders(<AdminPayrollScreen />);
     });
     await act(async () => {
       await Promise.resolve();
@@ -87,7 +92,7 @@ describe("AdminPayrollScreen", () => {
 
     let component: any;
     await act(async () => {
-      component = renderer.create(<AdminPayrollScreen />);
+      component = renderWithProviders(<AdminPayrollScreen />);
     });
     await act(async () => {
       await Promise.resolve();
@@ -125,7 +130,7 @@ describe("AdminPayrollScreen", () => {
 
     let component: any;
     await act(async () => {
-      component = renderer.create(<AdminPayrollScreen />);
+      component = renderWithProviders(<AdminPayrollScreen />);
     });
     await act(async () => {
       await Promise.resolve();
@@ -146,7 +151,7 @@ describe("AdminPayrollScreen", () => {
 
     let component: any;
     await act(async () => {
-      component = renderer.create(<AdminPayrollScreen />);
+      component = renderWithProviders(<AdminPayrollScreen />);
     });
     // Allow multiple microtask ticks for error state to propagate
     await act(async () => { await Promise.resolve(); });

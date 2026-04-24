@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { validateEmail } from "@/src/api/auth";
 import { FormInput } from "@/src/components/form";
+import { useToast } from "@/src/components/shared/ToastProvider";
 import { useAuth } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
 import {
@@ -23,6 +24,7 @@ import {
 
 export default function AdminCreateClientScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
+  const { showToast } = useToast();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState<CreateAdminClientRequest>({
@@ -104,17 +106,8 @@ export default function AdminCreateClientScreen() {
         throw new Error("El cliente fue creado, pero no se recibió el identificador para abrir el detalle.");
       }
 
-      Alert.alert(
-        "Cliente creado",
-        "La cuenta del cliente se creó correctamente y ya está lista para gestión administrativa.",
-        [
-          {
-            text: "Ver detalle",
-            onPress: () => router.replace(`/admin/clients/${createdClientUserId}` as never),
-          },
-        ],
-        { cancelable: false },
-      );
+      showToast({ variant: "success", message: "La cuenta del cliente se creó correctamente y ya está lista para gestión administrativa." });
+      router.replace(`/admin/clients/${createdClientUserId}` as never);
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : "No fue posible crear el cliente.");
     } finally {

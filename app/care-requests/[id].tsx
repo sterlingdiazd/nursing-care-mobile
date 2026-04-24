@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { designTokens } from "@/src/design-system/tokens";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
@@ -27,15 +28,15 @@ import { careRequestTestIds } from "@/src/testing/testIds";
 function getStatusColors(status: CareRequestDto["status"]) {
   switch (status) {
     case "Approved":
-      return { bg: "#dcfce7", fg: "#166534" };
+      return { bg: designTokens.color.surface.success, fg: designTokens.color.status.successText };
     case "Rejected":
-      return { bg: "#fee2e2", fg: "#991b1b" };
+      return { bg: designTokens.color.surface.danger, fg: designTokens.color.status.dangerText };
     case "Completed":
-      return { bg: "#dbeafe", fg: "#1d4ed8" };
+      return { bg: designTokens.color.status.infoBg, fg: designTokens.color.ink.accentStrong };
     case "Cancelled":
-      return { bg: "#f1f5f9", fg: "#475569" };
+      return { bg: designTokens.color.surface.secondary, fg: designTokens.color.ink.secondary };
     default:
-      return { bg: "#fef3c7", fg: "#92400e" };
+      return { bg: designTokens.color.surface.warning, fg: designTokens.color.status.warningText };
   }
 }
 
@@ -203,7 +204,10 @@ export default function CareRequestDetailScreen() {
   if (isLoading && !careRequest) {
     return (
       <View style={styles.loadingState}>
-        <ActivityIndicator color="#1d4ed8" />
+        <ActivityIndicator
+          color={designTokens.color.ink.accentStrong}
+          accessibilityLabel="Cargando..."
+        />
       </View>
     );
   }
@@ -249,6 +253,8 @@ export default function CareRequestDetailScreen() {
             styles.backActionButton,
             pressed && styles.buttonPressed,
           ]}
+          accessibilityRole="button"
+          accessibilityLabel="Volver a la cola de solicitudes"
         >
           <Text style={styles.backActionButtonText}>Volver a la cola</Text>
         </Pressable>
@@ -315,6 +321,8 @@ export default function CareRequestDetailScreen() {
                 styles.pricingButton,
                 pressed && styles.buttonPressed,
               ]}
+              accessibilityRole="button"
+              accessibilityLabel={showPricingReview ? "Cerrar revisión de precios" : primaryActionLabel}
             >
               <Text style={styles.pricingButtonText}>
                 {showPricingReview ? "Cerrar revisión de precios" : primaryActionLabel}
@@ -349,6 +357,8 @@ export default function CareRequestDetailScreen() {
                   styles.reviewSecondaryButton,
                   pressed && styles.buttonPressed,
                 ]}
+                accessibilityRole="button"
+                accessibilityLabel={showPricingBreakdown ? "Ocultar desglose de precios" : "Mostrar desglose de precios"}
               >
                 <Text style={styles.reviewSecondaryButtonText}>
                   {showPricingBreakdown ? "Ocultar desglose" : "Mostrar desglose"}
@@ -365,6 +375,8 @@ export default function CareRequestDetailScreen() {
                     isPricingLoading && styles.disabledButton,
                     pressed && styles.buttonPressed,
                   ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Ejecutar verificación de precios"
                 >
                   <Text style={styles.primaryButtonText}>
                     {isPricingLoading ? "Verificando..." : "Ejecutar verificación"}
@@ -375,7 +387,10 @@ export default function CareRequestDetailScreen() {
 
             {isPricingLoading ? (
               <View style={styles.pricingLoadingRow}>
-                <ActivityIndicator color="#1d4ed8" />
+                <ActivityIndicator
+                  color={designTokens.color.ink.accentStrong}
+                  accessibilityLabel="Cargando..."
+                />
                 <Text style={styles.pricingLoadingText}>Verificando precios...</Text>
               </View>
             ) : null}
@@ -543,6 +558,9 @@ export default function CareRequestDetailScreen() {
                         selected && styles.nurseChipSelected,
                         pressed && styles.buttonPressed,
                       ]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Seleccionar enfermera ${label}`}
+                      accessibilityState={{ selected }}
                     >
                       <Text style={[styles.nurseChipText, selected && styles.nurseChipTextSelected]}>
                         {label}
@@ -561,6 +579,8 @@ export default function CareRequestDetailScreen() {
                 (!assignedNurseId || isActing) && styles.disabledButton,
                 pressed && styles.buttonPressed,
               ]}
+              accessibilityRole="button"
+              accessibilityLabel={careRequest.assignedNurse ? "Reasignar enfermera" : "Asignar enfermera"}
             >
               <Text style={styles.primaryButtonText}>
                 {careRequest.assignedNurse ? "Reasignar enfermera" : "Asignar enfermera"}
@@ -581,6 +601,8 @@ export default function CareRequestDetailScreen() {
                   (!canApprove || isActing) && styles.disabledButton,
                   pressed && styles.buttonPressed,
                 ]}
+                accessibilityRole="button"
+                accessibilityLabel="Aprobar solicitud"
               >
                 <Text style={styles.primaryButtonText}>Aprobar</Text>
               </Pressable>
@@ -592,6 +614,8 @@ export default function CareRequestDetailScreen() {
                   styles.rejectButton,
                   pressed && styles.buttonPressed,
                 ]}
+                accessibilityRole="button"
+                accessibilityLabel="Rechazar solicitud"
               >
                 <Text style={styles.secondaryButtonText}>Rechazar</Text>
               </Pressable>
@@ -612,6 +636,8 @@ export default function CareRequestDetailScreen() {
                 styles.primaryButton,
                 pressed && styles.buttonPressed,
               ]}
+              accessibilityRole="button"
+              accessibilityLabel="Completar solicitud"
             >
               <Text style={styles.primaryButtonText}>Completar</Text>
             </Pressable>
@@ -627,6 +653,8 @@ export default function CareRequestDetailScreen() {
                 isActing && styles.disabledButton,
                 pressed && styles.buttonPressed,
               ]}
+              accessibilityRole="button"
+              accessibilityLabel="Cancelar solicitud"
             >
               <Text style={styles.cancelButtonText}>Cancelar solicitud</Text>
             </Pressable>
@@ -643,7 +671,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#eef3fb",
+    backgroundColor: designTokens.color.surface.accent,
     padding: 24,
   },
   backActionButton: {
@@ -656,18 +684,18 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.08)",
   },
   backActionButtonText: {
-    color: "#f8fafc",
+    color: designTokens.color.surface.canvas,
     fontWeight: "700",
   },
   card: {
-    backgroundColor: "#fffdf9",
+    backgroundColor: designTokens.color.surface.primary,
     borderRadius: 28,
     padding: 22,
     borderWidth: 1,
-    borderColor: "#dbe5f3",
+    borderColor: designTokens.color.border.subtle,
   },
   eyebrow: {
-    color: "#2563eb",
+    color: designTokens.color.ink.accent,
     fontWeight: "800",
     letterSpacing: 1.3,
     textTransform: "uppercase",
@@ -679,36 +707,36 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   summaryCard: {
-    backgroundColor: "#eff6ff",
+    backgroundColor: designTokens.color.surface.accent,
     borderRadius: 20,
     padding: 18,
     borderWidth: 1,
-    borderColor: "#bfdbfe",
+    borderColor: designTokens.color.border.strong,
     gap: 14,
     marginBottom: 18,
   },
   summaryTitle: {
-    color: "#102a43",
+    color: designTokens.color.ink.primary,
     fontSize: 20,
     lineHeight: 26,
     fontWeight: "800",
   },
   summaryCopy: {
-    color: "#334e68",
+    color: designTokens.color.ink.secondary,
     lineHeight: 21,
   },
   summaryGrid: {
     gap: 12,
   },
   summaryMetric: {
-    backgroundColor: "#fff",
+    backgroundColor: designTokens.color.ink.inverse,
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#dbeafe",
+    borderColor: designTokens.color.border.subtle,
   },
   summaryLabel: {
-    color: "#52637a",
+    color: designTokens.color.ink.secondary,
     fontSize: 12,
     fontWeight: "700",
     textTransform: "uppercase",
@@ -716,13 +744,13 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   summaryValue: {
-    color: "#0f172a",
+    color: designTokens.color.ink.primary,
     fontSize: 16,
     lineHeight: 22,
     fontWeight: "700",
   },
   title: {
-    color: "#102a43",
+    color: designTokens.color.ink.primary,
     fontSize: 27,
     lineHeight: 33,
     fontWeight: "800",
@@ -746,40 +774,40 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   reviewCard: {
-    backgroundColor: "#fff7ed",
+    backgroundColor: designTokens.color.surface.warning,
     borderRadius: 20,
     padding: 18,
     borderWidth: 1,
-    borderColor: "#fdba74",
+    borderColor: designTokens.color.status.warningText,
     gap: 14,
     marginBottom: 18,
   },
   reviewTitle: {
-    color: "#102a43",
+    color: designTokens.color.ink.primary,
     fontSize: 20,
     lineHeight: 26,
     fontWeight: "800",
   },
   reviewCopy: {
-    color: "#7c2d12",
+    color: designTokens.color.status.dangerText,
     lineHeight: 21,
   },
   reviewChecklist: {
     gap: 8,
   },
   reviewChecklistItem: {
-    color: "#9a3412",
+    color: designTokens.color.status.dangerText,
     lineHeight: 21,
   },
   reviewActions: {
     gap: 12,
   },
   reviewSecondaryButton: {
-    borderColor: "#fdba74",
-    backgroundColor: "#ffedd5",
+    borderColor: designTokens.color.status.warningText,
+    backgroundColor: designTokens.color.surface.warning,
   },
   reviewSecondaryButtonText: {
-    color: "#9a3412",
+    color: designTokens.color.status.dangerText,
     fontWeight: "800",
     fontSize: 16,
   },
@@ -788,21 +816,21 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingTop: 18,
     borderTopWidth: 1,
-    borderTopColor: "#e2e8f0",
+    borderTopColor: designTokens.color.border.subtle,
   },
   sectionEyebrow: {
-    color: "#2563eb",
+    color: designTokens.color.ink.accent,
     fontWeight: "800",
     letterSpacing: 1.2,
     textTransform: "uppercase",
     fontSize: 12,
   },
   assignmentCopy: {
-    color: "#52637a",
+    color: designTokens.color.ink.secondary,
     lineHeight: 21,
   },
   assignmentEmpty: {
-    color: "#7c2d12",
+    color: designTokens.color.status.dangerText,
     lineHeight: 21,
   },
   nurseList: {
@@ -812,28 +840,28 @@ const styles = StyleSheet.create({
   nurseChip: {
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#d7e3fb",
-    backgroundColor: "#eef4ff",
+    borderColor: designTokens.color.border.strong,
+    backgroundColor: designTokens.color.surface.accent,
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
   nurseChipSelected: {
-    backgroundColor: "#1d4ed8",
-    borderColor: "#1d4ed8",
+    backgroundColor: designTokens.color.ink.accent,
+    borderColor: designTokens.color.ink.accent,
   },
   nurseChipText: {
-    color: "#163561",
+    color: designTokens.color.ink.primary,
     fontWeight: "700",
   },
   nurseChipTextSelected: {
-    color: "#fff",
+    color: designTokens.color.ink.inverse,
   },
   metaText: {
-    color: "#334e68",
+    color: designTokens.color.ink.secondary,
     lineHeight: 21,
   },
   assignmentWarning: {
-    color: "#92400e",
+    color: designTokens.color.status.warningText,
     lineHeight: 21,
   },
   actionRow: {
@@ -841,25 +869,25 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   primaryButton: {
-    backgroundColor: "#1d4ed8",
+    backgroundColor: designTokens.color.ink.accent,
     borderRadius: 18,
     paddingVertical: 15,
     alignItems: "center",
   },
   successButton: {
-    backgroundColor: "#166534",
+    backgroundColor: designTokens.color.status.successText,
   },
   secondaryButton: {
     borderRadius: 18,
     paddingVertical: 15,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#fecdd3",
-    backgroundColor: "#fff1f2",
+    borderColor: designTokens.color.border.subtle,
+    backgroundColor: designTokens.color.surface.danger,
   },
   rejectButton: {
-    borderColor: "#fecaca",
-    backgroundColor: "#fff1f2",
+    borderColor: designTokens.color.border.subtle,
+    backgroundColor: designTokens.color.surface.danger,
   },
   buttonPressed: {
     opacity: 0.92,
@@ -868,45 +896,45 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   primaryButtonText: {
-    color: "#fff",
+    color: designTokens.color.ink.inverse,
     fontWeight: "800",
     fontSize: 16,
   },
   secondaryButtonText: {
-    color: "#be123c",
+    color: designTokens.color.ink.danger,
     fontWeight: "800",
     fontSize: 16,
   },
   successText: {
-    color: "#166534",
+    color: designTokens.color.status.successText,
     marginBottom: 16,
     lineHeight: 21,
     fontWeight: "700",
-    backgroundColor: "#dcfce7",
+    backgroundColor: designTokens.color.surface.success,
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
   errorText: {
-    color: "#be123c",
+    color: designTokens.color.ink.danger,
     lineHeight: 21,
     textAlign: "center",
   },
   errorBanner: {
-    color: "#be123c",
+    color: designTokens.color.ink.danger,
     marginBottom: 16,
     lineHeight: 21,
-    backgroundColor: "#fff1f2",
+    backgroundColor: designTokens.color.surface.danger,
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
   cancelButton: {
-    borderColor: "#e2e8f0",
-    backgroundColor: "#f8fafc",
+    borderColor: designTokens.color.border.subtle,
+    backgroundColor: designTokens.color.surface.canvas,
   },
   cancelButtonText: {
-    color: "#475569",
+    color: designTokens.color.ink.secondary,
     fontWeight: "800",
     fontSize: 16,
   },
@@ -914,7 +942,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingTop: 18,
     borderTopWidth: 1,
-    borderTopColor: "#e2e8f0",
+    borderTopColor: designTokens.color.border.subtle,
   },
   pricingRow: {
     flexDirection: "row",
@@ -922,42 +950,42 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#f1f5f9",
+    borderBottomColor: designTokens.color.surface.secondary,
   },
   pricingTotalRow: {
     borderBottomWidth: 0,
     borderTopWidth: 2,
-    borderTopColor: "#1d4ed8",
+    borderTopColor: designTokens.color.ink.accent,
     marginTop: 4,
     paddingTop: 12,
   },
   pricingLabel: {
     fontSize: 14,
-    color: "#475569",
+    color: designTokens.color.ink.secondary,
     flex: 1,
   },
   pricingValue: {
     fontSize: 14,
-    color: "#0f172a",
+    color: designTokens.color.ink.primary,
     fontWeight: "600",
     textAlign: "right",
   },
   pricingTotalLabel: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#0f172a",
+    color: designTokens.color.ink.primary,
   },
   pricingTotalValue: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#1d4ed8",
+    color: designTokens.color.ink.accent,
   },
   pricingButton: {
-    borderColor: "#bfdbfe",
-    backgroundColor: "#eff6ff",
+    borderColor: designTokens.color.border.strong,
+    backgroundColor: designTokens.color.surface.accent,
   },
   pricingButtonText: {
-    color: "#1d4ed8",
+    color: designTokens.color.ink.accent,
     fontWeight: "800",
     fontSize: 16,
   },
@@ -968,24 +996,24 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   pricingLoadingText: {
-    color: "#52637a",
+    color: designTokens.color.ink.secondary,
     fontSize: 15,
   },
   pricingErrorText: {
-    color: "#be123c",
+    color: designTokens.color.ink.danger,
     fontSize: 15,
     lineHeight: 22,
   },
   pricingSuccessCard: {
-    backgroundColor: "#dcfce7",
+    backgroundColor: designTokens.color.surface.success,
     borderRadius: 16,
     padding: 18,
     borderWidth: 1,
-    borderColor: "#bbf7d0",
+    borderColor: designTokens.color.status.successText,
     gap: 12,
   },
   pricingSuccessText: {
-    color: "#166534",
+    color: designTokens.color.status.successText,
     fontSize: 16,
     fontWeight: "800",
   },
@@ -993,27 +1021,27 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   pricingNoteItem: {
-    color: "#166534",
+    color: designTokens.color.status.successText,
     fontSize: 14,
     lineHeight: 20,
   },
   pricingDiscrepancyCard: {
-    backgroundColor: "#fff",
+    backgroundColor: designTokens.color.ink.inverse,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#fecaca",
+    borderColor: designTokens.color.border.subtle,
     gap: 0,
   },
   pricingDiscrepancyTitle: {
-    color: "#991b1b",
+    color: designTokens.color.status.dangerText,
     fontSize: 16,
     fontWeight: "800",
     marginBottom: 14,
   },
   pricingTableHeader: {
     flexDirection: "row",
-    backgroundColor: "#fef2f2",
+    backgroundColor: designTokens.color.surface.danger,
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 4,
@@ -1021,18 +1049,18 @@ const styles = StyleSheet.create({
   },
   pricingTableHeaderText: {
     fontWeight: "700",
-    color: "#991b1b",
+    color: designTokens.color.status.dangerText,
   },
   pricingTableRow: {
     flexDirection: "row",
     paddingVertical: 8,
     paddingHorizontal: 4,
     borderBottomWidth: 1,
-    borderBottomColor: "#fecaca",
+    borderBottomColor: designTokens.color.border.subtle,
   },
   pricingTableCell: {
     flex: 1,
     fontSize: 13,
-    color: "#334e68",
+    color: designTokens.color.ink.secondary,
   },
 });

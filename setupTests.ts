@@ -193,35 +193,10 @@ vi.mock('@/src/services/adminShiftsService', () => ({
   getAdminShiftChanges: vi.fn().mockResolvedValue([]),
 }));
 
-// Mock Admin Portal Service
-vi.mock('@/src/services/adminPortalService', () => ({
-  searchAuditLogs: vi.fn().mockResolvedValue({ items: [], totalCount: 0 }),
-  getAuditLogDetail: vi.fn().mockResolvedValue({}),
-  listCareRequestCategories: vi.fn().mockResolvedValue([]),
-  listCareRequestTypes: vi.fn().mockResolvedValue([]),
-  listUnitTypes: vi.fn().mockResolvedValue([]),
-  listDistanceFactors: vi.fn().mockResolvedValue([]),
-  listComplexityLevels: vi.fn().mockResolvedValue([]),
-  listVolumeDiscountRules: vi.fn().mockResolvedValue([]),
-  listNurseSpecialties: vi.fn().mockResolvedValue([]),
-  listNurseCategories: vi.fn().mockResolvedValue([]),
-  createCareRequestCategory: vi.fn().mockResolvedValue({}),
-  createCareRequestType: vi.fn().mockResolvedValue({}),
-  createUnitType: vi.fn().mockResolvedValue({}),
-  createDistanceFactor: vi.fn().mockResolvedValue({}),
-  createComplexityLevel: vi.fn().mockResolvedValue({}),
-  createVolumeDiscountRule: vi.fn().mockResolvedValue({}),
-  createNurseSpecialty: vi.fn().mockResolvedValue({}),
-  createNurseCategory: vi.fn().mockResolvedValue({}),
-  updateCareRequestCategory: vi.fn().mockResolvedValue({}),
-  updateCareRequestType: vi.fn().mockResolvedValue({}),
-  updateUnitType: vi.fn().mockResolvedValue({}),
-  updateDistanceFactor: vi.fn().mockResolvedValue({}),
-  updateComplexityLevel: vi.fn().mockResolvedValue({}),
-  updateVolumeDiscountRule: vi.fn().mockResolvedValue({}),
-  updateNurseSpecialty: vi.fn().mockResolvedValue({}),
-  updateNurseCategory: vi.fn().mockResolvedValue({}),
-  catalogPricingPreview: vi.fn().mockResolvedValue({ basePrice: 100, categoryFactor: 1.0, grandTotal: 100 }),
+// Mock Admin Portal Service — use importOriginal so all exports are available.
+// Individual test files that need specific return values mock httpClient.requestJson directly.
+vi.mock('@/src/services/adminPortalService', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/src/services/adminPortalService')>()),
 }));
 
 // Mock console.error to reduce noise

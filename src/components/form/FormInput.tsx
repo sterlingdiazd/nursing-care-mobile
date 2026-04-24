@@ -14,17 +14,25 @@ interface FormInputProps extends Omit<TextInputProps, "testID"> {
   testID: string;
   label?: string;
   error?: string;
+  errorMessage?: string;
   containerStyle?: any;
+  accessibilityLabel?: string;
 }
 
 export function FormInput({
   testID,
   label,
   error,
+  errorMessage,
   containerStyle,
   style,
+  accessibilityLabel,
+  placeholder,
   ...props
 }: FormInputProps) {
+  const activeError = errorMessage ?? error;
+  const resolvedAccessibilityLabel = accessibilityLabel ?? placeholder;
+
   return (
     <View style={[styles.container, containerStyle]}>
       {label && <Text style={styles.label}>{label}</Text>}
@@ -32,18 +40,22 @@ export function FormInput({
         {...testProps(testID)}
         style={[
           styles.input,
-          error ? styles.inputError : null,
+          activeError ? styles.inputError : null,
           style,
         ]}
         placeholderTextColor={designTokens.color.ink.muted}
+        placeholder={placeholder}
+        accessibilityLabel={resolvedAccessibilityLabel}
+        accessibilityState={activeError ? { disabled: false } : undefined}
+        accessibilityHint={activeError ? `Error: ${activeError}` : undefined}
         {...props}
       />
-      {error ? (
+      {activeError ? (
         <Text
           {...testProps(`${testID}-error`)}
           style={styles.errorText}
         >
-          {error}
+          {activeError}
         </Text>
       ) : null}
     </View>

@@ -1,5 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type { AdminPayrollPeriodListItem } from "@/src/services/payrollService";
+import { designTokens } from "@/src/design-system/tokens";
 
 interface PeriodListItemProps {
   period: AdminPayrollPeriodListItem;
@@ -13,12 +14,14 @@ export function PeriodListItem({ period, onPress }: PeriodListItemProps) {
     <TouchableOpacity
       style={styles.container}
       onPress={() => onPress(period.id)}
+      accessibilityRole="button"
+      accessibilityLabel={`Período ${period.startDate} - ${period.endDate}, estado: ${isOpen ? "Abierto" : "Cerrado"}`}
     >
       <View style={styles.header}>
         <Text style={styles.dates}>
           {period.startDate} - {period.endDate}
         </Text>
-        <View 
+        <View
           style={[styles.statusBadge, isOpen ? styles.statusOpen : styles.statusClosed]}
           testID="payroll-period-status-badge"
           nativeID="payroll-period-status-badge"
@@ -39,8 +42,8 @@ export function PeriodListItem({ period, onPress }: PeriodListItemProps) {
           <Text style={styles.detailValue}>{period.cutoffDate}</Text>
         </View>
         <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Personal</Text>
-          <Text style={styles.detailValue}>{period.staffCount}</Text>
+          <Text style={styles.detailLabel}>Líneas</Text>
+          <Text style={styles.detailValue}>{period.lineCount}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -49,12 +52,12 @@ export function PeriodListItem({ period, onPress }: PeriodListItemProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#fff",
+    backgroundColor: designTokens.color.surface.primary,
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: designTokens.color.border.subtle,
   },
   header: {
     flexDirection: "row",
@@ -65,7 +68,7 @@ const styles = StyleSheet.create({
   dates: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#0f172a",
+    color: designTokens.color.ink.primary,
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -73,20 +76,20 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   statusOpen: {
-    backgroundColor: "#dcfce7",
+    backgroundColor: designTokens.color.surface.success,
   },
   statusClosed: {
-    backgroundColor: "#f1f5f9",
+    backgroundColor: designTokens.color.surface.secondary,
   },
   statusText: {
     fontSize: 12,
     fontWeight: "700",
   },
   statusTextOpen: {
-    color: "#15803d",
+    color: designTokens.color.status.successText,
   },
   statusTextClosed: {
-    color: "#475569",
+    color: designTokens.color.ink.muted,
   },
   details: {
     flexDirection: "row",
@@ -97,11 +100,11 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 11,
-    color: "#666",
+    color: designTokens.color.ink.muted,
     marginBottom: 2,
   },
   detailValue: {
     fontSize: 13,
-    color: "#333",
+    color: designTokens.color.ink.secondary,
   },
 });

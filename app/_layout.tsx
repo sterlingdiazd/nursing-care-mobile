@@ -6,6 +6,7 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { AuthProvider } from "@/src/context/AuthContext";
+import { ToastProvider } from "@/src/components/shared/ToastProvider";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -48,6 +49,7 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   return (
+    <ToastProvider>
     <AuthProvider>
       <Stack>
         {/* Auth Screens */}
@@ -140,5 +142,6 @@ function RootLayoutNav() {
         <Stack.Screen name="modal" options={{ presentation: "modal" }} />
       </Stack>
     </AuthProvider>
+    </ToastProvider>
   );
 }

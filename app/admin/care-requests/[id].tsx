@@ -124,6 +124,8 @@ export default function AdminCareRequestDetailScreen() {
           nativeID={adminTestIds.careRequests.detail.updateButton}
           style={styles.refreshButton}
           onPress={() => void load()}
+          accessibilityRole="button"
+          accessibilityLabel="Actualizar detalle de solicitud"
         >
           <Text style={styles.refreshButtonText}>Actualizar</Text>
         </Pressable>
@@ -155,7 +157,13 @@ export default function AdminCareRequestDetailScreen() {
           </Text>
         )}
 
-        {loading && <Text style={styles.loading}>Cargando...</Text>}
+        {loading && (
+          <ActivityIndicator
+            color={mobileTheme.colors.ink.accentStrong}
+            accessibilityLabel="Cargando..."
+            style={{ margin: mobileTheme.spacing.xxl }}
+          />
+        )}
 
         {detail && (
           <ScrollView
@@ -173,7 +181,11 @@ export default function AdminCareRequestDetailScreen() {
               <Text style={styles.cardTitle}>Información del Cliente</Text>
               <View style={styles.field}>
                 <Text style={styles.fieldLabel}>Nombre</Text>
-                <Pressable onPress={() => router.push(`/admin/clients/${detail.clientUserId}` as any)}>
+                <Pressable
+                  onPress={() => router.push(`/admin/clients/${detail.clientUserId}` as any)}
+                  accessibilityRole="link"
+                  accessibilityLabel={`Ver perfil de ${detail.clientDisplayName}`}
+                >
                   <Text style={styles.fieldValueLink}>{detail.clientDisplayName}</Text>
                 </Pressable>
               </View>
@@ -195,7 +207,11 @@ export default function AdminCareRequestDetailScreen() {
                 <>
                   <View style={styles.field}>
                     <Text style={styles.fieldLabel}>Enfermera</Text>
-                    <Pressable onPress={() => router.push(`/admin/nurse-profiles/${detail.assignedNurseUserId}` as any)}>
+                    <Pressable
+                      onPress={() => router.push(`/admin/nurse-profiles/${detail.assignedNurseUserId}` as any)}
+                      accessibilityRole="link"
+                      accessibilityLabel={`Ver perfil de enfermera ${detail.assignedNurseDisplayName}`}
+                    >
                       <Text style={styles.fieldValueLink}>{detail.assignedNurseDisplayName}</Text>
                     </Pressable>
                   </View>
@@ -463,6 +479,8 @@ export default function AdminCareRequestDetailScreen() {
             <Pressable
               {...automationProps("price-verification-close-button")}
               onPress={() => setPricingModalVisible(false)}
+              accessibilityRole="button"
+              accessibilityLabel="Cerrar verificación de precios"
             >
               <Text style={styles.pricingModalClose}>Cerrar</Text>
             </Pressable>
@@ -471,7 +489,7 @@ export default function AdminCareRequestDetailScreen() {
           <ScrollView style={styles.pricingModalBody}>
             {isPricingLoading && (
               <View style={styles.pricingLoadingRow}>
-                <ActivityIndicator color={mobileTheme.colors.ink.accent} />
+                <ActivityIndicator color={mobileTheme.colors.ink.accentStrong} accessibilityLabel="Cargando..." />
                 <Text style={styles.pricingLoadingText}>Verificando precios...</Text>
               </View>
             )}
@@ -544,12 +562,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: mobileTheme.colors.border.danger,
     marginBottom: mobileTheme.spacing.lg,
-  },
-  loading: {
-    color: mobileTheme.colors.ink.secondary,
-    fontSize: 14,
-    textAlign: "center",
-    padding: mobileTheme.spacing.xxl,
   },
   hiddenMarker: {
     height: 0,

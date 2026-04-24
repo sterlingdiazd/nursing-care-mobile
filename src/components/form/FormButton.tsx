@@ -15,6 +15,8 @@ interface FormButtonProps extends Omit<TouchableOpacityProps, "testID"> {
   children: React.ReactNode;
   variant?: "primary" | "secondary" | "danger";
   isLoading?: boolean;
+  loading?: boolean;
+  accessibilityLabel?: string;
 }
 
 export function FormButton({
@@ -22,10 +24,14 @@ export function FormButton({
   children,
   variant = "primary",
   isLoading = false,
+  loading = false,
   style,
   disabled,
+  accessibilityLabel,
   ...props
 }: FormButtonProps) {
+  const isActuallyLoading = isLoading || loading;
+
   const getVariantStyle = () => {
     switch (variant) {
       case "secondary":
@@ -46,19 +52,33 @@ export function FormButton({
     }
   };
 
+  const childrenText =
+    typeof children === "string" ? children : undefined;
+  const resolvedAccessibilityLabel = isActuallyLoading
+    ? "Cargando..."
+    : (accessibilityLabel ?? childrenText);
+
+  const accessibilityState = {
+    ...(isActuallyLoading ? { busy: true } : {}),
+    ...(disabled ? { disabled: true } : {}),
+  };
+
   return (
     <TouchableOpacity
       {...testProps(testID)}
       style={[
         getVariantStyle(),
         style,
-        (disabled || isLoading) ? styles.disabled : null,
+        (disabled || isActuallyLoading) ? styles.disabled : null,
       ]}
-      disabled={disabled || isLoading}
+      disabled={disabled || isActuallyLoading}
       activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={resolvedAccessibilityLabel}
+      accessibilityState={accessibilityState}
       {...props}
     >
-      {isLoading ? (
+      {isActuallyLoading ? (
         <ActivityIndicator
           color={variant === "secondary" ? designTokens.color.ink.accent : designTokens.color.ink.inverse}
         />

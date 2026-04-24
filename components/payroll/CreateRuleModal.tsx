@@ -1,20 +1,22 @@
 import { useState, useEffect } from "react";
-import { 
-  Modal, 
-  View, 
-  Text, 
-  StyleSheet, 
-  TextInput, 
+import {
+  Modal,
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert 
+  Alert,
 } from "react-native";
-import type { 
-  AdminCompensationRuleListItem, 
+import { useToast } from "@/src/components/shared/ToastProvider";
+import { designTokens } from "@/src/design-system/tokens";
+import type {
+  AdminCompensationRuleListItem,
   CreateCompensationRuleRequest,
-  UpdateCompensationRuleRequest 
+  UpdateCompensationRuleRequest,
 } from "@/src/services/payrollService";
 
 interface CreateRuleModalProps {
@@ -32,6 +34,7 @@ const EMPLOYMENT_TYPES = [
 ];
 
 export function CreateRuleModal({ visible, onClose, onSubmit, onDeactivate, editingRule }: CreateRuleModalProps) {
+  const { showToast } = useToast();
   const [name, setName] = useState("");
   const [employmentType, setEmploymentType] = useState("FullTime");
   const [baseCompensationPercent, setBaseCompensationPercent] = useState("");
@@ -60,7 +63,7 @@ export function CreateRuleModal({ visible, onClose, onSubmit, onDeactivate, edit
     setError(null);
   }, [editingRule, visible]);
 
-  const isValid = name.trim().length > 0 && 
+  const isValid = name.trim().length > 0 &&
                   parseFloat(baseCompensationPercent) > 0;
 
   const resetForm = () => {
@@ -80,10 +83,10 @@ export function CreateRuleModal({ visible, onClose, onSubmit, onDeactivate, edit
 
   const handleSubmit = async () => {
     if (!isValid) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const data = editingRule
         ? {
@@ -101,7 +104,7 @@ export function CreateRuleModal({ visible, onClose, onSubmit, onDeactivate, edit
             complexityBonusPercent: parseFloat(complexityBonusPercent) || 0,
             medicalSuppliesPercent: parseFloat(medicalSuppliesPercent) || 0,
           } as CreateCompensationRuleRequest;
-      
+
       await onSubmit(data);
       handleClose();
     } catch (e) {
@@ -111,21 +114,22 @@ export function CreateRuleModal({ visible, onClose, onSubmit, onDeactivate, edit
     }
   };
 
+  // Keep destructive confirmation as Alert.alert (per policy)
   const handleDeactivate = () => {
     Alert.alert(
       "Desactivar Regla",
       "¿Estás seguro de desactivar esta regla?",
       [
         { text: "Cancelar", style: "cancel" },
-        { 
-          text: "Desactivar", 
+        {
+          text: "Desactivar",
           style: "destructive",
           onPress: async () => {
             try {
               await onDeactivate?.();
               handleClose();
             } catch (e) {
-              Alert.alert("Error", "No fue posible desactivar la regla");
+              showToast({ variant: "error", message: "No fue posible desactivar la regla." });
             }
           }
         },
@@ -148,18 +152,25 @@ export function CreateRuleModal({ visible, onClose, onSubmit, onDeactivate, edit
       presentationStyle="pageSheet"
       onRequestClose={handleClose}
     >
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <View style={styles.header}>
-          <TouchableOpacity onPress={handleClose}>
+          <TouchableOpacity
+            onPress={handleClose}
+            accessibilityRole="button"
+            accessibilityLabel="Cancelar"
+          >
             <Text style={styles.cancelButton}>Cancelar</Text>
           </TouchableOpacity>
           <Text style={styles.title}>{editingRule ? "Editar Regla" : "Nueva Regla"}</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={handleSubmit}
             disabled={!isValid || loading}
+            accessibilityRole="button"
+            accessibilityLabel={loading ? "Guardando regla" : "Guardar regla de compensación"}
+            accessibilityState={{ busy: loading, disabled: !isValid || loading }}
           >
             <Text style={[
               styles.submitButton,
@@ -185,6 +196,7 @@ export function CreateRuleModal({ visible, onClose, onSubmit, onDeactivate, edit
               onChangeText={setName}
               placeholder="ej. Pago por servicio hogar"
               autoCapitalize="words"
+              accessibilityLabel="Nombre de la regla de compensación"
             />
           </View>
 
@@ -200,6 +212,9 @@ export function CreateRuleModal({ visible, onClose, onSubmit, onDeactivate, edit
                       employmentType === type.value && styles.optionButtonSelected,
                     ]}
                     onPress={() => setEmploymentType(type.value)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Tipo de empleo: ${type.label}`}
+                    accessibilityState={{ selected: employmentType === type.value }}
                   >
                     <Text style={[
                       styles.optionButtonText,
@@ -223,6 +238,7 @@ export function CreateRuleModal({ visible, onClose, onSubmit, onDeactivate, edit
               onChangeText={(text) => setBaseCompensationPercent(parsePercent(text))}
               placeholder="52"
               keyboardType="decimal-pad"
+              accessibilityLabel="Porcentaje de compensación base"
             />
           </View>
 
@@ -234,6 +250,7 @@ export function CreateRuleModal({ visible, onClose, onSubmit, onDeactivate, edit
               onChangeText={(text) => setTransportIncentivePercent(parsePercent(text))}
               placeholder="0"
               keyboardType="decimal-pad"
+              accessibilityLabel="Porcentaje de incentivo de transporte"
             />
           </View>
 
@@ -245,6 +262,7 @@ export function CreateRuleModal({ visible, onClose, onSubmit, onDeactivate, edit
               onChangeText={(text) => setComplexityBonusPercent(parsePercent(text))}
               placeholder="20"
               keyboardType="decimal-pad"
+              accessibilityLabel="Porcentaje de bonificación por complejidad"
             />
           </View>
 
@@ -256,13 +274,16 @@ export function CreateRuleModal({ visible, onClose, onSubmit, onDeactivate, edit
               onChangeText={(text) => setMedicalSuppliesPercent(parsePercent(text))}
               placeholder="0"
               keyboardType="decimal-pad"
+              accessibilityLabel="Porcentaje de compensación por insumos médicos"
             />
           </View>
 
           {editingRule && editingRule.isActive && onDeactivate && (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.deactivateButton}
               onPress={handleDeactivate}
+              accessibilityRole="button"
+              accessibilityLabel="Desactivar esta regla de compensación"
             >
               <Text style={styles.deactivateButtonText}>Desactivar Regla</Text>
             </TouchableOpacity>
@@ -276,7 +297,7 @@ export function CreateRuleModal({ visible, onClose, onSubmit, onDeactivate, edit
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: designTokens.color.surface.primary,
   },
   header: {
     flexDirection: "row",
@@ -284,41 +305,42 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: designTokens.color.border.subtle,
   },
   cancelButton: {
     fontSize: 16,
-    color: "#666",
+    color: designTokens.color.ink.muted,
   },
   title: {
     fontSize: 17,
     fontWeight: "600",
+    color: designTokens.color.ink.primary,
   },
   submitButton: {
     fontSize: 16,
-    color: "#1976d2",
+    color: designTokens.color.ink.accentStrong,
     fontWeight: "600",
   },
   submitButtonDisabled: {
-    color: "#ccc",
+    color: designTokens.color.border.strong,
   },
   form: {
     flex: 1,
     padding: 16,
   },
   errorCard: {
-    backgroundColor: "#fee2e2",
+    backgroundColor: designTokens.color.surface.danger,
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
   },
   errorText: {
-    color: "#991b1b",
+    color: designTokens.color.status.dangerText,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
+    color: designTokens.color.ink.primary,
     marginTop: 16,
     marginBottom: 12,
   },
@@ -328,15 +350,16 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#333",
+    color: designTokens.color.ink.primary,
     marginBottom: 6,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: designTokens.color.border.subtle,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
+    color: designTokens.color.ink.primary,
   },
   optionsRow: {
     flexDirection: "row",
@@ -347,30 +370,30 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: designTokens.color.border.subtle,
     alignItems: "center",
   },
   optionButtonSelected: {
-    backgroundColor: "#1976d2",
-    borderColor: "#1976d2",
+    backgroundColor: designTokens.color.ink.accentStrong,
+    borderColor: designTokens.color.ink.accentStrong,
   },
   optionButtonText: {
     fontSize: 13,
-    color: "#666",
+    color: designTokens.color.ink.muted,
   },
   optionButtonTextSelected: {
-    color: "#fff",
+    color: designTokens.color.ink.inverse,
     fontWeight: "500",
   },
   deactivateButton: {
-    backgroundColor: "#fee2e2",
+    backgroundColor: designTokens.color.surface.danger,
     padding: 14,
     borderRadius: 8,
     alignItems: "center",
     marginTop: 24,
   },
   deactivateButtonText: {
-    color: "#dc2626",
+    color: designTokens.color.ink.danger,
     fontSize: 16,
     fontWeight: "600",
   },

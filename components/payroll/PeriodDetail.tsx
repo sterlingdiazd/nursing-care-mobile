@@ -13,8 +13,10 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { useToast } from "@/src/components/shared/ToastProvider";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
+import { designTokens } from "@/src/design-system/tokens";
 import type { AdminPayrollPeriodDetail, AdminPayrollLineItem } from "@/src/services/payrollService";
 import { adminTestIds } from "@/src/testing/testIds/adminTestIds";
 import {
@@ -33,12 +35,11 @@ interface PeriodDetailProps {
   onPrepareRecalculate?: () => void;
 }
 
-async function downloadAndShare(url: string, filename: string): Promise<void> {
+async function downloadAndShare(url: string, filename: string): Promise<"shared" | "unavailable"> {
   const session = getCachedAuthSession();
   const token = session?.token;
   if (!token) {
-    Alert.alert("Error", "No hay sesion activa.");
-    return;
+    throw new Error("No hay sesion activa.");
   }
   const fileUri = (FileSystem as any).documentDirectory + filename;
   const downloadRes = await (FileSystem as any).downloadAsync(url, fileUri, {
@@ -47,15 +48,17 @@ async function downloadAndShare(url: string, filename: string): Promise<void> {
   if (downloadRes.status === 200) {
     if (await Sharing.isAvailableAsync()) {
       await Sharing.shareAsync(downloadRes.uri);
+      return "shared";
     } else {
-      Alert.alert("Descarga", "Archivo descargado pero compartir no esta disponible.");
+      return "unavailable";
     }
   } else {
-    Alert.alert("Error", "No fue posible descargar el archivo.");
+    throw new Error("No fue posible descargar el archivo.");
   }
 }
 
 export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: PeriodDetailProps) {
+  const { showToast } = useToast();
   const isOpen = period.status === "Open";
 
   // CSV export state
@@ -91,9 +94,12 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
     try {
       const url = getPayrollPeriodExportUrl(period.id);
       const filename = `nomina-${period.id}-${Date.now()}.csv`;
-      await downloadAndShare(url, filename);
-    } catch {
-      Alert.alert("Error", "No fue posible exportar el período.");
+      const result = await downloadAndShare(url, filename);
+      if (result === "unavailable") {
+        showToast({ variant: "info", message: "Archivo descargado pero compartir no está disponible." });
+      }
+    } catch (e) {
+      showToast({ variant: "error", message: e instanceof Error ? e.message : "No fue posible exportar el período." });
     } finally {
       setExporting(false);
     }
@@ -117,11 +123,11 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
     if (!overrideLine) return;
     const parsed = parseFloat(overrideAmount);
     if (isNaN(parsed) || parsed < 0) {
-      Alert.alert("Validacion", "Ingresa un monto válido.");
+      showToast({ variant: "error", message: "Ingresa un monto válido." });
       return;
     }
     if (!overrideReason.trim()) {
-      Alert.alert("Validacion", "La razón es requerida.");
+      showToast({ variant: "error", message: "La razón es requerida." });
       return;
     }
     setOverrideSubmitting(true);
@@ -131,15 +137,15 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
         reason: overrideReason.trim(),
       });
       setOverrideModalVisible(false);
-      Alert.alert("Exito", "Ajuste enviado correctamente.");
+      showToast({ variant: "success", message: "Ajuste enviado correctamente." });
     } catch (e) {
-      Alert.alert("Error", e instanceof Error ? e.message : "No fue posible enviar el ajuste.");
+      showToast({ variant: "error", message: e instanceof Error ? e.message : "No fue posible enviar el ajuste." });
     } finally {
       setOverrideSubmitting(false);
     }
   };
 
-  // --- Approve override ---
+  // --- Approve override (keep destructive confirmation as Alert.alert) ---
   const handleApproveOverride = async (line: AdminPayrollLineItem) => {
     Alert.alert(
       "Aprobar ajuste",
@@ -152,9 +158,9 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
             setApprovingLineId(line.id);
             try {
               await approvePayrollLineOverride(line.id);
-              Alert.alert("Exito", "Ajuste aprobado correctamente.");
+              showToast({ variant: "success", message: "Ajuste aprobado correctamente." });
             } catch (e) {
-              Alert.alert("Error", e instanceof Error ? e.message : "No fue posible aprobar el ajuste.");
+              showToast({ variant: "error", message: e instanceof Error ? e.message : "No fue posible aprobar el ajuste." });
             } finally {
               setApprovingLineId(null);
             }
@@ -171,9 +177,12 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
       const url = getAdminPayrollVoucherUrl(period.id, nurseUserId);
       const safeName = nurseDisplayName.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_]/g, "");
       const filename = `comprobante-${safeName}-${period.id}.pdf`;
-      await downloadAndShare(url, filename);
-    } catch {
-      Alert.alert("Error", "No fue posible descargar el comprobante.");
+      const result = await downloadAndShare(url, filename);
+      if (result === "unavailable") {
+        showToast({ variant: "info", message: "Archivo descargado pero compartir no está disponible." });
+      }
+    } catch (e) {
+      showToast({ variant: "error", message: e instanceof Error ? e.message : "No fue posible descargar el comprobante." });
     } finally {
       setDownloadingVoucherId(null);
     }
@@ -186,9 +195,12 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
     try {
       const url = getAdminPayrollBulkVouchersUrl(period.id);
       const filename = `comprobantes-${period.id}-${Date.now()}.zip`;
-      await downloadAndShare(url, filename);
-    } catch {
-      Alert.alert("Error", "No fue posible descargar los comprobantes.");
+      const result = await downloadAndShare(url, filename);
+      if (result === "unavailable") {
+        showToast({ variant: "info", message: "Archivos descargados pero compartir no está disponible." });
+      }
+    } catch (e) {
+      showToast({ variant: "error", message: e instanceof Error ? e.message : "No fue posible descargar los comprobantes." });
     } finally {
       setDownloadingBulk(false);
     }
@@ -201,7 +213,7 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
     setNurseDetailModalVisible(true);
   };
 
-  // --- Period close ---
+  // --- Period close (keep destructive confirmation as Alert.alert) ---
   const handleClosePeriod = () => {
     Alert.alert(
       "Cerrar Período",
@@ -215,7 +227,7 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
             try {
               await onClose();
             } catch {
-              Alert.alert("Error", "No fue posible cerrar el período.");
+              showToast({ variant: "error", message: "No fue posible cerrar el período." });
             }
           },
         },
@@ -257,7 +269,12 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
 
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={onBack}
+            style={styles.backButton}
+            accessibilityRole="button"
+            accessibilityLabel="Volver a la lista de períodos"
+          >
             <Text style={styles.backButtonText}>Volver</Text>
           </TouchableOpacity>
 
@@ -294,6 +311,8 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
               <Pressable
                 style={[styles.headerActionButton, styles.headerActionButtonWarning]}
                 onPress={onPrepareRecalculate}
+                accessibilityRole="button"
+                accessibilityLabel="Preparar recálculo de nómina"
               >
                 <Text style={styles.headerActionButtonText}>Preparar recálculo</Text>
               </Pressable>
@@ -305,9 +324,12 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
               disabled={exporting}
               testID="admin-period-export-csv-button"
               nativeID="admin-period-export-csv-button"
+              accessibilityRole="button"
+              accessibilityLabel={exporting ? "Exportando CSV" : "Exportar período como CSV"}
+              accessibilityState={{ busy: exporting }}
             >
               {exporting ? (
-                <ActivityIndicator color="#fff" size="small" />
+                <ActivityIndicator color={designTokens.color.ink.inverse} size="small" accessibilityLabel="Cargando..." />
               ) : (
                 <Text style={styles.headerActionButtonText}>Exportar CSV</Text>
               )}
@@ -319,9 +341,12 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
               disabled={downloadingBulk}
               testID="admin-period-bulk-vouchers-button"
               nativeID="admin-period-bulk-vouchers-button"
+              accessibilityRole="button"
+              accessibilityLabel={downloadingBulk ? "Descargando comprobantes" : "Descargar todos los comprobantes"}
+              accessibilityState={{ busy: downloadingBulk }}
             >
               {downloadingBulk ? (
-                <ActivityIndicator color="#0f766e" size="small" />
+                <ActivityIndicator color={designTokens.color.ink.accentStrong} size="small" accessibilityLabel="Cargando..." />
               ) : (
                 <Text style={[styles.headerActionButtonText, styles.headerActionButtonTextSecondary]}>
                   Descargar todos
@@ -428,9 +453,12 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
                     disabled={downloadingVoucherId === staff.nurseUserId}
                     testID={`admin-staff-voucher-${staff.nurseUserId}`}
                     nativeID={`admin-staff-voucher-${staff.nurseUserId}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Descargar comprobante de ${staff.nurseDisplayName}`}
+                    accessibilityState={{ busy: downloadingVoucherId === staff.nurseUserId }}
                   >
                     {downloadingVoucherId === staff.nurseUserId ? (
-                      <ActivityIndicator color="#0f766e" size="small" />
+                      <ActivityIndicator color={designTokens.color.ink.accentStrong} size="small" accessibilityLabel="Cargando..." />
                     ) : (
                       <Text style={styles.voucherButtonText}>Comprobante</Text>
                     )}
@@ -471,9 +499,12 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
                       disabled={approvingLineId === line.id}
                       testID={`admin-line-approve-${line.id}`}
                       nativeID={`admin-line-approve-${line.id}`}
+                      accessibilityRole="button"
+                      accessibilityLabel="Aprobar ajuste pendiente de esta línea"
+                      accessibilityState={{ busy: approvingLineId === line.id }}
                     >
                       {approvingLineId === line.id ? (
-                        <ActivityIndicator color="#fff" size="small" />
+                        <ActivityIndicator color={designTokens.color.ink.inverse} size="small" accessibilityLabel="Cargando..." />
                       ) : (
                         <Text style={styles.approveButtonText}>Aprobar</Text>
                       )}
@@ -484,6 +515,8 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
                       onPress={() => openOverrideModal(line)}
                       testID="override-request-button"
                       nativeID="override-request-button"
+                      accessibilityRole="button"
+                      accessibilityLabel="Ajustar esta línea de nómina"
                     >
                       <Text style={styles.adjustButtonText}>Ajustar</Text>
                     </Pressable>
@@ -497,7 +530,12 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
         {/* Bottom actions */}
         <View style={styles.actions}>
           {isOpen && (
-            <TouchableOpacity style={styles.closeButton} onPress={handleClosePeriod}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={handleClosePeriod}
+              accessibilityRole="button"
+              accessibilityLabel="Cerrar este período de nómina"
+            >
               <Text style={styles.closeButtonText}>Cerrar Período</Text>
             </TouchableOpacity>
           )}
@@ -557,6 +595,8 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
                 style={[styles.modalButton, styles.modalButtonSecondary]}
                 onPress={() => setOverrideModalVisible(false)}
                 disabled={overrideSubmitting}
+                accessibilityRole="button"
+                accessibilityLabel="Cancelar ajuste"
               >
                 <Text style={[styles.modalButtonText, styles.modalButtonTextSecondary]}>
                   Cancelar
@@ -568,9 +608,12 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
                 disabled={overrideSubmitting}
                 testID="admin-line-override-submit-button"
                 nativeID="admin-line-override-submit-button"
+                accessibilityRole="button"
+                accessibilityLabel={overrideSubmitting ? "Enviando ajuste" : "Enviar ajuste de línea"}
+                accessibilityState={{ busy: overrideSubmitting }}
               >
                 {overrideSubmitting ? (
-                  <ActivityIndicator color="#fff" size="small" />
+                  <ActivityIndicator color={designTokens.color.ink.inverse} size="small" accessibilityLabel="Cargando..." />
                 ) : (
                   <Text style={styles.modalButtonText}>Enviar ajuste</Text>
                 )}
@@ -609,6 +652,8 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
                 onPress={() => setNurseDetailModalVisible(false)}
                 testID="admin-nurse-detail-close-button"
                 nativeID="admin-nurse-detail-close-button"
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar detalle de enfermera"
               >
                 <Text style={styles.closeX}>Cerrar</Text>
               </Pressable>
@@ -680,7 +725,7 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: designTokens.color.surface.primary,
   },
   hiddenMarker: {
     height: 0,
@@ -693,26 +738,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: "#fee2e2",
+    backgroundColor: designTokens.color.surface.danger,
     borderWidth: 1,
-    borderColor: "#fecaca",
+    borderColor: designTokens.color.border.strong,
   },
   errorToastText: {
-    color: "#991b1b",
+    color: designTokens.color.status.dangerText,
     fontSize: 13,
     fontWeight: "600",
   },
   header: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: designTokens.color.border.subtle,
   },
   backButton: {
     marginBottom: 12,
   },
   backButtonText: {
     fontSize: 15,
-    color: "#1976d2",
+    color: designTokens.color.ink.accentStrong,
   },
   statusRow: {
     flexDirection: "row",
@@ -723,14 +768,14 @@ const styles = StyleSheet.create({
   dates: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
+    color: designTokens.color.ink.primary,
     flex: 1,
     marginRight: 8,
   },
   reviewBanner: {
-    backgroundColor: "#ecfeff",
+    backgroundColor: designTokens.color.status.infoBg,
     borderWidth: 1,
-    borderColor: "#a5f3fc",
+    borderColor: designTokens.color.border.subtle,
     borderRadius: 12,
     padding: 14,
     marginBottom: 16,
@@ -738,18 +783,18 @@ const styles = StyleSheet.create({
   reviewEyebrow: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#0f766e",
+    color: designTokens.color.ink.accentStrong,
     textTransform: "uppercase",
     marginBottom: 6,
   },
   reviewTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#0f172a",
+    color: designTokens.color.ink.primary,
   },
   reviewDescription: {
     marginTop: 6,
-    color: "#334155",
+    color: designTokens.color.ink.secondary,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -759,20 +804,20 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   statusOpen: {
-    backgroundColor: "#e3f2fd",
+    backgroundColor: designTokens.color.surface.accent,
   },
   statusClosed: {
-    backgroundColor: "#f5f5f5",
+    backgroundColor: designTokens.color.surface.secondary,
   },
   statusText: {
     fontSize: 13,
     fontWeight: "600",
   },
   statusTextOpen: {
-    color: "#1976d2",
+    color: designTokens.color.ink.accentStrong,
   },
   statusTextClosed: {
-    color: "#666",
+    color: designTokens.color.ink.muted,
   },
   headerActions: {
     flexDirection: "row",
@@ -781,31 +826,31 @@ const styles = StyleSheet.create({
   },
   headerActionButton: {
     flex: 1,
-    backgroundColor: "#1976d2",
+    backgroundColor: designTokens.color.ink.accentStrong,
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 8,
     alignItems: "center",
   },
   headerActionButtonSecondary: {
-    backgroundColor: "#f0fdfa",
+    backgroundColor: designTokens.color.surface.success,
     borderWidth: 1,
-    borderColor: "#0f766e",
+    borderColor: designTokens.color.ink.accentStrong,
   },
   headerActionButtonWarning: {
-    backgroundColor: "#0f766e",
+    backgroundColor: designTokens.color.ink.accentStrong,
   },
   headerActionButtonText: {
-    color: "#fff",
+    color: designTokens.color.ink.inverse,
     fontSize: 13,
     fontWeight: "600",
   },
   headerActionButtonTextSecondary: {
-    color: "#0f766e",
+    color: designTokens.color.ink.accentStrong,
   },
   metaSection: {
     padding: 16,
-    backgroundColor: "#f9f9f9",
+    backgroundColor: designTokens.color.surface.canvas,
   },
   metaRow: {
     flexDirection: "row",
@@ -816,22 +861,22 @@ const styles = StyleSheet.create({
   },
   metaLabel: {
     fontSize: 12,
-    color: "#666",
+    color: designTokens.color.ink.muted,
     marginBottom: 2,
   },
   metaValue: {
     fontSize: 14,
-    color: "#333",
+    color: designTokens.color.ink.primary,
   },
   summarySection: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: designTokens.color.border.subtle,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
+    color: designTokens.color.ink.primary,
     marginBottom: 12,
   },
   summaryGrid: {
@@ -843,21 +888,21 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 12,
-    color: "#666",
+    color: designTokens.color.ink.muted,
     marginBottom: 4,
   },
   summaryValue: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#333",
+    color: designTokens.color.ink.primary,
   },
   summaryValueGreen: {
-    color: "#2e7d32",
+    color: designTokens.color.status.successText,
   },
   staffSection: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: designTokens.color.border.subtle,
   },
   emptyState: {
     padding: 24,
@@ -865,10 +910,10 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: "#666",
+    color: designTokens.color.ink.muted,
   },
   staffItem: {
-    backgroundColor: "#f9f9f9",
+    backgroundColor: designTokens.color.surface.canvas,
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
@@ -882,16 +927,16 @@ const styles = StyleSheet.create({
   staffName: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#333",
+    color: designTokens.color.ink.primary,
   },
   staffNameTappable: {
-    color: "#1976d2",
+    color: designTokens.color.ink.accentStrong,
     textDecorationLine: "underline",
   },
   staffNet: {
     fontSize: 15,
     fontWeight: "bold",
-    color: "#2e7d32",
+    color: designTokens.color.status.successText,
   },
   staffDetails: {
     flexDirection: "row",
@@ -900,7 +945,7 @@ const styles = StyleSheet.create({
   },
   staffInfo: {
     fontSize: 12,
-    color: "#666",
+    color: designTokens.color.ink.muted,
   },
   staffActions: {
     flexDirection: "row",
@@ -911,23 +956,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: "#0f766e",
-    backgroundColor: "#f0fdfa",
+    borderColor: designTokens.color.ink.accentStrong,
+    backgroundColor: designTokens.color.surface.success,
     minWidth: 90,
     alignItems: "center",
   },
   voucherButtonText: {
-    color: "#0f766e",
+    color: designTokens.color.ink.accentStrong,
     fontSize: 13,
     fontWeight: "600",
   },
   linesSection: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: "#eee",
+    borderTopColor: designTokens.color.border.subtle,
   },
   lineItem: {
-    backgroundColor: "#f9f9f9",
+    backgroundColor: designTokens.color.surface.canvas,
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
@@ -941,18 +986,18 @@ const styles = StyleSheet.create({
   lineName: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#333",
+    color: designTokens.color.ink.primary,
     flex: 1,
     marginRight: 8,
   },
   lineNet: {
     fontSize: 14,
     fontWeight: "bold",
-    color: "#2e7d32",
+    color: designTokens.color.status.successText,
   },
   lineDescription: {
     fontSize: 12,
-    color: "#666",
+    color: designTokens.color.ink.muted,
     marginBottom: 8,
   },
   lineActions: {
@@ -964,13 +1009,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: "#1976d2",
-    backgroundColor: "#e3f2fd",
+    borderColor: designTokens.color.ink.accentStrong,
+    backgroundColor: designTokens.color.surface.accent,
     minWidth: 80,
     alignItems: "center",
   },
   adjustButtonText: {
-    color: "#1976d2",
+    color: designTokens.color.ink.accentStrong,
     fontSize: 13,
     fontWeight: "600",
   },
@@ -978,12 +1023,12 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 6,
-    backgroundColor: "#0f766e",
+    backgroundColor: designTokens.color.ink.accentStrong,
     minWidth: 80,
     alignItems: "center",
   },
   approveButtonText: {
-    color: "#fff",
+    color: designTokens.color.ink.inverse,
     fontSize: 13,
     fontWeight: "600",
   },
@@ -995,13 +1040,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   closeButton: {
-    backgroundColor: "#dc2626",
+    backgroundColor: designTokens.color.ink.danger,
     padding: 14,
     borderRadius: 8,
     alignItems: "center",
   },
   closeButtonText: {
-    color: "#fff",
+    color: designTokens.color.ink.inverse,
     fontSize: 16,
     fontWeight: "600",
   },
@@ -1012,37 +1057,37 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   modalCard: {
-    backgroundColor: "#fff",
+    backgroundColor: designTokens.color.surface.primary,
     borderRadius: 14,
     padding: 16,
   },
   modalTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#0f172a",
+    color: designTokens.color.ink.primary,
     marginBottom: 4,
   },
   modalSubtitle: {
     fontSize: 13,
-    color: "#475569",
+    color: designTokens.color.ink.secondary,
     marginBottom: 16,
   },
   inputLabel: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#334155",
+    color: designTokens.color.ink.secondary,
     marginBottom: 4,
     marginTop: 10,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#cbd5e1",
+    borderColor: designTokens.color.border.strong,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,
-    color: "#0f172a",
-    backgroundColor: "#f8fafc",
+    color: designTokens.color.ink.primary,
+    backgroundColor: designTokens.color.surface.canvas,
   },
   inputMultiline: {
     minHeight: 80,
@@ -1055,7 +1100,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   modalButton: {
-    backgroundColor: "#0f766e",
+    backgroundColor: designTokens.color.ink.accentStrong,
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 10,
@@ -1063,15 +1108,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalButtonSecondary: {
-    backgroundColor: "#e2e8f0",
+    backgroundColor: designTokens.color.surface.tertiary,
   },
   modalButtonText: {
-    color: "#fff",
+    color: designTokens.color.ink.inverse,
     fontWeight: "800",
     fontSize: 14,
   },
   modalButtonTextSecondary: {
-    color: "#0f172a",
+    color: designTokens.color.ink.primary,
   },
   nurseDetailModal: {
     maxHeight: "75%",
@@ -1084,7 +1129,7 @@ const styles = StyleSheet.create({
   },
   closeX: {
     fontSize: 14,
-    color: "#1976d2",
+    color: designTokens.color.ink.accentStrong,
     fontWeight: "600",
   },
   nurseDetailScroll: {
@@ -1096,17 +1141,17 @@ const styles = StyleSheet.create({
   nurseDetailSectionTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#0f172a",
+    color: designTokens.color.ink.primary,
     marginBottom: 12,
   },
   nurseDetailLine: {
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#f1f5f9",
+    borderBottomColor: designTokens.color.border.subtle,
   },
   nurseDetailDescription: {
     fontSize: 13,
-    color: "#334155",
+    color: designTokens.color.ink.secondary,
     marginBottom: 6,
   },
   nurseDetailAmounts: {
@@ -1116,14 +1161,14 @@ const styles = StyleSheet.create({
   },
   nurseDetailLabel: {
     fontSize: 12,
-    color: "#64748b",
+    color: designTokens.color.ink.muted,
   },
   nurseDetailValue: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#0f172a",
+    color: designTokens.color.ink.primary,
   },
   summaryValueNegative: {
-    color: "#b91c1c",
+    color: designTokens.color.ink.danger,
   },
 });

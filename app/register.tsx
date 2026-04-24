@@ -239,6 +239,7 @@ export default function RegisterScreen() {
 
       <FormInput
         testID={authTestIds.register.nameInput}
+        accessibilityLabel="Nombre"
         label="Nombre"
         placeholder="Tu nombre"
         value={name}
@@ -248,6 +249,7 @@ export default function RegisterScreen() {
 
       <FormInput
         testID={authTestIds.register.lastNameInput}
+        accessibilityLabel="Apellido"
         label="Apellido"
         placeholder="Tu apellido"
         value={lastName}
@@ -257,6 +259,7 @@ export default function RegisterScreen() {
 
       <FormInput
         testID={authTestIds.register.identificationInput}
+        accessibilityLabel="Cédula"
         label="Cédula"
         placeholder="00112345678"
         value={identificationNumber}
@@ -268,6 +271,7 @@ export default function RegisterScreen() {
 
       <FormInput
         testID={authTestIds.register.phoneInput}
+        accessibilityLabel="Teléfono"
         label="Teléfono"
         placeholder="8095550101"
         value={phone}
@@ -293,6 +297,9 @@ export default function RegisterScreen() {
           hapticFeedback.selection();
           setProfileType(UserProfileType.CLIENT);
         }}
+        accessibilityRole="radio"
+        accessibilityLabel="Perfil cliente"
+        accessibilityState={{ selected: profileType === UserProfileType.CLIENT }}
         {...testProps(authTestIds.register.profileTypeClientRadio)}
       >
         <View style={styles.roleCardHeader}>
@@ -314,6 +321,9 @@ export default function RegisterScreen() {
           hapticFeedback.selection();
           setProfileType(UserProfileType.NURSE);
         }}
+        accessibilityRole="radio"
+        accessibilityLabel="Perfil enfermería"
+        accessibilityState={{ selected: profileType === UserProfileType.NURSE }}
         {...testProps(authTestIds.register.profileTypeNurseRadio)}
       >
         <View style={styles.roleCardHeader}>
@@ -335,6 +345,7 @@ export default function RegisterScreen() {
 
       <FormInput
         testID={authTestIds.register.emailInput}
+        accessibilityLabel="Correo electrónico"
         label="Correo Electrónico"
         placeholder="tu@correo.com"
         value={email}
@@ -346,6 +357,7 @@ export default function RegisterScreen() {
 
       <FormInput
         testID={authTestIds.register.passwordInput}
+        accessibilityLabel="Contraseña"
         label="Contraseña"
         placeholder="Mínimo 6 caracteres"
         value={password}
@@ -356,6 +368,7 @@ export default function RegisterScreen() {
 
       <FormInput
         testID={authTestIds.register.confirmPasswordInput}
+        accessibilityLabel="Confirmar contraseña"
         label="Confirmar Contraseña"
         placeholder="Vuelve a escribir tu contraseña"
         value={confirmPassword}
@@ -373,6 +386,7 @@ export default function RegisterScreen() {
 
       <FormInput
         testID={authTestIds.register.hireDateInput}
+        accessibilityLabel="Fecha de contratación"
         label="Fecha de Contratación"
         placeholder="AAAA-MM-DD"
         value={hireDate}
@@ -394,6 +408,9 @@ export default function RegisterScreen() {
                 hapticFeedback.selection();
                 setSpecialty(opt.code);
               }}
+              accessibilityRole="button"
+              accessibilityLabel={opt.displayName}
+              accessibilityState={{ selected: specialty === opt.code }}
             >
               <Text style={[
                 styles.chipText,
@@ -407,6 +424,7 @@ export default function RegisterScreen() {
 
       <FormInput
         testID="register-license-input"
+        accessibilityLabel="Número de licencia"
         label="Licencia"
         placeholder="Opcional"
         value={licenseId}
@@ -417,6 +435,7 @@ export default function RegisterScreen() {
 
       <FormInput
         testID="register-bank-name-input"
+        accessibilityLabel="Nombre del banco"
         label="Banco"
         placeholder="Nombre del banco"
         value={bankName}
@@ -426,6 +445,7 @@ export default function RegisterScreen() {
 
       <FormInput
         testID="register-account-number-input"
+        accessibilityLabel="Número de cuenta bancaria"
         label="Número de Cuenta"
         placeholder="Opcional"
         value={accountNumber}
@@ -508,7 +528,11 @@ export default function RegisterScreen() {
           {step === RegisterStep.IDENTITY && !isProfileCompletionMode ? (
             <View style={styles.footer}>
               <Text style={styles.footerText}>¿Ya tienes cuenta?</Text>
-              <TouchableOpacity onPress={() => router.push("/login")}>
+              <TouchableOpacity
+                onPress={() => router.push("/login")}
+                accessibilityRole="link"
+                accessibilityLabel="Inicia sesión"
+              >
                 <Text style={styles.loginLink}>Inicia Sesión</Text>
               </TouchableOpacity>
             </View>

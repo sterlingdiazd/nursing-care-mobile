@@ -1,16 +1,17 @@
 import { useState, useEffect } from "react";
-import { 
-  Modal, 
-  View, 
-  Text, 
-  StyleSheet, 
-  TextInput, 
+import {
+  Modal,
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert 
+  Alert,
 } from "react-native";
+import { designTokens } from "@/src/design-system/tokens";
 import type { CreateDeductionRequest } from "@/src/services/payrollService";
 
 interface CreateDeductionModalProps {
@@ -44,7 +45,7 @@ export function CreateDeductionModal({ visible, onClose, onSubmit }: CreateDeduc
     }
   }, [visible]);
 
-  const isValid = label.trim().length > 0 && 
+  const isValid = label.trim().length > 0 &&
                   parseFloat(amount) > 0 &&
                   nurseUserId.trim().length > 0;
 
@@ -64,10 +65,10 @@ export function CreateDeductionModal({ visible, onClose, onSubmit }: CreateDeduc
 
   const handleSubmit = async () => {
     if (!isValid) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const data: CreateDeductionRequest = {
         label: label.trim(),
@@ -76,7 +77,7 @@ export function CreateDeductionModal({ visible, onClose, onSubmit }: CreateDeduc
         payrollPeriodId: payrollPeriodId.trim() || undefined,
         deductionType,
       };
-      
+
       await onSubmit(data);
       handleClose();
     } catch (e) {
@@ -87,9 +88,6 @@ export function CreateDeductionModal({ visible, onClose, onSubmit }: CreateDeduc
   };
 
   const parseAmount = (text: string): string => {
-    if (deductionType === "Fixed") {
-      return text.replace(/[^0-9.]/g, "");
-    }
     return text.replace(/[^0-9.]/g, "");
   };
 
@@ -100,18 +98,25 @@ export function CreateDeductionModal({ visible, onClose, onSubmit }: CreateDeduc
       presentationStyle="pageSheet"
       onRequestClose={handleClose}
     >
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <View style={styles.header}>
-          <TouchableOpacity onPress={handleClose}>
+          <TouchableOpacity
+            onPress={handleClose}
+            accessibilityRole="button"
+            accessibilityLabel="Cancelar creación de deducción"
+          >
             <Text style={styles.cancelButton}>Cancelar</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Nueva Deducción</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={handleSubmit}
             disabled={!isValid || loading}
+            accessibilityRole="button"
+            accessibilityLabel={loading ? "Creando deducción" : "Crear deducción"}
+            accessibilityState={{ busy: loading, disabled: !isValid || loading }}
           >
             <Text style={[
               styles.submitButton,
@@ -137,6 +142,7 @@ export function CreateDeductionModal({ visible, onClose, onSubmit }: CreateDeduc
               onChangeText={setNurseUserId}
               placeholder="GUID de la enfermera"
               autoCapitalize="none"
+              accessibilityLabel="Identificador de la enfermera"
             />
           </View>
 
@@ -148,6 +154,7 @@ export function CreateDeductionModal({ visible, onClose, onSubmit }: CreateDeduc
               onChangeText={setLabel}
               placeholder="ej. Seguro médico"
               autoCapitalize="words"
+              accessibilityLabel="Etiqueta de la deducción"
             />
           </View>
 
@@ -162,6 +169,9 @@ export function CreateDeductionModal({ visible, onClose, onSubmit }: CreateDeduc
                     deductionType === type.value && styles.optionButtonSelected,
                   ]}
                   onPress={() => setDeductionType(type.value)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Tipo de deducción: ${type.label}`}
+                  accessibilityState={{ selected: deductionType === type.value }}
                 >
                   <Text style={[
                     styles.optionButtonText,
@@ -182,6 +192,7 @@ export function CreateDeductionModal({ visible, onClose, onSubmit }: CreateDeduc
               onChangeText={(text) => setAmount(parseAmount(text))}
               placeholder={deductionType === "Percentage" ? "5" : "1500"}
               keyboardType="decimal-pad"
+              accessibilityLabel={deductionType === "Percentage" ? "Monto porcentual de la deducción" : "Monto fijo de la deducción"}
             />
           </View>
 
@@ -193,6 +204,7 @@ export function CreateDeductionModal({ visible, onClose, onSubmit }: CreateDeduc
               onChangeText={setPayrollPeriodId}
               placeholder="GUID del período"
               autoCapitalize="none"
+              accessibilityLabel="Identificador del período de nómina (opcional)"
             />
           </View>
         </ScrollView>
@@ -204,7 +216,7 @@ export function CreateDeductionModal({ visible, onClose, onSubmit }: CreateDeduc
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: designTokens.color.surface.primary,
   },
   header: {
     flexDirection: "row",
@@ -212,36 +224,37 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: designTokens.color.border.subtle,
   },
   cancelButton: {
     fontSize: 16,
-    color: "#666",
+    color: designTokens.color.ink.muted,
   },
   title: {
     fontSize: 17,
     fontWeight: "600",
+    color: designTokens.color.ink.primary,
   },
   submitButton: {
     fontSize: 16,
-    color: "#1976d2",
+    color: designTokens.color.ink.accentStrong,
     fontWeight: "600",
   },
   submitButtonDisabled: {
-    color: "#ccc",
+    color: designTokens.color.border.strong,
   },
   form: {
     flex: 1,
     padding: 16,
   },
   errorCard: {
-    backgroundColor: "#fee2e2",
+    backgroundColor: designTokens.color.surface.danger,
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
   },
   errorText: {
-    color: "#991b1b",
+    color: designTokens.color.status.dangerText,
   },
   inputGroup: {
     marginBottom: 16,
@@ -249,15 +262,16 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#333",
+    color: designTokens.color.ink.primary,
     marginBottom: 6,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: designTokens.color.border.subtle,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
+    color: designTokens.color.ink.primary,
   },
   optionsRow: {
     flexDirection: "row",
@@ -268,19 +282,19 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: designTokens.color.border.subtle,
     alignItems: "center",
   },
   optionButtonSelected: {
-    backgroundColor: "#1976d2",
-    borderColor: "#1976d2",
+    backgroundColor: designTokens.color.ink.accentStrong,
+    borderColor: designTokens.color.ink.accentStrong,
   },
   optionButtonText: {
     fontSize: 13,
-    color: "#666",
+    color: designTokens.color.ink.muted,
   },
   optionButtonTextSelected: {
-    color: "#fff",
+    color: designTokens.color.ink.inverse,
     fontWeight: "500",
   },
 });

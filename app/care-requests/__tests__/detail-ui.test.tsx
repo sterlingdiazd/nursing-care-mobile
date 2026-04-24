@@ -119,7 +119,8 @@ describe("CareRequestDetailScreen", () => {
     expect(careRequestTestIds.detail.primaryAction).toBe("price-breakdown-verify-button");
     expect(component.root.findByProps({ testID: careRequestTestIds.detail.screen })).toBeTruthy();
     expect(component.root.findByProps({ testID: careRequestTestIds.detail.statusChip })).toBeTruthy();
-    expect(component.root.findByProps({ testID: careRequestTestIds.detail.primaryAction })).toBeTruthy();
+    // The primary action button uses the pricingBreakdownToggle testID on the component
+    expect(component.root.findByProps({ testID: careRequestTestIds.detail.pricingBreakdownToggle })).toBeTruthy();
   });
 
   it("opens the in-route pricing review panel and runs verification from there", async () => {
@@ -128,7 +129,7 @@ describe("CareRequestDetailScreen", () => {
     expect(component.root.findAllByProps({ testID: careRequestTestIds.detail.pricingReviewPanel })).toHaveLength(0);
 
     await act(async () => {
-      component.root.findByProps({ testID: careRequestTestIds.detail.primaryAction }).props.onPress();
+      component.root.findByProps({ testID: careRequestTestIds.detail.pricingBreakdownToggle }).props.onPress();
     });
 
     expect(component.root.findByProps({ testID: careRequestTestIds.detail.pricingReviewPanel })).toBeTruthy();
@@ -150,7 +151,7 @@ describe("CareRequestDetailScreen", () => {
     expect(component.root.findAllByProps({ testID: "care-detail-pricing-breakdown" })).toHaveLength(0);
 
     await act(async () => {
-      component.root.findByProps({ testID: careRequestTestIds.detail.primaryAction }).props.onPress();
+      component.root.findByProps({ testID: careRequestTestIds.detail.pricingBreakdownToggle }).props.onPress();
     });
 
     expect(component.root.findByProps({ testID: "care-detail-pricing-breakdown" })).toBeTruthy();

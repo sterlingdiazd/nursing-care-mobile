@@ -1,10 +1,11 @@
 import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
-import { Alert, StyleSheet, Text, View, ScrollView, Platform } from "react-native";
+import { StyleSheet, Text, View, ScrollView, Platform } from "react-native";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { logClientEvent } from "@/src/logging/clientLogger";
+import { useToast } from "@/src/components/shared/ToastProvider";
 import {
   getGoogleOAuthStartUrl,
   getLocalHttpsCertificateWarning,
@@ -21,13 +22,14 @@ import { FormButton } from "@/src/components/form";
 export default function AccountScreen() {
   const router = useRouter();
   const { email, isAuthenticated, logout, roles, token } = useAuth();
+  const { showToast } = useToast();
   const apiBaseUrl = getMobileApiBaseUrl();
 
   const onGoogleLogin = async () => {
     const certificateWarning = getLocalHttpsCertificateWarning();
 
     if (certificateWarning) {
-      Alert.alert("Certificado local requerido", certificateWarning);
+      showToast({ variant: "error", message: certificateWarning });
     }
 
     try {
@@ -39,10 +41,7 @@ export default function AccountScreen() {
       await Linking.openURL(authUrl);
     } catch (error: any) {
       hapticFeedback.error();
-      Alert.alert(
-        "No se pudo abrir Google",
-        error?.message || "No fue posible abrir Google OAuth.",
-      );
+      showToast({ variant: "error", message: error?.message || "No fue posible abrir Google OAuth." });
     }
   };
 

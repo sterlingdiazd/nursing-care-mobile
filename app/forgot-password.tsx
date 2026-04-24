@@ -91,6 +91,8 @@ export default function ForgotPasswordScreen() {
               router.back();
             }}
             style={styles.backButton}
+            accessibilityRole="button"
+            accessibilityLabel="Volver"
           >
             <Text style={styles.backButtonText}>← Volver</Text>
           </TouchableOpacity>
@@ -146,6 +148,7 @@ export default function ForgotPasswordScreen() {
               <>
                 <FormInput
                   testID={authTestIds.forgotPassword.emailInput}
+                  accessibilityLabel="Correo electrónico"
                   label="Correo Electrónico"
                   placeholder="ejemplo@correo.com"
                   value={email}
@@ -175,6 +178,8 @@ export default function ForgotPasswordScreen() {
                     });
                   }}
                   style={styles.hasCodeLink}
+                  accessibilityRole="link"
+                  accessibilityLabel="Ya tengo un código, ir a restablecer contraseña"
                 >
                   <Text style={styles.hasCodeText}>
                     ¿Ya tienes un código? <Text style={styles.accentText}>Ingrésalo aquí</Text>

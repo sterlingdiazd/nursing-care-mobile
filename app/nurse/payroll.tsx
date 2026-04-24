@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, View, Text, StyleSheet } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, View, Text, StyleSheet } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
@@ -16,10 +16,13 @@ import {
   type PayrollPeriodListItemDto,
   type NursePayrollPeriodDetailDto,
 } from "@/src/services/payrollService";
+import { designTokens } from "@/src/design-system/tokens";
+import { useToast } from "@/src/components/shared/ToastProvider";
 
 export default function NursePayrollScreen() {
   const { userId: paramUserId } = useLocalSearchParams<{ userId?: string }>();
   const { userId: authUserId } = useAuth();
+  const { showToast } = useToast();
 
   const [summary, setSummary] = useState<NursePayrollSummaryDto | null>(null);
   const [history, setHistory] = useState<PayrollPeriodListItemDto[]>([]);
@@ -97,7 +100,7 @@ export default function NursePayrollScreen() {
       const session = getCachedAuthSession();
       const token = session?.token;
       if (!token) {
-        Alert.alert("Error", "No hay sesion activa.");
+        showToast({ variant: "error", message: "No hay sesión activa." });
         return;
       }
       const url = getNursePayrollVoucherUrl(periodId);
@@ -109,14 +112,14 @@ export default function NursePayrollScreen() {
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(downloadRes.uri);
         } else {
-          Alert.alert("Descarga", "Archivo descargado pero compartir no disponible.");
+          showToast({ variant: "error", message: "Archivo descargado pero compartir no está disponible." });
         }
       } else {
-        Alert.alert("Error", "No fue posible descargar el comprobante.");
+        showToast({ variant: "error", message: "No fue posible descargar el comprobante." });
       }
     } catch (e) {
       console.error(e);
-      Alert.alert("Error", e instanceof Error ? e.message : "Error al descargar el comprobante.");
+      showToast({ variant: "error", message: e instanceof Error ? e.message : "Error al descargar el comprobante." });
     } finally {
       setDownloadingVoucher(false);
     }
@@ -130,7 +133,10 @@ export default function NursePayrollScreen() {
         description="Consulta tu balance y pagos recientes"
       >
         <View style={styles.container}>
-          <Text>Cargando...</Text>
+          <ActivityIndicator
+            color={designTokens.color.ink.accentStrong}
+            accessibilityLabel="Cargando..."
+          />
         </View>
       </MobileWorkspaceShell>
     );
@@ -197,6 +203,9 @@ export default function NursePayrollScreen() {
                   ]}
                   onPress={() => handlePeriodPress(period.id)}
                   testID={`nurse-payroll-period-item-${period.id}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Periodo ${period.startDate} a ${period.endDate}, ${period.status === "Open" ? "abierto" : "cerrado"}`}
+                  accessibilityState={{ expanded: expandedPeriodId === period.id }}
                 >
                   <View>
                     <Text style={styles.historyDate}>
@@ -229,7 +238,11 @@ export default function NursePayrollScreen() {
                   >
                     {detailLoading && (
                       <View style={styles.detailLoader}>
-                        <ActivityIndicator size="small" color="#1976d2" />
+                        <ActivityIndicator
+                          size="small"
+                          color={designTokens.color.ink.accentStrong}
+                          accessibilityLabel="Cargando..."
+                        />
                         <Text style={styles.detailLoaderText}>Cargando detalle...</Text>
                       </View>
                     )}
@@ -292,9 +305,15 @@ export default function NursePayrollScreen() {
                           onPress={() => handleDownloadVoucher(period.id)}
                           disabled={downloadingVoucher}
                           testID={`nurse-payroll-download-voucher-${period.id}`}
+                          accessibilityRole="button"
+                          accessibilityLabel="Descargar comprobante"
                         >
                           {downloadingVoucher ? (
-                            <ActivityIndicator size="small" color="#fff" />
+                            <ActivityIndicator
+                              size="small"
+                              color={designTokens.color.ink.inverse}
+                              accessibilityLabel="Cargando..."
+                            />
                           ) : (
                             <Text style={styles.voucherButtonText}>Descargar comprobante</Text>
                           )}
@@ -316,17 +335,22 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   section: { marginBottom: 24, padding: 16 },
   sectionTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 12 },
-  card: { backgroundColor: "#f5f5f5", padding: 12, borderRadius: 8, marginBottom: 8 },
-  label: { fontSize: 12, color: "#666" },
+  card: {
+    backgroundColor: designTokens.color.surface.secondary,
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  label: { fontSize: 12, color: designTokens.color.ink.muted },
   value: { fontSize: 16, fontWeight: "500" },
-  highlight: { color: "#2e7d32", fontSize: 20 },
+  highlight: { color: designTokens.color.status.successText, fontSize: 20 },
   historyItem: {
     flexDirection: "row",
     justifyContent: "space-between",
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-    backgroundColor: "#f9f9f9",
+    borderBottomColor: designTokens.color.border.subtle,
+    backgroundColor: designTokens.color.surface.primary,
     borderRadius: 8,
     marginBottom: 0,
   },
@@ -334,23 +358,27 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
     borderBottomWidth: 0,
-    backgroundColor: "#eef4ff",
+    backgroundColor: designTokens.color.surface.accent,
   },
   historyDate: { fontSize: 14, fontWeight: "500" },
-  historyInfo: { fontSize: 12, color: "#666" },
+  historyInfo: { fontSize: 12, color: designTokens.color.ink.muted },
   historyRight: { alignItems: "flex-end" },
   historyStatus: { fontSize: 12, fontWeight: "500", marginBottom: 4 },
-  statusOpen: { color: "#1976d2" },
-  statusClosed: { color: "#666" },
-  historyAmount: { fontSize: 14, fontWeight: "500", color: "#2e7d32" },
-  expandIndicator: { fontSize: 11, color: "#1976d2", marginTop: 4 },
-  errorCard: { backgroundColor: "#fee2e2", padding: 12, borderRadius: 8, margin: 16 },
-  errorText: { color: "#991b1b" },
-  // Detail expansion styles
+  statusOpen: { color: designTokens.color.ink.accentStrong },
+  statusClosed: { color: designTokens.color.ink.muted },
+  historyAmount: { fontSize: 14, fontWeight: "500", color: designTokens.color.status.successText },
+  expandIndicator: { fontSize: 11, color: designTokens.color.ink.accentStrong, marginTop: 4 },
+  errorCard: {
+    backgroundColor: designTokens.color.surface.danger,
+    padding: 12,
+    borderRadius: 8,
+    margin: 16,
+  },
+  errorText: { color: designTokens.color.status.dangerText },
   detailContainer: {
-    backgroundColor: "#f0f4ff",
+    backgroundColor: designTokens.color.surface.accent,
     borderTopWidth: 1,
-    borderTopColor: "#c7d7f0",
+    borderTopColor: designTokens.color.border.strong,
     borderRadius: 8,
     borderTopLeftRadius: 0,
     borderTopRightRadius: 0,
@@ -358,31 +386,51 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   detailLoader: { flexDirection: "row", alignItems: "center", paddingVertical: 8 },
-  detailLoaderText: { marginLeft: 8, fontSize: 13, color: "#555" },
-  detailErrorCard: { backgroundColor: "#fee2e2", padding: 10, borderRadius: 6 },
-  detailEmptyText: { fontSize: 13, color: "#666", textAlign: "center", paddingVertical: 12 },
+  detailLoaderText: { marginLeft: 8, fontSize: 13, color: designTokens.color.ink.secondary },
+  detailErrorCard: {
+    backgroundColor: designTokens.color.surface.danger,
+    padding: 10,
+    borderRadius: 6,
+  },
+  detailEmptyText: {
+    fontSize: 13,
+    color: designTokens.color.ink.muted,
+    textAlign: "center",
+    paddingVertical: 12,
+  },
   detailTableHeader: {
     flexDirection: "row",
     paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: "#c7d7f0",
+    borderBottomColor: designTokens.color.border.strong,
     marginBottom: 4,
   },
-  detailHeaderCell: { fontSize: 11, fontWeight: "700", color: "#4a5568", textTransform: "uppercase" },
+  detailHeaderCell: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: designTokens.color.ink.secondary,
+    textTransform: "uppercase",
+  },
   detailRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#dce8fb",
+    borderBottomColor: designTokens.color.border.subtle,
   },
-  detailServiceDate: { fontSize: 11, color: "#888", marginBottom: 2 },
-  detailServiceDesc: { fontSize: 13, color: "#222", fontWeight: "500" },
+  detailServiceDate: { fontSize: 11, color: designTokens.color.ink.muted, marginBottom: 2 },
+  detailServiceDesc: { fontSize: 13, color: designTokens.color.ink.primary, fontWeight: "500" },
   detailAmountsRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 },
-  detailAmountLabel: { fontSize: 11, color: "#555" },
-  detailNetAmount: { fontSize: 14, fontWeight: "700", color: "#2e7d32", minWidth: 80, textAlign: "right" },
+  detailAmountLabel: { fontSize: 11, color: designTokens.color.ink.secondary },
+  detailNetAmount: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: designTokens.color.status.successText,
+    minWidth: 80,
+    textAlign: "right",
+  },
   voucherButton: {
-    backgroundColor: "#1976d2",
+    backgroundColor: designTokens.color.ink.accentStrong,
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
@@ -390,5 +438,9 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   voucherButtonDisabled: { opacity: 0.6 },
-  voucherButtonText: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  voucherButtonText: {
+    color: designTokens.color.ink.inverse,
+    fontWeight: "700",
+    fontSize: 14,
+  },
 });

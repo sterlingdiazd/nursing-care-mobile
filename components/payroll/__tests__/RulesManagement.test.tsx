@@ -4,6 +4,7 @@ import renderer from "react-test-renderer";
 
 import { RuleListItem } from "../RuleListItem";
 import { CreateRuleModal } from "../CreateRuleModal";
+import { ToastProvider } from "@/src/components/shared/ToastProvider";
 
 describe("RulesManagement", () => {
   const mockRule = {
@@ -28,7 +29,11 @@ describe("RulesManagement", () => {
 
   it("CreateRuleModal renders header and key labels", () => {
     expect(() =>
-      renderer.create(<CreateRuleModal visible={true} onSubmit={async () => {}} onClose={vi.fn()} />)
+      renderer.create(
+        <ToastProvider>
+          <CreateRuleModal visible={true} onSubmit={async () => {}} onClose={vi.fn()} />
+        </ToastProvider>
+      )
     ).not.toThrow();
   });
 });

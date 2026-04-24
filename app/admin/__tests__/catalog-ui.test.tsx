@@ -3,6 +3,21 @@ import React from "react";
 import renderer, { act } from "react-test-renderer";
 import AdminCatalogScreen from "../catalog";
 
+vi.mock("@/src/services/adminPortalService", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/src/services/adminPortalService")>()),
+  listCareRequestCategories: vi.fn().mockResolvedValue([]),
+  listCareRequestTypes: vi.fn().mockResolvedValue([]),
+  listUnitTypes: vi.fn().mockResolvedValue([]),
+  listDistanceFactors: vi.fn().mockResolvedValue([]),
+  listComplexityLevels: vi.fn().mockResolvedValue([]),
+  listVolumeDiscountRules: vi.fn().mockResolvedValue([]),
+  listNurseSpecialties: vi.fn().mockResolvedValue([]),
+  listNurseCategories: vi.fn().mockResolvedValue([]),
+  createCareRequestCategory: vi.fn().mockResolvedValue({}),
+  updateCareRequestCategory: vi.fn().mockResolvedValue({}),
+  catalogPricingPreview: vi.fn().mockResolvedValue({ basePrice: 100, categoryFactor: 1.0, grandTotal: 100 }),
+}));
+
 describe("AdminCatalogScreen", () => {
   beforeEach(() => {
     vi.clearAllMocks();
