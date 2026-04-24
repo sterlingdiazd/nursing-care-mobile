@@ -18,7 +18,7 @@ export default defineConfig({
     extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
   },
   optimizeDeps: {
-    exclude: ["src/services/payrollService"],
+    exclude: ["src/services/payrollService", "src/services/adminShiftsService", "src/services/adminPortalService"],
   },
   esbuild: {
     target: "es2022",
@@ -47,6 +47,10 @@ export default defineConfig({
           "react-native-safe-area-context",
           "src/services/payrollService",
           "src/services/payrollTypes",
+          "src/services/adminShiftsService",
+          "src/services/adminPortalService",
+          "@/src/services/adminShiftsService",
+          "@/src/services/adminPortalService",
         ],
       },
     },

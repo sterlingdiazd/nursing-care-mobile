@@ -1,17 +1,19 @@
+// @generated-by: implementation-agent
+// @pipeline-run: 2026-04-23-mobile-ux-route-first-refactor
+// @diffs: DIFF-ADMIN-CAT-001
+// @do-not-edit: false
+
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
-  Modal,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { router } from "expo-router";
 import {
   listCareRequestCategories,
   listCareRequestTypes,
@@ -49,6 +51,7 @@ import {
   type CatalogPricingPreviewResult,
 } from "@/src/services/adminPortalService";
 import { useAuth } from "@/src/context/AuthContext";
+import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 
 type TabKey =
   | "categories"
@@ -76,9 +79,11 @@ const TABS: TabConfig[] = [
   { key: "nurseCategories", label: "Cat. Enfermería" },
 ];
 
+type CatalogItem = CareRequestCategoryListItemDto | CareRequestTypeListItemDto | UnitTypeListItemDto | DistanceFactorListItemDto | ComplexityLevelListItemDto | VolumeDiscountRuleListItemDto | NurseSpecialtyListItemDto | NurseCategoryListItemDto;
+
 export default function AdminCatalogScreen() {
-  const router = useRouter();
-  const { token } = useAuth();
+  const { isReady, isAuthenticated, requiresProfileCompletion, roles, token } = useAuth();
+  const isAdmin = roles.includes("ADMIN");
   const [activeTab, setActiveTab] = useState<TabKey>("categories");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,21 +99,31 @@ export default function AdminCatalogScreen() {
   const [specialties, setSpecialties] = useState<NurseSpecialtyListItemDto[]>([]);
   const [nurseCategories, setNurseCategories] = useState<NurseCategoryListItemDto[]>([]);
 
-  // Modal states
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editingItem, setEditingItem] = useState<any>(null);
-  const [formData, setFormData] = useState<Record<string, any>>({});
+  // Inline panel states (replaces Modals)
+  const [editingItem, setEditingItem] = useState<CatalogItem | null>(null);
+  const [editingTabKey, setEditingTabKey] = useState<TabKey | null>(null);
+  const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Pricing preview states
-  const [pricingPreviewVisible, setPricingPreviewVisible] = useState(false);
+  // Pricing preview inline panel
+  const [pricingPreviewItemCode, setPricingPreviewItemCode] = useState<string | null>(null);
   const [pricingPreviewResult, setPricingPreviewResult] = useState<CatalogPricingPreviewResult | null>(null);
   const [pricingPreviewLoading, setPricingPreviewLoading] = useState(false);
   const [pricingPreviewError, setPricingPreviewError] = useState<string | null>(null);
-  const [selectedTypeCode, setSelectedTypeCode] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isReady) return;
+    if (!isAuthenticated) return void router.replace("/login");
+    if (requiresProfileCompletion) return void router.replace("/register");
+    if (!isAdmin) return void router.replace("/");
+  }, [isReady, isAuthenticated, requiresProfileCompletion, isAdmin]);
 
   const loadData = useCallback(async () => {
-    if (!token) return;
+    if (!token || !isReady || !isAuthenticated || requiresProfileCompletion || !isAdmin) {
+      setLoading(false);
+      return;
+    }
     setError(null);
     setLoading(true);
     try {
@@ -130,23 +145,27 @@ export default function AdminCatalogScreen() {
       setVolumeRules(v);
       setSpecialties(s);
       setNurseCategories(n);
-    } catch (e: any) {
-      setError(e?.message ?? "No fue posible cargar el catálogo.");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "No fue posible cargar el catálogo.");
     } finally {
       setLoading(false);
     }
-  }, [token, includeInactive]);
+  }, [token, includeInactive, isReady, isAuthenticated, requiresProfileCompletion, isAdmin]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
   const handlePricingPreview = async (typeCode: string) => {
-    setSelectedTypeCode(typeCode);
+    if (pricingPreviewItemCode === typeCode) {
+      setPricingPreviewItemCode(null);
+      setPricingPreviewResult(null);
+      return;
+    }
+    setPricingPreviewItemCode(typeCode);
     setPricingPreviewResult(null);
     setPricingPreviewError(null);
     setPricingPreviewLoading(true);
-    setPricingPreviewVisible(true);
     try {
       const result = await catalogPricingPreview({
         careRequestTypeCode: typeCode,
@@ -154,8 +173,8 @@ export default function AdminCatalogScreen() {
         existingSameUnitTypeCount: 0,
       });
       setPricingPreviewResult(result);
-    } catch (e: any) {
-      setPricingPreviewError(e?.message ?? "No fue posible obtener la vista previa.");
+    } catch (e: unknown) {
+      setPricingPreviewError(e instanceof Error ? e.message : "No fue posible obtener la vista previa.");
     } finally {
       setPricingPreviewLoading(false);
     }
@@ -163,36 +182,52 @@ export default function AdminCatalogScreen() {
 
   const handleCreate = (tabKey: TabKey) => {
     setEditingItem(null);
+    setEditingTabKey(tabKey);
     setFormData(getDefaultFormData(tabKey));
-    setModalVisible(true);
+    setSaveError(null);
   };
 
-  const handleEdit = (tabKey: TabKey, item: any) => {
+  const handleEdit = (tabKey: TabKey, item: CatalogItem) => {
+    if (editingItem === item) {
+      setEditingItem(null);
+      setEditingTabKey(null);
+      return;
+    }
     setEditingItem(item);
+    setEditingTabKey(tabKey);
     setFormData(getFormDataFromItem(tabKey, item));
-    setModalVisible(true);
+    setSaveError(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingItem(null);
+    setEditingTabKey(null);
+    setFormData({});
+    setSaveError(null);
   };
 
   const handleSave = async () => {
     if (!token) return;
     setSaving(true);
+    setSaveError(null);
     try {
-      if (editingItem) {
-        await updateItem(activeTab, editingItem.id, formData, token);
-      } else {
-        await createItem(activeTab, formData, token);
+      if (editingItem && editingTabKey) {
+        const itemWithId = editingItem as { id: string };
+        await updateItem(editingTabKey, itemWithId.id, formData);
+      } else if (editingTabKey) {
+        await createItem(editingTabKey, formData);
       }
-      setModalVisible(false);
+      setEditingItem(null);
+      setEditingTabKey(null);
       await loadData();
-      Alert.alert("Éxito", editingItem ? "Elemento actualizado." : "Elemento creado.");
-    } catch (e: any) {
-      Alert.alert("Error", e?.message ?? "No fue posible guardar.");
+    } catch (e: unknown) {
+      setSaveError(e instanceof Error ? e.message : "No fue posible guardar.");
     } finally {
       setSaving(false);
     }
   };
 
-  const getDefaultFormData = (tabKey: TabKey): Record<string, any> => {
+  const getDefaultFormData = (tabKey: TabKey): Record<string, unknown> => {
     switch (tabKey) {
       case "categories":
         return { code: "", displayName: "", categoryFactor: 1, isActive: true, displayOrder: categories.length };
@@ -215,72 +250,72 @@ export default function AdminCatalogScreen() {
     }
   };
 
-  const getFormDataFromItem = (tabKey: TabKey, item: any): Record<string, any> => {
+  const getFormDataFromItem = (tabKey: TabKey, item: CatalogItem): Record<string, unknown> => {
     switch (tabKey) {
-      case "categories":
-        return { code: item.code, displayName: item.displayName, categoryFactor: item.categoryFactor, isActive: item.isActive, displayOrder: item.displayOrder };
-      case "types":
-        return { code: item.code, displayName: item.displayName, careRequestCategoryCode: item.careRequestCategoryCode, unitTypeCode: item.unitTypeCode, basePrice: item.basePrice, isActive: item.isActive, displayOrder: item.displayOrder };
-      case "units":
-        return { code: item.code, displayName: item.displayName, isActive: item.isActive, displayOrder: item.displayOrder };
-      case "distance":
-        return { code: item.code, displayName: item.displayName, multiplier: item.multiplier, isActive: item.isActive, displayOrder: item.displayOrder };
-      case "complexity":
-        return { code: item.code, displayName: item.displayName, multiplier: item.multiplier, isActive: item.isActive, displayOrder: item.displayOrder };
-      case "volume":
-        return { minimumCount: item.minimumCount, discountPercent: item.discountPercent, isActive: item.isActive, displayOrder: item.displayOrder };
-      case "specialties":
-        return { code: item.code, displayName: item.displayName, alternativeCodes: item.alternativeCodes ?? "", isActive: item.isActive, displayOrder: item.displayOrder };
-      case "nurseCategories":
-        return { code: item.code, displayName: item.displayName, alternativeCodes: item.alternativeCodes ?? "", isActive: item.isActive, displayOrder: item.displayOrder };
+      case "categories": {
+        const category = item as CareRequestCategoryListItemDto;
+        return { code: category.code, displayName: category.displayName, categoryFactor: category.categoryFactor, isActive: category.isActive, displayOrder: category.displayOrder };
+      }
+      case "types": {
+        const type = item as CareRequestTypeListItemDto;
+        return { code: type.code, displayName: type.displayName, careRequestCategoryCode: type.careRequestCategoryCode, unitTypeCode: type.unitTypeCode, basePrice: type.basePrice, isActive: type.isActive, displayOrder: type.displayOrder };
+      }
+      case "units": {
+        const unit = item as UnitTypeListItemDto;
+        return { code: unit.code, displayName: unit.displayName, isActive: unit.isActive, displayOrder: unit.displayOrder };
+      }
+      case "distance": {
+        const distance = item as DistanceFactorListItemDto;
+        return { code: distance.code, displayName: distance.displayName, multiplier: distance.multiplier, isActive: distance.isActive, displayOrder: distance.displayOrder };
+      }
+      case "complexity": {
+        const complexity = item as ComplexityLevelListItemDto;
+        return { code: complexity.code, displayName: complexity.displayName, multiplier: complexity.multiplier, isActive: complexity.isActive, displayOrder: complexity.displayOrder };
+      }
+      case "volume": {
+        const volumeRule = item as VolumeDiscountRuleListItemDto;
+        return { minimumCount: volumeRule.minimumCount, discountPercent: volumeRule.discountPercent, isActive: volumeRule.isActive, displayOrder: volumeRule.displayOrder };
+      }
+      case "specialties": {
+        const specialty = item as NurseSpecialtyListItemDto;
+        return { code: specialty.code, displayName: specialty.displayName, alternativeCodes: specialty.alternativeCodes ?? "", isActive: specialty.isActive, displayOrder: specialty.displayOrder };
+      }
+      case "nurseCategories": {
+        const nurseCategory = item as NurseCategoryListItemDto;
+        return { code: nurseCategory.code, displayName: nurseCategory.displayName, alternativeCodes: nurseCategory.alternativeCodes ?? "", isActive: nurseCategory.isActive, displayOrder: nurseCategory.displayOrder };
+      }
       default:
         return {};
     }
   };
 
-  const createItem = async (tabKey: TabKey, data: Record<string, any>, authToken: string) => {
+  const createItem = async (tabKey: TabKey, data: Record<string, unknown>) => {
     switch (tabKey) {
-      case "categories":
-        return createCareRequestCategory(data as any);
-      case "types":
-        return createCareRequestType(data as any);
-      case "units":
-        return createUnitType(data as any);
-      case "distance":
-        return createDistanceFactor(data as any);
-      case "complexity":
-        return createComplexityLevel(data as any);
-      case "volume":
-        return createVolumeDiscountRule(data as any);
-      case "specialties":
-        return createNurseSpecialty(data as any);
-      case "nurseCategories":
-        return createNurseCategory(data as any);
+      case "categories": return createCareRequestCategory(data as Parameters<typeof createCareRequestCategory>[0]);
+      case "types": return createCareRequestType(data as Parameters<typeof createCareRequestType>[0]);
+      case "units": return createUnitType(data as Parameters<typeof createUnitType>[0]);
+      case "distance": return createDistanceFactor(data as Parameters<typeof createDistanceFactor>[0]);
+      case "complexity": return createComplexityLevel(data as Parameters<typeof createComplexityLevel>[0]);
+      case "volume": return createVolumeDiscountRule(data as Parameters<typeof createVolumeDiscountRule>[0]);
+      case "specialties": return createNurseSpecialty(data as Parameters<typeof createNurseSpecialty>[0]);
+      case "nurseCategories": return createNurseCategory(data as Parameters<typeof createNurseCategory>[0]);
     }
   };
 
-  const updateItem = async (tabKey: TabKey, id: string, data: Record<string, any>, authToken: string) => {
+  const updateItem = async (tabKey: TabKey, id: string, data: Record<string, unknown>) => {
     switch (tabKey) {
-      case "categories":
-        return updateCareRequestCategory(id, data as any);
-      case "types":
-        return updateCareRequestType(id, data as any);
-      case "units":
-        return updateUnitType(id, data as any);
-      case "distance":
-        return updateDistanceFactor(id, data as any);
-      case "complexity":
-        return updateComplexityLevel(id, data as any);
-      case "volume":
-        return updateVolumeDiscountRule(id, data as any);
-      case "specialties":
-        return updateNurseSpecialty(id, data as any);
-      case "nurseCategories":
-        return updateNurseCategory(id, data as any);
+      case "categories": return updateCareRequestCategory(id, data as Parameters<typeof updateCareRequestCategory>[1]);
+      case "types": return updateCareRequestType(id, data as Parameters<typeof updateCareRequestType>[1]);
+      case "units": return updateUnitType(id, data as Parameters<typeof updateUnitType>[1]);
+      case "distance": return updateDistanceFactor(id, data as Parameters<typeof updateDistanceFactor>[1]);
+      case "complexity": return updateComplexityLevel(id, data as Parameters<typeof updateComplexityLevel>[1]);
+      case "volume": return updateVolumeDiscountRule(id, data as Parameters<typeof updateVolumeDiscountRule>[1]);
+      case "specialties": return updateNurseSpecialty(id, data as Parameters<typeof updateNurseSpecialty>[1]);
+      case "nurseCategories": return updateNurseCategory(id, data as Parameters<typeof updateNurseCategory>[1]);
     }
   };
 
-  const getCurrentData = () => {
+  const getCurrentData = (): CatalogItem[] => {
     switch (activeTab) {
       case "categories": return categories;
       case "types": return types;
@@ -294,84 +329,65 @@ export default function AdminCatalogScreen() {
     }
   };
 
-  const renderCard = (item: any, index: number) => {
-    const getSubtitle = () => {
-      switch (activeTab) {
-        case "categories":
-          return `Factor: ${item.categoryFactor}`;
-        case "types":
-          return `Precio base: $${item.basePrice}`;
-        case "units":
-          return item.isActive ? "Activo" : "Inactivo";
-        case "distance":
-        case "complexity":
-          return `Multiplicador: ${item.multiplier}`;
-        case "volume":
-          return `${item.discountPercent}% descuento desde ${item.minimumCount}`;
-        case "specialties":
-        case "nurseCategories":
-          return item.alternativeCodes ?? "Sin códigos alternativos";
-        default:
-          return "";
+  const getSubtitle = (item: CatalogItem): string => {
+    switch (activeTab) {
+      case "categories":
+        return `Factor: ${(item as CareRequestCategoryListItemDto).categoryFactor}`;
+      case "types":
+        return `Precio base: $${(item as CareRequestTypeListItemDto).basePrice}`;
+      case "units":
+        return (item as UnitTypeListItemDto).isActive ? "Activo" : "Inactivo";
+      case "distance":
+        return `Multiplicador: ${(item as DistanceFactorListItemDto).multiplier}`;
+      case "complexity":
+        return `Multiplicador: ${(item as ComplexityLevelListItemDto).multiplier}`;
+      case "volume": {
+        const volumeRule = item as VolumeDiscountRuleListItemDto;
+        return `${volumeRule.discountPercent}% descuento desde ${volumeRule.minimumCount}`;
       }
-    };
-
-    return (
-      <TouchableOpacity
-        key={item.id ?? index}
-        style={styles.card}
-        onPress={() => handleEdit(activeTab, item)}
-      >
-        <View style={styles.cardContent}>
-          <View style={styles.cardTextBlock}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>{item.displayName ?? item.code}</Text>
-              {!item.isActive && (
-                <View style={styles.inactiveBadge}>
-                  <Text style={styles.inactiveBadgeText}>Inactivo</Text>
-                </View>
-              )}
-            </View>
-            <Text style={styles.cardSubtitle}>{getSubtitle()}</Text>
-            {item.code && <Text style={styles.cardCode}>Código {item.code}</Text>}
-          </View>
-          <View style={styles.cardActions}>
-            {activeTab === "types" && item.code && (
-              <TouchableOpacity
-                testID={`pricing-preview-btn-${item.code}`}
-                style={styles.previewButton}
-                onPress={(e) => {
-                  e.stopPropagation();
-                  handlePricingPreview(item.code);
-                }}
-              >
-                <Text style={styles.previewButtonText}>Previsualizar precio</Text>
-              </TouchableOpacity>
-            )}
-            <Text style={styles.cardChevron}>›</Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
+      case "specialties":
+        return (item as NurseSpecialtyListItemDto).alternativeCodes ?? "Sin códigos alternativos";
+      case "nurseCategories":
+        return (item as NurseCategoryListItemDto).alternativeCodes ?? "Sin códigos alternativos";
+      default: return "";
+    }
   };
 
-  const renderFormField = (key: string, value: any) => {
+  const getItemId = (item: CatalogItem) => item.id;
+
+  const getItemTitle = (item: CatalogItem) => {
+    if ("displayName" in item) {
+      return item.displayName;
+    }
+    return `Descuento ${item.discountPercent}%`;
+  };
+
+  const getItemCode = (item: CatalogItem) => {
+    if ("code" in item) {
+      return item.code;
+    }
+    return null;
+  };
+
+  const isItemActive = (item: CatalogItem) => item.isActive;
+
+  const renderFormField = (key: string, value: unknown) => {
     const label = getFieldLabel(key);
     const isBoolean = typeof value === "boolean";
     const isNumber = typeof value === "number";
 
     if (isBoolean) {
       return (
-        <TouchableOpacity
+        <Pressable
           key={key}
           style={styles.checkboxRow}
           onPress={() => setFormData({ ...formData, [key]: !value })}
         >
           <View style={[styles.checkbox, value && styles.checkboxChecked]}>
-            {value && <Text style={styles.checkmark}>✓</Text>}
+            {value && <Text style={styles.checkmark}>v</Text>}
           </View>
           <Text style={styles.checkboxLabel}>{label}</Text>
-        </TouchableOpacity>
+        </Pressable>
       );
     }
 
@@ -387,6 +403,8 @@ export default function AdminCatalogScreen() {
           }}
           keyboardType={isNumber ? "decimal-pad" : "default"}
           placeholder={label}
+          testID="admin-setting-value-input"
+          nativeID="admin-setting-value-input"
         />
       </View>
     );
@@ -394,561 +412,299 @@ export default function AdminCatalogScreen() {
 
   const getFieldLabel = (key: string): string => {
     const labels: Record<string, string> = {
-      code: "Código",
+      code: "Codigo",
       displayName: "Nombre",
-      categoryFactor: "Factor de categoría",
-      careRequestCategoryCode: "Categoría de solicitud",
+      categoryFactor: "Factor de categoria",
+      careRequestCategoryCode: "Categoria de solicitud",
       unitTypeCode: "Tipo de unidad",
       basePrice: "Precio base",
       multiplier: "Multiplicador",
-      minimumCount: "Cantidad mínima",
+      minimumCount: "Cantidad minima",
       discountPercent: "Porcentaje de descuento",
-      alternativeCodes: "Códigos alternativos",
+      alternativeCodes: "Codigos alternativos",
       isActive: "Activo",
-      displayOrder: "Orden de visualización",
+      displayOrder: "Orden de visualizacion",
     };
     return labels[key] ?? key;
   };
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
+  return (
+    <MobileWorkspaceShell
+      eyebrow="Administración"
+      title="Catálogo de precios"
+      description="Gestiona opciones y factores desde una sola vista."
+      testID="admin-catalog-screen"
+      nativeID="admin-catalog-screen"
+      actions={(
+        <View style={styles.headerActions}>
+          <Pressable
+            style={[styles.button, includeInactive && styles.buttonActive]}
+            onPress={() => setIncludeInactive(!includeInactive)}
+            testID="admin-catalog-toggle-inactive"
+            nativeID="admin-catalog-toggle-inactive"
+          >
+            <Text style={[styles.buttonText, includeInactive && styles.buttonTextActive]}>
+              {includeInactive ? "Ocultar inactivos" : "Mostrar inactivos"}
+            </Text>
+          </Pressable>
+          <Pressable
+            style={styles.button}
+            onPress={() => void loadData()}
+            testID="admin-catalog-refresh-btn"
+            nativeID="admin-catalog-refresh-btn"
+          >
+            <Text style={styles.buttonText}>Actualizar</Text>
+          </Pressable>
+          <Pressable
+            style={styles.buttonPrimary}
+            onPress={() => handleCreate(activeTab)}
+            testID="admin-catalog-create-btn"
+            nativeID="admin-catalog-create-btn"
+          >
+            <Text style={styles.buttonPrimaryText}>Nuevo</Text>
+          </Pressable>
+        </View>
+      )}
+    >
+      {!!error && (
+        <Text
+          style={styles.error}
+          testID="admin-catalog-error"
+          nativeID="admin-catalog-error"
+        >
+          {error}
+        </Text>
+      )}
+
+      {loading && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#1f4b6e" />
           <Text style={styles.loadingText}>Cargando catálogo...</Text>
         </View>
-      </SafeAreaView>
-    );
-  }
-
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>Volver</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Catálogo de precios</Text>
-        <Text style={styles.subtitle}>Gestiona opciones y factores desde una sola vista.</Text>
-      </View>
-
-      {error && (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity onPress={loadData} style={styles.retryButton}>
-            <Text style={styles.retryButtonText}>Reintentar</Text>
-          </TouchableOpacity>
-        </View>
       )}
 
-      <View style={styles.controls}>
-        <TouchableOpacity
-          style={[styles.toggleButton, includeInactive && styles.toggleButtonActive]}
-          onPress={() => setIncludeInactive(!includeInactive)}
-        >
-          <Text style={[styles.toggleButtonText, includeInactive && styles.toggleButtonTextActive]}>
-            {includeInactive ? "Ocultar inactivos" : "Mostrar inactivos"}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={loadData} style={styles.reloadButton}>
-          <Text style={styles.reloadButtonText}>Actualizar</Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsContainer}>
-        {TABS.map((tab) => (
-          <TouchableOpacity
-            key={tab.key}
-            style={[styles.tab, activeTab === tab.key && styles.tabActive]}
-            onPress={() => setActiveTab(tab.key)}
+      {!loading && (
+        <>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.tabsContainer}
+            testID="admin-catalog-tab-bar"
+            nativeID="admin-catalog-tab-bar"
           >
-            <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      <ScrollView style={styles.content}>
-        <View style={styles.cardsContainer}>
-          {getCurrentData().map((item, index) => renderCard(item, index))}
-        </View>
-        {getCurrentData().length === 0 && (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No hay elementos para mostrar</Text>
-          </View>
-        )}
-      </ScrollView>
-
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => handleCreate(activeTab)}
-      >
-        <Text style={styles.fabText}>Nuevo</Text>
-      </TouchableOpacity>
-
-      <Modal
-        visible={pricingPreviewVisible}
-        animationType="slide"
-        presentationStyle="formSheet"
-        onRequestClose={() => setPricingPreviewVisible(false)}
-      >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setPricingPreviewVisible(false)}>
-              <Text style={styles.modalCancelText}>Cerrar</Text>
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>Vista previa de precio</Text>
-            <View style={{ width: 60 }} />
-          </View>
-          <View style={styles.previewModalBody}>
-            {pricingPreviewLoading && (
-              <View style={styles.previewLoadingRow}>
-                <ActivityIndicator color="#007aff" />
-                <Text style={styles.previewLoadingText}>Calculando precio...</Text>
-              </View>
-            )}
-            {pricingPreviewError && (
-              <Text style={styles.previewErrorText}>{pricingPreviewError}</Text>
-            )}
-            {pricingPreviewResult && (
-              <View style={styles.previewResultCard}>
-                <Text style={styles.previewTypeLabel}>Código: {selectedTypeCode}</Text>
-                <View style={styles.previewRow}>
-                  <Text style={styles.previewRowLabel}>Precio base</Text>
-                  <Text style={styles.previewRowValue}>${pricingPreviewResult.basePrice.toFixed(2)}</Text>
-                </View>
-                <View style={styles.previewRow}>
-                  <Text style={styles.previewRowLabel}>Factor de categoría</Text>
-                  <Text style={styles.previewRowValue}>{pricingPreviewResult.categoryFactor}</Text>
-                </View>
-                <View style={[styles.previewRow, styles.previewTotalRow]}>
-                  <Text style={styles.previewTotalLabel}>Total</Text>
-                  <Text style={styles.previewTotalValue}>${pricingPreviewResult.grandTotal.toFixed(2)}</Text>
-                </View>
-              </View>
-            )}
-          </View>
-        </SafeAreaView>
-      </Modal>
-
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setModalVisible(false)}>
-              <Text style={styles.modalCancelText}>Cancelar</Text>
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>
-              {editingItem ? "Editar" : "Crear"} {TABS.find((t) => t.key === activeTab)?.label}
-            </Text>
-            <TouchableOpacity onPress={handleSave} disabled={saving}>
-              <Text style={[styles.modalSaveText, saving && styles.modalSaveTextDisabled]}>
-                {saving ? "Guardando..." : "Guardar"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView style={styles.modalContent}>
-            {Object.entries(formData).map(([key, value]) => renderFormField(key, value))}
+            {TABS.map((tab) => (
+              <Pressable
+                key={tab.key}
+                style={[styles.tab, activeTab === tab.key && styles.tabActive]}
+                onPress={() => setActiveTab(tab.key)}
+                testID={`admin-catalog-tab-${tab.key}`}
+                nativeID={`admin-catalog-tab-${tab.key}`}
+              >
+                <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
+                  {tab.label}
+                </Text>
+              </Pressable>
+            ))}
           </ScrollView>
-        </SafeAreaView>
-      </Modal>
-    </SafeAreaView>
+
+          {/* Inline edit/create panel */}
+          {editingTabKey === activeTab && (
+            <View
+              style={styles.editPanel}
+              testID="admin-catalog-edit-panel"
+              nativeID="admin-catalog-edit-panel"
+            >
+              <Text style={styles.editPanelTitle}>
+                {editingItem ? "Editar" : "Crear"} {TABS.find((t) => t.key === activeTab)?.label}
+              </Text>
+
+              {saveError && <Text style={styles.error}>{saveError}</Text>}
+
+              {Object.entries(formData).map(([key, value]) => renderFormField(key, value))}
+
+              <View style={styles.editActions}>
+                <Pressable
+                  style={[styles.buttonPrimary, saving && styles.buttonDisabled]}
+                  onPress={() => void handleSave()}
+                  disabled={saving}
+                  testID="admin-catalog-save-btn"
+                  nativeID="admin-catalog-save-btn"
+                >
+                  <Text style={styles.buttonPrimaryText}>{saving ? "Guardando..." : "Guardar"}</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.button}
+                  onPress={handleCancelEdit}
+                  testID="admin-catalog-cancel-btn"
+                  nativeID="admin-catalog-cancel-btn"
+                >
+                  <Text style={styles.buttonText}>Cancelar</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
+
+          <View
+            style={styles.cardsContainer}
+            testID="admin-catalog-cards-list"
+            nativeID="admin-catalog-cards-list"
+          >
+            {getCurrentData().map((item, index) => {
+              const isEditingThis = editingItem === item;
+              const itemId = getItemId(item) ?? String(index);
+              const itemCode = getItemCode(item);
+              return (
+                <View key={itemId}>
+                  <Pressable
+                    style={styles.card}
+                    onPress={() => handleEdit(activeTab, item)}
+                    testID={`admin-catalog-card-${itemId}`}
+                    nativeID={`admin-catalog-card-${itemId}`}
+                  >
+                    <View style={styles.cardContent}>
+                      <View style={styles.cardTextBlock}>
+                        <View style={styles.cardHeader}>
+                          <Text style={styles.cardTitle}>{getItemTitle(item)}</Text>
+                          {!isItemActive(item) && (
+                            <View style={styles.inactiveBadge}>
+                              <Text style={styles.inactiveBadgeText}>Inactivo</Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={styles.cardSubtitle}>{getSubtitle(item)}</Text>
+                        {itemCode && <Text style={styles.cardCode}>Código {itemCode}</Text>}
+                      </View>
+                      <View style={styles.cardActions}>
+                        {activeTab === "types" && itemCode && (
+                          <Pressable
+                            testID={`admin-catalog-pricing-preview-${itemCode}`}
+                            nativeID={`admin-catalog-pricing-preview-${itemCode}`}
+                            style={styles.previewButton}
+                            onPress={(e) => {
+                              e.stopPropagation?.();
+                              void handlePricingPreview(itemCode);
+                            }}
+                          >
+                            <Text style={styles.previewButtonText}>Previsualizar precio</Text>
+                          </Pressable>
+                        )}
+                        <Text style={styles.cardChevron}>{isEditingThis ? "v" : ">"}</Text>
+                      </View>
+                    </View>
+                  </Pressable>
+
+                  {/* Pricing preview inline panel */}
+                  {activeTab === "types" && pricingPreviewItemCode === itemCode && (
+                    <View
+                      style={styles.pricingPreviewPanel}
+                      testID="admin-catalog-pricing-preview-panel"
+                      nativeID="admin-catalog-pricing-preview-panel"
+                    >
+                      <Text style={styles.previewPanelTitle}>Vista previa de precio</Text>
+                      {pricingPreviewLoading && (
+                        <View style={styles.previewLoadingRow}>
+                          <ActivityIndicator color="#007aff" />
+                          <Text style={styles.previewLoadingText}>Calculando precio...</Text>
+                        </View>
+                      )}
+                      {pricingPreviewError && (
+                        <Text style={styles.error}>{pricingPreviewError}</Text>
+                      )}
+                      {pricingPreviewResult && (
+                        <View style={styles.previewResultCard}>
+                          <Text style={styles.previewTypeLabel}>Codigo: {pricingPreviewItemCode}</Text>
+                          <View style={styles.previewRow}>
+                            <Text style={styles.previewRowLabel}>Precio base</Text>
+                            <Text style={styles.previewRowValue}>${pricingPreviewResult.basePrice.toFixed(2)}</Text>
+                          </View>
+                          <View style={styles.previewRow}>
+                            <Text style={styles.previewRowLabel}>Factor de categoria</Text>
+                            <Text style={styles.previewRowValue}>{pricingPreviewResult.categoryFactor}</Text>
+                          </View>
+                          <View style={[styles.previewRow, styles.previewTotalRow]}>
+                            <Text style={styles.previewTotalLabel}>Total</Text>
+                            <Text style={styles.previewTotalValue}>${pricingPreviewResult.grandTotal.toFixed(2)}</Text>
+                          </View>
+                        </View>
+                      )}
+                      <Pressable
+                        style={styles.button}
+                        onPress={() => { setPricingPreviewItemCode(null); setPricingPreviewResult(null); }}
+                      >
+                        <Text style={styles.buttonText}>Cerrar vista previa</Text>
+                      </Pressable>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+
+            {getCurrentData().length === 0 && (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateText}>No hay elementos para mostrar</Text>
+              </View>
+            )}
+          </View>
+        </>
+      )}
+    </MobileWorkspaceShell>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f2f2f7",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: "#5f7280",
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 14,
-    backgroundColor: "#f2f2f7",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
-  },
-  backButton: {
-    marginBottom: 10,
-    alignSelf: "flex-start",
-  },
-  backButtonText: {
-    fontSize: 15,
-    color: "#007aff",
-    fontWeight: "600",
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: "800",
-    color: "#111827",
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#6b7280",
-    marginTop: 6,
-    lineHeight: 20,
-  },
-  errorContainer: {
-    margin: 16,
-    padding: 16,
-    backgroundColor: "#fef2f2",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#fecaca",
-  },
-  errorText: {
-    color: "#b74f4d",
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  retryButton: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: "#b74f4d",
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  controls: {
-    flexDirection: "row",
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 10,
-    gap: 10,
-  },
-  toggleButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    backgroundColor: "#ffffff",
-  },
-  toggleButtonActive: {
-    backgroundColor: "#eff6ff",
-    borderColor: "#bfdbfe",
-  },
-  toggleButtonText: {
-    fontSize: 14,
-    color: "#111827",
-    fontWeight: "600",
-  },
-  toggleButtonTextActive: {
-    color: "#007aff",
-  },
-  reloadButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    backgroundColor: "#ffffff",
-  },
-  reloadButtonText: {
-    fontSize: 14,
-    color: "#007aff",
-    fontWeight: "600",
-  },
-  tabsContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-  },
-  tab: {
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    marginRight: 8,
-    borderRadius: 999,
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-  },
-  tabActive: {
-    backgroundColor: "#111827",
-    borderColor: "#111827",
-  },
-  tabText: {
-    fontSize: 14,
-    color: "#111827",
-    fontWeight: "600",
-  },
-  tabTextActive: {
-    color: "#ffffff",
-  },
-  content: {
-    flex: 1,
-  },
-  cardsContainer: {
-    padding: 16,
-    gap: 10,
-  },
-  card: {
-    backgroundColor: "#ffffff",
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.03,
-    shadowRadius: 12,
-    elevation: 2,
-  },
-  cardContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 14,
-  },
-  cardTextBlock: {
-    flex: 1,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 4,
-    gap: 8,
-  },
-  cardTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#111827",
-    flex: 1,
-  },
-  inactiveBadge: {
-    backgroundColor: "#fff1f2",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
-  },
-  inactiveBadgeText: {
-    fontSize: 11,
-    color: "#be123c",
-    fontWeight: "600",
-  },
-  cardSubtitle: {
-    fontSize: 13,
-    color: "#4b5563",
-    marginBottom: 4,
-  },
-  cardCode: {
-    fontSize: 12,
-    color: "#9ca3af",
-  },
-  cardChevron: {
-    color: "#9ca3af",
-    fontSize: 24,
-    lineHeight: 24,
-  },
-  cardActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  previewButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-    backgroundColor: "#eff6ff",
-    borderWidth: 1,
-    borderColor: "#bfdbfe",
-  },
-  previewButtonText: {
-    fontSize: 12,
-    color: "#1d4ed8",
-    fontWeight: "600",
-  },
-  previewModalBody: {
-    flex: 1,
-    padding: 20,
-  },
-  previewLoadingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingVertical: 24,
-  },
-  previewLoadingText: {
-    fontSize: 15,
-    color: "#5f7280",
-  },
-  previewErrorText: {
-    fontSize: 15,
-    color: "#b74f4d",
-    lineHeight: 22,
-  },
-  previewResultCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    gap: 0,
-  },
-  previewTypeLabel: {
-    fontSize: 13,
-    color: "#6b7280",
-    marginBottom: 16,
-  },
-  previewRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
-  },
-  previewRowLabel: {
-    fontSize: 15,
-    color: "#374151",
-  },
-  previewRowValue: {
-    fontSize: 15,
-    color: "#111827",
-    fontWeight: "600",
-  },
-  previewTotalRow: {
-    borderBottomWidth: 0,
-    marginTop: 4,
-    paddingTop: 14,
-  },
-  previewTotalLabel: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  previewTotalValue: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#007aff",
-  },
-  emptyState: {
-    padding: 32,
-    alignItems: "center",
-  },
-  emptyStateText: {
-    fontSize: 16,
-    color: "#5f7280",
-  },
-  fab: {
-    position: "absolute",
-    right: 16,
-    bottom: 16,
-    minWidth: 88,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#007aff",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 18,
-    shadowColor: "#007aff",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  fabText: {
-    fontSize: 15,
-    color: "#ffffff",
-    fontWeight: "700",
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "#f2f2f7",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 16,
-    backgroundColor: "#ffffff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
-  },
-  modalCancelText: {
-    fontSize: 16,
-    color: "#6b7280",
-  },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  modalSaveText: {
-    fontSize: 16,
-    color: "#007aff",
-    fontWeight: "700",
-  },
-  modalSaveTextDisabled: {
-    opacity: 0.5,
-  },
-  modalContent: {
-    flex: 1,
-    padding: 16,
-  },
-  formGroup: {
-    marginBottom: 16,
-  },
-  formLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#111827",
-    marginBottom: 8,
-  },
-  formInput: {
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 14,
-    padding: 14,
-    fontSize: 16,
-    color: "#111827",
-  },
-  checkboxRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: "#d1d5db",
-    backgroundColor: "#ffffff",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  checkboxChecked: {
-    backgroundColor: "#007aff",
-    borderColor: "#007aff",
-  },
-  checkmark: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  checkboxLabel: {
-    fontSize: 16,
-    color: "#111827",
-  },
+  headerActions: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
+  button: { backgroundColor: "#ffffff", borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: "#d1d5db" },
+  buttonText: { color: "#007aff", fontWeight: "700", fontSize: 14 },
+  buttonActive: { backgroundColor: "#eff6ff", borderColor: "#bfdbfe" },
+  buttonTextActive: { color: "#007aff" },
+  buttonPrimary: { backgroundColor: "#007aff", borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10 },
+  buttonPrimaryText: { color: "#ffffff", fontWeight: "700", fontSize: 14, textAlign: "center" },
+  buttonDisabled: { opacity: 0.5 },
+  error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: 40 },
+  loadingText: { marginTop: 12, fontSize: 16, color: "#5f7280" },
+  tabsContainer: { marginBottom: 8 },
+  tab: { paddingHorizontal: 15, paddingVertical: 10, marginRight: 8, borderRadius: 999, backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#d1d5db" },
+  tabActive: { backgroundColor: "#111827", borderColor: "#111827" },
+  tabText: { fontSize: 14, color: "#111827", fontWeight: "600" },
+  tabTextActive: { color: "#ffffff" },
+  editPanel: { backgroundColor: "#f8fafc", borderWidth: 1, borderColor: "#bfdbfe", borderRadius: 16, padding: 16, marginBottom: 12, gap: 8 },
+  editPanelTitle: { fontSize: 16, fontWeight: "800", color: "#111827", marginBottom: 8 },
+  editActions: { flexDirection: "row", gap: 8, marginTop: 8 },
+  cardsContainer: { gap: 10 },
+  card: { backgroundColor: "#ffffff", borderRadius: 18, paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: "#e5e7eb", shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 2 },
+  cardContent: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 14 },
+  cardTextBlock: { flex: 1 },
+  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4, gap: 8 },
+  cardTitle: { fontSize: 15, fontWeight: "700", color: "#111827", flex: 1 },
+  inactiveBadge: { backgroundColor: "#fff1f2", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
+  inactiveBadgeText: { fontSize: 11, color: "#be123c", fontWeight: "600" },
+  cardSubtitle: { fontSize: 13, color: "#4b5563", marginBottom: 4 },
+  cardCode: { fontSize: 12, color: "#9ca3af" },
+  cardChevron: { color: "#9ca3af", fontSize: 18, lineHeight: 24 },
+  cardActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+  previewButton: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, backgroundColor: "#eff6ff", borderWidth: 1, borderColor: "#bfdbfe" },
+  previewButtonText: { fontSize: 12, color: "#1d4ed8", fontWeight: "600" },
+  pricingPreviewPanel: { backgroundColor: "#f8fafc", borderWidth: 1, borderColor: "#bfdbfe", borderRadius: 16, padding: 16, marginTop: 4, marginBottom: 8, gap: 12 },
+  previewPanelTitle: { fontSize: 16, fontWeight: "800", color: "#111827", marginBottom: 8 },
+  previewLoadingRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 },
+  previewLoadingText: { fontSize: 15, color: "#5f7280" },
+  previewResultCard: { backgroundColor: "#ffffff", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#e5e7eb" },
+  previewTypeLabel: { fontSize: 13, color: "#6b7280", marginBottom: 12 },
+  previewRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#f3f4f6" },
+  previewRowLabel: { fontSize: 15, color: "#374151" },
+  previewRowValue: { fontSize: 15, color: "#111827", fontWeight: "600" },
+  previewTotalRow: { borderBottomWidth: 0, marginTop: 4, paddingTop: 14 },
+  previewTotalLabel: { fontSize: 16, fontWeight: "700", color: "#111827" },
+  previewTotalValue: { fontSize: 18, fontWeight: "800", color: "#007aff" },
+  emptyState: { padding: 32, alignItems: "center" },
+  emptyStateText: { fontSize: 16, color: "#5f7280" },
+  formGroup: { marginBottom: 16 },
+  formLabel: { fontSize: 14, fontWeight: "600", color: "#111827", marginBottom: 8 },
+  formInput: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#d1d5db", borderRadius: 14, padding: 14, fontSize: 16, color: "#111827" },
+  checkboxRow: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
+  checkbox: { width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: "#d1d5db", backgroundColor: "#ffffff", justifyContent: "center", alignItems: "center", marginRight: 12 },
+  checkboxChecked: { backgroundColor: "#007aff", borderColor: "#007aff" },
+  checkmark: { color: "#fff", fontSize: 14, fontWeight: "700" },
+  checkboxLabel: { fontSize: 16, color: "#111827" },
 });

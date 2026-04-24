@@ -1,5 +1,10 @@
+// @generated-by: implementation-agent
+// @pipeline-run: 2026-04-23-mobile-ux-route-first-refactor
+// @diffs: DIFF-ADMIN-AL-001
+// @do-not-edit: false
+
 import { useEffect, useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
@@ -24,6 +29,7 @@ function roleLabel(role: string) {
 
 export default function AdminAuditLogsScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
+  const isAdmin = roles.includes("ADMIN");
   const [items, setItems] = useState<AuditLogListItemDto[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [pageNumber, setPageNumber] = useState(1);
@@ -34,17 +40,21 @@ export default function AdminAuditLogsScreen() {
   const [entityTypeFilter, setEntityTypeFilter] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
-  // Detail modal
+  // Inline detail panel (replaces Modal)
   const [selectedDetail, setSelectedDetail] = useState<AuditLogDetailDto | null>(null);
-  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
 
-  const load = async () => {
+  const load = async (
+    page = pageNumber,
+    nextActionFilter = actionFilter,
+    nextEntityTypeFilter = entityTypeFilter,
+  ) => {
     try {
       setError(null);
       const response = await searchAuditLogs({
-        action: actionFilter || undefined,
-        entityType: entityTypeFilter || undefined,
-        pageNumber,
+        action: nextActionFilter || undefined,
+        entityType: nextEntityTypeFilter || undefined,
+        pageNumber: page,
         pageSize: 20,
       });
       setItems(response.items);
@@ -58,74 +68,110 @@ export default function AdminAuditLogsScreen() {
     if (!isReady) return;
     if (!isAuthenticated) return void router.replace("/login");
     if (requiresProfileCompletion) return void router.replace("/register");
-    if (!roles.includes("ADMIN")) return void router.replace("/");
+    if (!isAdmin) return void router.replace("/");
     void load();
-  }, [isReady, isAuthenticated, requiresProfileCompletion, roles, pageNumber]);
+  }, [isReady, isAuthenticated, requiresProfileCompletion, isAdmin, pageNumber]);
 
   const handleSearch = () => {
     setPageNumber(1);
-    void load();
+    void load(1);
   };
 
   const handleClearFilters = () => {
+    const nextPageNumber = 1;
     setActionFilter("");
     setEntityTypeFilter("");
-    setPageNumber(1);
+    setPageNumber(nextPageNumber);
+    void load(nextPageNumber, "", "");
   };
 
   const handleViewDetail = async (id: string) => {
+    if (expandedLogId === id) {
+      setExpandedLogId(null);
+      setSelectedDetail(null);
+      return;
+    }
     try {
       const detail = await getAuditLogDetail(id);
       setSelectedDetail(detail);
-      setDetailModalVisible(true);
+      setExpandedLogId(id);
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : "No fue posible cargar el detalle.");
     }
   };
 
-  const handleCloseDetail = () => {
-    setDetailModalVisible(false);
-    setSelectedDetail(null);
-  };
-
   return (
     <MobileWorkspaceShell
-      eyebrow="Auditoria"
-      title="Registro de auditoria"
+      eyebrow="Auditoría"
+      title="Registro de auditoría"
       description="Historial de eventos sensibles para seguimiento y cumplimiento."
+      testID="admin-audit-logs-screen"
+      nativeID="admin-audit-logs-screen"
       actions={(
         <View style={styles.headerActions}>
-          <Pressable style={styles.button} onPress={() => setShowFilters(!showFilters)}>
+          <Pressable
+            style={styles.button}
+            onPress={() => setShowFilters(!showFilters)}
+            testID="admin-audit-logs-filter-toggle"
+            nativeID="admin-audit-logs-filter-toggle"
+          >
             <Text style={styles.buttonText}>{showFilters ? "Ocultar filtros" : "Filtros"}</Text>
           </Pressable>
-          <Pressable style={styles.button} onPress={() => void load()}>
+          <Pressable
+            style={styles.button}
+            onPress={() => void load()}
+            testID="admin-audit-logs-refresh-btn"
+            nativeID="admin-audit-logs-refresh-btn"
+          >
             <Text style={styles.buttonText}>Actualizar</Text>
           </Pressable>
         </View>
       )}
     >
-      {!!error && <Text style={styles.error}>{error}</Text>}
+      {!!error && (
+        <Text
+          style={styles.error}
+          testID="admin-audit-logs-error"
+          nativeID="admin-audit-logs-error"
+        >
+          {error}
+        </Text>
+      )}
 
       {showFilters && (
         <View style={styles.filtersCard}>
-          <Text style={styles.filtersTitle}>Filtros de busqueda</Text>
+          <Text style={styles.filtersTitle}>Filtros de búsqueda</Text>
           <TextInput
             style={styles.input}
-            placeholder="Accion (ej: AdminAccountCreated)"
+            placeholder="Acción (ej: AdminAccountCreated)"
             value={actionFilter}
             onChangeText={setActionFilter}
+            testID="admin-audit-logs-action-input"
+            nativeID="admin-audit-logs-action-input"
           />
           <TextInput
             style={styles.input}
             placeholder="Tipo de entidad (ej: User)"
             value={entityTypeFilter}
             onChangeText={setEntityTypeFilter}
+            testID="admin-audit-logs-entity-type-input"
+            nativeID="admin-audit-logs-entity-type-input"
           />
           <View style={styles.filterActions}>
-            <Pressable style={styles.buttonPrimary} onPress={handleSearch}>
+            <Pressable
+              style={styles.buttonPrimary}
+              onPress={handleSearch}
+              testID="admin-audit-logs-search-btn"
+              nativeID="admin-audit-logs-search-btn"
+            >
               <Text style={styles.buttonPrimaryText}>Buscar</Text>
             </Pressable>
-            <Pressable style={styles.button} onPress={handleClearFilters}>
+            <Pressable
+              style={styles.button}
+              onPress={handleClearFilters}
+              testID="admin-audit-logs-clear-btn"
+              nativeID="admin-audit-logs-clear-btn"
+            >
               <Text style={styles.buttonText}>Limpiar</Text>
             </Pressable>
           </View>
@@ -134,20 +180,93 @@ export default function AdminAuditLogsScreen() {
 
       <View style={styles.summary}>
         <Text style={styles.summaryText}>Total: {totalCount} registros</Text>
-        <Text style={styles.summaryText}>Pagina: {pageNumber}</Text>
+        <Text style={styles.summaryText}>Página: {pageNumber}</Text>
       </View>
 
-      <View style={styles.list}>
+      <View
+        style={styles.list}
+        testID="admin-audit-logs-list"
+        nativeID="admin-audit-logs-list"
+      >
         {items.map((item) => (
-          <View key={item.id} style={styles.card}>
-            <Text style={styles.timestamp}>{formatTimestamp(item.createdAtUtc)}</Text>
-            <Text style={styles.actor}>{item.actorName || "Sistema"} · {roleLabel(item.actorRole)}</Text>
-            <Text style={styles.action}>{item.action}</Text>
-            <Text style={styles.entity}>{item.entityType} · {item.entityId.substring(0, 20)}...</Text>
-            {item.notes && <Text style={styles.notes}>{item.notes}</Text>}
-            <Pressable style={styles.detailButton} onPress={() => void handleViewDetail(item.id)}>
-              <Text style={styles.detailButtonText}>Ver detalle</Text>
-            </Pressable>
+          <View key={item.id}>
+            <View
+              style={styles.card}
+              testID={`admin-audit-log-card-${item.id}`}
+              nativeID={`admin-audit-log-card-${item.id}`}
+            >
+              <Text style={styles.timestamp}>{formatTimestamp(item.createdAtUtc)}</Text>
+              <Text style={styles.actor}>{item.actorName || "Sistema"} · {roleLabel(item.actorRole)}</Text>
+              <Text style={styles.action}>{item.action}</Text>
+              <Text style={styles.entity}>{item.entityType} · {item.entityId.substring(0, 20)}...</Text>
+              {item.notes && <Text style={styles.notes}>{item.notes}</Text>}
+              <Pressable
+                style={styles.detailButton}
+                onPress={() => void handleViewDetail(item.id)}
+                testID={`admin-audit-log-detail-btn-${item.id}`}
+                nativeID={`admin-audit-log-detail-btn-${item.id}`}
+              >
+                <Text style={styles.detailButtonText}>
+                  {expandedLogId === item.id ? "Ocultar detalle" : "Ver detalle"}
+                </Text>
+              </Pressable>
+            </View>
+
+            {expandedLogId === item.id && selectedDetail && (
+              <View
+                style={styles.detailPanel}
+                testID="admin-audit-log-detail-panel"
+                nativeID="admin-audit-log-detail-panel"
+              >
+                <View style={styles.detailField}>
+                  <Text style={styles.detailLabel}>ID</Text>
+                  <Text style={styles.detailValue}>{selectedDetail.id}</Text>
+                </View>
+                <View style={styles.detailField}>
+                  <Text style={styles.detailLabel}>Fecha y hora</Text>
+                  <Text style={styles.detailValue}>{formatTimestamp(selectedDetail.createdAtUtc)}</Text>
+                </View>
+                <View style={styles.detailField}>
+                  <Text style={styles.detailLabel}>Actor</Text>
+                  <Text style={styles.detailValue}>{selectedDetail.actorName || "Sistema"}</Text>
+                  {selectedDetail.actorEmail && (
+                    <Text style={styles.detailValueSecondary}>{selectedDetail.actorEmail}</Text>
+                  )}
+                </View>
+                <View style={styles.detailField}>
+                  <Text style={styles.detailLabel}>Rol del actor</Text>
+                  <Text style={styles.detailValue}>{roleLabel(selectedDetail.actorRole)}</Text>
+                </View>
+                <View style={styles.detailField}>
+                  <Text style={styles.detailLabel}>Acción</Text>
+                  <Text style={styles.detailValue}>{selectedDetail.action}</Text>
+                </View>
+                <View style={styles.detailField}>
+                  <Text style={styles.detailLabel}>Tipo de entidad</Text>
+                  <Text style={styles.detailValue}>{selectedDetail.entityType}</Text>
+                </View>
+                <View style={styles.detailField}>
+                  <Text style={styles.detailLabel}>ID de entidad</Text>
+                  <Text style={styles.detailValueMono}>{selectedDetail.entityId}</Text>
+                </View>
+                {selectedDetail.notes && (
+                  <View style={styles.detailField}>
+                    <Text style={styles.detailLabel}>Notas</Text>
+                    <Text style={styles.detailValue}>{selectedDetail.notes}</Text>
+                  </View>
+                )}
+                {selectedDetail.metadataJson && (
+                  <View style={styles.detailField}>
+                    <Text style={styles.detailLabel}>Metadata (JSON)</Text>
+                    <View style={styles.jsonContainer}>
+                      <Text style={styles.jsonText}>
+                        {JSON.stringify(JSON.parse(selectedDetail.metadataJson), null, 2)}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+              </View>
+            )}
           </View>
         ))}
       </View>
@@ -158,6 +277,8 @@ export default function AdminAuditLogsScreen() {
             style={[styles.button, pageNumber === 1 && styles.buttonDisabled]}
             onPress={() => setPageNumber((p) => Math.max(1, p - 1))}
             disabled={pageNumber === 1}
+            testID="admin-audit-logs-prev-btn"
+            nativeID="admin-audit-logs-prev-btn"
           >
             <Text style={styles.buttonText}>Anterior</Text>
           </Pressable>
@@ -166,73 +287,13 @@ export default function AdminAuditLogsScreen() {
             style={[styles.button, pageNumber * 20 >= totalCount && styles.buttonDisabled]}
             onPress={() => setPageNumber((p) => p + 1)}
             disabled={pageNumber * 20 >= totalCount}
+            testID="admin-audit-logs-next-btn"
+            nativeID="admin-audit-logs-next-btn"
           >
             <Text style={styles.buttonText}>Siguiente</Text>
           </Pressable>
         </View>
       )}
-
-      <Modal visible={detailModalVisible} animationType="slide" onRequestClose={handleCloseDetail}>
-        <ScrollView style={styles.modal}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Detalle de auditoria</Text>
-            <Pressable style={styles.closeButton} onPress={handleCloseDetail}>
-              <Text style={styles.closeButtonText}>Cerrar</Text>
-            </Pressable>
-          </View>
-          {selectedDetail && (
-            <View style={styles.modalContent}>
-              <View style={styles.detailField}>
-                <Text style={styles.detailLabel}>ID</Text>
-                <Text style={styles.detailValue}>{selectedDetail.id}</Text>
-              </View>
-              <View style={styles.detailField}>
-                <Text style={styles.detailLabel}>Fecha y hora</Text>
-                <Text style={styles.detailValue}>{formatTimestamp(selectedDetail.createdAtUtc)}</Text>
-              </View>
-              <View style={styles.detailField}>
-                <Text style={styles.detailLabel}>Actor</Text>
-                <Text style={styles.detailValue}>{selectedDetail.actorName || "Sistema"}</Text>
-                {selectedDetail.actorEmail && (
-                  <Text style={styles.detailValueSecondary}>{selectedDetail.actorEmail}</Text>
-                )}
-              </View>
-              <View style={styles.detailField}>
-                <Text style={styles.detailLabel}>Rol del actor</Text>
-                <Text style={styles.detailValue}>{roleLabel(selectedDetail.actorRole)}</Text>
-              </View>
-              <View style={styles.detailField}>
-                <Text style={styles.detailLabel}>Accion</Text>
-                <Text style={styles.detailValue}>{selectedDetail.action}</Text>
-              </View>
-              <View style={styles.detailField}>
-                <Text style={styles.detailLabel}>Tipo de entidad</Text>
-                <Text style={styles.detailValue}>{selectedDetail.entityType}</Text>
-              </View>
-              <View style={styles.detailField}>
-                <Text style={styles.detailLabel}>ID de entidad</Text>
-                <Text style={styles.detailValueMono}>{selectedDetail.entityId}</Text>
-              </View>
-              {selectedDetail.notes && (
-                <View style={styles.detailField}>
-                  <Text style={styles.detailLabel}>Notas</Text>
-                  <Text style={styles.detailValue}>{selectedDetail.notes}</Text>
-                </View>
-              )}
-              {selectedDetail.metadataJson && (
-                <View style={styles.detailField}>
-                  <Text style={styles.detailLabel}>Metadata (JSON)</Text>
-                  <View style={styles.jsonContainer}>
-                    <Text style={styles.jsonText}>
-                      {JSON.stringify(JSON.parse(selectedDetail.metadataJson), null, 2)}
-                    </Text>
-                  </View>
-                </View>
-              )}
-            </View>
-          )}
-        </ScrollView>
-      </Modal>
     </MobileWorkspaceShell>
   );
 }
@@ -260,14 +321,9 @@ const styles = StyleSheet.create({
   notes: { color: "#4b5563", fontSize: 13, marginBottom: 8 },
   detailButton: { backgroundColor: "#007aff", borderRadius: 12, paddingVertical: 8, marginTop: 8 },
   detailButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 14, textAlign: "center" },
+  detailPanel: { backgroundColor: "#f8fafc", borderWidth: 1, borderColor: "#bfdbfe", borderRadius: 16, padding: 16, marginTop: 4, marginBottom: 8, gap: 12 },
   pagination: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 16, paddingHorizontal: 4 },
   pageInfo: { color: "#6b7280", fontSize: 14, fontWeight: "600" },
-  modal: { flex: 1, backgroundColor: "#f2f2f7" },
-  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "#e5e7eb", backgroundColor: "#ffffff" },
-  modalTitle: { fontSize: 20, fontWeight: "800", color: "#111827" },
-  closeButton: { backgroundColor: "#ffffff", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: "#d1d5db" },
-  closeButtonText: { color: "#007aff", fontWeight: "700", fontSize: 14 },
-  modalContent: { padding: 16, gap: 16 },
   detailField: { gap: 4 },
   detailLabel: { color: "#6b7280", fontSize: 12, fontWeight: "800", textTransform: "uppercase" },
   detailValue: { color: "#111827", fontSize: 15 },

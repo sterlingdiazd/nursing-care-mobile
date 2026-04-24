@@ -1,10 +1,10 @@
 // @generated-by: implementation-agent
-// @pipeline-run: 2026-04-20T-shifts-settings
-// @diffs: DIFF-ADMIN-SHF-001
+// @pipeline-run: 2026-04-23-mobile-ux-route-first-refactor
+// @diffs: DIFF-ADMIN-SHF-002
 // @do-not-edit: false
 
 import { useEffect, useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
@@ -55,6 +55,7 @@ const STATUS_CHIPS: { label: string; value: StatusFilter }[] = [
 
 export default function AdminShiftsScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
+  const isAdmin = roles.includes("ADMIN");
 
   const [items, setItems] = useState<ShiftListItemDto[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -68,22 +69,27 @@ export default function AdminShiftsScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [showFilters, setShowFilters] = useState(false);
 
-  // Detail modal
+  // Inline detail panel (replaces Modal)
   const [selectedShift, setSelectedShift] = useState<ShiftDetailDto | null>(null);
   const [shiftChanges, setShiftChanges] = useState<ShiftChangeHistoryItemDto[]>([]);
-  const [detailModalVisible, setDetailModalVisible] = useState(false);
-  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
+  const [expandedShiftId, setExpandedShiftId] = useState<string | null>(null);
 
-  const load = async (page = pageNumber) => {
+  const load = async (
+    page = pageNumber,
+    nextStartDateFilter = startDateFilter,
+    nextEndDateFilter = endDateFilter,
+    nextStatusFilter = statusFilter,
+  ) => {
     try {
       setError(null);
       setLoading(true);
       const result = await listAdminShifts({
         pageNumber: page,
         pageSize: PAGE_SIZE,
-        startDate: startDateFilter || undefined,
-        endDate: endDateFilter || undefined,
-        status: statusFilter !== "all" ? statusFilter : undefined,
+        startDate: nextStartDateFilter || undefined,
+        endDate: nextEndDateFilter || undefined,
+        status: nextStatusFilter !== "all" ? nextStatusFilter : undefined,
       });
       setItems(result.items);
       setTotalCount(result.totalCount);
@@ -98,9 +104,9 @@ export default function AdminShiftsScreen() {
     if (!isReady) return;
     if (!isAuthenticated) return void router.replace("/login");
     if (requiresProfileCompletion) return void router.replace("/register");
-    if (!roles.includes("ADMIN")) return void router.replace("/");
+    if (!isAdmin) return void router.replace("/");
     void load();
-  }, [isReady, isAuthenticated, requiresProfileCompletion, roles, pageNumber, statusFilter]);
+  }, [isReady, isAuthenticated, requiresProfileCompletion, isAdmin, pageNumber, statusFilter]);
 
   const handleSearch = () => {
     setPageNumber(1);
@@ -108,16 +114,25 @@ export default function AdminShiftsScreen() {
   };
 
   const handleClearFilters = () => {
+    const nextPageNumber = 1;
+    const nextStatusFilter: StatusFilter = "all";
     setStartDateFilter("");
     setEndDateFilter("");
-    setStatusFilter("all");
-    setPageNumber(1);
+    setStatusFilter(nextStatusFilter);
+    setPageNumber(nextPageNumber);
+    void load(nextPageNumber, "", "", nextStatusFilter);
   };
 
   const handleViewDetail = async (id: string) => {
+    if (expandedShiftId === id) {
+      setExpandedShiftId(null);
+      setSelectedShift(null);
+      setShiftChanges([]);
+      return;
+    }
     try {
-      setDetailLoading(true);
-      setDetailModalVisible(true);
+      setDetailLoadingId(id);
+      setExpandedShiftId(id);
       const [detail, changes] = await Promise.all([
         getAdminShiftDetail(id),
         getAdminShiftChanges(id),
@@ -126,29 +141,35 @@ export default function AdminShiftsScreen() {
       setShiftChanges(changes);
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : "No fue posible cargar el detalle del turno.");
-      setDetailModalVisible(false);
+      setExpandedShiftId(null);
     } finally {
-      setDetailLoading(false);
+      setDetailLoadingId(null);
     }
-  };
-
-  const handleCloseDetail = () => {
-    setDetailModalVisible(false);
-    setSelectedShift(null);
-    setShiftChanges([]);
   };
 
   return (
     <MobileWorkspaceShell
-      eyebrow="Administracion"
+      eyebrow="Administración"
       title="Turnos"
       description="Gestiona los turnos de enfermeras asignados."
+      testID="admin-shifts-screen"
+      nativeID="admin-shifts-screen"
       actions={(
         <View style={styles.headerActions}>
-          <Pressable style={styles.button} onPress={() => setShowFilters(!showFilters)}>
+          <Pressable
+            style={styles.button}
+            onPress={() => setShowFilters(!showFilters)}
+            testID="admin-shifts-filter-toggle"
+            nativeID="admin-shifts-filter-toggle"
+          >
             <Text style={styles.buttonText}>{showFilters ? "Ocultar filtros" : "Filtros"}</Text>
           </Pressable>
-          <Pressable style={styles.button} onPress={() => void load()}>
+          <Pressable
+            style={styles.button}
+            onPress={() => void load()}
+            testID="admin-shifts-refresh-btn"
+            nativeID="admin-shifts-refresh-btn"
+          >
             <Text style={styles.buttonText}>Actualizar</Text>
           </Pressable>
         </View>
@@ -166,7 +187,7 @@ export default function AdminShiftsScreen() {
 
       {showFilters && (
         <View style={styles.filtersCard}>
-          <Text style={styles.filtersTitle}>Filtros de busqueda</Text>
+          <Text style={styles.filtersTitle}>Filtros de búsqueda</Text>
 
           <Text style={styles.filterLabel}>Estado</Text>
           <View style={styles.filterChips}>
@@ -220,7 +241,7 @@ export default function AdminShiftsScreen() {
 
       <View style={styles.summary}>
         <Text style={styles.summaryText}>Total: {totalCount} turnos</Text>
-        <Text style={styles.summaryText}>Pagina: {pageNumber}</Text>
+        <Text style={styles.summaryText}>Página: {pageNumber}</Text>
       </View>
 
       {loading && <Text style={styles.loadingText}>Cargando...</Text>}
@@ -234,43 +255,139 @@ export default function AdminShiftsScreen() {
       <View style={styles.list} testID="admin-shifts-list" nativeID="admin-shifts-list">
         {items.map((item) => {
           const badgeColors = statusBadgeColors(item.status);
+          const isExpanded = expandedShiftId === item.id;
           return (
-            <View
-              key={item.id}
-              style={styles.card}
-              testID={`admin-shift-card-${item.id}`}
-              nativeID={`admin-shift-card-${item.id}`}
-            >
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardNurse}>{item.nurseDisplayName ?? "Enfermera sin nombre"}</Text>
-                <View style={[styles.statusBadge, { backgroundColor: badgeColors.bg }]}>
-                  <Text style={[styles.statusBadgeText, { color: badgeColors.text }]}>
-                    {statusLabel(item.status)}
-                  </Text>
-                </View>
-              </View>
-
-              {item.careRequestReference && (
-                <Text style={styles.cardRef}>Solicitud: {item.careRequestReference}</Text>
-              )}
-
-              <View style={styles.cardDateRow}>
-                <Text style={styles.cardDateLabel}>Inicio:</Text>
-                <Text style={styles.cardDateValue}>{formatDate(item.scheduledStartUtc)}</Text>
-              </View>
-              <View style={styles.cardDateRow}>
-                <Text style={styles.cardDateLabel}>Fin:</Text>
-                <Text style={styles.cardDateValue}>{formatDate(item.scheduledEndUtc)}</Text>
-              </View>
-
-              <Pressable
-                style={styles.detailButton}
-                onPress={() => void handleViewDetail(item.id)}
-                testID={`admin-shift-detail-btn-${item.id}`}
-                nativeID={`admin-shift-detail-btn-${item.id}`}
+            <View key={item.id}>
+              <View
+                style={styles.card}
+                testID={`admin-shift-card-${item.id}`}
+                nativeID={`admin-shift-card-${item.id}`}
               >
-                <Text style={styles.detailButtonText}>Ver detalle</Text>
-              </Pressable>
+                <View style={styles.cardHeader}>
+                  <Text style={styles.cardNurse}>{item.nurseDisplayName ?? "Enfermera sin nombre"}</Text>
+                  <View
+                    style={[styles.statusBadge, { backgroundColor: badgeColors.bg }]}
+                    testID={`admin-shifts-status-chip-card-${item.id}`}
+                    nativeID={`admin-shifts-status-chip-card-${item.id}`}
+                  >
+                    <Text style={[styles.statusBadgeText, { color: badgeColors.text }]}>
+                      {statusLabel(item.status)}
+                    </Text>
+                  </View>
+                </View>
+
+                {item.careRequestReference && (
+                  <Text style={styles.cardRef}>Solicitud: {item.careRequestReference}</Text>
+                )}
+
+                <View style={styles.cardDateRow}>
+                  <Text style={styles.cardDateLabel}>Inicio:</Text>
+                  <Text style={styles.cardDateValue}>{formatDate(item.scheduledStartUtc)}</Text>
+                </View>
+                <View style={styles.cardDateRow}>
+                  <Text style={styles.cardDateLabel}>Fin:</Text>
+                  <Text style={styles.cardDateValue}>{formatDate(item.scheduledEndUtc)}</Text>
+                </View>
+
+                <Pressable
+                  style={styles.detailButton}
+                  onPress={() => void handleViewDetail(item.id)}
+                  testID={`admin-shift-detail-btn-${item.id}`}
+                  nativeID={`admin-shift-detail-btn-${item.id}`}
+                >
+                  <Text style={styles.detailButtonText}>
+                    {detailLoadingId === item.id ? "Cargando..." : isExpanded ? "Ocultar detalle" : "Ver detalle"}
+                  </Text>
+                </Pressable>
+              </View>
+
+              {isExpanded && selectedShift && selectedShift.id === item.id && (
+                <View
+                  style={styles.detailPanel}
+                  testID="admin-shift-detail-panel"
+                  nativeID="admin-shift-detail-panel"
+                >
+                  <View style={styles.detailField}>
+                    <Text style={styles.detailLabel}>Enfermera</Text>
+                    <Text style={styles.detailValue}>{selectedShift.nurseDisplayName ?? "Sin nombre"}</Text>
+                    {selectedShift.nurseEmail && (
+                      <Text style={styles.detailValueSecondary}>{selectedShift.nurseEmail}</Text>
+                    )}
+                  </View>
+
+                  <View style={styles.detailField}>
+                    <Text style={styles.detailLabel}>Solicitud de cuidado</Text>
+                    <Text style={styles.detailValue}>{selectedShift.careRequestReference ?? selectedShift.careRequestId}</Text>
+                  </View>
+
+                  <View style={styles.detailField}>
+                    <Text style={styles.detailLabel}>Inicio programado</Text>
+                    <Text style={styles.detailValue}>{formatDate(selectedShift.scheduledStartUtc)}</Text>
+                  </View>
+
+                  <View style={styles.detailField}>
+                    <Text style={styles.detailLabel}>Fin programado</Text>
+                    <Text style={styles.detailValue}>{formatDate(selectedShift.scheduledEndUtc)}</Text>
+                  </View>
+
+                  <View style={styles.detailField}>
+                    <Text style={styles.detailLabel}>Estado</Text>
+                    <View style={{ flexDirection: "row" }}>
+                      <View style={[styles.statusBadge, { backgroundColor: statusBadgeColors(selectedShift.status).bg }]}>
+                        <Text style={[styles.statusBadgeText, { color: statusBadgeColors(selectedShift.status).text }]}>
+                          {statusLabel(selectedShift.status)}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {selectedShift.notes && (
+                    <View style={styles.detailField}>
+                      <Text style={styles.detailLabel}>Notas</Text>
+                      <Text style={styles.detailValue}>{selectedShift.notes}</Text>
+                    </View>
+                  )}
+
+                  <View style={styles.detailField}>
+                    <Text style={styles.detailLabel}>Creado</Text>
+                    <Text style={styles.detailValue}>{formatDate(selectedShift.createdAtUtc)}</Text>
+                  </View>
+
+                  <View style={styles.detailField}>
+                    <Text style={styles.detailLabel}>Última actualización</Text>
+                    <Text style={styles.detailValue}>{formatDate(selectedShift.updatedAtUtc)}</Text>
+                  </View>
+
+                  {shiftChanges.length > 0 && (
+                    <View style={styles.changesSection}>
+                      <Text style={styles.changesSectionTitle}>Historial de cambios</Text>
+                      {shiftChanges.map((change) => (
+                        <View key={change.id} style={styles.changeItem}>
+                          <Text style={styles.changeDate}>{formatDate(change.changedAtUtc)}</Text>
+                          {change.changedByActorName && (
+                            <Text style={styles.changeActor}>{change.changedByActorName}</Text>
+                          )}
+                          {change.previousStatus && change.newStatus && (
+                            <Text style={styles.changeStatus}>
+                              {statusLabel(change.previousStatus)} → {statusLabel(change.newStatus)}
+                            </Text>
+                          )}
+                          {change.notes && (
+                            <Text style={styles.changeNotes}>{change.notes}</Text>
+                          )}
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  {shiftChanges.length === 0 && (
+                    <View style={styles.detailField}>
+                      <Text style={styles.detailLabel}>Historial de cambios</Text>
+                      <Text style={styles.detailValueSecondary}>Sin cambios registrados.</Text>
+                    </View>
+                  )}
+                </View>
+              )}
             </View>
           );
         })}
@@ -299,114 +416,6 @@ export default function AdminShiftsScreen() {
           </Pressable>
         </View>
       )}
-
-      <Modal
-        visible={detailModalVisible}
-        animationType="slide"
-        onRequestClose={handleCloseDetail}
-      >
-        <ScrollView style={styles.modal}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Detalle del turno</Text>
-            <Pressable
-              style={styles.closeButton}
-              onPress={handleCloseDetail}
-              testID="admin-shift-detail-close-btn"
-              nativeID="admin-shift-detail-close-btn"
-            >
-              <Text style={styles.closeButtonText}>Cerrar</Text>
-            </Pressable>
-          </View>
-
-          {detailLoading && (
-            <Text style={[styles.loadingText, { margin: 24 }]}>Cargando...</Text>
-          )}
-
-          {!detailLoading && selectedShift && (
-            <View style={styles.modalContent}>
-              <View style={styles.detailField}>
-                <Text style={styles.detailLabel}>Enfermera</Text>
-                <Text style={styles.detailValue}>{selectedShift.nurseDisplayName ?? "Sin nombre"}</Text>
-                {selectedShift.nurseEmail && (
-                  <Text style={styles.detailValueSecondary}>{selectedShift.nurseEmail}</Text>
-                )}
-              </View>
-
-              <View style={styles.detailField}>
-                <Text style={styles.detailLabel}>Solicitud de cuidado</Text>
-                <Text style={styles.detailValue}>{selectedShift.careRequestReference ?? selectedShift.careRequestId}</Text>
-              </View>
-
-              <View style={styles.detailField}>
-                <Text style={styles.detailLabel}>Inicio programado</Text>
-                <Text style={styles.detailValue}>{formatDate(selectedShift.scheduledStartUtc)}</Text>
-              </View>
-
-              <View style={styles.detailField}>
-                <Text style={styles.detailLabel}>Fin programado</Text>
-                <Text style={styles.detailValue}>{formatDate(selectedShift.scheduledEndUtc)}</Text>
-              </View>
-
-              <View style={styles.detailField}>
-                <Text style={styles.detailLabel}>Estado</Text>
-                <View style={{ flexDirection: "row" }}>
-                  <View style={[styles.statusBadge, { backgroundColor: statusBadgeColors(selectedShift.status).bg }]}>
-                    <Text style={[styles.statusBadgeText, { color: statusBadgeColors(selectedShift.status).text }]}>
-                      {statusLabel(selectedShift.status)}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-
-              {selectedShift.notes && (
-                <View style={styles.detailField}>
-                  <Text style={styles.detailLabel}>Notas</Text>
-                  <Text style={styles.detailValue}>{selectedShift.notes}</Text>
-                </View>
-              )}
-
-              <View style={styles.detailField}>
-                <Text style={styles.detailLabel}>Creado</Text>
-                <Text style={styles.detailValue}>{formatDate(selectedShift.createdAtUtc)}</Text>
-              </View>
-
-              <View style={styles.detailField}>
-                <Text style={styles.detailLabel}>Ultima actualizacion</Text>
-                <Text style={styles.detailValue}>{formatDate(selectedShift.updatedAtUtc)}</Text>
-              </View>
-
-              {shiftChanges.length > 0 && (
-                <View style={styles.changesSection}>
-                  <Text style={styles.changesSectionTitle}>Historial de cambios</Text>
-                  {shiftChanges.map((change) => (
-                    <View key={change.id} style={styles.changeItem}>
-                      <Text style={styles.changeDate}>{formatDate(change.changedAtUtc)}</Text>
-                      {change.changedByActorName && (
-                        <Text style={styles.changeActor}>{change.changedByActorName}</Text>
-                      )}
-                      {change.previousStatus && change.newStatus && (
-                        <Text style={styles.changeStatus}>
-                          {statusLabel(change.previousStatus)} → {statusLabel(change.newStatus)}
-                        </Text>
-                      )}
-                      {change.notes && (
-                        <Text style={styles.changeNotes}>{change.notes}</Text>
-                      )}
-                    </View>
-                  ))}
-                </View>
-              )}
-
-              {shiftChanges.length === 0 && !detailLoading && (
-                <View style={styles.detailField}>
-                  <Text style={styles.detailLabel}>Historial de cambios</Text>
-                  <Text style={styles.detailValueSecondary}>Sin cambios registrados.</Text>
-                </View>
-              )}
-            </View>
-          )}
-        </ScrollView>
-      </Modal>
     </MobileWorkspaceShell>
   );
 }
@@ -446,14 +455,9 @@ const styles = StyleSheet.create({
   cardDateValue: { color: "#111827", fontSize: 13, flex: 1 },
   detailButton: { backgroundColor: "#007aff", borderRadius: 12, paddingVertical: 8, marginTop: 10 },
   detailButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 14, textAlign: "center" },
+  detailPanel: { backgroundColor: "#f8fafc", borderWidth: 1, borderColor: "#bfdbfe", borderRadius: 16, padding: 16, marginTop: 4, marginBottom: 8, gap: 12 },
   pagination: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 16, paddingHorizontal: 4 },
   pageInfo: { color: "#6b7280", fontSize: 14, fontWeight: "600" },
-  modal: { flex: 1, backgroundColor: "#f2f2f7" },
-  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "#e5e7eb", backgroundColor: "#ffffff" },
-  modalTitle: { fontSize: 20, fontWeight: "800", color: "#111827" },
-  closeButton: { backgroundColor: "#ffffff", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: "#d1d5db" },
-  closeButtonText: { color: "#007aff", fontWeight: "700", fontSize: 14 },
-  modalContent: { padding: 16, gap: 16 },
   detailField: { gap: 4 },
   detailLabel: { color: "#6b7280", fontSize: 12, fontWeight: "800", textTransform: "uppercase" },
   detailValue: { color: "#111827", fontSize: 15 },

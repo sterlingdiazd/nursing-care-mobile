@@ -178,7 +178,50 @@ vi.mock('@/src/services/payrollService', () => ({
 
 // Mock MobileWorkspaceShell
 vi.mock('@/components/app/MobileWorkspaceShell', () => ({
-  default: vi.fn(({ children }) => children),
+  default: vi.fn(({ children, actions, testID, nativeID }) => {
+    const React = require('react');
+    return React.createElement('View', { testID, nativeID }, actions, children);
+  }),
+}));
+
+// Mock Admin Shifts Service
+vi.mock('@/src/services/adminShiftsService', () => ({
+  listAdminSettings: vi.fn().mockResolvedValue([]),
+  updateAdminSetting: vi.fn().mockResolvedValue({}),
+  listAdminShifts: vi.fn().mockResolvedValue({ items: [], totalCount: 0 }),
+  getAdminShiftDetail: vi.fn().mockResolvedValue({}),
+  getAdminShiftChanges: vi.fn().mockResolvedValue([]),
+}));
+
+// Mock Admin Portal Service
+vi.mock('@/src/services/adminPortalService', () => ({
+  searchAuditLogs: vi.fn().mockResolvedValue({ items: [], totalCount: 0 }),
+  getAuditLogDetail: vi.fn().mockResolvedValue({}),
+  listCareRequestCategories: vi.fn().mockResolvedValue([]),
+  listCareRequestTypes: vi.fn().mockResolvedValue([]),
+  listUnitTypes: vi.fn().mockResolvedValue([]),
+  listDistanceFactors: vi.fn().mockResolvedValue([]),
+  listComplexityLevels: vi.fn().mockResolvedValue([]),
+  listVolumeDiscountRules: vi.fn().mockResolvedValue([]),
+  listNurseSpecialties: vi.fn().mockResolvedValue([]),
+  listNurseCategories: vi.fn().mockResolvedValue([]),
+  createCareRequestCategory: vi.fn().mockResolvedValue({}),
+  createCareRequestType: vi.fn().mockResolvedValue({}),
+  createUnitType: vi.fn().mockResolvedValue({}),
+  createDistanceFactor: vi.fn().mockResolvedValue({}),
+  createComplexityLevel: vi.fn().mockResolvedValue({}),
+  createVolumeDiscountRule: vi.fn().mockResolvedValue({}),
+  createNurseSpecialty: vi.fn().mockResolvedValue({}),
+  createNurseCategory: vi.fn().mockResolvedValue({}),
+  updateCareRequestCategory: vi.fn().mockResolvedValue({}),
+  updateCareRequestType: vi.fn().mockResolvedValue({}),
+  updateUnitType: vi.fn().mockResolvedValue({}),
+  updateDistanceFactor: vi.fn().mockResolvedValue({}),
+  updateComplexityLevel: vi.fn().mockResolvedValue({}),
+  updateVolumeDiscountRule: vi.fn().mockResolvedValue({}),
+  updateNurseSpecialty: vi.fn().mockResolvedValue({}),
+  updateNurseCategory: vi.fn().mockResolvedValue({}),
+  catalogPricingPreview: vi.fn().mockResolvedValue({ basePrice: 100, categoryFactor: 1.0, grandTotal: 100 }),
 }));
 
 // Mock console.error to reduce noise
