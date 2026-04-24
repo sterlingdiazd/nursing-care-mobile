@@ -1,6 +1,6 @@
 // @generated-by: implementation-agent
-// @pipeline-run: 2026-04-23-mobile-ux-route-first-refactor
-// @diffs: DIFF-ADMIN-AL-001
+// @pipeline-run: 2026-04-24-mobile-ux-audit
+// @diffs: DIFF-ADMIN-AL-002
 // @do-not-edit: false
 
 import { useEffect, useState } from "react";
@@ -9,6 +9,7 @@ import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
+import { designTokens } from "@/src/design-system/tokens";
 import {
   searchAuditLogs,
   getAuditLogDetail,
@@ -114,6 +115,8 @@ export default function AdminAuditLogsScreen() {
             onPress={() => setShowFilters(!showFilters)}
             testID="admin-audit-logs-filter-toggle"
             nativeID="admin-audit-logs-filter-toggle"
+            accessibilityRole="button"
+            accessibilityLabel={showFilters ? "Ocultar filtros" : "Mostrar filtros"}
           >
             <Text style={styles.buttonText}>{showFilters ? "Ocultar filtros" : "Filtros"}</Text>
           </Pressable>
@@ -122,6 +125,8 @@ export default function AdminAuditLogsScreen() {
             onPress={() => void load()}
             testID="admin-audit-logs-refresh-btn"
             nativeID="admin-audit-logs-refresh-btn"
+            accessibilityRole="button"
+            accessibilityLabel="Actualizar registros de auditoría"
           >
             <Text style={styles.buttonText}>Actualizar</Text>
           </Pressable>
@@ -144,18 +149,22 @@ export default function AdminAuditLogsScreen() {
           <TextInput
             style={styles.input}
             placeholder="Acción (ej: AdminAccountCreated)"
+            placeholderTextColor={designTokens.color.ink.muted}
             value={actionFilter}
             onChangeText={setActionFilter}
             testID="admin-audit-logs-action-input"
             nativeID="admin-audit-logs-action-input"
+            accessibilityLabel="Filtrar por tipo de acción"
           />
           <TextInput
             style={styles.input}
             placeholder="Tipo de entidad (ej: User)"
+            placeholderTextColor={designTokens.color.ink.muted}
             value={entityTypeFilter}
             onChangeText={setEntityTypeFilter}
             testID="admin-audit-logs-entity-type-input"
             nativeID="admin-audit-logs-entity-type-input"
+            accessibilityLabel="Filtrar por tipo de entidad"
           />
           <View style={styles.filterActions}>
             <Pressable
@@ -163,6 +172,8 @@ export default function AdminAuditLogsScreen() {
               onPress={handleSearch}
               testID="admin-audit-logs-search-btn"
               nativeID="admin-audit-logs-search-btn"
+              accessibilityRole="button"
+              accessibilityLabel="Buscar registros de auditoría"
             >
               <Text style={styles.buttonPrimaryText}>Buscar</Text>
             </Pressable>
@@ -171,6 +182,8 @@ export default function AdminAuditLogsScreen() {
               onPress={handleClearFilters}
               testID="admin-audit-logs-clear-btn"
               nativeID="admin-audit-logs-clear-btn"
+              accessibilityRole="button"
+              accessibilityLabel="Limpiar filtros de búsqueda"
             >
               <Text style={styles.buttonText}>Limpiar</Text>
             </Pressable>
@@ -205,6 +218,8 @@ export default function AdminAuditLogsScreen() {
                 onPress={() => void handleViewDetail(item.id)}
                 testID={`admin-audit-log-detail-btn-${item.id}`}
                 nativeID={`admin-audit-log-detail-btn-${item.id}`}
+                accessibilityRole="button"
+                accessibilityLabel={expandedLogId === item.id ? "Ocultar detalle del registro" : "Ver detalle del registro"}
               >
                 <Text style={styles.detailButtonText}>
                   {expandedLogId === item.id ? "Ocultar detalle" : "Ver detalle"}
@@ -279,6 +294,8 @@ export default function AdminAuditLogsScreen() {
             disabled={pageNumber === 1}
             testID="admin-audit-logs-prev-btn"
             nativeID="admin-audit-logs-prev-btn"
+            accessibilityRole="button"
+            accessibilityLabel="Página anterior"
           >
             <Text style={styles.buttonText}>Anterior</Text>
           </Pressable>
@@ -289,6 +306,8 @@ export default function AdminAuditLogsScreen() {
             disabled={pageNumber * 20 >= totalCount}
             testID="admin-audit-logs-next-btn"
             nativeID="admin-audit-logs-next-btn"
+            accessibilityRole="button"
+            accessibilityLabel="Página siguiente"
           >
             <Text style={styles.buttonText}>Siguiente</Text>
           </Pressable>
@@ -300,35 +319,35 @@ export default function AdminAuditLogsScreen() {
 
 const styles = StyleSheet.create({
   headerActions: { flexDirection: "row", gap: 8 },
-  button: { backgroundColor: "#ffffff", borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: "#d1d5db" },
-  buttonText: { color: "#007aff", fontWeight: "700", fontSize: 14 },
-  buttonPrimary: { backgroundColor: "#007aff", borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, flex: 1 },
-  buttonPrimaryText: { color: "#ffffff", fontWeight: "700", fontSize: 14, textAlign: "center" },
+  button: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: designTokens.color.border.strong },
+  buttonText: { color: designTokens.color.ink.accent, fontWeight: "700", fontSize: 14 },
+  buttonPrimary: { backgroundColor: designTokens.color.ink.accent, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, flex: 1 },
+  buttonPrimaryText: { color: designTokens.color.ink.inverse, fontWeight: "700", fontSize: 14, textAlign: "center" },
   buttonDisabled: { opacity: 0.5 },
-  error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
-  filtersCard: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 18, padding: 16, marginBottom: 12 },
-  filtersTitle: { fontSize: 16, fontWeight: "800", color: "#111827", marginBottom: 12 },
-  input: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#d1d5db", borderRadius: 14, padding: 14, marginBottom: 8, color: "#111827" },
+  error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: 12, borderRadius: 12, marginBottom: 12 },
+  filtersCard: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 18, padding: 16, marginBottom: 12 },
+  filtersTitle: { fontSize: 16, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 12 },
+  input: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.strong, borderRadius: 14, padding: 14, marginBottom: 8, color: designTokens.color.ink.primary },
   filterActions: { flexDirection: "row", gap: 8, marginTop: 8 },
   summary: { flexDirection: "row", justifyContent: "space-between", marginBottom: 12, paddingHorizontal: 4 },
-  summaryText: { color: "#6b7280", fontSize: 14, fontWeight: "600" },
+  summaryText: { color: designTokens.color.ink.muted, fontSize: 14, fontWeight: "600" },
   list: { gap: 12 },
-  card: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 18, padding: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 2 },
-  timestamp: { color: "#92400e", fontWeight: "800", fontSize: 12, marginBottom: 4 },
-  actor: { color: "#6b7280", fontSize: 14, marginBottom: 4 },
-  action: { color: "#111827", fontWeight: "800", fontSize: 16, marginBottom: 4 },
-  entity: { color: "#6b7280", fontSize: 13, fontFamily: "monospace", marginBottom: 4 },
-  notes: { color: "#4b5563", fontSize: 13, marginBottom: 8 },
-  detailButton: { backgroundColor: "#007aff", borderRadius: 12, paddingVertical: 8, marginTop: 8 },
-  detailButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 14, textAlign: "center" },
-  detailPanel: { backgroundColor: "#f8fafc", borderWidth: 1, borderColor: "#bfdbfe", borderRadius: 16, padding: 16, marginTop: 4, marginBottom: 8, gap: 12 },
+  card: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 18, padding: 16, shadowColor: designTokens.color.ink.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 2 },
+  timestamp: { color: designTokens.color.status.warningText, fontWeight: "800", fontSize: 12, marginBottom: 4 },
+  actor: { color: designTokens.color.ink.muted, fontSize: 14, marginBottom: 4 },
+  action: { color: designTokens.color.ink.primary, fontWeight: "800", fontSize: 16, marginBottom: 4 },
+  entity: { color: designTokens.color.ink.muted, fontSize: 13, fontFamily: "monospace", marginBottom: 4 },
+  notes: { color: designTokens.color.ink.secondary, fontSize: 13, marginBottom: 8 },
+  detailButton: { backgroundColor: designTokens.color.ink.accent, borderRadius: 12, paddingVertical: 8, marginTop: 8 },
+  detailButtonText: { color: designTokens.color.ink.inverse, fontWeight: "700", fontSize: 14, textAlign: "center" },
+  detailPanel: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: "#bfdbfe", borderRadius: 16, padding: 16, marginTop: 4, marginBottom: 8, gap: 12 },
   pagination: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 16, paddingHorizontal: 4 },
-  pageInfo: { color: "#6b7280", fontSize: 14, fontWeight: "600" },
+  pageInfo: { color: designTokens.color.ink.muted, fontSize: 14, fontWeight: "600" },
   detailField: { gap: 4 },
-  detailLabel: { color: "#6b7280", fontSize: 12, fontWeight: "800", textTransform: "uppercase" },
-  detailValue: { color: "#111827", fontSize: 15 },
-  detailValueSecondary: { color: "#4b5563", fontSize: 14 },
-  detailValueMono: { color: "#111827", fontSize: 13, fontFamily: "monospace" },
-  jsonContainer: { backgroundColor: "#ffffff", borderRadius: 12, padding: 12, marginTop: 4, borderWidth: 1, borderColor: "#e5e7eb" },
-  jsonText: { color: "#111827", fontSize: 12, fontFamily: "monospace" },
+  detailLabel: { color: designTokens.color.ink.muted, fontSize: 12, fontWeight: "800", textTransform: "uppercase" },
+  detailValue: { color: designTokens.color.ink.primary, fontSize: 15 },
+  detailValueSecondary: { color: designTokens.color.ink.secondary, fontSize: 14 },
+  detailValueMono: { color: designTokens.color.ink.primary, fontSize: 13, fontFamily: "monospace" },
+  jsonContainer: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 12, padding: 12, marginTop: 4, borderWidth: 1, borderColor: "#e5e7eb" },
+  jsonText: { color: designTokens.color.ink.primary, fontSize: 12, fontFamily: "monospace" },
 });

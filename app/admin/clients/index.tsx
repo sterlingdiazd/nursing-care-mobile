@@ -1,6 +1,6 @@
 // @generated-by: implementation-agent
-// @pipeline-run: 2026-04-20T-priority-1
-// @diffs: DIFF-ADMIN-CLIENTS-001
+// @pipeline-run: 2026-04-24-mobile-ux-audit
+// @diffs: DIFF-ADMIN-CLIENTS-002
 // @do-not-edit: false
 
 import { useEffect, useState } from "react";
@@ -87,7 +87,12 @@ export default function AdminClientsScreen() {
       nativeID={adminTestIds.clients.listScreen}
       actions={(
         <View style={styles.headerActions}>
-          <Pressable style={styles.button} onPress={() => setShowFilters((current) => !current)}>
+          <Pressable
+            style={styles.button}
+            onPress={() => setShowFilters((current) => !current)}
+            accessibilityRole="button"
+            accessibilityLabel={showFilters ? "Ocultar filtros" : "Mostrar filtros"}
+          >
             <Text style={styles.buttonText}>{showFilters ? "Ocultar filtros" : "Filtros"}</Text>
           </Pressable>
           <Pressable
@@ -95,6 +100,8 @@ export default function AdminClientsScreen() {
             onPress={() => router.push("/admin/clients/create" as never)}
             testID={adminTestIds.clients.primaryAction}
             nativeID={adminTestIds.clients.primaryAction}
+            accessibilityRole="button"
+            accessibilityLabel="Crear nuevo cliente"
           >
             <Text style={styles.buttonPrimaryText}>Crear</Text>
           </Pressable>
@@ -130,17 +137,23 @@ export default function AdminClientsScreen() {
 
           <Text style={styles.filterLabel}>Estado</Text>
           <View style={styles.filterChips}>
-            {(["all", "active", "inactive"] as const).map((status) => (
-              <Pressable
-                key={status}
-                style={[styles.chip, statusFilter === status && styles.chipActive]}
-                onPress={() => setStatusFilter(status)}
-              >
-                <Text style={[styles.chipText, statusFilter === status && styles.chipTextActive]}>
-                  {status === "all" ? "Todos" : status === "active" ? "Activos" : "Inactivos"}
-                </Text>
-              </Pressable>
-            ))}
+            {(["all", "active", "inactive"] as const).map((status) => {
+              const isActive = statusFilter === status;
+              return (
+                <Pressable
+                  key={status}
+                  style={[styles.chip, isActive && styles.chipActive]}
+                  onPress={() => setStatusFilter(status)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Filtrar por estado: ${status === "all" ? "Todos" : status === "active" ? "Activos" : "Inactivos"}`}
+                  accessibilityState={{ selected: isActive }}
+                >
+                  <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                    {status === "all" ? "Todos" : status === "active" ? "Activos" : "Inactivos"}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
 
           <Text style={styles.filterLabel}>Buscar</Text>
@@ -150,6 +163,7 @@ export default function AdminClientsScreen() {
             placeholderTextColor={designTokens.color.ink.muted}
             value={searchQuery}
             onChangeText={setSearchQuery}
+            accessibilityLabel="Buscar cliente por nombre, correo o cédula"
           />
         </View>
       )}
@@ -173,6 +187,8 @@ export default function AdminClientsScreen() {
             style={styles.card}
             testID={`admin-client-card-${item.userId}`}
             nativeID={`admin-client-card-${item.userId}`}
+            accessibilityRole="button"
+            accessibilityLabel={`Ver detalle del cliente ${item.displayName}`}
           >
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>{item.displayName}</Text>

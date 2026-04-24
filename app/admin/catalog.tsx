@@ -1,6 +1,6 @@
 // @generated-by: implementation-agent
-// @pipeline-run: 2026-04-23-mobile-ux-route-first-refactor
-// @diffs: DIFF-ADMIN-CAT-001
+// @pipeline-run: 2026-04-24-mobile-ux-audit
+// @diffs: DIFF-ADMIN-CAT-002
 // @do-not-edit: false
 
 import { useCallback, useEffect, useState } from "react";
@@ -52,6 +52,7 @@ import {
 } from "@/src/services/adminPortalService";
 import { useAuth } from "@/src/context/AuthContext";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { designTokens } from "@/src/design-system/tokens";
 
 type TabKey =
   | "categories"
@@ -382,6 +383,9 @@ export default function AdminCatalogScreen() {
           key={key}
           style={styles.checkboxRow}
           onPress={() => setFormData({ ...formData, [key]: !value })}
+          accessibilityRole="checkbox"
+          accessibilityLabel={label}
+          accessibilityState={{ checked: !!value }}
         >
           <View style={[styles.checkbox, value && styles.checkboxChecked]}>
             {value && <Text style={styles.checkmark}>v</Text>}
@@ -403,6 +407,7 @@ export default function AdminCatalogScreen() {
           }}
           keyboardType={isNumber ? "decimal-pad" : "default"}
           placeholder={label}
+          accessibilityLabel={label}
           testID="admin-setting-value-input"
           nativeID="admin-setting-value-input"
         />
@@ -442,6 +447,8 @@ export default function AdminCatalogScreen() {
             onPress={() => setIncludeInactive(!includeInactive)}
             testID="admin-catalog-toggle-inactive"
             nativeID="admin-catalog-toggle-inactive"
+            accessibilityRole="button"
+            accessibilityLabel={includeInactive ? "Ocultar inactivos" : "Mostrar inactivos"}
           >
             <Text style={[styles.buttonText, includeInactive && styles.buttonTextActive]}>
               {includeInactive ? "Ocultar inactivos" : "Mostrar inactivos"}
@@ -452,6 +459,8 @@ export default function AdminCatalogScreen() {
             onPress={() => void loadData()}
             testID="admin-catalog-refresh-btn"
             nativeID="admin-catalog-refresh-btn"
+            accessibilityRole="button"
+            accessibilityLabel="Actualizar catálogo"
           >
             <Text style={styles.buttonText}>Actualizar</Text>
           </Pressable>
@@ -460,6 +469,8 @@ export default function AdminCatalogScreen() {
             onPress={() => handleCreate(activeTab)}
             testID="admin-catalog-create-btn"
             nativeID="admin-catalog-create-btn"
+            accessibilityRole="button"
+            accessibilityLabel="Crear nuevo elemento"
           >
             <Text style={styles.buttonPrimaryText}>Nuevo</Text>
           </Pressable>
@@ -478,7 +489,7 @@ export default function AdminCatalogScreen() {
 
       {loading && (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1f4b6e" />
+          <ActivityIndicator size="large" color={designTokens.color.ink.accentStrong} accessibilityLabel="Cargando..." />
           <Text style={styles.loadingText}>Cargando catálogo...</Text>
         </View>
       )}
@@ -492,19 +503,25 @@ export default function AdminCatalogScreen() {
             testID="admin-catalog-tab-bar"
             nativeID="admin-catalog-tab-bar"
           >
-            {TABS.map((tab) => (
-              <Pressable
-                key={tab.key}
-                style={[styles.tab, activeTab === tab.key && styles.tabActive]}
-                onPress={() => setActiveTab(tab.key)}
-                testID={`admin-catalog-tab-${tab.key}`}
-                nativeID={`admin-catalog-tab-${tab.key}`}
-              >
-                <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
-                  {tab.label}
-                </Text>
-              </Pressable>
-            ))}
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.key;
+              return (
+                <Pressable
+                  key={tab.key}
+                  style={[styles.tab, isActive && styles.tabActive]}
+                  onPress={() => setActiveTab(tab.key)}
+                  testID={`admin-catalog-tab-${tab.key}`}
+                  nativeID={`admin-catalog-tab-${tab.key}`}
+                  accessibilityRole="tab"
+                  accessibilityLabel={tab.label}
+                  accessibilityState={{ selected: isActive }}
+                >
+                  <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
+                    {tab.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </ScrollView>
 
           {/* Inline edit/create panel */}
@@ -529,6 +546,8 @@ export default function AdminCatalogScreen() {
                   disabled={saving}
                   testID="admin-catalog-save-btn"
                   nativeID="admin-catalog-save-btn"
+                  accessibilityRole="button"
+                  accessibilityLabel={saving ? "Guardando elemento" : "Guardar elemento"}
                 >
                   <Text style={styles.buttonPrimaryText}>{saving ? "Guardando..." : "Guardar"}</Text>
                 </Pressable>
@@ -537,6 +556,8 @@ export default function AdminCatalogScreen() {
                   onPress={handleCancelEdit}
                   testID="admin-catalog-cancel-btn"
                   nativeID="admin-catalog-cancel-btn"
+                  accessibilityRole="button"
+                  accessibilityLabel="Cancelar edición"
                 >
                   <Text style={styles.buttonText}>Cancelar</Text>
                 </Pressable>
@@ -553,6 +574,7 @@ export default function AdminCatalogScreen() {
               const isEditingThis = editingItem === item;
               const itemId = getItemId(item) ?? String(index);
               const itemCode = getItemCode(item);
+              const itemTitle = getItemTitle(item);
               return (
                 <View key={itemId}>
                   <Pressable
@@ -560,11 +582,13 @@ export default function AdminCatalogScreen() {
                     onPress={() => handleEdit(activeTab, item)}
                     testID={`admin-catalog-card-${itemId}`}
                     nativeID={`admin-catalog-card-${itemId}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Editar ${itemTitle}`}
                   >
                     <View style={styles.cardContent}>
                       <View style={styles.cardTextBlock}>
                         <View style={styles.cardHeader}>
-                          <Text style={styles.cardTitle}>{getItemTitle(item)}</Text>
+                          <Text style={styles.cardTitle}>{itemTitle}</Text>
                           {!isItemActive(item) && (
                             <View style={styles.inactiveBadge}>
                               <Text style={styles.inactiveBadgeText}>Inactivo</Text>
@@ -584,6 +608,8 @@ export default function AdminCatalogScreen() {
                               e.stopPropagation?.();
                               void handlePricingPreview(itemCode);
                             }}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Previsualizar precio de ${itemTitle}`}
                           >
                             <Text style={styles.previewButtonText}>Previsualizar precio</Text>
                           </Pressable>
@@ -603,7 +629,7 @@ export default function AdminCatalogScreen() {
                       <Text style={styles.previewPanelTitle}>Vista previa de precio</Text>
                       {pricingPreviewLoading && (
                         <View style={styles.previewLoadingRow}>
-                          <ActivityIndicator color="#007aff" />
+                          <ActivityIndicator color={designTokens.color.ink.accent} accessibilityLabel="Cargando..." />
                           <Text style={styles.previewLoadingText}>Calculando precio...</Text>
                         </View>
                       )}
@@ -630,6 +656,8 @@ export default function AdminCatalogScreen() {
                       <Pressable
                         style={styles.button}
                         onPress={() => { setPricingPreviewItemCode(null); setPricingPreviewResult(null); }}
+                        accessibilityRole="button"
+                        accessibilityLabel="Cerrar vista previa de precio"
                       >
                         <Text style={styles.buttonText}>Cerrar vista previa</Text>
                       </Pressable>
@@ -653,58 +681,58 @@ export default function AdminCatalogScreen() {
 
 const styles = StyleSheet.create({
   headerActions: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
-  button: { backgroundColor: "#ffffff", borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: "#d1d5db" },
-  buttonText: { color: "#007aff", fontWeight: "700", fontSize: 14 },
+  button: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: "#d1d5db" },
+  buttonText: { color: designTokens.color.ink.accent, fontWeight: "700", fontSize: 14 },
   buttonActive: { backgroundColor: "#eff6ff", borderColor: "#bfdbfe" },
-  buttonTextActive: { color: "#007aff" },
-  buttonPrimary: { backgroundColor: "#007aff", borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10 },
-  buttonPrimaryText: { color: "#ffffff", fontWeight: "700", fontSize: 14, textAlign: "center" },
+  buttonTextActive: { color: designTokens.color.ink.accent },
+  buttonPrimary: { backgroundColor: designTokens.color.ink.accent, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10 },
+  buttonPrimaryText: { color: designTokens.color.ink.inverse, fontWeight: "700", fontSize: 14, textAlign: "center" },
   buttonDisabled: { opacity: 0.5 },
-  error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
+  error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: 12, borderRadius: 12, marginBottom: 12 },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: 40 },
-  loadingText: { marginTop: 12, fontSize: 16, color: "#5f7280" },
+  loadingText: { marginTop: 12, fontSize: 16, color: designTokens.color.ink.secondary },
   tabsContainer: { marginBottom: 8 },
-  tab: { paddingHorizontal: 15, paddingVertical: 10, marginRight: 8, borderRadius: 999, backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#d1d5db" },
-  tabActive: { backgroundColor: "#111827", borderColor: "#111827" },
-  tabText: { fontSize: 14, color: "#111827", fontWeight: "600" },
-  tabTextActive: { color: "#ffffff" },
-  editPanel: { backgroundColor: "#f8fafc", borderWidth: 1, borderColor: "#bfdbfe", borderRadius: 16, padding: 16, marginBottom: 12, gap: 8 },
-  editPanelTitle: { fontSize: 16, fontWeight: "800", color: "#111827", marginBottom: 8 },
+  tab: { paddingHorizontal: 15, paddingVertical: 10, marginRight: 8, borderRadius: 999, backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: "#d1d5db" },
+  tabActive: { backgroundColor: designTokens.color.ink.primary, borderColor: designTokens.color.ink.primary },
+  tabText: { fontSize: 14, color: designTokens.color.ink.primary, fontWeight: "600" },
+  tabTextActive: { color: designTokens.color.ink.inverse },
+  editPanel: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: "#bfdbfe", borderRadius: 16, padding: 16, marginBottom: 12, gap: 8 },
+  editPanelTitle: { fontSize: 16, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 8 },
   editActions: { flexDirection: "row", gap: 8, marginTop: 8 },
   cardsContainer: { gap: 10 },
-  card: { backgroundColor: "#ffffff", borderRadius: 18, paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: "#e5e7eb", shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 2 },
+  card: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: "#e5e7eb", shadowColor: designTokens.color.ink.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 2 },
   cardContent: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 14 },
   cardTextBlock: { flex: 1 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4, gap: 8 },
-  cardTitle: { fontSize: 15, fontWeight: "700", color: "#111827", flex: 1 },
+  cardTitle: { fontSize: 15, fontWeight: "700", color: designTokens.color.ink.primary, flex: 1 },
   inactiveBadge: { backgroundColor: "#fff1f2", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
-  inactiveBadgeText: { fontSize: 11, color: "#be123c", fontWeight: "600" },
-  cardSubtitle: { fontSize: 13, color: "#4b5563", marginBottom: 4 },
-  cardCode: { fontSize: 12, color: "#9ca3af" },
-  cardChevron: { color: "#9ca3af", fontSize: 18, lineHeight: 24 },
+  inactiveBadgeText: { fontSize: 11, color: designTokens.color.ink.accentStrong, fontWeight: "600" },
+  cardSubtitle: { fontSize: 13, color: designTokens.color.ink.muted, marginBottom: 4 },
+  cardCode: { fontSize: 12, color: designTokens.color.ink.muted },
+  cardChevron: { color: designTokens.color.ink.muted, fontSize: 18, lineHeight: 24 },
   cardActions: { flexDirection: "row", alignItems: "center", gap: 8 },
-  previewButton: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, backgroundColor: "#eff6ff", borderWidth: 1, borderColor: "#bfdbfe" },
-  previewButtonText: { fontSize: 12, color: "#1d4ed8", fontWeight: "600" },
-  pricingPreviewPanel: { backgroundColor: "#f8fafc", borderWidth: 1, borderColor: "#bfdbfe", borderRadius: 16, padding: 16, marginTop: 4, marginBottom: 8, gap: 12 },
-  previewPanelTitle: { fontSize: 16, fontWeight: "800", color: "#111827", marginBottom: 8 },
+  previewButton: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, backgroundColor: designTokens.color.surface.accent, borderWidth: 1, borderColor: "#bfdbfe" },
+  previewButtonText: { fontSize: 12, color: designTokens.color.ink.accentStrong, fontWeight: "600" },
+  pricingPreviewPanel: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: "#bfdbfe", borderRadius: 16, padding: 16, marginTop: 4, marginBottom: 8, gap: 12 },
+  previewPanelTitle: { fontSize: 16, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 8 },
   previewLoadingRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 },
-  previewLoadingText: { fontSize: 15, color: "#5f7280" },
-  previewResultCard: { backgroundColor: "#ffffff", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#e5e7eb" },
-  previewTypeLabel: { fontSize: 13, color: "#6b7280", marginBottom: 12 },
+  previewLoadingText: { fontSize: 15, color: designTokens.color.ink.secondary },
+  previewResultCard: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#e5e7eb" },
+  previewTypeLabel: { fontSize: 13, color: designTokens.color.ink.muted, marginBottom: 12 },
   previewRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#f3f4f6" },
-  previewRowLabel: { fontSize: 15, color: "#374151" },
-  previewRowValue: { fontSize: 15, color: "#111827", fontWeight: "600" },
+  previewRowLabel: { fontSize: 15, color: designTokens.color.ink.secondary },
+  previewRowValue: { fontSize: 15, color: designTokens.color.ink.primary, fontWeight: "600" },
   previewTotalRow: { borderBottomWidth: 0, marginTop: 4, paddingTop: 14 },
-  previewTotalLabel: { fontSize: 16, fontWeight: "700", color: "#111827" },
-  previewTotalValue: { fontSize: 18, fontWeight: "800", color: "#007aff" },
+  previewTotalLabel: { fontSize: 16, fontWeight: "700", color: designTokens.color.ink.primary },
+  previewTotalValue: { fontSize: 18, fontWeight: "800", color: designTokens.color.ink.accent },
   emptyState: { padding: 32, alignItems: "center" },
-  emptyStateText: { fontSize: 16, color: "#5f7280" },
+  emptyStateText: { fontSize: 16, color: designTokens.color.ink.secondary },
   formGroup: { marginBottom: 16 },
-  formLabel: { fontSize: 14, fontWeight: "600", color: "#111827", marginBottom: 8 },
-  formInput: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#d1d5db", borderRadius: 14, padding: 14, fontSize: 16, color: "#111827" },
+  formLabel: { fontSize: 14, fontWeight: "600", color: designTokens.color.ink.primary, marginBottom: 8 },
+  formInput: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: "#d1d5db", borderRadius: 14, padding: 14, fontSize: 16, color: designTokens.color.ink.primary },
   checkboxRow: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
-  checkbox: { width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: "#d1d5db", backgroundColor: "#ffffff", justifyContent: "center", alignItems: "center", marginRight: 12 },
-  checkboxChecked: { backgroundColor: "#007aff", borderColor: "#007aff" },
-  checkmark: { color: "#fff", fontSize: 14, fontWeight: "700" },
-  checkboxLabel: { fontSize: 16, color: "#111827" },
+  checkbox: { width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: "#d1d5db", backgroundColor: designTokens.color.ink.inverse, justifyContent: "center", alignItems: "center", marginRight: 12 },
+  checkboxChecked: { backgroundColor: designTokens.color.ink.accent, borderColor: designTokens.color.ink.accent },
+  checkmark: { color: designTokens.color.ink.inverse, fontSize: 14, fontWeight: "700" },
+  checkboxLabel: { fontSize: 16, color: designTokens.color.ink.primary },
 });

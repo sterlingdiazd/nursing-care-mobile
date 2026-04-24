@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
+import { designTokens } from "@/src/design-system/tokens";
+import { FormInput } from "@/src/components/form/FormInput";
 import {
   getNurseProfileForAdmin,
   updateNurseProfileForAdmin,
@@ -175,53 +177,58 @@ export default function AdminEditNurseProfileScreen() {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Información Personal</Text>
 
-            <Text style={styles.label}>Nombre *</Text>
-            <TextInput
-              style={[styles.input, errors.name ? styles.inputError : undefined]}
+            <FormInput
+              testID="admin-edit-nurse-name-input"
+              label="Nombre *"
               placeholder="Nombre de la enfermera"
               value={form.name}
               onChangeText={(text) => setForm({ ...form, name: text })}
+              errorMessage={errors.name}
+              accessibilityLabel="Nombre de la enfermera"
             />
-            {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
 
-            <Text style={styles.label}>Apellido *</Text>
-            <TextInput
-              style={[styles.input, errors.lastName ? styles.inputError : undefined]}
+            <FormInput
+              testID="admin-edit-nurse-lastname-input"
+              label="Apellido *"
               placeholder="Apellido de la enfermera"
               value={form.lastName}
               onChangeText={(text) => setForm({ ...form, lastName: text })}
+              errorMessage={errors.lastName}
+              accessibilityLabel="Apellido de la enfermera"
             />
-            {errors.lastName && <Text style={styles.errorText}>{errors.lastName}</Text>}
 
-            <Text style={styles.label}>Cédula *</Text>
-            <TextInput
-              style={[styles.input, errors.identificationNumber ? styles.inputError : undefined]}
+            <FormInput
+              testID="admin-edit-nurse-id-input"
+              label="Cédula *"
               placeholder="Número de cédula"
               value={form.identificationNumber}
               onChangeText={(text) => setForm({ ...form, identificationNumber: text })}
+              errorMessage={errors.identificationNumber}
+              accessibilityLabel="Número de cédula de la enfermera"
             />
-            {errors.identificationNumber && <Text style={styles.errorText}>{errors.identificationNumber}</Text>}
 
-            <Text style={styles.label}>Teléfono *</Text>
-            <TextInput
-              style={[styles.input, errors.phone ? styles.inputError : undefined]}
+            <FormInput
+              testID="admin-edit-nurse-phone-input"
+              label="Teléfono *"
               placeholder="Número de teléfono"
               value={form.phone}
               onChangeText={(text) => setForm({ ...form, phone: text })}
+              errorMessage={errors.phone}
               keyboardType="phone-pad"
+              accessibilityLabel="Número de teléfono de la enfermera"
             />
-            {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
 
-            <Text style={styles.label}>Correo electrónico *</Text>
-            <TextInput
-              style={[styles.input, errors.email ? styles.inputError : undefined]}
+            <FormInput
+              testID="admin-edit-nurse-email-input"
+              label="Correo electrónico *"
               placeholder="correo@ejemplo.com"
               value={form.email}
               onChangeText={(text) => setForm({ ...form, email: text })}
+              errorMessage={errors.email}
               keyboardType="email-address"
               autoCapitalize="none"
+              accessibilityLabel="Correo electrónico de la enfermera"
             />
-            {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
           </View>
         )}
 
@@ -230,40 +237,44 @@ export default function AdminEditNurseProfileScreen() {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Información Profesional</Text>
 
-            <Text style={styles.label}>Fecha de contratación *</Text>
-            <TextInput
-              style={[styles.input, errors.hireDate ? styles.inputError : undefined]}
+            <FormInput
+              testID="admin-edit-nurse-hire-date-input"
+              label="Fecha de contratación *"
               placeholder="YYYY-MM-DD"
               value={form.hireDate}
               onChangeText={(text) => setForm({ ...form, hireDate: text })}
+              errorMessage={errors.hireDate}
+              accessibilityLabel="Fecha de contratación de la enfermera"
             />
-            {errors.hireDate && <Text style={styles.errorText}>{errors.hireDate}</Text>}
 
-            <Text style={styles.label}>Especialidad *</Text>
-            <TextInput
-              style={[styles.input, errors.specialty ? styles.inputError : undefined]}
+            <FormInput
+              testID="admin-edit-nurse-specialty-input"
+              label="Especialidad *"
               placeholder="Especialidad de la enfermera"
               value={form.specialty}
               onChangeText={(text) => setForm({ ...form, specialty: text })}
+              errorMessage={errors.specialty}
+              accessibilityLabel="Especialidad de la enfermera"
             />
-            {errors.specialty && <Text style={styles.errorText}>{errors.specialty}</Text>}
 
-            <Text style={styles.label}>Número de licencia</Text>
-            <TextInput
-              style={styles.input}
+            <FormInput
+              testID="admin-edit-nurse-license-input"
+              label="Número de licencia"
               placeholder="Número de licencia profesional (opcional)"
               value={form.licenseId ?? ""}
               onChangeText={(text) => setForm({ ...form, licenseId: text })}
+              accessibilityLabel="Número de licencia profesional de la enfermera"
             />
 
-            <Text style={styles.label}>Categoría *</Text>
-            <TextInput
-              style={[styles.input, errors.category ? styles.inputError : undefined]}
+            <FormInput
+              testID="admin-edit-nurse-category-input"
+              label="Categoría *"
               placeholder="Categoría profesional"
               value={form.category}
               onChangeText={(text) => setForm({ ...form, category: text })}
+              errorMessage={errors.category}
+              accessibilityLabel="Categoría profesional de la enfermera"
             />
-            {errors.category && <Text style={styles.errorText}>{errors.category}</Text>}
           </View>
         )}
 
@@ -272,22 +283,24 @@ export default function AdminEditNurseProfileScreen() {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Información Bancaria</Text>
 
-            <Text style={styles.label}>Banco *</Text>
-            <TextInput
-              style={[styles.input, errors.bankName ? styles.inputError : undefined]}
+            <FormInput
+              testID="admin-edit-nurse-bank-input"
+              label="Banco *"
               placeholder="Nombre del banco"
               value={form.bankName}
               onChangeText={(text) => setForm({ ...form, bankName: text })}
+              errorMessage={errors.bankName}
+              accessibilityLabel="Nombre del banco de la enfermera"
             />
-            {errors.bankName && <Text style={styles.errorText}>{errors.bankName}</Text>}
 
-            <Text style={styles.label}>Número de cuenta</Text>
-            <TextInput
-              style={styles.input}
+            <FormInput
+              testID="admin-edit-nurse-account-input"
+              label="Número de cuenta"
               placeholder="Número de cuenta bancaria (opcional)"
               value={form.accountNumber ?? ""}
               onChangeText={(text) => setForm({ ...form, accountNumber: text })}
               keyboardType="numeric"
+              accessibilityLabel="Número de cuenta bancaria de la enfermera"
             />
           </View>
         )}
@@ -295,22 +308,43 @@ export default function AdminEditNurseProfileScreen() {
 
       <View style={styles.actions}>
         {step > 1 && (
-          <Pressable style={styles.button} onPress={handlePrevious}>
+          <Pressable
+            style={styles.button}
+            onPress={handlePrevious}
+            accessibilityRole="button"
+            accessibilityLabel="Ir al paso anterior"
+          >
             <Text style={styles.buttonText}>Anterior</Text>
           </Pressable>
         )}
         {step === 1 && (
-          <Pressable style={styles.button} onPress={() => router.back()}>
+          <Pressable
+            style={styles.button}
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel="Cancelar edición del perfil"
+          >
             <Text style={styles.buttonText}>Cancelar</Text>
           </Pressable>
         )}
         {step < 3 && (
-          <Pressable style={styles.buttonPrimary} onPress={handleNext}>
+          <Pressable
+            style={styles.buttonPrimary}
+            onPress={handleNext}
+            accessibilityRole="button"
+            accessibilityLabel="Continuar al siguiente paso"
+          >
             <Text style={styles.buttonPrimaryText}>Siguiente</Text>
           </Pressable>
         )}
         {step === 3 && (
-          <Pressable style={styles.buttonPrimary} onPress={handleSubmit} disabled={submitting}>
+          <Pressable
+            style={styles.buttonPrimary}
+            onPress={handleSubmit}
+            disabled={submitting}
+            accessibilityRole="button"
+            accessibilityLabel={submitting ? "Guardando perfil de enfermera" : "Guardar perfil de enfermera"}
+          >
             <Text style={styles.buttonPrimaryText}>{submitting ? "Guardando..." : "Guardar"}</Text>
           </Pressable>
         )}
@@ -320,19 +354,15 @@ export default function AdminEditNurseProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  loading: { color: "#52637a", fontSize: 14, textAlign: "center", padding: 20 },
-  error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
-  stepIndicator: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 12, padding: 12, marginBottom: 12 },
-  stepText: { color: "#102a43", fontSize: 14, fontWeight: "700", textAlign: "center" },
-  card: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
-  cardTitle: { fontSize: 18, fontWeight: "800", color: "#102a43", marginBottom: 8 },
-  label: { fontSize: 14, fontWeight: "700", color: "#7c2d12", marginTop: 12, marginBottom: 6 },
-  input: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#cbd5e0", borderRadius: 12, padding: 12, fontSize: 15 },
-  inputError: { borderColor: "#c00" },
-  errorText: { color: "#dc2626", fontSize: 12, marginTop: 4 },
+  loading: { color: designTokens.color.ink.secondary, fontSize: 14, textAlign: "center", padding: 20 },
+  error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: 12, borderRadius: 12, marginBottom: 12 },
+  stepIndicator: { backgroundColor: designTokens.color.surface.canvas, borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 12, padding: 12, marginBottom: 12 },
+  stepText: { color: designTokens.color.ink.primary, fontSize: 14, fontWeight: "700", textAlign: "center" },
+  card: { backgroundColor: designTokens.color.surface.canvas, borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
+  cardTitle: { fontSize: 18, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 8 },
   actions: { flexDirection: "row", gap: 8, marginTop: 16 },
-  button: { flex: 1, backgroundColor: "#f0f4f8", borderRadius: 12, paddingVertical: 14, alignItems: "center" },
-  buttonText: { color: "#102a43", fontWeight: "700", fontSize: 16 },
-  buttonPrimary: { flex: 1, backgroundColor: "#3b82f6", borderRadius: 12, paddingVertical: 14, alignItems: "center" },
-  buttonPrimaryText: { color: "#ffffff", fontWeight: "700", fontSize: 16 },
+  button: { flex: 1, backgroundColor: designTokens.color.surface.secondary, borderRadius: 12, paddingVertical: 14, alignItems: "center" },
+  buttonText: { color: designTokens.color.ink.primary, fontWeight: "700", fontSize: 16 },
+  buttonPrimary: { flex: 1, backgroundColor: designTokens.color.ink.accent, borderRadius: 12, paddingVertical: 14, alignItems: "center" },
+  buttonPrimaryText: { color: designTokens.color.ink.inverse, fontWeight: "700", fontSize: 16 },
 });

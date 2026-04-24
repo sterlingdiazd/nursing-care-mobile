@@ -1,6 +1,6 @@
 // @generated-by: implementation-agent
-// @pipeline-run: 2026-04-20T-priority-1
-// @diffs: DIFF-ADMIN-USERS-001
+// @pipeline-run: 2026-04-24-mobile-ux-audit
+// @diffs: DIFF-ADMIN-USERS-002
 // @do-not-edit: false
 
 import { useEffect, useState } from "react";
@@ -10,6 +10,7 @@ import { router } from "expo-router";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { adminTestIds } from "@/src/testing/testIds";
+import { designTokens } from "@/src/design-system/tokens";
 import {
   getAdminUsers,
   type AdminUserListItemDto,
@@ -47,9 +48,9 @@ function translateAccountStatus(status: AdminUserAccountStatus): string {
 
 function statusBadgeStyle(status: AdminUserAccountStatus) {
   switch (status) {
-    case "Active": return { bg: "#d1fae5", text: "#065f46" };
-    case "Inactive": return { bg: "#fee2e2", text: "#991b1b" };
-    default: return { bg: "#fef3c7", text: "#92400e" };
+    case "Active": return { bg: designTokens.color.surface.success, text: designTokens.color.status.successText };
+    case "Inactive": return { bg: designTokens.color.surface.danger, text: designTokens.color.status.dangerText };
+    default: return { bg: designTokens.color.surface.warning, text: designTokens.color.status.warningText };
   }
 }
 
@@ -124,6 +125,8 @@ export default function AdminUsersScreen() {
             onPress={() => setShowFilters(!showFilters)}
             testID={adminTestIds.users.primaryAction}
             nativeID={adminTestIds.users.primaryAction}
+            accessibilityRole="button"
+            accessibilityLabel={showFilters ? "Ocultar filtros" : "Mostrar filtros"}
           >
             <Text style={styles.buttonText}>{showFilters ? "Ocultar filtros" : "Filtros"}</Text>
           </Pressable>
@@ -161,55 +164,75 @@ export default function AdminUsersScreen() {
 
           <Text style={styles.filterLabel}>Rol</Text>
           <View style={styles.filterChips}>
-            {(["all", "ADMIN", "CLIENT", "NURSE"] as const).map((role) => (
-              <Pressable
-                key={role}
-                style={[styles.chip, roleFilter === role && styles.chipActive]}
-                onPress={() => setRoleFilter(role)}
-              >
-                <Text style={[styles.chipText, roleFilter === role && styles.chipTextActive]}>
-                  {role === "all" ? "Todos" : translateRole(role)}
-                </Text>
-              </Pressable>
-            ))}
+            {(["all", "ADMIN", "CLIENT", "NURSE"] as const).map((role) => {
+              const isActive = roleFilter === role;
+              return (
+                <Pressable
+                  key={role}
+                  style={[styles.chip, isActive && styles.chipActive]}
+                  onPress={() => setRoleFilter(role)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Filtrar por rol: ${role === "all" ? "Todos" : translateRole(role)}`}
+                  accessibilityState={{ selected: isActive }}
+                >
+                  <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                    {role === "all" ? "Todos" : translateRole(role)}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
 
           <Text style={styles.filterLabel}>Tipo de perfil</Text>
           <View style={styles.filterChips}>
-            {(["all", "ADMIN", "CLIENT", "NURSE"] as const).map((pt) => (
-              <Pressable
-                key={pt}
-                style={[styles.chip, profileTypeFilter === pt && styles.chipActive]}
-                onPress={() => setProfileTypeFilter(pt)}
-              >
-                <Text style={[styles.chipText, profileTypeFilter === pt && styles.chipTextActive]}>
-                  {pt === "all" ? "Todos" : translateProfileType(pt)}
-                </Text>
-              </Pressable>
-            ))}
+            {(["all", "ADMIN", "CLIENT", "NURSE"] as const).map((pt) => {
+              const isActive = profileTypeFilter === pt;
+              return (
+                <Pressable
+                  key={pt}
+                  style={[styles.chip, isActive && styles.chipActive]}
+                  onPress={() => setProfileTypeFilter(pt)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Filtrar por tipo de perfil: ${pt === "all" ? "Todos" : translateProfileType(pt)}`}
+                  accessibilityState={{ selected: isActive }}
+                >
+                  <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                    {pt === "all" ? "Todos" : translateProfileType(pt)}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
 
           <Text style={styles.filterLabel}>Estado de cuenta</Text>
           <View style={styles.filterChips}>
-            {(["all", "Active", "Inactive", "ProfileIncomplete", "AdminReview", "ManualIntervention"] as const).map((status) => (
-              <Pressable
-                key={status}
-                style={[styles.chip, statusFilter === status && styles.chipActive]}
-                onPress={() => setStatusFilter(status)}
-              >
-                <Text style={[styles.chipText, statusFilter === status && styles.chipTextActive]}>
-                  {status === "all" ? "Todos" : translateAccountStatus(status)}
-                </Text>
-              </Pressable>
-            ))}
+            {(["all", "Active", "Inactive", "ProfileIncomplete", "AdminReview", "ManualIntervention"] as const).map((status) => {
+              const isActive = statusFilter === status;
+              return (
+                <Pressable
+                  key={status}
+                  style={[styles.chip, isActive && styles.chipActive]}
+                  onPress={() => setStatusFilter(status)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Filtrar por estado: ${status === "all" ? "Todos" : translateAccountStatus(status)}`}
+                  accessibilityState={{ selected: isActive }}
+                >
+                  <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                    {status === "all" ? "Todos" : translateAccountStatus(status)}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
 
           <Text style={styles.filterLabel}>Buscar</Text>
           <TextInput
             style={styles.input}
             placeholder="Nombre, correo o número de identificación"
+            placeholderTextColor={designTokens.color.ink.muted}
             value={searchQuery}
             onChangeText={setSearchQuery}
+            accessibilityLabel="Buscar usuario por nombre, correo o cédula"
           />
         </View>
       )}
@@ -235,6 +258,8 @@ export default function AdminUsersScreen() {
               style={styles.card}
               testID={`admin-user-card-${item.id}`}
               nativeID={`admin-user-card-${item.id}`}
+              accessibilityRole="button"
+              accessibilityLabel={`Ver detalle del usuario ${item.displayName}`}
             >
               <View style={styles.cardHeader}>
                 <Text style={styles.cardTitle}>{item.displayName}</Text>
@@ -285,33 +310,33 @@ export default function AdminUsersScreen() {
 
 const styles = StyleSheet.create({
   headerActions: { flexDirection: "row", gap: 8 },
-  button: { backgroundColor: "#ffffff", borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: "#d1d5db" },
-  buttonText: { color: "#007aff", fontWeight: "700", fontSize: 14 },
-  summaryCard: { backgroundColor: "#f8fafc", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 16, marginBottom: 12 },
-  summaryChip: { alignSelf: "flex-start", backgroundColor: "#102a43", color: "#ffffff", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 13, fontWeight: "800", marginBottom: 8 },
-  summaryText: { color: "#52637a", fontSize: 13, lineHeight: 18 },
-  error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
-  loading: { color: "#52637a", fontSize: 14, textAlign: "center", padding: 20 },
-  filtersCard: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 18, padding: 16, marginBottom: 12 },
-  filtersTitle: { fontSize: 16, fontWeight: "800", color: "#111827", marginBottom: 12 },
-  filterLabel: { fontSize: 14, fontWeight: "700", color: "#6b7280", marginTop: 8, marginBottom: 6 },
+  button: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: designTokens.color.border.strong },
+  buttonText: { color: designTokens.color.ink.accent, fontWeight: "700", fontSize: 14 },
+  summaryCard: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 16, marginBottom: 12 },
+  summaryChip: { alignSelf: "flex-start", backgroundColor: designTokens.color.ink.primary, color: designTokens.color.ink.inverse, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 13, fontWeight: "800", marginBottom: 8 },
+  summaryText: { color: designTokens.color.ink.secondary, fontSize: 13, lineHeight: 18 },
+  error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: 12, borderRadius: 12, marginBottom: 12 },
+  loading: { color: designTokens.color.ink.secondary, fontSize: 14, textAlign: "center", padding: 20 },
+  filtersCard: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 18, padding: 16, marginBottom: 12 },
+  filtersTitle: { fontSize: 16, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 12 },
+  filterLabel: { fontSize: 14, fontWeight: "700", color: designTokens.color.ink.muted, marginTop: 8, marginBottom: 6 },
   filterChips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 },
-  chip: { backgroundColor: "#ffffff", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: "#d1d5db" },
-  chipActive: { backgroundColor: "#111827", borderColor: "#111827" },
-  chipText: { color: "#111827", fontSize: 12, fontWeight: "600" },
-  chipTextActive: { color: "#ffffff" },
-  input: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#d1d5db", borderRadius: 14, padding: 14, color: "#111827" },
+  chip: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: "#d1d5db" },
+  chipActive: { backgroundColor: designTokens.color.ink.primary, borderColor: designTokens.color.ink.primary },
+  chipText: { color: designTokens.color.ink.primary, fontSize: 12, fontWeight: "600" },
+  chipTextActive: { color: designTokens.color.ink.inverse },
+  input: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.strong, borderRadius: 14, padding: 14, color: designTokens.color.ink.primary },
   emptyState: { padding: 40, alignItems: "center" },
-  emptyStateText: { color: "#52637a", fontSize: 16, textAlign: "center" },
+  emptyStateText: { color: designTokens.color.ink.secondary, fontSize: 16, textAlign: "center" },
   list: { gap: 12 },
-  card: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 18, padding: 16, marginBottom: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 2 },
+  card: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 18, padding: 16, marginBottom: 12, shadowColor: designTokens.color.ink.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 2 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
-  cardTitle: { color: "#111827", fontWeight: "800", fontSize: 18, flex: 1 },
+  cardTitle: { color: designTokens.color.ink.primary, fontWeight: "800", fontSize: 18, flex: 1 },
   statusBadge: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, marginLeft: 8 },
   statusBadgeText: { fontSize: 11, fontWeight: "700" },
-  cardMeta: { color: "#6b7280", fontSize: 14, marginBottom: 8 },
-  cardHint: { color: "#52637a", fontSize: 13, marginBottom: 10 },
+  cardMeta: { color: designTokens.color.ink.muted, fontSize: 14, marginBottom: 8 },
+  cardHint: { color: designTokens.color.ink.secondary, fontSize: 13, marginBottom: 10 },
   cardRow: { flexDirection: "row", marginBottom: 4 },
-  cardLabel: { color: "#6b7280", fontSize: 13, fontWeight: "700", width: 120 },
-  cardValue: { color: "#111827", fontSize: 13, flex: 1 },
+  cardLabel: { color: designTokens.color.ink.muted, fontSize: 13, fontWeight: "700", width: 120 },
+  cardValue: { color: designTokens.color.ink.primary, fontSize: 13, flex: 1 },
 });

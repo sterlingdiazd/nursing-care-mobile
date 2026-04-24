@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
+import { designTokens } from "@/src/design-system/tokens";
 import {
   getAdminUserDetail,
   updateAdminUserActiveState,
@@ -46,9 +47,9 @@ function translateAccountStatus(status: AdminUserAccountStatus): string {
 
 function statusBadgeStyle(status: AdminUserAccountStatus) {
   switch (status) {
-    case "Active": return { bg: "#d1fae5", text: "#065f46" };
-    case "Inactive": return { bg: "#fee2e2", text: "#991b1b" };
-    default: return { bg: "#fef3c7", text: "#92400e" };
+    case "Active": return { bg: designTokens.color.surface.success, text: designTokens.color.status.successText };
+    case "Inactive": return { bg: designTokens.color.surface.danger, text: designTokens.color.status.dangerText };
+    default: return { bg: designTokens.color.surface.warning, text: designTokens.color.status.warningText };
   }
 }
 
@@ -162,7 +163,12 @@ export default function AdminUserDetailScreen() {
       nativeID={adminTestIds.users.detailScreen}
       actions={(
         <View style={styles.headerActions}>
-          <Pressable style={styles.button} onPress={() => void load()}>
+          <Pressable
+            style={styles.button}
+            onPress={() => void load()}
+            accessibilityRole="button"
+            accessibilityLabel="Actualizar datos del usuario"
+          >
             <Text style={styles.buttonText}>Actualizar</Text>
           </Pressable>
         </View>
@@ -177,7 +183,12 @@ export default function AdminUserDetailScreen() {
           >
             {error}
           </Text>
-          <Pressable onPress={() => void load()} style={styles.retryButton}>
+          <Pressable
+            onPress={() => void load()}
+            style={styles.retryButton}
+            accessibilityRole="button"
+            accessibilityLabel="Reintentar carga de datos"
+          >
             <Text style={styles.retryButtonText}>Reintentar</Text>
           </Pressable>
         </View>
@@ -342,6 +353,8 @@ export default function AdminUserDetailScreen() {
             <Pressable
               style={styles.buttonSecondary}
               onPress={() => router.push(`/admin/users/${id}/edit` as never)}
+              accessibilityRole="button"
+              accessibilityLabel="Editar usuario"
             >
               <Text style={styles.buttonSecondaryText}>Editar usuario</Text>
             </Pressable>
@@ -354,6 +367,8 @@ export default function AdminUserDetailScreen() {
               }}
               testID={adminTestIds.users.detailPrimaryAction}
               nativeID={adminTestIds.users.detailPrimaryAction}
+              accessibilityRole="button"
+              accessibilityLabel="Gestionar roles del usuario"
             >
               <Text style={styles.buttonPrimaryText}>Gestionar roles</Text>
             </Pressable>
@@ -361,6 +376,8 @@ export default function AdminUserDetailScreen() {
               style={[styles.toggleButton, toggling && styles.buttonDisabled]}
               onPress={handleToggleActiveState}
               disabled={toggling}
+              accessibilityRole="button"
+              accessibilityLabel={detail.isActive ? "Desactivar cuenta del usuario" : "Activar cuenta del usuario"}
             >
               <Text style={styles.toggleButtonText}>
                 {toggling ? "Cambiando..." : detail.isActive ? "Desactivar usuario" : "Activar usuario"}
@@ -370,6 +387,8 @@ export default function AdminUserDetailScreen() {
               style={[styles.buttonDanger, invalidating && styles.buttonDisabled]}
               onPress={handleInvalidateSessions}
               disabled={invalidating}
+              accessibilityRole="button"
+              accessibilityLabel="Invalidar todas las sesiones activas del usuario"
             >
               <Text style={styles.buttonDangerText}>
                 {invalidating ? "Invalidando..." : "Invalidar sesiones"}
@@ -406,6 +425,9 @@ export default function AdminUserDetailScreen() {
                   style={[styles.roleRow, !isAllowed && styles.roleRowDisabled]}
                   onPress={() => isAllowed && toggleRole(role)}
                   disabled={!isAllowed}
+                  accessibilityRole="checkbox"
+                  accessibilityLabel={`Rol ${translateRole(role)}`}
+                  accessibilityState={{ checked: isSelected, disabled: !isAllowed }}
                 >
                   <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
                     {isSelected && <Text style={styles.checkboxCheck}>✓</Text>}
@@ -421,6 +443,8 @@ export default function AdminUserDetailScreen() {
               <Pressable
                 style={styles.buttonSecondary}
                 onPress={() => setShowRolesModal(false)}
+                accessibilityRole="button"
+                accessibilityLabel="Cancelar gestión de roles"
               >
                 <Text style={styles.buttonSecondaryText}>Cancelar</Text>
               </Pressable>
@@ -428,6 +452,8 @@ export default function AdminUserDetailScreen() {
                 style={[styles.buttonPrimary, savingRoles && styles.buttonDisabled]}
                 onPress={handleSaveRoles}
                 disabled={savingRoles}
+                accessibilityRole="button"
+                accessibilityLabel={savingRoles ? "Guardando roles" : "Guardar roles seleccionados"}
               >
                 <Text style={styles.buttonPrimaryText}>
                   {savingRoles ? "Guardando..." : "Guardar roles"}
@@ -443,8 +469,8 @@ export default function AdminUserDetailScreen() {
 
 const styles = StyleSheet.create({
   headerActions: { flexDirection: "row", gap: 8 },
-  button: { backgroundColor: "#f0f4f8", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },
-  buttonText: { color: "#102a43", fontWeight: "700", fontSize: 14 },
+  button: { backgroundColor: designTokens.color.surface.secondary, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },
+  buttonText: { color: designTokens.color.ink.primary, fontWeight: "700", fontSize: 14 },
   buttonPrimary: { ...mobileAdminActionButton, paddingVertical: 12, marginTop: 8 },
   buttonPrimaryText: { ...mobileAdminActionButtonText },
   buttonSecondary: { ...mobileAdminActionButton, paddingVertical: 12, marginTop: 4 },
@@ -454,38 +480,38 @@ const styles = StyleSheet.create({
   buttonDisabled: { opacity: 0.5 },
   toggleButton: { ...mobileAdminActionButton, paddingVertical: 12, marginTop: 8 },
   toggleButtonText: { ...mobileAdminActionButtonText },
-  errorCard: { backgroundColor: "#fee", borderRadius: 12, padding: 12, marginBottom: 12 },
-  errorText: { color: "#c00", fontSize: 14, marginBottom: 8 },
-  summaryCard: { backgroundColor: "#f8fafc", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 16, marginBottom: 12 },
-  summaryEyebrow: { color: "#7c2d12", fontSize: 12, fontWeight: "800", textTransform: "uppercase", marginBottom: 6 },
-  summaryChip: { alignSelf: "flex-start", backgroundColor: "#102a43", color: "#ffffff", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 13, fontWeight: "800", marginBottom: 8 },
-  summaryText: { color: "#52637a", fontSize: 13, lineHeight: 18 },
-  retryButton: { backgroundColor: "#c00", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12, alignSelf: "flex-start" },
-  retryButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 13 },
-  loading: { color: "#52637a", fontSize: 14, textAlign: "center", padding: 20 },
-  card: { backgroundColor: "#fffdf9", borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
-  cardTitle: { fontSize: 16, fontWeight: "800", color: "#102a43", marginBottom: 12 },
+  errorCard: { backgroundColor: designTokens.color.surface.danger, borderRadius: 12, padding: 12, marginBottom: 12 },
+  errorText: { color: designTokens.color.ink.danger, fontSize: 14, marginBottom: 8 },
+  summaryCard: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 16, marginBottom: 12 },
+  summaryEyebrow: { color: designTokens.color.status.dangerText, fontSize: 12, fontWeight: "800", textTransform: "uppercase", marginBottom: 6 },
+  summaryChip: { alignSelf: "flex-start", backgroundColor: designTokens.color.ink.primary, color: designTokens.color.ink.inverse, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 13, fontWeight: "800", marginBottom: 8 },
+  summaryText: { color: designTokens.color.ink.secondary, fontSize: 13, lineHeight: 18 },
+  retryButton: { backgroundColor: designTokens.color.ink.danger, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12, alignSelf: "flex-start" },
+  retryButtonText: { color: designTokens.color.ink.inverse, fontWeight: "700", fontSize: 13 },
+  loading: { color: designTokens.color.ink.secondary, fontSize: 14, textAlign: "center", padding: 20 },
+  card: { backgroundColor: designTokens.color.surface.canvas, borderWidth: 1, borderColor: "#dbe5f3", borderRadius: 18, padding: 14, marginBottom: 12 },
+  cardTitle: { fontSize: 16, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 12 },
   field: { marginBottom: 8 },
-  fieldLabel: { color: "#7c2d12", fontSize: 12, fontWeight: "800", textTransform: "uppercase", marginBottom: 2 },
-  fieldValue: { color: "#102a43", fontSize: 15 },
-  fieldValueMono: { color: "#102a43", fontSize: 13, fontFamily: "monospace" },
+  fieldLabel: { color: designTokens.color.status.dangerText, fontSize: 12, fontWeight: "800", textTransform: "uppercase", marginBottom: 2 },
+  fieldValue: { color: designTokens.color.ink.primary, fontSize: 15 },
+  fieldValueMono: { color: designTokens.color.ink.primary, fontSize: 13, fontFamily: "monospace" },
   statusBadge: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, alignSelf: "flex-start" },
-  statusBadgeActive: { backgroundColor: "#d1fae5" },
-  statusBadgeInactive: { backgroundColor: "#fee2e2" },
+  statusBadgeActive: { backgroundColor: designTokens.color.surface.success },
+  statusBadgeInactive: { backgroundColor: designTokens.color.surface.danger },
   statusBadgeText: { fontSize: 11, fontWeight: "700" },
-  statusBadgeTextActive: { color: "#065f46" },
-  statusBadgeTextInactive: { color: "#991b1b" },
+  statusBadgeTextActive: { color: designTokens.color.status.successText },
+  statusBadgeTextInactive: { color: designTokens.color.status.dangerText },
   modalOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", padding: 20 },
-  modal: { backgroundColor: "#ffffff", borderRadius: 18, padding: 20, width: "100%" },
-  modalTitle: { fontSize: 18, fontWeight: "800", color: "#102a43", marginBottom: 4 },
-  modalSubtitle: { fontSize: 14, color: "#52637a", marginBottom: 16 },
-  modalError: { color: "#c00", fontSize: 13, marginBottom: 12, backgroundColor: "#fee", padding: 8, borderRadius: 8 },
+  modal: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 18, padding: 20, width: "100%" },
+  modalTitle: { fontSize: 18, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 4 },
+  modalSubtitle: { fontSize: 14, color: designTokens.color.ink.secondary, marginBottom: 16 },
+  modalError: { color: designTokens.color.ink.danger, fontSize: 13, marginBottom: 12, backgroundColor: designTokens.color.surface.danger, padding: 8, borderRadius: 8 },
   modalActions: { flexDirection: "row", gap: 8, marginTop: 16 },
-  roleRow: { flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#f0f4f8" },
+  roleRow: { flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: designTokens.color.surface.secondary },
   roleRowDisabled: { opacity: 0.4 },
   checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: mobileTheme.colors.border.accent, marginRight: 12, alignItems: "center", justifyContent: "center" },
   checkboxSelected: { backgroundColor: mobileTheme.colors.ink.accent },
-  checkboxCheck: { color: "#ffffff", fontSize: 13, fontWeight: "800" },
-  roleLabel: { color: "#102a43", fontSize: 15, fontWeight: "600" },
+  checkboxCheck: { color: designTokens.color.ink.inverse, fontSize: 13, fontWeight: "800" },
+  roleLabel: { color: designTokens.color.ink.primary, fontSize: 15, fontWeight: "600" },
   roleLabelDisabled: { color: "#94a3b8" },
 });

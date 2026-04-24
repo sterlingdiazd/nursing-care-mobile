@@ -1,6 +1,6 @@
 // @generated-by: implementation-agent
-// @pipeline-run: 2026-04-23-mobile-ux-route-first-refactor
-// @diffs: DIFF-ADMIN-SHF-002
+// @pipeline-run: 2026-04-24-mobile-ux-audit
+// @diffs: DIFF-ADMIN-SHF-003
 // @do-not-edit: false
 
 import { useEffect, useState } from "react";
@@ -9,6 +9,7 @@ import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
+import { designTokens } from "@/src/design-system/tokens";
 import {
   listAdminShifts,
   getAdminShiftDetail,
@@ -36,10 +37,10 @@ function statusLabel(status: ShiftRecordStatus): string {
 
 function statusBadgeColors(status: ShiftRecordStatus): { bg: string; text: string } {
   switch (status) {
-    case "Planned": return { bg: "#dbeafe", text: "#1e40af" };
-    case "Completed": return { bg: "#d1fae5", text: "#065f46" };
-    case "Changed": return { bg: "#fef3c7", text: "#92400e" };
-    case "Cancelled": return { bg: "#fee2e2", text: "#991b1b" };
+    case "Planned": return { bg: designTokens.color.status.infoBg, text: designTokens.color.ink.accentStrong };
+    case "Completed": return { bg: designTokens.color.surface.success, text: designTokens.color.status.successText };
+    case "Changed": return { bg: designTokens.color.surface.warning, text: designTokens.color.status.warningText };
+    case "Cancelled": return { bg: designTokens.color.surface.danger, text: designTokens.color.status.dangerText };
   }
 }
 
@@ -161,6 +162,8 @@ export default function AdminShiftsScreen() {
             onPress={() => setShowFilters(!showFilters)}
             testID="admin-shifts-filter-toggle"
             nativeID="admin-shifts-filter-toggle"
+            accessibilityRole="button"
+            accessibilityLabel={showFilters ? "Ocultar filtros" : "Mostrar filtros"}
           >
             <Text style={styles.buttonText}>{showFilters ? "Ocultar filtros" : "Filtros"}</Text>
           </Pressable>
@@ -169,6 +172,8 @@ export default function AdminShiftsScreen() {
             onPress={() => void load()}
             testID="admin-shifts-refresh-btn"
             nativeID="admin-shifts-refresh-btn"
+            accessibilityRole="button"
+            accessibilityLabel="Actualizar turnos"
           >
             <Text style={styles.buttonText}>Actualizar</Text>
           </Pressable>
@@ -191,19 +196,25 @@ export default function AdminShiftsScreen() {
 
           <Text style={styles.filterLabel}>Estado</Text>
           <View style={styles.filterChips}>
-            {STATUS_CHIPS.map((chip) => (
-              <Pressable
-                key={chip.value}
-                style={[styles.chip, statusFilter === chip.value && styles.chipActive]}
-                onPress={() => setStatusFilter(chip.value)}
-                testID={`admin-shifts-status-chip-${chip.value}`}
-                nativeID={`admin-shifts-status-chip-${chip.value}`}
-              >
-                <Text style={[styles.chipText, statusFilter === chip.value && styles.chipTextActive]}>
-                  {chip.label}
-                </Text>
-              </Pressable>
-            ))}
+            {STATUS_CHIPS.map((chip) => {
+              const isActive = statusFilter === chip.value;
+              return (
+                <Pressable
+                  key={chip.value}
+                  style={[styles.chip, isActive && styles.chipActive]}
+                  onPress={() => setStatusFilter(chip.value)}
+                  testID={`admin-shifts-status-chip-${chip.value}`}
+                  nativeID={`admin-shifts-status-chip-${chip.value}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Filtrar por estado: ${chip.label}`}
+                  accessibilityState={{ selected: isActive }}
+                >
+                  <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                    {chip.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
 
           <TextInput
@@ -213,6 +224,7 @@ export default function AdminShiftsScreen() {
             onChangeText={setStartDateFilter}
             testID="admin-shifts-start-date-input"
             nativeID="admin-shifts-start-date-input"
+            accessibilityLabel="Fecha de inicio del filtro"
           />
           <TextInput
             style={[styles.input, { marginTop: 8 }]}
@@ -221,6 +233,7 @@ export default function AdminShiftsScreen() {
             onChangeText={setEndDateFilter}
             testID="admin-shifts-end-date-input"
             nativeID="admin-shifts-end-date-input"
+            accessibilityLabel="Fecha de fin del filtro"
           />
 
           <View style={styles.filterActions}>
@@ -229,10 +242,17 @@ export default function AdminShiftsScreen() {
               onPress={handleSearch}
               testID="admin-shifts-search-btn"
               nativeID="admin-shifts-search-btn"
+              accessibilityRole="button"
+              accessibilityLabel="Buscar turnos"
             >
               <Text style={styles.buttonPrimaryText}>Buscar</Text>
             </Pressable>
-            <Pressable style={styles.button} onPress={handleClearFilters}>
+            <Pressable
+              style={styles.button}
+              onPress={handleClearFilters}
+              accessibilityRole="button"
+              accessibilityLabel="Limpiar filtros"
+            >
               <Text style={styles.buttonText}>Limpiar</Text>
             </Pressable>
           </View>
@@ -294,6 +314,8 @@ export default function AdminShiftsScreen() {
                   onPress={() => void handleViewDetail(item.id)}
                   testID={`admin-shift-detail-btn-${item.id}`}
                   nativeID={`admin-shift-detail-btn-${item.id}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={isExpanded ? "Ocultar detalle del turno" : "Ver detalle del turno"}
                 >
                   <Text style={styles.detailButtonText}>
                     {detailLoadingId === item.id ? "Cargando..." : isExpanded ? "Ocultar detalle" : "Ver detalle"}
@@ -401,6 +423,8 @@ export default function AdminShiftsScreen() {
             disabled={pageNumber === 1}
             testID="admin-shifts-prev-btn"
             nativeID="admin-shifts-prev-btn"
+            accessibilityRole="button"
+            accessibilityLabel="Página anterior"
           >
             <Text style={styles.buttonText}>Anterior</Text>
           </Pressable>
@@ -411,6 +435,8 @@ export default function AdminShiftsScreen() {
             disabled={pageNumber * PAGE_SIZE >= totalCount}
             testID="admin-shifts-next-btn"
             nativeID="admin-shifts-next-btn"
+            accessibilityRole="button"
+            accessibilityLabel="Página siguiente"
           >
             <Text style={styles.buttonText}>Siguiente</Text>
           </Pressable>
@@ -422,51 +448,51 @@ export default function AdminShiftsScreen() {
 
 const styles = StyleSheet.create({
   headerActions: { flexDirection: "row", gap: 8 },
-  button: { backgroundColor: "#ffffff", borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: "#d1d5db" },
-  buttonText: { color: "#007aff", fontWeight: "700", fontSize: 14 },
-  buttonPrimary: { backgroundColor: "#007aff", borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, flex: 1 },
-  buttonPrimaryText: { color: "#ffffff", fontWeight: "700", fontSize: 14, textAlign: "center" },
+  button: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: "#d1d5db" },
+  buttonText: { color: designTokens.color.ink.accent, fontWeight: "700", fontSize: 14 },
+  buttonPrimary: { backgroundColor: designTokens.color.ink.accent, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, flex: 1 },
+  buttonPrimaryText: { color: designTokens.color.ink.inverse, fontWeight: "700", fontSize: 14, textAlign: "center" },
   buttonDisabled: { opacity: 0.5 },
-  error: { backgroundColor: "#fee", color: "#c00", padding: 12, borderRadius: 12, marginBottom: 12 },
-  filtersCard: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 18, padding: 16, marginBottom: 12 },
-  filtersTitle: { fontSize: 16, fontWeight: "800", color: "#111827", marginBottom: 12 },
-  filterLabel: { fontSize: 14, fontWeight: "700", color: "#6b7280", marginTop: 8, marginBottom: 6 },
+  error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: 12, borderRadius: 12, marginBottom: 12 },
+  filtersCard: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 18, padding: 16, marginBottom: 12 },
+  filtersTitle: { fontSize: 16, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 12 },
+  filterLabel: { fontSize: 14, fontWeight: "700", color: designTokens.color.ink.muted, marginTop: 8, marginBottom: 6 },
   filterChips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 },
-  chip: { backgroundColor: "#ffffff", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: "#d1d5db" },
-  chipActive: { backgroundColor: "#111827", borderColor: "#111827" },
-  chipText: { color: "#111827", fontSize: 12, fontWeight: "600" },
-  chipTextActive: { color: "#ffffff" },
-  input: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#d1d5db", borderRadius: 14, padding: 14, color: "#111827" },
+  chip: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: "#d1d5db" },
+  chipActive: { backgroundColor: designTokens.color.ink.primary, borderColor: designTokens.color.ink.primary },
+  chipText: { color: designTokens.color.ink.primary, fontSize: 12, fontWeight: "600" },
+  chipTextActive: { color: designTokens.color.ink.inverse },
+  input: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: "#d1d5db", borderRadius: 14, padding: 14, color: designTokens.color.ink.primary },
   filterActions: { flexDirection: "row", gap: 8, marginTop: 8 },
   summary: { flexDirection: "row", justifyContent: "space-between", marginBottom: 12, paddingHorizontal: 4 },
-  summaryText: { color: "#6b7280", fontSize: 14, fontWeight: "600" },
-  loadingText: { color: "#52637a", fontSize: 14, textAlign: "center", padding: 20 },
+  summaryText: { color: designTokens.color.ink.muted, fontSize: 14, fontWeight: "600" },
+  loadingText: { color: designTokens.color.ink.secondary, fontSize: 14, textAlign: "center", padding: 20 },
   emptyState: { padding: 40, alignItems: "center" },
-  emptyStateText: { color: "#52637a", fontSize: 16 },
+  emptyStateText: { color: designTokens.color.ink.secondary, fontSize: 16 },
   list: { gap: 12 },
-  card: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 18, padding: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 2 },
+  card: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 18, padding: 16, shadowColor: designTokens.color.ink.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 2 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
-  cardNurse: { color: "#111827", fontWeight: "800", fontSize: 16, flex: 1 },
+  cardNurse: { color: designTokens.color.ink.primary, fontWeight: "800", fontSize: 16, flex: 1 },
   statusBadge: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, marginLeft: 8 },
   statusBadgeText: { fontSize: 11, fontWeight: "700" },
-  cardRef: { color: "#6b7280", fontSize: 13, marginBottom: 6 },
+  cardRef: { color: designTokens.color.ink.muted, fontSize: 13, marginBottom: 6 },
   cardDateRow: { flexDirection: "row", marginBottom: 4 },
-  cardDateLabel: { color: "#6b7280", fontSize: 13, fontWeight: "700", width: 50 },
-  cardDateValue: { color: "#111827", fontSize: 13, flex: 1 },
-  detailButton: { backgroundColor: "#007aff", borderRadius: 12, paddingVertical: 8, marginTop: 10 },
-  detailButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 14, textAlign: "center" },
-  detailPanel: { backgroundColor: "#f8fafc", borderWidth: 1, borderColor: "#bfdbfe", borderRadius: 16, padding: 16, marginTop: 4, marginBottom: 8, gap: 12 },
+  cardDateLabel: { color: designTokens.color.ink.muted, fontSize: 13, fontWeight: "700", width: 50 },
+  cardDateValue: { color: designTokens.color.ink.primary, fontSize: 13, flex: 1 },
+  detailButton: { backgroundColor: designTokens.color.ink.accent, borderRadius: 12, paddingVertical: 8, marginTop: 10 },
+  detailButtonText: { color: designTokens.color.ink.inverse, fontWeight: "700", fontSize: 14, textAlign: "center" },
+  detailPanel: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: "#bfdbfe", borderRadius: 16, padding: 16, marginTop: 4, marginBottom: 8, gap: 12 },
   pagination: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 16, paddingHorizontal: 4 },
-  pageInfo: { color: "#6b7280", fontSize: 14, fontWeight: "600" },
+  pageInfo: { color: designTokens.color.ink.muted, fontSize: 14, fontWeight: "600" },
   detailField: { gap: 4 },
-  detailLabel: { color: "#6b7280", fontSize: 12, fontWeight: "800", textTransform: "uppercase" },
-  detailValue: { color: "#111827", fontSize: 15 },
-  detailValueSecondary: { color: "#4b5563", fontSize: 14 },
+  detailLabel: { color: designTokens.color.ink.muted, fontSize: 12, fontWeight: "800", textTransform: "uppercase" },
+  detailValue: { color: designTokens.color.ink.primary, fontSize: 15 },
+  detailValueSecondary: { color: designTokens.color.ink.secondary, fontSize: 14 },
   changesSection: { gap: 8 },
-  changesSectionTitle: { fontSize: 14, fontWeight: "800", color: "#111827", textTransform: "uppercase", letterSpacing: 0.5 },
-  changeItem: { backgroundColor: "#ffffff", borderRadius: 12, padding: 12, borderWidth: 1, borderColor: "#e5e7eb", gap: 2 },
-  changeDate: { color: "#92400e", fontWeight: "700", fontSize: 12 },
-  changeActor: { color: "#6b7280", fontSize: 13 },
-  changeStatus: { color: "#111827", fontWeight: "700", fontSize: 14 },
-  changeNotes: { color: "#4b5563", fontSize: 13, marginTop: 2 },
+  changesSectionTitle: { fontSize: 14, fontWeight: "800", color: designTokens.color.ink.primary, textTransform: "uppercase", letterSpacing: 0.5 },
+  changeItem: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: "#e5e7eb", gap: 2 },
+  changeDate: { color: designTokens.color.status.warningText, fontWeight: "700", fontSize: 12 },
+  changeActor: { color: designTokens.color.ink.muted, fontSize: 13 },
+  changeStatus: { color: designTokens.color.ink.primary, fontWeight: "700", fontSize: 14 },
+  changeNotes: { color: designTokens.color.ink.secondary, fontSize: 13, marginTop: 2 },
 });
