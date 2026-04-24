@@ -308,8 +308,8 @@ export default function CareRequestDetailScreen() {
           {hasPricingData ? (
             <Pressable
               onPress={showPricingReview ? closePricingReview : openPricingReview}
-              testID={careRequestTestIds.detail.primaryAction}
-              nativeID={careRequestTestIds.detail.primaryAction}
+              testID={careRequestTestIds.detail.pricingBreakdownToggle}
+              nativeID={careRequestTestIds.detail.pricingBreakdownToggle}
               style={({ pressed }) => [
                 styles.secondaryButton,
                 styles.pricingButton,

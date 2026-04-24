@@ -3,40 +3,44 @@ import type { AdminPayrollPeriodListItem } from "@/src/services/payrollService";
 
 interface PeriodListItemProps {
   period: AdminPayrollPeriodListItem;
-  onPress: (period: AdminPayrollPeriodListItem) => void;
+  onPress: (id: string) => void;
 }
 
 export function PeriodListItem({ period, onPress }: PeriodListItemProps) {
   const isOpen = period.status === "Open";
 
   return (
-    <TouchableOpacity 
-      style={styles.container} 
-      onPress={() => onPress(period)}
+    <TouchableOpacity
+      style={styles.container}
+      onPress={() => onPress(period.id)}
     >
       <View style={styles.header}>
         <Text style={styles.dates}>
           {period.startDate} - {period.endDate}
         </Text>
-        <View style={[styles.statusBadge, isOpen ? styles.statusOpen : styles.statusClosed]}>
+        <View 
+          style={[styles.statusBadge, isOpen ? styles.statusOpen : styles.statusClosed]}
+          testID="payroll-period-status-badge"
+          nativeID="payroll-period-status-badge"
+        >
           <Text style={[styles.statusText, isOpen ? styles.statusTextOpen : styles.statusTextClosed]}>
             {isOpen ? "Abierto" : "Cerrado"}
           </Text>
         </View>
       </View>
-      
+
       <View style={styles.details}>
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Corte</Text>
-          <Text style={styles.detailValue}>{period.cutoffDate}</Text>
-        </View>
         <View style={styles.detailItem}>
           <Text style={styles.detailLabel}>Pago</Text>
           <Text style={styles.detailValue}>{period.paymentDate}</Text>
         </View>
         <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Líneas</Text>
-          <Text style={styles.detailValue}>{period.lineCount}</Text>
+          <Text style={styles.detailLabel}>Cierre</Text>
+          <Text style={styles.detailValue}>{period.cutoffDate}</Text>
+        </View>
+        <View style={styles.detailItem}>
+          <Text style={styles.detailLabel}>Personal</Text>
+          <Text style={styles.detailValue}>{period.staffCount}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -45,42 +49,44 @@ export function PeriodListItem({ period, onPress }: PeriodListItemProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#f9f9f9",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
+    backgroundColor: "#fff",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 12,
   },
   dates: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
+    fontWeight: "700",
+    color: "#0f172a",
   },
   statusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: 6,
   },
   statusOpen: {
-    backgroundColor: "#e3f2fd",
+    backgroundColor: "#dcfce7",
   },
   statusClosed: {
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#f1f5f9",
   },
   statusText: {
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: "700",
   },
   statusTextOpen: {
-    color: "#1976d2",
+    color: "#15803d",
   },
   statusTextClosed: {
-    color: "#666",
+    color: "#475569",
   },
   details: {
     flexDirection: "row",
