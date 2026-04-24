@@ -224,7 +224,11 @@ export default function AdminCareRequestBillingTaskScreen({
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Estado</Text>
-                <Text style={[styles.statusValue, { color: getAdminCareRequestStatusColor(detail.status) }]}>
+                <Text
+                  testID="care-request-status-badge"
+                  nativeID="care-request-status-badge"
+                  style={[styles.statusValue, { color: getAdminCareRequestStatusColor(detail.status) }]}
+                >
                   {formatAdminCareRequestStatusLabel(detail.status)}
                 </Text>
               </View>
