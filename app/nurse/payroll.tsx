@@ -18,6 +18,7 @@ import {
 } from "@/src/services/payrollService";
 import { designTokens } from "@/src/design-system/tokens";
 import { useToast } from "@/src/components/shared/ToastProvider";
+import { formatDateES } from "@/src/utils/spanishTextValidator";
 
 export default function NursePayrollScreen() {
   const { userId: paramUserId } = useLocalSearchParams<{ userId?: string }>();
@@ -157,7 +158,7 @@ export default function NursePayrollScreen() {
               <View style={styles.card}>
                 <Text style={styles.label}>Periodo</Text>
                 <Text style={styles.value}>
-                  {summary.currentPeriodStartDate} - {summary.currentPeriodEndDate}
+                  {summary.currentPeriodStartDate ? formatDateES(summary.currentPeriodStartDate) : ""} - {summary.currentPeriodEndDate ? formatDateES(summary.currentPeriodEndDate) : ""}
                 </Text>
               </View>
 
@@ -272,7 +273,7 @@ export default function NursePayrollScreen() {
                                 testID={`nurse-payroll-service-line-${line.serviceExecutionId}`}
                               >
                                 <View style={{ flex: 1 }}>
-                                  <Text style={styles.detailServiceDate}>{line.serviceDate}</Text>
+                                  <Text style={styles.detailServiceDate}>{formatDateES(line.serviceDate)}</Text>
                                   <Text style={styles.detailServiceDesc} numberOfLines={2}>
                                     {line.description}
                                   </Text>

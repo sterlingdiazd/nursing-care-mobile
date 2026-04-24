@@ -27,6 +27,7 @@ import {
   getAdminPayrollBulkVouchersUrl,
 } from "@/src/services/payrollService";
 import { getCachedAuthSession } from "@/src/services/authSession";
+import { formatDateES, formatDateTimeES } from "@/src/utils/spanishTextValidator";
 
 interface PeriodDetailProps {
   period: AdminPayrollPeriodDetail;
@@ -361,22 +362,22 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
           <View style={styles.metaRow}>
             <View style={styles.metaItem}>
               <Text style={styles.metaLabel}>Corte</Text>
-              <Text style={styles.metaValue}>{period.cutoffDate}</Text>
+              <Text style={styles.metaValue}>{formatDateES(period.cutoffDate)}</Text>
             </View>
             <View style={styles.metaItem}>
               <Text style={styles.metaLabel}>Pago</Text>
-              <Text style={styles.metaValue}>{period.paymentDate}</Text>
+              <Text style={styles.metaValue}>{formatDateES(period.paymentDate)}</Text>
             </View>
           </View>
           <View style={styles.metaRow}>
             <View style={styles.metaItem}>
               <Text style={styles.metaLabel}>Creado</Text>
-              <Text style={styles.metaValue}>{period.createdAtUtc}</Text>
+              <Text style={styles.metaValue}>{formatDateTimeES(period.createdAtUtc)}</Text>
             </View>
             {period.closedAtUtc && (
               <View style={styles.metaItem}>
                 <Text style={styles.metaLabel}>Cerrado</Text>
-                <Text style={styles.metaValue}>{period.closedAtUtc}</Text>
+                <Text style={styles.metaValue}>{period.closedAtUtc ? formatDateTimeES(period.closedAtUtc) : ""}</Text>
               </View>
             )}
           </View>

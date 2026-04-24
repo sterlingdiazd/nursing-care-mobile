@@ -25,6 +25,7 @@ import {
 } from "@/src/services/careRequestService";
 import { CareRequestDto, CareRequestTransitionAction } from "@/src/types/careRequest";
 import { careRequestTestIds } from "@/src/testing/testIds";
+import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
 
 function getStatusColors(status: CareRequestDto["status"]) {
   switch (status) {
@@ -442,19 +443,19 @@ export default function CareRequestDetailScreen() {
             Fecha del servicio: {careRequest.careRequestDate ?? "Sin fecha"}
           </Text>
           <Text style={styles.metaText}>
-            Creada: {new Date(careRequest.createdAtUtc).toLocaleString("es-DO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
+            Creada: {formatDateTimeES(careRequest.createdAtUtc)}
           </Text>
           <Text style={styles.metaText}>
-            Actualizada: {new Date(careRequest.updatedAtUtc).toLocaleString("es-DO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
+            Actualizada: {formatDateTimeES(careRequest.updatedAtUtc)}
           </Text>
           {careRequest.approvedAtUtc && (
             <Text style={styles.metaText}>
-              Aprobada: {new Date(careRequest.approvedAtUtc).toLocaleString("es-DO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
+              Aprobada: {formatDateTimeES(careRequest.approvedAtUtc)}
             </Text>
           )}
           {careRequest.rejectedAtUtc && (
             <Text style={styles.metaText}>
-              Rechazada: {new Date(careRequest.rejectedAtUtc).toLocaleString("es-DO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
+              Rechazada: {formatDateTimeES(careRequest.rejectedAtUtc)}
             </Text>
           )}
           {careRequest.rejectionReason && (
@@ -464,12 +465,12 @@ export default function CareRequestDetailScreen() {
           )}
           {careRequest.completedAtUtc && (
             <Text style={styles.metaText}>
-              Completada: {new Date(careRequest.completedAtUtc).toLocaleString("es-DO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
+              Completada: {formatDateTimeES(careRequest.completedAtUtc)}
             </Text>
           )}
           {careRequest.cancelledAtUtc && (
             <Text style={styles.metaText}>
-              Cancelada: {new Date(careRequest.cancelledAtUtc).toLocaleString("es-DO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
+              Cancelada: {formatDateTimeES(careRequest.cancelledAtUtc)}
             </Text>
           )}
         </View>
