@@ -13,6 +13,7 @@ import {
 } from "@/src/services/authService";
 import { authTestIds } from "@/src/testing/authTestIds";
 import { testProps } from "@/src/testing/testIds";
+import { navigationTestIds } from "@/src/testing/testIds/navigationTestIds";
 import { formatRoleLabels } from "@/src/utils/roleLabels";
 import { hapticFeedback } from "@/src/utils/haptics";
 import { designTokens } from "@/src/design-system/tokens";
@@ -54,6 +55,8 @@ export default function AccountScreen() {
 
   return (
     <MobileWorkspaceShell
+      testID={navigationTestIds.screens.accountRoot}
+      nativeID={navigationTestIds.screens.accountRoot}
       eyebrow="Cuenta"
       title="Acceso y sesión"
       description="Consulta el estado actual de tu cuenta y gestiona tu sesión."

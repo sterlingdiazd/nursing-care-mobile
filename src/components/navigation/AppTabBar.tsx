@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import { router } from "expo-router";
 
 import { useAuth, UserProfileType } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
@@ -56,7 +57,13 @@ export default function AppTabBar({ state, navigation }: BottomTabBarProps) {
       canPreventDefault: true,
     });
 
-    if (!event.defaultPrevented) {
+    if (event.defaultPrevented) return;
+
+    if (tabKey === "nurse/payroll") {
+      router.push("/nurse/payroll" as any);
+    } else if (tabKey === "admin/payroll") {
+      router.push("/admin/payroll" as any);
+    } else {
       navigation.navigate(routeKey);
     }
   };

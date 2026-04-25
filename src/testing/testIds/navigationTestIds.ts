@@ -16,11 +16,12 @@ export const navigationTestIds = {
     actionBar: "nav-footer-action-bar",
   },
   screens: {
-    careRequestsListRoot: "care-requests-list-root",
-    adminCareRequestsListRoot: "admin-care-requests-list-root",
+    accountRoot: "account-screen-root",
     adminCareRequestDetailRoot: "admin-care-request-detail-root",
-    nursePayrollRoot: "nurse-payroll-root",
-    adminPayrollRoot: "admin-payroll-root",
+    adminCareRequestsListRoot: "admin-care-requests-list-root",
     adminHomeRoot: "admin-home-root",
+    adminPayrollRoot: "admin-payroll-root",
+    careRequestsListRoot: "care-requests-list-root",
+    nursePayrollRoot: "nurse-payroll-root",
   },
 } as const;
