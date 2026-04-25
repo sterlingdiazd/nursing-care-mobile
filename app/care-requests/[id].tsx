@@ -25,6 +25,7 @@ import {
 } from "@/src/services/careRequestService";
 import { CareRequestDto, CareRequestTransitionAction } from "@/src/types/careRequest";
 import { careRequestTestIds } from "@/src/testing/testIds";
+import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
 
 function getStatusColors(status: CareRequestDto["status"]) {
@@ -248,19 +249,8 @@ export default function CareRequestDetailScreen() {
       eyebrow="Detalle de solicitud"
       title="Detalle de Solicitud"
       description="Informacion completa de la solicitud de servicio."
-      actions={
-        <Pressable
-          onPress={() => router.back()}
-          style={({ pressed }) => [
-            styles.backActionButton,
-            pressed && styles.buttonPressed,
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel="Volver a la cola de solicitudes"
-        >
-          <Text style={styles.backActionButtonText}>Volver a la cola</Text>
-        </Pressable>
-      }
+      primaryReturnLabel="Volver a solicitudes"
+      onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.createCareRequest)}
     >
       <View style={styles.card} testID={careRequestTestIds.detail.screen} nativeID={careRequestTestIds.detail.screen}>
         <Text style={styles.eyebrow}>Detalle de solicitud</Text>

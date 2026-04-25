@@ -2,20 +2,27 @@ import { ReactNode } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
+  Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
+import { router, type Href } from "expo-router";
 
 import { mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
+import { navigationTestIds } from "@/src/testing/testIds";
 
 interface MobileWorkspaceShellProps {
   eyebrow: string;
   title: string;
   description: string;
   actions?: ReactNode;
+  primaryReturnPath?: Href;
+  primaryReturnLabel?: string;
+  onPrimaryReturn?: () => void;
   children: ReactNode;
   footer?: ReactNode;
   testID?: string;
@@ -27,11 +34,28 @@ export default function MobileWorkspaceShell({
   title,
   description,
   actions,
+  primaryReturnPath,
+  primaryReturnLabel,
+  onPrimaryReturn,
   children,
   footer,
   testID,
   nativeID,
 }: MobileWorkspaceShellProps) {
+  const shouldRenderPrimaryReturn = Boolean(primaryReturnPath || onPrimaryReturn);
+  const shouldRenderActions = shouldRenderPrimaryReturn || Boolean(actions);
+
+  const handlePrimaryReturn = () => {
+    if (onPrimaryReturn) {
+      onPrimaryReturn();
+      return;
+    }
+
+    if (primaryReturnPath) {
+      router.replace(primaryReturnPath);
+    }
+  };
+
   return (
     <SafeAreaView
       style={styles.safeArea}
@@ -49,16 +73,41 @@ export default function MobileWorkspaceShell({
             <Text style={styles.topBarTitle}>{title}</Text>
           </BlurView>
 
-          <View style={styles.container}>
+          <ScrollView
+            style={styles.container}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
             <View style={styles.hero}>
               <Text style={styles.eyebrow}>{eyebrow}</Text>
               <Text style={styles.title}>{title}</Text>
               <Text style={styles.description}>{description}</Text>
-              {actions ? <View style={styles.actions}>{actions}</View> : null}
+              {shouldRenderActions ? (
+                <View style={styles.actions}>
+                  {shouldRenderPrimaryReturn ? (
+                    <Pressable
+                      onPress={handlePrimaryReturn}
+                      accessibilityRole="button"
+                      accessibilityLabel={primaryReturnLabel ?? "Volver"}
+                      testID={navigationTestIds.shell.primaryReturnButton}
+                      nativeID={navigationTestIds.shell.primaryReturnButton}
+                      style={({ pressed }) => [
+                        styles.primaryReturnButton,
+                        pressed && styles.primaryReturnButtonPressed,
+                      ]}
+                    >
+                      <Text style={styles.primaryReturnButtonText}>
+                        {primaryReturnLabel ?? "Volver"}
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                  {actions}
+                </View>
+              ) : null}
             </View>
 
             <View style={styles.body}>{children}</View>
-          </View>
+          </ScrollView>
         </KeyboardAvoidingView>
         {footer ?? null}
       </View>
@@ -98,6 +147,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: 24,
+  },
   hero: {
     ...mobileSurfaceCard,
     borderRadius: mobileTheme.radius.xl,
@@ -124,6 +176,23 @@ const styles = StyleSheet.create({
   actions: {
     marginTop: 20,
     gap: 12,
+  },
+  primaryReturnButton: {
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: mobileTheme.colors.border.strong,
+    backgroundColor: mobileTheme.colors.surface.secondary,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  primaryReturnButtonPressed: {
+    opacity: 0.85,
+  },
+  primaryReturnButtonText: {
+    color: mobileTheme.colors.ink.primary,
+    fontSize: 14,
+    fontWeight: "700",
   },
   body: {
     flex: 1,

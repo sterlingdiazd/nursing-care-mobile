@@ -12,6 +12,7 @@ import {
 import { FormInput } from "@/src/components/form";
 import { adminTestIds } from "@/src/testing/testIds";
 import { getAdminNurseCreateProgress } from "@/src/utils/adminCreationUx";
+import { mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 const CATEGORIES = ["Auxiliar", "Técnico", "Profesional", "Especialista"];
 
@@ -109,6 +110,8 @@ export default function AdminCreateNurseProfileScreen() {
       description="Crear perfil rápido y configuraciones base."
       testID={adminTestIds.nurses.create.screen}
       nativeID={adminTestIds.nurses.create.screen}
+      primaryReturnPath={mobileNavigationEscapes.adminNurseProfiles}
+      primaryReturnLabel="Volver a enfermeras"
     >
       <View style={styles.progressPanel}>
         <Text

@@ -1,6 +1,10 @@
-import { useRef, useState } from "react";
-import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { LayoutAnimation, Platform, Pressable, StyleSheet, Text, UIManager, View } from "react-native";
 import { designTokens } from "@/src/design-system/tokens";
+
+if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export interface CollapsibleSectionProps {
   title: string;
@@ -10,39 +14,11 @@ export interface CollapsibleSectionProps {
 
 export function CollapsibleSection({ title, defaultExpanded = false, children }: CollapsibleSectionProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
-  const rotation = useRef(new Animated.Value(defaultExpanded ? 1 : 0)).current;
-  const [contentHeight, setContentHeight] = useState<number | null>(null);
-  const animatedHeight = useRef(new Animated.Value(defaultExpanded ? 1 : 0)).current;
 
   const toggle = () => {
-    const toValue = expanded ? 0 : 1;
-    Animated.parallel([
-      Animated.timing(rotation, {
-        toValue,
-        duration: 220,
-        useNativeDriver: true,
-      }),
-      Animated.timing(animatedHeight, {
-        toValue,
-        duration: 220,
-        useNativeDriver: false,
-      }),
-    ]).start();
-    setExpanded(!expanded);
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpanded((prev) => !prev);
   };
-
-  const rotateInterpolation = rotation.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "180deg"],
-  });
-
-  const heightInterpolation =
-    contentHeight !== null
-      ? animatedHeight.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0, contentHeight],
-        })
-      : undefined;
 
   return (
     <View style={styles.container}>
@@ -54,35 +30,15 @@ export function CollapsibleSection({ title, defaultExpanded = false, children }:
         accessibilityState={{ expanded }}
       >
         <Text style={styles.title}>{title}</Text>
-        <Animated.Text
-          style={[styles.chevron, { transform: [{ rotate: rotateInterpolation }] }]}
-          accessibilityElementsHidden
-          importantForAccessibility="no"
-        >
+        <Text style={[styles.chevron, expanded && styles.chevronExpanded]}>
           ▾
-        </Animated.Text>
+        </Text>
       </Pressable>
 
-      {contentHeight === null ? (
-        <View
-          style={styles.measureContainer}
-          onLayout={(e) => setContentHeight(e.nativeEvent.layout.height)}
-        >
+      {expanded && (
+        <View style={styles.body}>
           {children}
         </View>
-      ) : (
-        <Animated.View
-          style={[
-            styles.body,
-            heightInterpolation !== undefined
-              ? { height: heightInterpolation, overflow: "hidden" }
-              : expanded
-              ? undefined
-              : { height: 0, overflow: "hidden" },
-          ]}
-        >
-          {children}
-        </Animated.View>
       )}
     </View>
   );
@@ -118,14 +74,10 @@ const styles = StyleSheet.create({
     color: designTokens.color.ink.accent,
     marginLeft: designTokens.spacing.sm,
   },
-  body: {
-    paddingHorizontal: designTokens.spacing.lg,
-    paddingBottom: designTokens.spacing.md,
+  chevronExpanded: {
+    transform: [{ rotate: "180deg" }],
   },
-  measureContainer: {
-    position: "absolute",
-    opacity: 0,
-    pointerEvents: "none",
+  body: {
     paddingHorizontal: designTokens.spacing.lg,
     paddingBottom: designTokens.spacing.md,
   },

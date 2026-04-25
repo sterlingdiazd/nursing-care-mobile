@@ -1,9 +1,12 @@
 import React from "react";
 import renderer, { act } from "react-test-renderer";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { router } from "expo-router";
 
 import LoginScreen from "../login";
 import RegisterScreen from "../register";
+import ForgotPasswordScreen from "../forgot-password";
+import ResetPasswordScreen from "../reset-password";
 import { authTestIds } from "@/src/testing/authTestIds";
 
 vi.mock("@/src/context/AuthContext", () => ({
@@ -34,6 +37,29 @@ vi.mock("@/src/services/catalogOptionsService", () => ({
   getNurseProfileOptions: vi.fn().mockResolvedValue({ specialties: [] }),
 }));
 
+vi.mock("@/src/api/auth", () => ({
+  forgotPassword: vi.fn().mockResolvedValue(undefined),
+  resetPassword: vi.fn().mockResolvedValue({ message: "La contraseña fue restablecida." }),
+  validateEmail: (value: string) => /\S+@\S+\.\S+/.test(value),
+  validatePassword: (value: string) => ({
+    isValid: value.length >= 6,
+    message: "La contraseña debe tener al menos 6 caracteres",
+  }),
+}));
+
+vi.mock("@/src/components/shared/ToastProvider", () => ({
+  useToast: () => ({
+    showToast: vi.fn(),
+  }),
+}));
+
+vi.mock("@/src/utils/haptics", () => ({
+  hapticFeedback: {
+    selection: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
 vi.mock("@/assets/images/icon.png", () => ({
   default: 1,
 }));
@@ -55,6 +81,7 @@ async function renderScreen(element: React.ReactElement) {
 describe("Auth UI Screens", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(router.canGoBack).mockReturnValue(false);
   });
 
   describe("LoginScreen", () => {
@@ -115,6 +142,33 @@ describe("Auth UI Screens", () => {
 
       expect(findByText(component, "Tipo de Perfil")).toBeTruthy();
       expect(component.root.findAllByProps({ children: "Información Personal" })).toHaveLength(0);
+    });
+  });
+
+  describe("Recovery Screens", () => {
+    it("renders a deterministic login escape on forgot password", async () => {
+      const component = await renderScreen(<ForgotPasswordScreen />);
+
+      expect(component.root.findByProps({ testID: authTestIds.forgotPassword.backToLoginLink })).toBeTruthy();
+
+      await act(async () => {
+        component.root.findByProps({ testID: authTestIds.forgotPassword.backToLoginLink }).props.onPress();
+      });
+
+      expect(router.replace).toHaveBeenCalledWith("/login");
+    });
+
+    it("falls back to forgot-password when reset password has no history", async () => {
+      const component = await renderScreen(<ResetPasswordScreen />);
+
+      expect(component.root.findByProps({ testID: authTestIds.resetPassword.backToRecoveryLink })).toBeTruthy();
+
+      await act(async () => {
+        component.root.findByProps({ testID: authTestIds.resetPassword.backToRecoveryLink }).props.onPress();
+      });
+
+      expect(router.canGoBack).toHaveBeenCalled();
+      expect(router.replace).toHaveBeenCalledWith("/forgot-password");
     });
   });
 });

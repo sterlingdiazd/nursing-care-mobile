@@ -17,6 +17,7 @@ import {
 } from "@/src/services/adminPortalService";
 import { mobileAdminActionButton, mobileAdminActionButtonText, mobileTheme } from "@/src/design-system/mobileStyles";
 import { adminTestIds } from "@/src/testing/testIds";
+import { mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 function translateRole(role: AdminUserRoleName): string {
   switch (role) {
@@ -161,6 +162,8 @@ export default function AdminUserDetailScreen() {
       description="Muestra primero el estado y la siguiente acción segura antes del resto del perfil."
       testID={adminTestIds.users.detailScreen}
       nativeID={adminTestIds.users.detailScreen}
+      primaryReturnPath={mobileNavigationEscapes.adminUsers}
+      primaryReturnLabel="Volver a usuarios"
       actions={(
         <View style={styles.headerActions}>
           <Pressable

@@ -17,6 +17,13 @@ const createMockComponent = (name: string) => {
   return component;
 };
 
+const mockExpoRouter = {
+  push: vi.fn(),
+  back: vi.fn(),
+  canGoBack: vi.fn(() => false),
+  replace: vi.fn(),
+};
+
 vi.mock('react-native', () => ({
   StyleSheet: {
     create: (styles: any) => styles,
@@ -62,18 +69,16 @@ vi.mock('react-native', () => ({
 
 // Mock Expo Router
 vi.mock('expo-router', () => ({
-  router: {
-    push: vi.fn(),
-    back: vi.fn(),
-    replace: vi.fn(),
-  },
-  useRouter: () => ({
-    push: vi.fn(),
-    back: vi.fn(),
-    replace: vi.fn(),
-  }),
+  router: mockExpoRouter,
+  useRouter: () => mockExpoRouter,
   useLocalSearchParams: () => ({}),
 }));
+
+vi.mock('expo-router/src/layouts/Stack', () => {
+  const Stack = createMockComponent('Stack') as any;
+  Stack.Screen = createMockComponent('Stack.Screen');
+  return { default: Stack };
+});
 
 // Mock React Native Safe Area Context
 vi.mock('react-native-safe-area-context', () => ({
@@ -114,6 +119,10 @@ vi.mock('expo-haptics', () => ({
   ImpactFeedbackStyle: {
     Light: 'Light',
   },
+}));
+
+vi.mock('@react-native-community/datetimepicker', () => ({
+  default: createMockComponent('DateTimePicker'),
 }));
 
 vi.mock('expo-file-system', () => ({
@@ -193,9 +202,22 @@ vi.mock('@/src/services/payrollService', () => ({
 
 // Mock MobileWorkspaceShell
 vi.mock('@/components/app/MobileWorkspaceShell', () => ({
-  default: vi.fn(({ children, actions, testID, nativeID }) => {
+  default: vi.fn(({ children, actions, footer, testID, nativeID, primaryReturnLabel, onPrimaryReturn, primaryReturnPath }) => {
     const React = require('react');
-    return React.createElement('View', { testID, nativeID }, actions, children);
+    const { router } = require('expo-router');
+    const returnButton =
+      primaryReturnLabel || primaryReturnPath || onPrimaryReturn
+        ? React.createElement(
+            'Pressable',
+            {
+              testID: 'nav-shell-primary-return-button',
+              nativeID: 'nav-shell-primary-return-button',
+              onPress: onPrimaryReturn ?? (() => router.replace(primaryReturnPath)),
+            },
+            primaryReturnLabel ?? 'Volver',
+          )
+        : null;
+    return React.createElement('View', { testID, nativeID }, returnButton, actions, children, footer);
   }),
 }));
 

@@ -25,6 +25,7 @@ import { testProps } from "@/src/testing/testIds";
 import {
   getGoogleOAuthStartUrl,
 } from "@/src/services/authService";
+import { t } from "@/src/i18n/translations";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -66,9 +67,9 @@ export default function LoginScreen() {
   // Validation functions
   const validateEmailField = (value: string) => {
     if (!value) {
-      setEmailError("El correo es obligatorio");
+      setEmailError(t("auth.correo_obligatorio"));
     } else if (!validateEmail(value)) {
-      setEmailError("El formato del correo no es valido");
+      setEmailError(t("auth.correo_formato_invalido"));
     } else {
       setEmailError("");
     }
@@ -76,7 +77,7 @@ export default function LoginScreen() {
 
   const validatePasswordField = (value: string) => {
     if (!value) {
-      setPasswordError("La contrasena es obligatoria");
+      setPasswordError(t("auth.contrasena_obligatoria"));
     } else {
       setPasswordError("");
     }
@@ -153,9 +154,9 @@ export default function LoginScreen() {
               style={styles.logo}
               resizeMode="contain"
             />
-            <Text style={styles.title}>Iniciar Sesión</Text>
+            <Text style={styles.title}>{t("actions.iniciar_sesion")}</Text>
             <Text style={styles.subtitle}>
-              Bienvenido de nuevo a Nursing Care
+              {t("auth.bienvenido")}
             </Text>
           </View>
 
@@ -218,7 +219,7 @@ export default function LoginScreen() {
               isLoading={isLoading}
               style={styles.submitButton}
             >
-              Entrar
+              {t("actions.entrar")}
             </FormButton>
 
             <View style={styles.divider}>
@@ -234,21 +235,11 @@ export default function LoginScreen() {
               variant="secondary"
               style={styles.googleButton}
             >
-              Continuar con Google
+              {t("auth.continuar_google")}
             </FormButton>
           </View>
 
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>¿No tienes una cuenta?</Text>
-            <TouchableOpacity
-              onPress={() => router.push("/register")}
-              accessibilityRole="link"
-              accessibilityLabel="Regístrate"
-              {...testProps(authTestIds.login.registerLink)}
-            >
-              <Text style={styles.registerLink}>Regístrate</Text>
-            </TouchableOpacity>
-          </View>
+          {/* Footer removed — single login flow */}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -267,6 +258,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: designTokens.spacing.xl,
     justifyContent: "center",
+    alignItems: "center",
   },
   header: {
     alignItems: "center",
@@ -289,6 +281,8 @@ const styles = StyleSheet.create({
   card: {
     ...mobileSurfaceCard,
     padding: designTokens.spacing.xl,
+    width: "100%",
+    maxWidth: 400,
   },
   errorBanner: {
     backgroundColor: designTokens.color.status.dangerBg,

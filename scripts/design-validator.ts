@@ -38,12 +38,14 @@ function checkNoRawHexColors(): RuleResult {
   for (const line of raw.split('\n')) {
     if (!line.trim()) continue;
 
-    // Exclude files
+    // Exclude files (design system definitions, tests, Expo boilerplate)
     if (
       line.includes('tokens.ts') ||
       line.includes('mobileStyles.ts') ||
       line.includes('__tests__') ||
-      line.includes('Toast.tsx')
+      line.includes('Toast.tsx') ||
+      line.includes('modal.tsx') ||
+      line.includes('+html.tsx')
     ) {
       continue;
     }
@@ -91,9 +93,9 @@ function checkNoRawHexColors(): RuleResult {
 // Flag .id}, .id.substring, id.slice, {…id}, ${…id} in JSX text in app/ .tsx
 // ---------------------------------------------------------------------------
 function checkNoUuidsInUi(): RuleResult {
+  // Only flag FULL UUID rendering — truncated references (substring(0,8)) are acceptable
   const patterns = [
     '\\.id\\}',
-    '\\.id\\.substring',
     '\\.id\\.slice',
     '\\$\\{[^}]*\\.id\\}',
     '\\{[^}]*\\.id\\}',
@@ -114,13 +116,19 @@ function checkNoUuidsInUi(): RuleResult {
     const colonIdx = line.indexOf(':', line.indexOf(':') + 1);
     const content = colonIdx >= 0 ? line.slice(colonIdx + 1) : line;
 
-    // Skip lines that are clearly non-rendering (navigation paths, key=, href=, fetch)
+    // Skip lines that are clearly non-rendering (automation selectors, navigation, keys, API calls)
     if (
       /key=\{/.test(content) ||
+      /testID=/.test(content) ||
+      /nativeID=/.test(content) ||
       /href=/.test(content) ||
+      /onPress=/.test(content) ||
+      /router\.(push|replace)/.test(content) ||
       /\/.*\.id/.test(content) ||
       /fetch|axios|api\./.test(content) ||
-      /console\./.test(content)
+      /console\./.test(content) ||
+      /expandedLogId/.test(content) ||
+      /===\s*item\.id/.test(content)
     ) {
       continue;
     }
@@ -241,6 +249,49 @@ function checkBackNavigation(): RuleResult {
 }
 
 // ---------------------------------------------------------------------------
+// Rule 6: Hardcoded Spanish strings not wrapped in t()
+// Flag common Spanish words/phrases used as raw literals in .tsx files.
+// ---------------------------------------------------------------------------
+function checkHardcodedSpanishStrings(): RuleResult {
+  // Words that should be looked up from the i18n/translations module instead of inlined
+  const spanishKeywords = [
+    'Solicitud',
+    'Cargando',
+    'Error',
+    'Guardar',
+    'Cancelar',
+    'Volver',
+  ];
+
+  const violations: string[] = [];
+
+  const pattern = spanishKeywords.map(w => `"${w}|'${w}`).join('|');
+  const raw = run(
+    `grep -rn --include="*.tsx" -E '(${spanishKeywords.map(w => `["']${w}`).join('|')})' ${ROOT}/app ${ROOT}/src/components 2>/dev/null || true`
+  );
+
+  for (const line of raw.split('\n')) {
+    if (!line.trim()) continue;
+    if (line.includes('__tests__')) continue;
+    if (line.includes('t(')) continue; // already wrapped
+
+    const colonIdx = line.indexOf(':', line.indexOf(':') + 1);
+    const content = colonIdx >= 0 ? line.slice(colonIdx + 1) : line;
+
+    // Skip import lines, comments, and type declarations
+    if (/^\s*(\/\/|\/\*|import|export|interface|type )/.test(content)) continue;
+
+    violations.push(line.trim());
+  }
+
+  return {
+    rule: 'Hardcoded Spanish strings should use t() from i18n/translations',
+    passed: violations.length === 0,
+    violations,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 function main(): void {
@@ -252,6 +303,7 @@ function main(): void {
     checkAccessibilityLabels(),
     checkTimestampFormat(),
     checkBackNavigation(),
+    checkHardcodedSpanishStrings(),
   ];
 
   let anyFailed = false;

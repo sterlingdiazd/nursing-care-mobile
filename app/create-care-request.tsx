@@ -23,6 +23,7 @@ import { getAvailableNurses, getCareRequestOptions } from "@/src/services/catalo
 import { createCareRequest, getCareRequests } from "@/src/services/careRequestService";
 import type { AvailableNurseOption, CatalogOptionsResponse } from "@/src/types/catalog";
 import { CreateCareRequestDto } from "@/src/types/careRequest";
+import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { estimateCareRequestPricingFromCatalog } from "@/src/utils/pricingFromCatalogOptions";
 
 export default function CreateCareRequestScreen() {
@@ -391,7 +392,10 @@ export default function CreateCareRequestScreen() {
       eyebrow="Nueva solicitud"
       title="Crea una solicitud clara con un flujo guiado."
       description="La captura ahora se organiza como una experiencia de trabajo: contexto principal primero, opciones guiadas despues y ajustes opcionales al final."
-      actions={null}
+      testID={careRequestTestIds.create.screen}
+      nativeID={careRequestTestIds.create.screen}
+      primaryReturnLabel="Volver a solicitudes"
+      onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.createCareRequest)}
     >
       <View style={styles.flow}>
           {!!formError && (

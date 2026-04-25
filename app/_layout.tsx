@@ -58,19 +58,11 @@ function RootLayoutNav() {
         {/* Auth screens — outside tab group, no tab bar */}
         <Stack.Screen
           name="register"
-          options={{
-            title: "Registro",
-            headerShown: true,
-            headerBackVisible: true,
-          }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="login"
-          options={{
-            title: "Iniciar sesion",
-            headerShown: true,
-            headerBackVisible: true,
-          }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="forgot-password"

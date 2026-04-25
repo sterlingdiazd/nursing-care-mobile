@@ -20,6 +20,7 @@ import {
   sanitizeDigitsOnlyInput,
   sanitizeTextOnlyInput,
 } from "@/src/utils/identityValidation";
+import { mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 export default function AdminCreateAdminAccountScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
@@ -133,6 +134,8 @@ export default function AdminCreateAdminAccountScreen() {
       description="Crea la cuenta en bloques y confirma el alcance privilegiado antes del alta."
       testID={adminTestIds.adminAccounts.create.screen}
       nativeID={adminTestIds.adminAccounts.create.screen}
+      primaryReturnPath={mobileNavigationEscapes.adminUsers}
+      primaryReturnLabel="Volver a usuarios"
     >
       {!!error && (
         <View

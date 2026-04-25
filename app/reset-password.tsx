@@ -22,6 +22,7 @@ import { designTokens } from "@/src/design-system/tokens";
 import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import { testProps } from "@/src/testing/testIds";
 import { useToast } from "@/src/components/shared/ToastProvider";
+import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
@@ -103,13 +104,14 @@ export default function ResetPasswordScreen() {
           showsVerticalScrollIndicator={false}
         >
           <TouchableOpacity
+            {...testProps(authTestIds.resetPassword.backToRecoveryLink)}
             onPress={() => {
               hapticFeedback.selection();
-              router.back();
+              goBackOrReplace(router, mobileNavigationEscapes.resetPassword);
             }}
             style={styles.backButton}
             accessibilityRole="button"
-            accessibilityLabel="Volver"
+            accessibilityLabel="Volver a recuperación"
           >
             <Text style={styles.backButtonText}>← Volver</Text>
           </TouchableOpacity>

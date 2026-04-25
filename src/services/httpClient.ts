@@ -56,7 +56,7 @@ export function getNetworkErrorMessage(url: string, error: unknown) {
 
 export function getDisplayErrorMessage(responseText: string, status: number) {
   if (!responseText) {
-    return `La solicitud no se pudo completar. Codigo ${status}.`;
+    return `La solicitud no se pudo completar. Código ${status}.`;
   }
 
   try {
@@ -77,7 +77,7 @@ export function getDisplayErrorMessage(responseText: string, status: number) {
       parsed.error ||
       parsed.message ||
       parsed.title ||
-      `La solicitud no se pudo completar. Codigo ${status}.`
+      `La solicitud no se pudo completar. Código ${status}.`
     );
   } catch {
     return responseText;

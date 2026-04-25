@@ -21,6 +21,7 @@ import {
   sanitizeDigitsOnlyInput,
   sanitizeTextOnlyInput,
 } from "@/src/utils/identityValidation";
+import { mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 export default function AdminCreateClientScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
@@ -126,6 +127,8 @@ export default function AdminCreateClientScreen() {
       description="Registra identidad y credenciales para habilitar la gestión administrativa."
       testID={adminTestIds.clients.create.screen}
       nativeID={adminTestIds.clients.create.screen}
+      primaryReturnPath={mobileNavigationEscapes.adminClients}
+      primaryReturnLabel="Volver a clientes"
     >
       <Text
         style={styles.progressChip}

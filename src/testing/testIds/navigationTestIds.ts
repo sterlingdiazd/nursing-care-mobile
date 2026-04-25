@@ -2,6 +2,9 @@
 // Aligned with UC-011, UC-012, UC-013, UC-014 selector contracts.
 
 export const navigationTestIds = {
+  shell: {
+    primaryReturnButton: "nav-shell-primary-return-button",
+  },
   tabBar: {
     root: "nav-tab-bar-root",
     btn: (key: string) => `nav-tab-btn-${key}`,

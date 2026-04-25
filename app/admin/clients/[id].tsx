@@ -12,6 +12,7 @@ import {
   type AdminCareRequestStatus,
 } from "@/src/services/adminPortalService";
 import { adminTestIds } from "@/src/testing/testIds";
+import { mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 function formatTimestamp(value: string | null) {
   if (!value) return "N/A";
@@ -88,6 +89,8 @@ export default function AdminClientDetailScreen() {
       description="Consolida identidad, actividad y próximos pasos del cliente."
       testID={adminTestIds.clients.detailScreen}
       nativeID={adminTestIds.clients.detailScreen}
+      primaryReturnPath={mobileNavigationEscapes.adminClients}
+      primaryReturnLabel="Volver a clientes"
       actions={detail ? (
         <View style={styles.headerActions}>
           <Pressable style={styles.buttonSecondary} onPress={() => void load()}>

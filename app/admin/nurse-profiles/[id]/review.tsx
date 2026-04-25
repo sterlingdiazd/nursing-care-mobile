@@ -13,6 +13,7 @@ import {
 } from "@/src/services/adminPortalService";
 import { adminTestIds } from "@/src/testing/testIds";
 import { getAdminNurseReviewProgress } from "@/src/utils/adminCreationUx";
+import { buildAdminNurseProfileDetailPath, goBackOrReplace } from "@/src/utils/navigationEscapes";
 
 const CATEGORIES = ["Auxiliar", "Tecnico", "Profesional", "Especialista"];
 
@@ -274,7 +275,13 @@ export default function AdminReviewNurseProfileScreen() {
       <View style={styles.actions}>
         <Pressable
           style={styles.button}
-          onPress={() => router.back()}
+          onPress={() => {
+            if (!id) {
+              return;
+            }
+
+            goBackOrReplace(router, buildAdminNurseProfileDetailPath(id));
+          }}
           accessibilityRole="button"
           accessibilityLabel="Cancelar y volver"
         >

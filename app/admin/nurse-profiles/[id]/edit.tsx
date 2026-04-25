@@ -13,6 +13,7 @@ import {
   type UpdateNurseProfileRequest,
 } from "@/src/services/adminPortalService";
 import { adminTestIds } from "@/src/testing/testIds";
+import { buildAdminNurseProfileDetailPath, goBackOrReplace } from "@/src/utils/navigationEscapes";
 
 export default function AdminEditNurseProfileScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
@@ -320,7 +321,13 @@ export default function AdminEditNurseProfileScreen() {
         {step === 1 && (
           <Pressable
             style={styles.button}
-            onPress={() => router.back()}
+            onPress={() => {
+              if (!id) {
+                return;
+              }
+
+              goBackOrReplace(router, buildAdminNurseProfileDetailPath(id));
+            }}
             accessibilityRole="button"
             accessibilityLabel="Cancelar edición del perfil"
           >

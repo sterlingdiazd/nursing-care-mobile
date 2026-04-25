@@ -27,6 +27,7 @@ import { adminTestIds } from "@/src/testing/testIds";
 import { getAvailableNurses } from "@/src/services/catalogOptionsService";
 import type { AvailableNurseOption } from "@/src/types/catalog";
 import { getAdminCareCreateProgress } from "@/src/utils/adminCreationUx";
+import { mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 const CARE_TYPES = [
   "Cuidado Básico",
@@ -248,6 +249,8 @@ export default function CreateAdminCareRequestScreen() {
       description="Crear una solicitud de servicio en nombre de un cliente."
       testID={adminTestIds.careRequests.create.screen}
       nativeID={adminTestIds.careRequests.create.screen}
+      primaryReturnPath={mobileNavigationEscapes.adminCareRequests}
+      primaryReturnLabel="Volver a solicitudes"
     >
       <View style={styles.progressCard}>
         <Text

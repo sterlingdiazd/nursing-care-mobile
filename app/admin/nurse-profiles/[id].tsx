@@ -12,6 +12,7 @@ import {
 } from "@/src/services/adminPortalService";
 import { mobileAdminActionButton, mobileAdminActionButtonText } from "@/src/design-system/mobileStyles";
 import { adminTestIds } from "@/src/testing/testIds";
+import { mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 function formatTimestamp(value: string | null) {
   if (!value) return "N/A";
@@ -73,6 +74,8 @@ export default function AdminNurseProfileDetailScreen() {
       description="Información completa del perfil de enfermera."
       testID={adminTestIds.nurses.detailScreen}
       nativeID={adminTestIds.nurses.detailScreen}
+      primaryReturnPath={mobileNavigationEscapes.adminNurseProfiles}
+      primaryReturnLabel="Volver a enfermeras"
       actions={(
         <View style={styles.headerActions}>
           <Pressable

@@ -26,6 +26,7 @@ import {
   getAdminCareRequestStatusColor,
   getBillingTaskActions,
 } from "@/src/utils/adminCareRequestBilling";
+import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 function automationProps(testId: string) {
   return {
@@ -127,18 +128,10 @@ export default function AdminCareRequestDetailScreen() {
       eyebrow="Solicitud de Cuidado"
       title="Detalle de Solicitud"
       description="Detalles completos de la solicitud y tareas administrativas relacionadas."
+      primaryReturnLabel="Volver a solicitudes"
+      onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.adminCareRequests)}
       actions={(
         <View style={styles.headerActions}>
-          <Pressable
-            testID="admin-care-detail-back-btn"
-            nativeID="admin-care-detail-back-btn"
-            style={styles.backButton}
-            onPress={() => router.back()}
-            accessibilityRole="button"
-            accessibilityLabel="Volver a la lista de solicitudes"
-          >
-            <Text style={styles.backButtonText}>Volver</Text>
-          </Pressable>
           <Pressable
             testID={adminTestIds.careRequests.detail.updateButton}
             nativeID={adminTestIds.careRequests.detail.updateButton}

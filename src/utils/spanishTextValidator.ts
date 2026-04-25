@@ -34,6 +34,41 @@ export function validateSpanishText(text: string): SpanishTextValidation {
     issues.push('Formato de fecha ISO detectado — usar DD/MM/YYYY');
   }
 
+  // Rule 5: Accent detection — flag common words missing required accents
+  const accentRules: Array<{ wrong: string; correct: string }> = [
+    { wrong: 'invalido', correct: 'inválido' },
+    { wrong: 'invalida', correct: 'inválida' },
+    { wrong: 'invalidos', correct: 'inválidos' },
+    { wrong: 'informacion', correct: 'información' },
+    { wrong: 'sesion', correct: 'sesión' },
+    { wrong: 'calculo', correct: 'cálculo' },
+    { wrong: 'transicion', correct: 'transición' },
+    { wrong: 'telefono', correct: 'teléfono' },
+    { wrong: 'numero', correct: 'número' },
+    { wrong: 'direccion', correct: 'dirección' },
+    { wrong: 'periodo', correct: 'período' },
+    { wrong: 'codigo', correct: 'código' },
+    { wrong: 'autorizacion', correct: 'autorización' },
+    { wrong: 'validacion', correct: 'validación' },
+    { wrong: 'operacion', correct: 'operación' },
+    { wrong: 'creacion', correct: 'creación' },
+    { wrong: 'solicitud invalida', correct: 'solicitud inválida' },
+    { wrong: 'contrasena', correct: 'contraseña' },
+    { wrong: 'administracion', correct: 'administración' },
+    { wrong: 'notificacion', correct: 'notificación' },
+    { wrong: 'nominima', correct: 'nómina' },
+    { wrong: 'nomina', correct: 'nómina' },
+  ];
+
+  const lowerText = text.toLowerCase();
+  for (const rule of accentRules) {
+    // Match whole word (with word boundary) to avoid false positives
+    const pattern = new RegExp(`\\b${rule.wrong}\\b`, 'i');
+    if (pattern.test(lowerText) && !text.includes(rule.correct)) {
+      issues.push(`Acento faltante: "${rule.wrong}" debe escribirse "${rule.correct}"`);
+    }
+  }
+
   return { isValid: issues.length === 0, issues };
 }
 

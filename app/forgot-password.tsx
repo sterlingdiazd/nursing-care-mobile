@@ -25,6 +25,7 @@ import { FormButton, FormInput } from "@/src/components/form";
 import { designTokens } from "@/src/design-system/tokens";
 import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import { testProps } from "@/src/testing/testIds";
+import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -88,7 +89,7 @@ export default function ForgotPasswordScreen() {
           <TouchableOpacity
             onPress={() => {
               hapticFeedback.selection();
-              router.back();
+              goBackOrReplace(router, mobileNavigationEscapes.forgotPassword);
             }}
             style={styles.backButton}
             accessibilityRole="button"
@@ -187,6 +188,19 @@ export default function ForgotPasswordScreen() {
                 </TouchableOpacity>
               </>
             )}
+
+            <TouchableOpacity
+              {...testProps(authTestIds.forgotPassword.backToLoginLink)}
+              onPress={() => {
+                hapticFeedback.selection();
+                router.replace(mobileNavigationEscapes.forgotPassword);
+              }}
+              style={styles.loginLink}
+              accessibilityRole="link"
+              accessibilityLabel="Volver a iniciar sesión"
+            >
+              <Text style={styles.loginLinkText}>Volver a iniciar sesión</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -280,6 +294,15 @@ const styles = StyleSheet.create({
   hasCodeLink: {
     marginTop: designTokens.spacing.lg,
     alignItems: "center",
+  },
+  loginLink: {
+    marginTop: designTokens.spacing.xl,
+    alignItems: "center",
+  },
+  loginLinkText: {
+    ...designTokens.typography.body,
+    color: designTokens.color.ink.accent,
+    fontWeight: "600",
   },
   hasCodeText: {
     ...designTokens.typography.body,
