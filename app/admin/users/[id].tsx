@@ -164,18 +164,13 @@ export default function AdminUserDetailScreen() {
       nativeID={adminTestIds.users.detailScreen}
       primaryReturnPath={mobileNavigationEscapes.adminUsers}
       primaryReturnLabel="Volver a usuarios"
-      actions={(
-        <View style={styles.headerActions}>
-          <Pressable
-            style={styles.button}
-            onPress={() => void load()}
-            accessibilityRole="button"
-            accessibilityLabel="Actualizar datos del usuario"
-          >
-            <Text style={styles.buttonText}>Actualizar</Text>
-          </Pressable>
-        </View>
-      )}
+      systemActions={[
+        {
+          label: "Actualizar",
+          onPress: () => void load(),
+          variant: "secondary",
+        },
+      ]}
     >
       {!!error && (
         <View style={styles.errorCard}>
@@ -471,7 +466,6 @@ export default function AdminUserDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  headerActions: { flexDirection: "row", gap: 8 },
   button: { backgroundColor: designTokens.color.surface.secondary, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },
   buttonText: { color: designTokens.color.ink.primary, fontWeight: "700", fontSize: 14 },
   buttonPrimary: { ...mobileAdminActionButton, paddingVertical: 12, marginTop: 8 },

@@ -169,21 +169,14 @@ export default function AdminReportsScreen() {
       eyebrow="Reportes"
       title="Inteligencia operativa"
       description="Visualiza indicadores clave con una presentacion mas clara y consistente."
-      actions={
-        <Pressable
-          style={[styles.exportButton, isExporting && styles.disabledButton]}
-          onPress={handleExport}
-          disabled={isExporting}
-          accessibilityRole="button"
-          accessibilityLabel="Exportar reporte en formato CSV"
-        >
-          {isExporting ? (
-            <ActivityIndicator size="small" color={designTokens.color.ink.inverse} accessibilityLabel="Cargando..." />
-          ) : (
-            <Text style={styles.exportButtonText}>Exportar CSV</Text>
-          )}
-        </Pressable>
-      }
+      systemActions={[
+        {
+          label: isExporting ? "Exportando..." : "Exportar CSV",
+          onPress: handleExport,
+          disabled: isExporting,
+          variant: "primary",
+        },
+      ]}
     >
       <View style={styles.container}>
         {error && <Text style={styles.errorText}>{error}</Text>}

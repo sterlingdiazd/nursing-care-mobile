@@ -76,30 +76,23 @@ export default function AdminNurseProfileDetailScreen() {
       nativeID={adminTestIds.nurses.detailScreen}
       primaryReturnPath={mobileNavigationEscapes.adminNurseProfiles}
       primaryReturnLabel="Volver a enfermeras"
-      actions={(
-        <View style={styles.headerActions}>
-          <Pressable
-            style={styles.button}
-            onPress={() => void load()}
-            accessibilityRole="button"
-            accessibilityLabel="Actualizar perfil de enfermera"
-          >
-            <Text style={styles.buttonText}>Actualizar</Text>
-          </Pressable>
-          {detail && (
-            <Pressable
-              testID={adminTestIds.nurses.detailPrimaryAction}
-              nativeID={adminTestIds.nurses.detailPrimaryAction}
-              style={styles.buttonPrimary}
-              onPress={() => router.push(`/admin/nurse-profiles/${id}/edit` as any)}
-              accessibilityRole="button"
-              accessibilityLabel="Editar perfil de enfermera"
-            >
-              <Text style={styles.buttonPrimaryText}>Editar</Text>
-            </Pressable>
-          )}
-        </View>
-      )}
+      systemActions={[
+        {
+          label: "Actualizar",
+          onPress: () => void load(),
+          variant: "secondary",
+        },
+        ...(detail
+          ? ([
+              {
+                label: "Editar",
+                onPress: () => router.push(`/admin/nurse-profiles/${id}/edit` as any),
+                variant: "primary",
+                testID: adminTestIds.nurses.detailPrimaryAction,
+              },
+            ] as const)
+          : []),
+      ]}
     >
       {!!error && (
         <Text
@@ -305,7 +298,6 @@ export default function AdminNurseProfileDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  headerActions: { flexDirection: "row", gap: 8 },
   button: { backgroundColor: designTokens.color.surface.secondary, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },
   buttonText: { color: designTokens.color.ink.primary, fontWeight: "700", fontSize: 14 },
   buttonPrimary: { ...mobileAdminActionButton, paddingHorizontal: 16, paddingVertical: 10 },

@@ -9,7 +9,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { CollapsibleSection } from "@/src/components/shared/CollapsibleSection";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
-import WorkflowActionBar from "@/src/components/shared/WorkflowActionBar";
+import type { FooterAction } from "@/src/components/navigation/AppFooter";
 import { useAuth } from "@/src/context/AuthContext";
 import {
   getAdminCareRequestDetail,
@@ -21,6 +21,7 @@ import {
 } from "@/src/services/careRequestService";
 import { mobileSecondarySurface, mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
 import { adminTestIds } from "@/src/testing/testIds/adminTestIds";
+import { navigationTestIds } from "@/src/testing/testIds/navigationTestIds";
 import {
   formatAdminCareRequestStatusLabel,
   getAdminCareRequestStatusColor,
@@ -119,6 +120,24 @@ export default function AdminCareRequestDetailScreen() {
     return getBillingTaskActions(detail.id, detail.status);
   }, [detail]);
 
+  const footerActions: FooterAction[] = detail
+    ? [
+        ...billingTaskActions.map<FooterAction>((action) => ({
+          label: action.label,
+          onPress: () => router.push(action.route as any),
+          variant: action.variant,
+          testID:
+            action.action === "invoice"
+              ? adminTestIds.careRequests.detail.invoiceButton
+              : action.action === "pay"
+              ? adminTestIds.careRequests.detail.payButton
+              : action.action === "void"
+              ? adminTestIds.careRequests.detail.voidButton
+              : adminTestIds.careRequests.detail.receiptButton,
+        })),
+      ]
+    : [];
+
   if (!isReady || !isAuthenticated || !roles.includes("ADMIN")) {
     return null;
   }
@@ -128,22 +147,19 @@ export default function AdminCareRequestDetailScreen() {
       eyebrow="Solicitud de Cuidado"
       title="Detalle de Solicitud"
       description="Detalles completos de la solicitud y tareas administrativas relacionadas."
+      testID={navigationTestIds.adminCareRequests.detailRoot}
+      nativeID={navigationTestIds.adminCareRequests.detailRoot}
       primaryReturnLabel="Volver a solicitudes"
       onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.adminCareRequests)}
-      actions={(
-        <View style={styles.headerActions}>
-          <Pressable
-            testID={adminTestIds.careRequests.detail.updateButton}
-            nativeID={adminTestIds.careRequests.detail.updateButton}
-            style={styles.refreshButton}
-            onPress={() => void load()}
-            accessibilityRole="button"
-            accessibilityLabel="Actualizar detalle de solicitud"
-          >
-            <Text style={styles.refreshButtonText}>Actualizar</Text>
-          </Pressable>
-        </View>
-      )}
+      systemActions={[
+        {
+          label: "Actualizar",
+          onPress: () => void load(),
+          variant: "secondary",
+          testID: adminTestIds.careRequests.detail.updateButton,
+        },
+      ]}
+      workflowActions={footerActions}
     >
       <View
         {...automationProps("admin-care-detail-page")}
@@ -332,48 +348,6 @@ export default function AdminCareRequestDetailScreen() {
                 )}
               </View>
             )}
-
-            {billingTaskActions.length > 0 && (
-              <View style={styles.actionsCard}>
-                <Text style={styles.actionCardTitle}>Tareas de facturación</Text>
-                <Text style={styles.actionCardDescription}>
-                  Continúa el flujo de cobro en una pantalla dedicada para mantener foco y trazabilidad.
-                </Text>
-                <WorkflowActionBar
-                  actions={billingTaskActions.map((action) => ({
-                    label: action.label,
-                    onPress: () => router.push(action.route as any),
-                    variant: action.variant,
-                    testID:
-                      action.action === "invoice"
-                        ? adminTestIds.careRequests.detail.invoiceButton
-                        : action.action === "pay"
-                        ? adminTestIds.careRequests.detail.payButton
-                        : action.action === "void"
-                        ? adminTestIds.careRequests.detail.voidButton
-                        : adminTestIds.careRequests.detail.receiptButton,
-                  }))}
-                />
-              </View>
-            )}
-
-            <View style={styles.actionsCard}>
-              <Text style={styles.actionCardTitle}>Validación de precios</Text>
-              <Text style={styles.actionCardDescription}>
-                Mantén esta verificación como una interacción ligera sin salir del detalle.
-              </Text>
-              <WorkflowActionBar
-                actions={[
-                  {
-                    label: isPricingLoading ? "Verificando..." : "Verificar precios",
-                    onPress: () => void handleVerifyPricing(),
-                    variant: "secondary",
-                    disabled: isPricingLoading,
-                    testID: "price-breakdown-verify-button",
-                  },
-                ]}
-              />
-            </View>
 
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Desglose de Precios</Text>
@@ -579,11 +553,6 @@ const styles = StyleSheet.create({
   pageRoot: {
     flex: 1,
   },
-  headerActions: {
-    flexDirection: "row",
-    gap: mobileTheme.spacing.sm,
-    alignItems: "center",
-  },
   backButton: {
     ...mobileSecondarySurface,
     paddingHorizontal: mobileTheme.spacing.lg,
@@ -700,22 +669,6 @@ const styles = StyleSheet.create({
   statusBadge: {
     fontSize: 15,
     fontWeight: "800",
-  },
-  actionsCard: {
-    ...mobileSurfaceCard,
-    padding: mobileTheme.spacing.lg,
-    marginBottom: mobileTheme.spacing.lg,
-  },
-  actionCardTitle: {
-    color: mobileTheme.colors.ink.primary,
-    fontSize: 16,
-    fontWeight: "800",
-    marginBottom: mobileTheme.spacing.sm,
-  },
-  actionCardDescription: {
-    color: mobileTheme.colors.ink.secondary,
-    lineHeight: 22,
-    marginBottom: mobileTheme.spacing.md,
   },
   pricingModalContainer: {
     flex: 1,

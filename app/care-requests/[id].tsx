@@ -19,14 +19,13 @@ import {
   getActiveNurseProfiles,
   getCareRequestById,
   transitionCareRequest,
-  verifyCareRequestPricing,
   type ActiveNurseProfileSummary,
-  type PricingVerificationResult,
 } from "@/src/services/careRequestService";
 import { CareRequestDto, CareRequestTransitionAction } from "@/src/types/careRequest";
 import { careRequestTestIds } from "@/src/testing/testIds";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
+import { t } from "@/src/i18n/translations";
 
 function getStatusColors(status: CareRequestDto["status"]) {
   switch (status) {
@@ -35,8 +34,11 @@ function getStatusColors(status: CareRequestDto["status"]) {
     case "Rejected":
       return { bg: designTokens.color.surface.danger, fg: designTokens.color.status.dangerText };
     case "Completed":
+    case "Invoiced":
+    case "Paid":
       return { bg: designTokens.color.status.infoBg, fg: designTokens.color.ink.accentStrong };
     case "Cancelled":
+    case "Voided":
       return { bg: designTokens.color.surface.secondary, fg: designTokens.color.ink.secondary };
     default:
       return { bg: designTokens.color.surface.warning, fg: designTokens.color.status.warningText };
@@ -53,6 +55,12 @@ function getStatusLabel(status: CareRequestDto["status"]) {
       return "Completada";
     case "Cancelled":
       return "Cancelada";
+    case "Invoiced":
+      return "Facturada";
+    case "Paid":
+      return "Pagada";
+    case "Voided":
+      return "Anulada";
     default:
       return "Pendiente";
   }
@@ -68,11 +76,7 @@ export default function CareRequestDetailScreen() {
   const [isActing, setIsActing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [showPricingReview, setShowPricingReview] = useState(false);
   const [showPricingBreakdown, setShowPricingBreakdown] = useState(false);
-  const [pricingResult, setPricingResult] = useState<PricingVerificationResult | null>(null);
-  const [isPricingLoading, setIsPricingLoading] = useState(false);
-  const [pricingError, setPricingError] = useState<string | null>(null);
 
   const loadCareRequest = async () => {
     if (!id) {
@@ -165,32 +169,6 @@ export default function CareRequestDetailScreen() {
   const assignedNurseLabel = assignedNurseRecord
     ? [assignedNurseRecord.name, assignedNurseRecord.lastName].filter(Boolean).join(" ") || assignedNurseRecord.email
     : careRequest?.assignedNurse ?? "Sin asignar";
-  const runPricingVerification = async () => {
-    if (!id) return;
-    setIsPricingLoading(true);
-    setPricingError(null);
-    setPricingResult(null);
-    try {
-      const result = await verifyCareRequestPricing(id);
-      setPricingResult(result);
-    } catch (nextError: any) {
-      setPricingError(nextError.message ?? "No fue posible verificar los precios.");
-    } finally {
-      setIsPricingLoading(false);
-    }
-  };
-
-  const openPricingReview = () => {
-    setShowPricingReview(true);
-    setShowPricingBreakdown(true);
-    setPricingError(null);
-    setPricingResult(null);
-  };
-
-  const closePricingReview = () => {
-    setShowPricingReview(false);
-  };
-
   const canManageAssignment = roles.includes("ADMIN");
   const canApproveOrReject =
     roles.includes("ADMIN") && careRequest?.status === "Pending";
@@ -237,23 +215,18 @@ export default function CareRequestDetailScreen() {
     careRequest.price != null ||
     careRequest.categoryFactorSnapshot != null ||
     careRequest.lineBeforeVolumeDiscount != null;
-  const primaryActionLabel = roles.includes("ADMIN")
-    ? "Preparar verificación de precios"
-    : "Consultar desglose tarifario";
-
   return (
     <>
     <MobileWorkspaceShell
       testID={careRequestTestIds.detail.screen}
       nativeID={careRequestTestIds.detail.screen}
-      eyebrow="Detalle de solicitud"
-      title="Detalle de Solicitud"
-      description="Informacion completa de la solicitud de servicio."
+      eyebrow={t('labels.detalle_solicitud')}
+      title={careRequest.careRequestDescription}
+      description={`Solicitud creada el ${formatDateTimeES(careRequest.createdAtUtc)}`}
       primaryReturnLabel="Volver a solicitudes"
       onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.createCareRequest)}
     >
-      <View style={styles.card} testID={careRequestTestIds.detail.screen} nativeID={careRequestTestIds.detail.screen}>
-        <Text style={styles.eyebrow}>Detalle de solicitud</Text>
+      <View style={styles.card}>
         <View style={styles.headerRow}>
           <Text style={styles.title}>{careRequest.careRequestDescription}</Text>
           <View
@@ -266,11 +239,7 @@ export default function CareRequestDetailScreen() {
         </View>
 
         <View style={styles.summaryCard}>
-          <Text style={styles.sectionEyebrow}>Historia operativa</Text>
-          <Text style={styles.summaryTitle}>Estado y próximo paso visibles antes del detalle técnico</Text>
-          <Text style={styles.summaryCopy}>
-            Revisa el estado actual, confirma la enfermera asignada y abre la verificación de precios solo cuando necesites comparar el cálculo guardado con el actual.
-          </Text>
+          <Text style={styles.sectionEyebrow}>Resumen</Text>
           <View style={styles.summaryGrid}>
             <View style={styles.summaryMetric}>
               <Text style={styles.summaryLabel}>Estado actual</Text>
@@ -305,7 +274,7 @@ export default function CareRequestDetailScreen() {
         <View style={styles.actionRail}>
           {hasPricingData ? (
             <Pressable
-              onPress={showPricingReview ? closePricingReview : openPricingReview}
+              onPress={() => setShowPricingBreakdown((current) => !current)}
               testID={careRequestTestIds.detail.pricingBreakdownToggle}
               nativeID={careRequestTestIds.detail.pricingBreakdownToggle}
               style={({ pressed }) => [
@@ -314,155 +283,13 @@ export default function CareRequestDetailScreen() {
                 pressed && styles.buttonPressed,
               ]}
               accessibilityRole="button"
-              accessibilityLabel={showPricingReview ? "Cerrar revisión de precios" : primaryActionLabel}
+              accessibilityLabel={showPricingBreakdown ? "Ocultar desglose de precios" : "Mostrar desglose de precios"}
             >
               <Text style={styles.pricingButtonText}>
-                {showPricingReview ? "Cerrar revisión de precios" : primaryActionLabel}
+                {showPricingBreakdown ? "Ocultar desglose" : "Mostrar desglose"}
               </Text>
             </Pressable>
           ) : null}
-        </View>
-
-        {showPricingReview ? (
-          <View
-            style={styles.reviewCard}
-            testID={careRequestTestIds.detail.pricingReviewPanel}
-            nativeID={careRequestTestIds.detail.pricingReviewPanel}
-          >
-            <Text style={styles.sectionEyebrow}>Revisión guiada</Text>
-            <Text style={styles.reviewTitle}>Confirma el cálculo antes de comparar valores</Text>
-            <Text style={styles.reviewCopy}>
-              Esta revisión mantiene el contexto operativo visible y evita abrir una ventana separada. Ejecuta la validación solo cuando estés listo para contrastar el cálculo guardado con el actual.
-            </Text>
-            <View style={styles.reviewChecklist}>
-              <Text style={styles.reviewChecklistItem}>• El estado actual permanece visible durante la revisión.</Text>
-              <Text style={styles.reviewChecklistItem}>• Las acciones sensibles siguen debajo del resumen principal.</Text>
-              <Text style={styles.reviewChecklistItem}>• El desglose profundo permanece dentro de este mismo recorrido.</Text>
-            </View>
-            <View style={styles.reviewActions}>
-              <Pressable
-                onPress={() => setShowPricingBreakdown((current) => !current)}
-                testID={careRequestTestIds.detail.pricingBreakdownToggle}
-                nativeID={careRequestTestIds.detail.pricingBreakdownToggle}
-                style={({ pressed }) => [
-                  styles.secondaryButton,
-                  styles.reviewSecondaryButton,
-                  pressed && styles.buttonPressed,
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel={showPricingBreakdown ? "Ocultar desglose de precios" : "Mostrar desglose de precios"}
-              >
-                <Text style={styles.reviewSecondaryButtonText}>
-                  {showPricingBreakdown ? "Ocultar desglose" : "Mostrar desglose"}
-                </Text>
-              </Pressable>
-              {roles.includes("ADMIN") ? (
-                <Pressable
-                  onPress={runPricingVerification}
-                  disabled={isPricingLoading}
-                  testID={careRequestTestIds.detail.pricingReviewConfirmButton}
-                  nativeID={careRequestTestIds.detail.pricingReviewConfirmButton}
-                  style={({ pressed }) => [
-                    styles.primaryButton,
-                    isPricingLoading && styles.disabledButton,
-                    pressed && styles.buttonPressed,
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel="Ejecutar verificación de precios"
-                >
-                  <Text style={styles.primaryButtonText}>
-                    {isPricingLoading ? "Verificando..." : "Ejecutar verificación"}
-                  </Text>
-                </Pressable>
-              ) : null}
-            </View>
-
-            {isPricingLoading ? (
-              <View style={styles.pricingLoadingRow}>
-                <ActivityIndicator
-                  color={designTokens.color.ink.accentStrong}
-                  accessibilityLabel="Cargando..."
-                />
-                <Text style={styles.pricingLoadingText}>Verificando precios...</Text>
-              </View>
-            ) : null}
-
-            {pricingError ? <Text style={styles.pricingErrorText}>{pricingError}</Text> : null}
-
-            {pricingResult && pricingResult.matches ? (
-              <View style={styles.pricingSuccessCard} testID="price-verification-success" nativeID="price-verification-success">
-                <Text style={styles.pricingSuccessText}>Todos los valores coinciden</Text>
-                {pricingResult.limitationNotes.length > 0 ? (
-                  <View style={styles.pricingNotesList} testID="price-verification-limitation" nativeID="price-verification-limitation">
-                    {pricingResult.limitationNotes.map((note, i) => (
-                      <Text key={i} style={styles.pricingNoteItem}>{note}</Text>
-                    ))}
-                  </View>
-                ) : null}
-              </View>
-            ) : null}
-
-            {pricingResult && !pricingResult.matches ? (
-              <View style={styles.pricingDiscrepancyCard} testID="price-verification-discrepancies" nativeID="price-verification-discrepancies">
-                <Text style={styles.pricingDiscrepancyTitle}>Discrepancias encontradas</Text>
-                <View style={styles.pricingTableHeader}>
-                  <Text style={[styles.pricingTableCell, styles.pricingTableHeaderText]}>Campo</Text>
-                  <Text style={[styles.pricingTableCell, styles.pricingTableHeaderText]}>Guardado</Text>
-                  <Text style={[styles.pricingTableCell, styles.pricingTableHeaderText]}>Actual</Text>
-                </View>
-                {pricingResult.discrepancies.map((d, i) => (
-                  <View key={i} style={styles.pricingTableRow}>
-                    <Text style={styles.pricingTableCell}>{d.fieldName}</Text>
-                    <Text style={styles.pricingTableCell}>{d.storedValue}</Text>
-                    <Text style={styles.pricingTableCell}>{d.currentValue}</Text>
-                  </View>
-                ))}
-              </View>
-            ) : null}
-          </View>
-        ) : null}
-
-        <View style={styles.metaGroup} testID="care-detail-info-section" nativeID="care-detail-info-section">
-          <Text style={styles.metaText}>
-            Enfermera asignada: {assignedNurseLabel}
-          </Text>
-          <Text style={styles.metaText}>
-            Enfermera sugerida: {careRequest.suggestedNurse ?? "Sin sugerencia"}
-          </Text>
-          <Text style={styles.metaText}>
-            Fecha del servicio: {careRequest.careRequestDate ?? "Sin fecha"}
-          </Text>
-          <Text style={styles.metaText}>
-            Creada: {formatDateTimeES(careRequest.createdAtUtc)}
-          </Text>
-          <Text style={styles.metaText}>
-            Actualizada: {formatDateTimeES(careRequest.updatedAtUtc)}
-          </Text>
-          {careRequest.approvedAtUtc && (
-            <Text style={styles.metaText}>
-              Aprobada: {formatDateTimeES(careRequest.approvedAtUtc)}
-            </Text>
-          )}
-          {careRequest.rejectedAtUtc && (
-            <Text style={styles.metaText}>
-              Rechazada: {formatDateTimeES(careRequest.rejectedAtUtc)}
-            </Text>
-          )}
-          {careRequest.rejectionReason && (
-            <Text style={styles.metaText}>
-              Razon de rechazo: {careRequest.rejectionReason}
-            </Text>
-          )}
-          {careRequest.completedAtUtc && (
-            <Text style={styles.metaText}>
-              Completada: {formatDateTimeES(careRequest.completedAtUtc)}
-            </Text>
-          )}
-          {careRequest.cancelledAtUtc && (
-            <Text style={styles.metaText}>
-              Cancelada: {formatDateTimeES(careRequest.cancelledAtUtc)}
-            </Text>
-          )}
         </View>
 
         {hasPricingData && showPricingBreakdown ? (
@@ -546,6 +373,60 @@ export default function CareRequestDetailScreen() {
             </CollapsibleSection>
           </View>
         ) : null}
+
+        <View style={styles.metaCard} testID="care-detail-info-section" nativeID="care-detail-info-section">
+          <Text style={styles.sectionEyebrow}>Información de la solicitud</Text>
+          <View style={styles.metaRow}>
+            <Text style={styles.metaLabel}>Enfermera asignada</Text>
+            <Text style={styles.metaValue}>{assignedNurseLabel}</Text>
+          </View>
+          <View style={styles.metaRow}>
+            <Text style={styles.metaLabel}>Enfermera sugerida</Text>
+            <Text style={styles.metaValue}>{careRequest.suggestedNurse ?? "Sin sugerencia"}</Text>
+          </View>
+          <View style={styles.metaRow}>
+            <Text style={styles.metaLabel}>Fecha del servicio</Text>
+            <Text style={styles.metaValue}>{careRequest.careRequestDate ?? "Sin fecha"}</Text>
+          </View>
+          <View style={styles.metaRow}>
+            <Text style={styles.metaLabel}>Creada</Text>
+            <Text style={styles.metaValue}>{formatDateTimeES(careRequest.createdAtUtc)}</Text>
+          </View>
+          <View style={styles.metaRow}>
+            <Text style={styles.metaLabel}>Actualizada</Text>
+            <Text style={styles.metaValue}>{formatDateTimeES(careRequest.updatedAtUtc)}</Text>
+          </View>
+          {careRequest.approvedAtUtc && (
+            <View style={styles.metaRow}>
+              <Text style={styles.metaLabel}>Aprobada</Text>
+              <Text style={styles.metaValue}>{formatDateTimeES(careRequest.approvedAtUtc)}</Text>
+            </View>
+          )}
+          {careRequest.rejectedAtUtc && (
+            <View style={styles.metaRow}>
+              <Text style={styles.metaLabel}>Rechazada</Text>
+              <Text style={styles.metaValue}>{formatDateTimeES(careRequest.rejectedAtUtc)}</Text>
+            </View>
+          )}
+          {careRequest.rejectionReason && (
+            <View style={styles.metaRow}>
+              <Text style={styles.metaLabel}>Razón de rechazo</Text>
+              <Text style={styles.metaValue}>{careRequest.rejectionReason}</Text>
+            </View>
+          )}
+          {careRequest.completedAtUtc && (
+            <View style={styles.metaRow}>
+              <Text style={styles.metaLabel}>Completada</Text>
+              <Text style={styles.metaValue}>{formatDateTimeES(careRequest.completedAtUtc)}</Text>
+            </View>
+          )}
+          {careRequest.cancelledAtUtc && (
+            <View style={styles.metaRow}>
+              <Text style={styles.metaLabel}>Cancelada</Text>
+              <Text style={styles.metaValue}>{formatDateTimeES(careRequest.cancelledAtUtc)}</Text>
+            </View>
+          )}
+        </View>
 
         {canManageAssignment && (
           <View style={styles.assignmentCard}>
@@ -784,50 +665,40 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     textTransform: "uppercase",
   },
-  metaGroup: {
-    gap: 10,
+  metaCard: {
+    backgroundColor: designTokens.color.surface.primary,
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.subtle,
+    gap: 0,
+    marginTop: 18,
+  },
+  metaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: designTokens.color.surface.secondary,
+    gap: 12,
+  },
+  metaLabel: {
+    color: designTokens.color.ink.muted,
+    fontSize: 13,
+    fontWeight: "700",
+    flex: 1,
+  },
+  metaValue: {
+    color: designTokens.color.ink.primary,
+    fontSize: 13,
+    fontWeight: "500",
+    flex: 1,
+    textAlign: "right",
   },
   actionRail: {
     gap: 12,
     marginBottom: 18,
-  },
-  reviewCard: {
-    backgroundColor: designTokens.color.surface.warning,
-    borderRadius: 20,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: designTokens.color.status.warningText,
-    gap: 14,
-    marginBottom: 18,
-  },
-  reviewTitle: {
-    color: designTokens.color.ink.primary,
-    fontSize: 20,
-    lineHeight: 26,
-    fontWeight: "800",
-  },
-  reviewCopy: {
-    color: designTokens.color.status.dangerText,
-    lineHeight: 21,
-  },
-  reviewChecklist: {
-    gap: 8,
-  },
-  reviewChecklistItem: {
-    color: designTokens.color.status.dangerText,
-    lineHeight: 21,
-  },
-  reviewActions: {
-    gap: 12,
-  },
-  reviewSecondaryButton: {
-    borderColor: designTokens.color.status.warningText,
-    backgroundColor: designTokens.color.surface.warning,
-  },
-  reviewSecondaryButtonText: {
-    color: designTokens.color.status.dangerText,
-    fontWeight: "800",
-    fontSize: 16,
   },
   assignmentCard: {
     marginTop: 24,
@@ -873,10 +744,6 @@ const styles = StyleSheet.create({
   },
   nurseChipTextSelected: {
     color: designTokens.color.ink.inverse,
-  },
-  metaText: {
-    color: designTokens.color.ink.secondary,
-    lineHeight: 21,
   },
   assignmentWarning: {
     color: designTokens.color.status.warningText,
@@ -1006,79 +873,5 @@ const styles = StyleSheet.create({
     color: designTokens.color.ink.accent,
     fontWeight: "800",
     fontSize: 16,
-  },
-  pricingLoadingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingVertical: 12,
-  },
-  pricingLoadingText: {
-    color: designTokens.color.ink.secondary,
-    fontSize: 15,
-  },
-  pricingErrorText: {
-    color: designTokens.color.ink.danger,
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  pricingSuccessCard: {
-    backgroundColor: designTokens.color.surface.success,
-    borderRadius: 16,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: designTokens.color.status.successText,
-    gap: 12,
-  },
-  pricingSuccessText: {
-    color: designTokens.color.status.successText,
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  pricingNotesList: {
-    gap: 6,
-  },
-  pricingNoteItem: {
-    color: designTokens.color.status.successText,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  pricingDiscrepancyCard: {
-    backgroundColor: designTokens.color.ink.inverse,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: designTokens.color.border.subtle,
-    gap: 0,
-  },
-  pricingDiscrepancyTitle: {
-    color: designTokens.color.status.dangerText,
-    fontSize: 16,
-    fontWeight: "800",
-    marginBottom: 14,
-  },
-  pricingTableHeader: {
-    flexDirection: "row",
-    backgroundColor: designTokens.color.surface.danger,
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    marginBottom: 4,
-  },
-  pricingTableHeaderText: {
-    fontWeight: "700",
-    color: designTokens.color.status.dangerText,
-  },
-  pricingTableRow: {
-    flexDirection: "row",
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: designTokens.color.border.subtle,
-  },
-  pricingTableCell: {
-    flex: 1,
-    fontSize: 13,
-    color: designTokens.color.ink.secondary,
   },
 });

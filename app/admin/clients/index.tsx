@@ -4,7 +4,7 @@
 // @do-not-edit: false
 
 import { useEffect, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
@@ -78,36 +78,8 @@ export default function AdminClientsScreen() {
   const inactiveCount = getInactiveCount(items);
   const activeCount = items.length - inactiveCount;
 
-  return (
-    <MobileWorkspaceShell
-      eyebrow="Clientes"
-      title="Gestión de clientes"
-      description="Prioriza seguimiento operativo y deja los filtros como apoyo progresivo."
-      testID={adminTestIds.clients.listScreen}
-      nativeID={adminTestIds.clients.listScreen}
-      actions={(
-        <View style={styles.headerActions}>
-          <Pressable
-            style={styles.button}
-            onPress={() => setShowFilters((current) => !current)}
-            accessibilityRole="button"
-            accessibilityLabel={showFilters ? "Ocultar filtros" : "Mostrar filtros"}
-          >
-            <Text style={styles.buttonText}>{showFilters ? "Ocultar filtros" : "Filtros"}</Text>
-          </Pressable>
-          <Pressable
-            style={styles.buttonPrimary}
-            onPress={() => router.push("/admin/clients/create" as never)}
-            testID={adminTestIds.clients.primaryAction}
-            nativeID={adminTestIds.clients.primaryAction}
-            accessibilityRole="button"
-            accessibilityLabel="Crear nuevo cliente"
-          >
-            <Text style={styles.buttonPrimaryText}>Crear</Text>
-          </Pressable>
-        </View>
-      )}
-    >
+  const listHeader = (
+    <>
       <View style={styles.summaryCard}>
         <Text
           style={styles.summaryChip}
@@ -120,7 +92,6 @@ export default function AdminClientsScreen() {
         </Text>
         <Text style={styles.summaryText}>Activos: {activeCount} • Inactivos: {inactiveCount}</Text>
       </View>
-
       {!!error && (
         <Text
           style={styles.error}
@@ -130,11 +101,9 @@ export default function AdminClientsScreen() {
           {error}
         </Text>
       )}
-
       {showFilters && (
         <View style={styles.filtersCard}>
           <Text style={styles.filtersTitle}>Filtros de búsqueda</Text>
-
           <Text style={styles.filterLabel}>Estado</Text>
           <View style={styles.filterChips}>
             {(["all", "active", "inactive"] as const).map((status) => {
@@ -155,7 +124,6 @@ export default function AdminClientsScreen() {
               );
             })}
           </View>
-
           <Text style={styles.filterLabel}>Buscar</Text>
           <TextInput
             style={styles.input}
@@ -167,22 +135,37 @@ export default function AdminClientsScreen() {
           />
         </View>
       )}
-
       {loading && <Text style={styles.loading}>Cargando...</Text>}
+    </>
+  );
 
-      {!loading && items.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>No se encontraron clientes.</Text>
-        </View>
-      ) : null}
-
-      <ScrollView
-        style={styles.list}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
-      >
-        {items.map((item) => (
+  return (
+    <MobileWorkspaceShell
+      eyebrow="Clientes"
+      title="Gestión de clientes"
+      description="Prioriza seguimiento operativo y deja los filtros como apoyo progresivo."
+      flat
+      testID={adminTestIds.clients.listScreen}
+      nativeID={adminTestIds.clients.listScreen}
+      systemActions={[
+        {
+          label: showFilters ? "Ocultar filtros" : "Filtros",
+          onPress: () => setShowFilters((current) => !current),
+          variant: "secondary",
+        },
+        {
+          label: "Crear",
+          onPress: () => router.push("/admin/clients/create" as never),
+          variant: "primary",
+          testID: adminTestIds.clients.primaryAction,
+        },
+      ]}
+    >
+      <FlatList
+        data={items}
+        keyExtractor={(item) => item.userId}
+        renderItem={({ item }) => (
           <Pressable
-            key={item.userId}
             onPress={() => router.push(`/admin/clients/${item.userId}` as never)}
             style={styles.card}
             testID={`admin-client-card-${item.userId}`}
@@ -198,26 +181,22 @@ export default function AdminClientsScreen() {
                 </Text>
               </View>
             </View>
-
             <Text style={styles.cardMeta}>{item.email}</Text>
             <Text style={styles.cardHint}>
               {item.isActive
                 ? "Cuenta disponible para nuevas gestiones administrativas."
                 : "Revisar activación antes de crear nuevas solicitudes."}
             </Text>
-
             {item.identificationNumber ? (
               <View style={styles.cardRow}>
                 <Text style={styles.cardLabel}>Cédula:</Text>
                 <Text style={styles.cardValue}>{item.identificationNumber}</Text>
               </View>
             ) : null}
-
             <View style={styles.cardRow}>
               <Text style={styles.cardLabel}>Solicitudes:</Text>
               <Text style={styles.cardValue}>{item.ownedCareRequestsCount}</Text>
             </View>
-
             {item.lastCareRequestAtUtc ? (
               <View style={styles.cardRow}>
                 <Text style={styles.cardLabel}>Última solicitud:</Text>
@@ -225,30 +204,29 @@ export default function AdminClientsScreen() {
               </View>
             ) : null}
           </Pressable>
-        ))}
-      </ScrollView>
+        )}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContent}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        refreshing={loading}
+        onRefresh={() => void load()}
+        ListHeaderComponent={listHeader}
+        ListEmptyComponent={
+          !loading ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No se encontraron clientes.</Text>
+            </View>
+          ) : null
+        }
+      />
     </MobileWorkspaceShell>
   );
 }
 
 const styles = StyleSheet.create({
-  headerActions: { flexDirection: "row", gap: designTokens.spacing.sm },
-  button: {
-    backgroundColor: designTokens.color.surface.primary,
-    borderRadius: designTokens.radius.md,
-    paddingHorizontal: designTokens.spacing.md,
-    paddingVertical: designTokens.spacing.sm,
-    borderWidth: 1,
-    borderColor: designTokens.color.border.strong,
-  },
-  buttonText: { ...designTokens.typography.label, color: designTokens.color.ink.primary },
-  buttonPrimary: {
-    backgroundColor: designTokens.color.ink.accentStrong,
-    borderRadius: designTokens.radius.md,
-    paddingHorizontal: designTokens.spacing.md,
-    paddingVertical: designTokens.spacing.sm,
-  },
-  buttonPrimaryText: { ...designTokens.typography.label, color: designTokens.color.surface.primary },
+  listContent: { paddingBottom: 16 },
   summaryCard: {
     backgroundColor: designTokens.color.surface.primary,
     borderWidth: 1,
@@ -323,7 +301,6 @@ const styles = StyleSheet.create({
   },
   emptyState: { padding: designTokens.spacing.xl, alignItems: "center" },
   emptyStateText: { ...designTokens.typography.body, color: designTokens.color.ink.muted, textAlign: "center" },
-  list: { gap: designTokens.spacing.sm },
   card: {
     backgroundColor: designTokens.color.surface.primary,
     borderWidth: 1,

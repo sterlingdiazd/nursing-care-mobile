@@ -2,10 +2,21 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import { router, useSegments } from "expo-router";
 
 import { useAuth, UserProfileType } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
 import { navigationTestIds } from "@/src/testing/testIds/navigationTestIds";
+
+const DETAIL_ACTION_SEGMENTS = [
+  "invoice",
+  "pay",
+  "void",
+  "receipt",
+  "review",
+  "edit",
+  "create",
+];
 
 interface TabConfig {
   key: string;
@@ -17,17 +28,27 @@ interface TabConfig {
 const TAB_HEIGHT = 56;
 
 const TAB_CONFIG: TabConfig[] = [
-  { key: "index", label: "Inicio", icon: "home", visibleTo: [UserProfileType.ADMIN, UserProfileType.NURSE, UserProfileType.CLIENT] },
+  { key: "admin", label: "Inicio", icon: "home", visibleTo: [UserProfileType.ADMIN] },
+  { key: "index", label: "Inicio", icon: "home", visibleTo: [UserProfileType.NURSE, UserProfileType.CLIENT] },
   { key: "care-requests", label: "Solicitudes", icon: "list", visibleTo: [UserProfileType.ADMIN, UserProfileType.NURSE, UserProfileType.CLIENT] },
   { key: "nurse/payroll", label: "Nomina", icon: "money", visibleTo: [UserProfileType.NURSE] },
   { key: "admin/payroll", label: "Nomina", icon: "money", visibleTo: [UserProfileType.ADMIN] },
   { key: "account", label: "Cuenta", icon: "user", visibleTo: [UserProfileType.CLIENT, UserProfileType.NURSE] },
-  { key: "account", label: "Admin", icon: "cog", visibleTo: [UserProfileType.ADMIN] },
+  { key: "account", label: "Cuenta", icon: "user", visibleTo: [UserProfileType.ADMIN] },
 ];
 
 export default function AppTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { profileType } = useAuth();
+  const segments = useSegments();
+
+  const isDetailRoute = segments.some(
+    (seg) => seg.startsWith("[") || DETAIL_ACTION_SEGMENTS.includes(seg),
+  );
+
+  if (isDetailRoute) {
+    return null;
+  }
 
   const visibleTabs = TAB_CONFIG.filter(
     (tab) => profileType !== null && tab.visibleTo.includes(profileType),
@@ -46,6 +67,15 @@ export default function AppTabBar({ state, navigation }: BottomTabBarProps) {
   };
 
   const handlePress = (tabKey: string) => {
+    if (tabKey === "admin/payroll") {
+      router.push("/(tabs)/admin/payroll");
+      return;
+    }
+    if (tabKey === "nurse/payroll") {
+      router.push("/(tabs)/nurse/payroll");
+      return;
+    }
+
     const routeKey = getRouteKey(tabKey);
     const route = state.routes.find((r) => r.name === routeKey);
     if (!route) return;

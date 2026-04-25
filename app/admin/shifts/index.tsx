@@ -155,30 +155,21 @@ export default function AdminShiftsScreen() {
       description="Gestiona los turnos de enfermeras asignados."
       testID="admin-shifts-screen"
       nativeID="admin-shifts-screen"
-      actions={(
-        <View style={styles.headerActions}>
-          <Pressable
-            style={styles.button}
-            onPress={() => setShowFilters(!showFilters)}
-            testID="admin-shifts-filter-toggle"
-            nativeID="admin-shifts-filter-toggle"
-            accessibilityRole="button"
-            accessibilityLabel={showFilters ? "Ocultar filtros" : "Mostrar filtros"}
-          >
-            <Text style={styles.buttonText}>{showFilters ? "Ocultar filtros" : "Filtros"}</Text>
-          </Pressable>
-          <Pressable
-            style={styles.button}
-            onPress={() => void load()}
-            testID="admin-shifts-refresh-btn"
-            nativeID="admin-shifts-refresh-btn"
-            accessibilityRole="button"
-            accessibilityLabel="Actualizar turnos"
-          >
-            <Text style={styles.buttonText}>Actualizar</Text>
-          </Pressable>
-        </View>
-      )}
+      flat
+      systemActions={[
+        {
+          label: showFilters ? "Ocultar filtros" : "Filtros",
+          onPress: () => setShowFilters(!showFilters),
+          variant: "secondary",
+          testID: "admin-shifts-filter-toggle",
+        },
+        {
+          label: "Actualizar",
+          onPress: () => void load(),
+          variant: "secondary",
+          testID: "admin-shifts-refresh-btn",
+        },
+      ]}
     >
       {!!error && (
         <Text
@@ -447,7 +438,6 @@ export default function AdminShiftsScreen() {
 }
 
 const styles = StyleSheet.create({
-  headerActions: { flexDirection: "row", gap: 8 },
   button: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: designTokens.color.border.subtle },
   buttonText: { color: designTokens.color.ink.accent, fontWeight: "700", fontSize: 14 },
   buttonPrimary: { backgroundColor: designTokens.color.ink.accent, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, flex: 1 },

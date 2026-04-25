@@ -390,8 +390,8 @@ export default function CreateCareRequestScreen() {
   return (
     <MobileWorkspaceShell
       eyebrow="Nueva solicitud"
-      title="Crea una solicitud clara con un flujo guiado."
-      description="La captura ahora se organiza como una experiencia de trabajo: contexto principal primero, opciones guiadas despues y ajustes opcionales al final."
+      title=""
+      description=""
       testID={careRequestTestIds.create.screen}
       nativeID={careRequestTestIds.create.screen}
       primaryReturnLabel="Volver a solicitudes"

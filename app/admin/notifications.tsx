@@ -66,11 +66,13 @@ export default function AdminNotificationsScreen() {
       eyebrow="Notificaciones"
       title="Notificaciones"
       description="Una accion dominante por tarjeta y opciones secundarias solo cuando las necesitas."
-      actions={
-        <Pressable style={styles.button} onPress={() => void load()}>
-          <Text style={styles.buttonText}>Actualizar</Text>
-        </Pressable>
-      }
+      systemActions={[
+        {
+          label: "Actualizar",
+          onPress: () => void load(),
+          variant: "secondary",
+        },
+      ]}
     >
       <View {...automationProps(adminTestIds.notifications.screen)} style={styles.screenRoot}>
         {error ? (

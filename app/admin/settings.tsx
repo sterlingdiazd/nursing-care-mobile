@@ -116,18 +116,14 @@ export default function AdminSettingsScreen() {
       description="Administra los parámetros del sistema."
       testID="admin-settings-screen"
       nativeID="admin-settings-screen"
-      actions={(
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Actualizar configuracion"
-          style={styles.button}
-          onPress={() => void load()}
-          testID="admin-settings-refresh-btn"
-          nativeID="admin-settings-refresh-btn"
-        >
-          <Text style={styles.buttonText}>Actualizar</Text>
-        </Pressable>
-      )}
+      systemActions={[
+        {
+          label: "Actualizar",
+          onPress: () => void load(),
+          variant: "secondary",
+          testID: "admin-settings-refresh-btn",
+        },
+      ]}
     >
       {!!error && (
         <Text

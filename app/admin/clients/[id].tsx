@@ -91,21 +91,21 @@ export default function AdminClientDetailScreen() {
       nativeID={adminTestIds.clients.detailScreen}
       primaryReturnPath={mobileNavigationEscapes.adminClients}
       primaryReturnLabel="Volver a clientes"
-      actions={detail ? (
-        <View style={styles.headerActions}>
-          <Pressable style={styles.buttonSecondary} onPress={() => void load()}>
-            <Text style={styles.buttonSecondaryText}>Actualizar</Text>
-          </Pressable>
-          <Pressable
-            style={styles.buttonPrimary}
-            onPress={() => router.push(`/admin/clients/${id}/edit` as never)}
-            testID={adminTestIds.clients.detailPrimaryAction}
-            nativeID={adminTestIds.clients.detailPrimaryAction}
-          >
-            <Text style={styles.buttonPrimaryText}>Editar</Text>
-          </Pressable>
-        </View>
-      ) : undefined}
+      systemActions={detail
+        ? [
+            {
+              label: "Actualizar",
+              onPress: () => void load(),
+              variant: "secondary",
+            },
+            {
+              label: "Editar",
+              onPress: () => router.push(`/admin/clients/${id}/edit` as never),
+              variant: "primary",
+              testID: adminTestIds.clients.detailPrimaryAction,
+            },
+          ]
+        : undefined}
     >
       {!!error && (
         <Text

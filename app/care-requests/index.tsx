@@ -111,35 +111,22 @@ export default function CareRequestsScreen() {
       eyebrow="Cola de solicitudes"
       title="Solicitudes"
       description="Revisa el estado de cada servicio y abre el detalle cuando lo necesites."
-      actions={
-        <>
-          <Pressable
-            onPress={loadCareRequests}
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              pressed && styles.buttonPressed,
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="Actualizar cola de solicitudes"
-          >
-            <Text style={styles.secondaryButtonText}>Actualizar cola</Text>
-          </Pressable>
-
-          {(roles.includes("CLIENT") || roles.includes("ADMIN")) && (
-            <Pressable
-              onPress={() => router.push("/create-care-request")}
-              style={({ pressed }) => [
-                styles.primaryButton,
-                pressed && styles.buttonPressed,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="Crear nueva solicitud de cuidado"
-            >
-              <Text style={styles.primaryButtonText}>Crear nueva solicitud</Text>
-            </Pressable>
-          )}
-        </>
-      }
+      systemActions={[
+        {
+          label: "Actualizar cola",
+          onPress: loadCareRequests,
+          variant: "secondary",
+        },
+        ...((roles.includes("CLIENT") || roles.includes("ADMIN"))
+          ? ([
+              {
+                label: "Crear nueva solicitud",
+                onPress: () => router.push("/create-care-request"),
+                variant: "primary",
+              },
+            ] as const)
+          : []),
+      ]}
     >
       {error && (
         <View style={styles.errorCard}>

@@ -1,6 +1,6 @@
 import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
-import { StyleSheet, Text, View, ScrollView, Platform } from "react-native";
+import { Pressable, StyleSheet, Text, View, ScrollView, Platform } from "react-native";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
@@ -19,9 +19,15 @@ import { designTokens } from "@/src/design-system/tokens";
 import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import { FormButton } from "@/src/components/form";
 
+const ADMIN_TOOLS = [
+  { label: "Diagnóstico", body: "Estado técnico y errores.", path: "/diagnostics" as const },
+  { label: "Herramientas", body: "Utilidades avanzadas.", path: "/tools" as const },
+];
+
 export default function AccountScreen() {
   const router = useRouter();
   const { email, isAuthenticated, logout, roles, token } = useAuth();
+  const isAdmin = roles.includes("ADMIN");
   const { showToast } = useToast();
   const apiBaseUrl = getMobileApiBaseUrl();
 
@@ -57,6 +63,8 @@ export default function AccountScreen() {
       eyebrow="Cuenta"
       title="Acceso y sesión"
       description="Consulta el estado actual de tu cuenta y gestiona tu sesión."
+      primaryReturnPath="/"
+      primaryReturnLabel="Volver al inicio"
     >
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.card}>
@@ -72,17 +80,6 @@ export default function AccountScreen() {
             <Text style={styles.infoValue}>{formatRoleLabels(roles) || "Ninguno"}</Text>
           </View>
 
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Servidor</Text>
-            <Text style={styles.infoValue}>{apiBaseUrl}</Text>
-          </View>
-
-          {token ? (
-            <View style={styles.tokenBox}>
-              <Text style={styles.tokenLabel}>Token de acceso</Text>
-              <Text style={styles.tokenValue}>{token.slice(0, 32)}...</Text>
-            </View>
-          ) : null}
         </View>
 
         <View style={[styles.card, styles.actionsCard]}>
@@ -139,6 +136,32 @@ export default function AccountScreen() {
             </FormButton>
           )}
         </View>
+
+        {isAdmin && (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Utilidades</Text>
+            {ADMIN_TOOLS.map((tool) => (
+              <Pressable
+                key={tool.path}
+                onPress={() => {
+                  hapticFeedback.light();
+                  router.push(tool.path);
+                }}
+                style={({ pressed }) => [styles.toolRow, pressed && styles.toolRowPressed]}
+                accessibilityRole="button"
+                accessibilityLabel={tool.label}
+              >
+                <View style={styles.toolContent}>
+                  <View>
+                    <Text style={styles.toolLabel}>{tool.label}</Text>
+                    <Text style={styles.toolBody}>{tool.body}</Text>
+                  </View>
+                  <Text style={styles.toolChevron}>›</Text>
+                </View>
+              </Pressable>
+            ))}
+          </View>
+        )}
       </ScrollView>
     </MobileWorkspaceShell>
   );
@@ -206,5 +229,34 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     marginTop: designTokens.spacing.sm,
+  },
+  toolRow: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: designTokens.color.border.subtle,
+  },
+  toolRowPressed: {
+    opacity: 0.75,
+  },
+  toolContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  toolLabel: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: designTokens.color.ink.primary,
+    marginBottom: 2,
+  },
+  toolBody: {
+    fontSize: 13,
+    color: designTokens.color.ink.muted,
+  },
+  toolChevron: {
+    fontSize: 24,
+    lineHeight: 24,
+    color: designTokens.color.ink.muted,
+    fontWeight: "400",
   },
 });

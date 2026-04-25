@@ -41,11 +41,13 @@ export default function AdminActionItemsScreen() {
       eyebrow="Cola administrativa"
       title="Acciones pendientes"
       description="Prioriza lo urgente y abre cada caso en su ruta administrativa correcta."
-      actions={
-        <Pressable style={styles.button} onPress={() => router.push("/admin" as any)}>
-          <Text style={styles.buttonText}>Volver al panel</Text>
-        </Pressable>
-      }
+      systemActions={[
+        {
+          label: "Volver al panel",
+          onPress: () => router.push("/admin" as any),
+          variant: "secondary",
+        },
+      ]}
     >
       <View {...automationProps(adminTestIds.actionQueue.screen)} style={styles.screenRoot}>
         {error ? (

@@ -1,49 +1,80 @@
-import { ReactNode } from "react";
+import { ReactNode, useCallback, useRef, useState } from "react";
 import {
+  Animated,
   KeyboardAvoidingView,
+  LayoutChangeEvent,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+export type { NativeSyntheticEvent, NativeScrollEvent };
 import { SafeAreaView } from "react-native-safe-area-context";
-import { BlurView } from "expo-blur";
 import { router, type Href } from "expo-router";
 
+import AppFooter, { type FooterAction } from "@/src/components/navigation/AppFooter";
 import { mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
-import { navigationTestIds } from "@/src/testing/testIds";
 
 interface MobileWorkspaceShellProps {
   eyebrow: string;
   title: string;
   description: string;
-  actions?: ReactNode;
+  systemActions?: FooterAction[];
   primaryReturnPath?: Href;
   primaryReturnLabel?: string;
   onPrimaryReturn?: () => void;
+  workflowActions?: FooterAction[];
   children: ReactNode;
   footer?: ReactNode;
   testID?: string;
   nativeID?: string;
+  /** When true, hero is fixed and body is flex:1 — use with FlatList children for bounded list viewports */
+  flat?: boolean;
 }
 
 export default function MobileWorkspaceShell({
   eyebrow,
   title,
   description,
-  actions,
+  systemActions,
   primaryReturnPath,
   primaryReturnLabel,
   onPrimaryReturn,
+  workflowActions,
   children,
   footer,
   testID,
   nativeID,
+  flat = false,
 }: MobileWorkspaceShellProps) {
+  const [heroBottom, setHeroBottom] = useState(0);
+  const topBarOpacity = useRef(new Animated.Value(0)).current;
+  const lastVisible = useRef(false);
+
+  const onHeroLayout = useCallback((e: LayoutChangeEvent) => {
+    setHeroBottom(e.nativeEvent.layout.y + e.nativeEvent.layout.height);
+  }, []);
+
+  const onScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (heroBottom === 0) return;
+      const scrolled = e.nativeEvent.contentOffset.y >= heroBottom;
+      if (scrolled !== lastVisible.current) {
+        lastVisible.current = scrolled;
+        Animated.timing(topBarOpacity, {
+          toValue: scrolled ? 1 : 0,
+          duration: 200,
+          useNativeDriver: true,
+        }).start();
+      }
+    },
+    [heroBottom, topBarOpacity],
+  );
+
   const shouldRenderPrimaryReturn = Boolean(primaryReturnPath || onPrimaryReturn);
-  const shouldRenderActions = shouldRenderPrimaryReturn || Boolean(actions);
 
   const handlePrimaryReturn = () => {
     if (onPrimaryReturn) {
@@ -55,6 +86,20 @@ export default function MobileWorkspaceShell({
       router.replace(primaryReturnPath);
     }
   };
+
+  const renderedFooter =
+    footer ??
+    (
+      <AppFooter
+        primaryReturn={
+          shouldRenderPrimaryReturn
+            ? { label: primaryReturnLabel, onPress: handlePrimaryReturn }
+            : undefined
+        }
+        systemActions={systemActions}
+        workflowActions={workflowActions}
+      />
+    );
 
   return (
     <SafeAreaView
@@ -69,47 +114,42 @@ export default function MobileWorkspaceShell({
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           keyboardVerticalOffset={0}
         >
-          <BlurView intensity={80} tint="light" style={styles.topBar}>
-            <Text style={styles.topBarTitle}>{title}</Text>
-          </BlurView>
-
-          <ScrollView
-            style={styles.container}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.hero}>
-              <Text style={styles.eyebrow}>{eyebrow}</Text>
-              <Text style={styles.title}>{title}</Text>
-              <Text style={styles.description}>{description}</Text>
-              {shouldRenderActions ? (
-                <View style={styles.actions}>
-                  {shouldRenderPrimaryReturn ? (
-                    <Pressable
-                      onPress={handlePrimaryReturn}
-                      accessibilityRole="button"
-                      accessibilityLabel={primaryReturnLabel ?? "Volver"}
-                      testID={navigationTestIds.shell.primaryReturnButton}
-                      nativeID={navigationTestIds.shell.primaryReturnButton}
-                      style={({ pressed }) => [
-                        styles.primaryReturnButton,
-                        pressed && styles.primaryReturnButtonPressed,
-                      ]}
-                    >
-                      <Text style={styles.primaryReturnButtonText}>
-                        {primaryReturnLabel ?? "Volver"}
-                      </Text>
-                    </Pressable>
-                  ) : null}
-                  {actions}
+          {flat ? (
+            <>
+              <View style={styles.hero}>
+                {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
+                {title ? <Text style={styles.title}>{title}</Text> : null}
+                {description ? <Text style={styles.description}>{description}</Text> : null}
+              </View>
+              <View style={styles.flatBody}>{children}</View>
+            </>
+          ) : (
+            <>
+              <Animated.View style={[styles.topBarWrapper, { opacity: topBarOpacity }]} pointerEvents="none">
+                <View style={styles.topBar}>
+                  <Text style={styles.topBarTitle}>{title}</Text>
                 </View>
-              ) : null}
-            </View>
+              </Animated.View>
 
-            <View style={styles.body}>{children}</View>
-          </ScrollView>
+              <ScrollView
+                style={styles.container}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+                onScroll={onScroll}
+                scrollEventThrottle={16}
+              >
+                <View style={styles.hero} onLayout={onHeroLayout}>
+                  {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
+                  {title ? <Text style={styles.title}>{title}</Text> : null}
+                  {description ? <Text style={styles.description}>{description}</Text> : null}
+                </View>
+
+                <View style={styles.body}>{children}</View>
+              </ScrollView>
+            </>
+          )}
         </KeyboardAvoidingView>
-        {footer ?? null}
+        {renderedFooter}
       </View>
     </SafeAreaView>
   );
@@ -129,15 +169,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingBottom: 0,
   },
+  topBarWrapper: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    paddingHorizontal: 0,
+    paddingTop: 10,
+  },
   topBar: {
-    marginTop: 10,
-    marginBottom: 14,
     borderRadius: 22,
-    backgroundColor: "rgba(252, 254, 253, 0.92)",
+    backgroundColor: mobileTheme.colors.surface.primary,
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderWidth: 1,
     borderColor: mobileTheme.colors.border.subtle,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
   },
   topBarTitle: {
     color: mobileTheme.colors.ink.primary,
@@ -173,28 +225,11 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     color: mobileTheme.colors.ink.secondary,
   },
-  actions: {
-    marginTop: 20,
-    gap: 12,
-  },
-  primaryReturnButton: {
-    alignSelf: "flex-start",
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: mobileTheme.colors.border.strong,
-    backgroundColor: mobileTheme.colors.surface.secondary,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  primaryReturnButtonPressed: {
-    opacity: 0.85,
-  },
-  primaryReturnButtonText: {
-    color: mobileTheme.colors.ink.primary,
-    fontSize: 14,
-    fontWeight: "700",
-  },
   body: {
     flex: 1,
+  },
+  flatBody: {
+    flex: 1,
+    marginTop: 4,
   },
 });

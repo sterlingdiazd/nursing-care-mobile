@@ -40,6 +40,8 @@ export default function DiagnosticsScreen() {
       eyebrow="Diagnostico"
       title="Estado tecnico"
       description="Verifica backend y revisa los eventos recientes del cliente."
+      primaryReturnPath="/(tabs)/account"
+      primaryReturnLabel="Volver a cuenta"
     >
       <View style={styles.card}>
         <Text style={styles.sectionEyebrow}>Backend</Text>

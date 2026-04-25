@@ -4,7 +4,7 @@
 // @do-not-edit: false
 
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
@@ -16,6 +16,7 @@ import {
 } from "@/src/services/adminPortalService";
 import { FormInput } from "@/src/components/form";
 import { adminTestIds } from "@/src/testing/testIds";
+import { navigationTestIds } from "@/src/testing/testIds/navigationTestIds";
 import { designTokens } from "@/src/design-system/tokens";
 
 function formatTimestamp(value: string) {
@@ -83,38 +84,13 @@ export default function AdminCareRequestsScreen() {
     setViewFilter(view);
   };
 
-  return (
-    <MobileWorkspaceShell
-      eyebrow="Solicitudes de Cuidado"
-      title="Gestion de solicitudes"
-      description="Consulta, filtra y supervisa todas las solicitudes de servicio."
-      actions={(
-        <View style={styles.headerActions}>
-          <Pressable
-            testID={adminTestIds.careRequests.filterButton}
-            nativeID={adminTestIds.careRequests.filterButton}
-            style={styles.button}
-            onPress={() => setShowFilters(!showFilters)}
-          >
-            <Text style={styles.buttonText}>{showFilters ? "Ocultar filtros" : "Filtros"}</Text>
-          </Pressable>
-          <Pressable
-            testID={adminTestIds.careRequests.createButton}
-            nativeID={adminTestIds.careRequests.createButton}
-            style={styles.buttonPrimary}
-            onPress={() => router.push("/admin/care-requests/create" as any)}
-          >
-            <Text style={styles.buttonPrimaryText}>Crear</Text>
-          </Pressable>
-        </View>
-      )}
-    >
+  const listHeader = (
+    <>
       {!!error && <Text style={styles.error}>{error}</Text>}
-
       {showFilters && (
         <View style={styles.filtersCard}>
           <Text style={styles.filtersTitle}>Filtros de búsqueda</Text>
-          
+
           <Text style={styles.filterLabel}>Vista</Text>
           <View style={styles.filterChips}>
             {(["all", "pending", "approved", "rejected", "completed", "unassigned", "pending-approval", "rejected-today", "approved-incomplete", "overdue"] as AdminCareRequestView[]).map((view) => (
@@ -149,53 +125,70 @@ export default function AdminCareRequestsScreen() {
           />
         </View>
       )}
-
       {loading && <Text style={styles.loading}>Cargando...</Text>}
+    </>
+  );
 
-      {!loading && items.length === 0 && (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>No se encontraron solicitudes de cuidado.</Text>
-        </View>
-      )}
-
-      <ScrollView style={styles.list}>
-        {items.map((item) => (
+  return (
+    <MobileWorkspaceShell
+      eyebrow="Solicitudes de Cuidado"
+      title="Gestión de solicitudes"
+      description="Consulta, filtra y supervisa todas las solicitudes de servicio."
+      flat
+      primaryReturnPath="/(tabs)/admin"
+      primaryReturnLabel="Panel administrativo"
+      testID={navigationTestIds.adminCareRequests.listRoot}
+      nativeID={navigationTestIds.adminCareRequests.listRoot}
+      systemActions={[
+        {
+          label: showFilters ? "Ocultar filtros" : "Filtros",
+          onPress: () => setShowFilters(!showFilters),
+          variant: "secondary",
+          testID: adminTestIds.careRequests.filterButton,
+        },
+        {
+          label: "Crear",
+          onPress: () => router.push("/admin/care-requests/create" as any),
+          variant: "primary",
+          testID: adminTestIds.careRequests.createButton,
+        },
+      ]}
+    >
+      <FlatList
+        data={items}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item, index }) => (
           <Pressable
-            key={item.id}
             onPress={() => router.push(`/admin/care-requests/${item.id}` as any)}
             style={[styles.card, item.isOverdueOrStale && styles.cardOverdue]}
+            testID={index === 0 ? navigationTestIds.adminCareRequests.listItemFirst : undefined}
+            nativeID={index === 0 ? navigationTestIds.adminCareRequests.listItemFirst : undefined}
           >
             {item.isOverdueOrStale && (
               <View style={styles.overdueIndicator}>
-                <Text style={styles.overdueText}>⚠️ Vencida o estancada</Text>
+                <Text style={styles.overdueText}>Vencida o estancada</Text>
               </View>
             )}
-            
             <Text style={styles.cardTitle}>{item.clientDisplayName}</Text>
             <Text style={styles.cardMeta}>{item.clientEmail}</Text>
-            
             <View style={styles.cardRow}>
               <Text style={styles.cardLabel}>Estado:</Text>
               <Text style={styles.cardValue}>{statusLabel(item.status)}</Text>
             </View>
-            
             <View style={styles.cardRow}>
               <Text style={styles.cardLabel}>Tipo:</Text>
               <Text style={styles.cardValue}>{item.careRequestType}</Text>
             </View>
-            
             <View style={styles.cardRow}>
               <Text style={styles.cardLabel}>Total:</Text>
               <Text style={styles.cardValue}>{formatCurrency(item.total)}</Text>
             </View>
-            
             {item.careRequestDate && (
               <View style={styles.cardRow}>
                 <Text style={styles.cardLabel}>Fecha programada:</Text>
                 <Text style={styles.cardValue}>{formatTimestamp(item.careRequestDate)}</Text>
               </View>
             )}
-            
             {item.assignedNurseDisplayName ? (
               <View style={styles.cardRow}>
                 <Text style={styles.cardLabel}>Enfermera asignada:</Text>
@@ -204,21 +197,29 @@ export default function AdminCareRequestsScreen() {
             ) : (
               <Text style={styles.unassigned}>Sin enfermera asignada</Text>
             )}
-            
             <Text style={styles.cardTimestamp}>Creada: {formatTimestamp(item.createdAtUtc)}</Text>
           </Pressable>
-        ))}
-      </ScrollView>
+        )}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContent}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        ListHeaderComponent={listHeader}
+        ListEmptyComponent={
+          !loading ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No se encontraron solicitudes de cuidado.</Text>
+            </View>
+          ) : null
+        }
+      />
     </MobileWorkspaceShell>
   );
 }
 
 const styles = StyleSheet.create({
-  headerActions: { flexDirection: "row", gap: 8 },
-  button: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: designTokens.color.border.strong },
-  buttonText: { color: designTokens.color.ink.accent, fontWeight: "700", fontSize: 14 },
-  buttonPrimary: { backgroundColor: designTokens.color.ink.accent, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10 },
-  buttonPrimaryText: { color: designTokens.color.ink.inverse, fontWeight: "700", fontSize: 14 },
+  listContent: { paddingBottom: 16 },
   error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: 12, borderRadius: 12, marginBottom: 12 },
   loading: { color: designTokens.color.ink.muted, fontSize: 14, textAlign: "center", padding: 20 },
   filtersCard: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, marginBottom: 12 },
@@ -232,7 +233,6 @@ const styles = StyleSheet.create({
   input: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.strong, borderRadius: 14, padding: 14, color: designTokens.color.ink.primary },
   emptyState: { padding: 40, alignItems: "center" },
   emptyStateText: { color: designTokens.color.ink.muted, fontSize: 16, textAlign: "center" },
-  list: { gap: 12 },
   card: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, marginBottom: 12, shadowColor: designTokens.color.ink.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 2 },
   cardOverdue: { borderColor: designTokens.color.status.warningText, borderWidth: 1.5 },
   overdueIndicator: { backgroundColor: designTokens.color.surface.warning, borderRadius: 10, padding: 8, marginBottom: 8, alignSelf: "flex-start" },

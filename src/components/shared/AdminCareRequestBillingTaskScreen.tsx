@@ -3,8 +3,7 @@ import { Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-n
 import { router, useLocalSearchParams } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
-import WorkflowActionBar from "@/src/components/shared/WorkflowActionBar";
-import type { WorkflowAction } from "@/src/components/shared/WorkflowActionBar";
+import type { FooterAction } from "@/src/components/navigation/AppFooter";
 import { useAuth } from "@/src/context/AuthContext";
 import {
   getAdminCareRequestDetail,
@@ -163,7 +162,7 @@ export default function AdminCareRequestBillingTaskScreen({
     }
   };
 
-  const actionBarActions: WorkflowAction[] = [
+  const actionBarActions: FooterAction[] = [
     {
       label: "Volver al detalle",
       onPress: handleBackToDetail,
@@ -187,9 +186,7 @@ export default function AdminCareRequestBillingTaskScreen({
       eyebrow={eyebrow}
       title={title}
       description={description}
-      actions={(
-        <WorkflowActionBar actions={actionBarActions} />
-      )}
+      systemActions={actionBarActions}
     >
       <View {...automationProps(screenTestID)} style={styles.pageRoot}>
         {!!error && (

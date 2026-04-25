@@ -108,30 +108,20 @@ export default function AdminAuditLogsScreen() {
       description="Historial de eventos sensibles para seguimiento y cumplimiento."
       testID="admin-audit-logs-screen"
       nativeID="admin-audit-logs-screen"
-      actions={(
-        <View style={styles.headerActions}>
-          <Pressable
-            style={styles.button}
-            onPress={() => setShowFilters(!showFilters)}
-            testID="admin-audit-logs-filter-toggle"
-            nativeID="admin-audit-logs-filter-toggle"
-            accessibilityRole="button"
-            accessibilityLabel={showFilters ? "Ocultar filtros" : "Mostrar filtros"}
-          >
-            <Text style={styles.buttonText}>{showFilters ? "Ocultar filtros" : "Filtros"}</Text>
-          </Pressable>
-          <Pressable
-            style={styles.button}
-            onPress={() => void load()}
-            testID="admin-audit-logs-refresh-btn"
-            nativeID="admin-audit-logs-refresh-btn"
-            accessibilityRole="button"
-            accessibilityLabel="Actualizar registros de auditoría"
-          >
-            <Text style={styles.buttonText}>Actualizar</Text>
-          </Pressable>
-        </View>
-      )}
+      systemActions={[
+        {
+          label: showFilters ? "Ocultar filtros" : "Filtros",
+          onPress: () => setShowFilters(!showFilters),
+          variant: "secondary",
+          testID: "admin-audit-logs-filter-toggle",
+        },
+        {
+          label: "Actualizar",
+          onPress: () => void load(),
+          variant: "secondary",
+          testID: "admin-audit-logs-refresh-btn",
+        },
+      ]}
     >
       {!!error && (
         <Text

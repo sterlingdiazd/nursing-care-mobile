@@ -47,6 +47,8 @@ export function FormButton({
     switch (variant) {
       case "secondary":
         return styles.secondaryText;
+      case "danger":
+        return styles.dangerText;
       default:
         return styles.primaryText;
     }
@@ -97,6 +99,10 @@ const styles = StyleSheet.create({
   secondaryText: {
     ...designTokens.typography.label,
     color: designTokens.color.ink.accent,
+  },
+  dangerText: {
+    ...designTokens.typography.label,
+    color: designTokens.color.status.dangerText,
   },
   dangerButton: {
     backgroundColor: designTokens.color.surface.danger,

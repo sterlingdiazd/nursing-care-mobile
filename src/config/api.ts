@@ -54,15 +54,15 @@ const getApiBaseUrl = (): string => {
     }
   }
 
-  // Construct URL using detected IP (convert to sslip.io domain for HTTPS)
+  // Construct URL using detected IP
+  // Use EXPO_PUBLIC_API_PROTOCOL to control http vs https (defaults to http for local dev)
+  const protocol = process.env.EXPO_PUBLIC_API_PROTOCOL || "http";
   if (hostIp && hostIp !== "localhost" && hostIp !== "127.0.0.1") {
-    const dynamicDomain = hostIp.replace(/\./g, "-") + ".sslip.io";
-    return `https://${dynamicDomain}:${apiPort}`;
+    return `${protocol}://${hostIp}:${apiPort}`;
   }
 
   // Priority 4: Fallback with reasonable defaults
-  // This will be used if IP detection fails completely
-  return `https://10-0-0-34.sslip.io:${apiPort}`;
+  return `http://localhost:${apiPort}`;
 };
 
 export const API_BASE_URL = getApiBaseUrl();

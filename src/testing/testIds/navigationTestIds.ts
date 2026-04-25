@@ -23,4 +23,9 @@ export const navigationTestIds = {
     adminPayrollRoot: "admin-payroll-root",
     adminHomeRoot: "admin-home-root",
   },
+  adminCareRequests: {
+    listRoot: "admin-care-requests-list-root",
+    listItemFirst: "admin-care-requests-list-item-0",
+    detailRoot: "admin-care-request-detail-root",
+  },
 } as const;

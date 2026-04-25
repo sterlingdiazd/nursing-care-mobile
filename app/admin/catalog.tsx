@@ -440,42 +440,26 @@ export default function AdminCatalogScreen() {
       description="Gestiona opciones y factores desde una sola vista."
       testID="admin-catalog-screen"
       nativeID="admin-catalog-screen"
-      actions={(
-        <View style={styles.headerActions}>
-          <Pressable
-            style={[styles.button, includeInactive && styles.buttonActive]}
-            onPress={() => setIncludeInactive(!includeInactive)}
-            testID="admin-catalog-toggle-inactive"
-            nativeID="admin-catalog-toggle-inactive"
-            accessibilityRole="button"
-            accessibilityLabel={includeInactive ? "Ocultar inactivos" : "Mostrar inactivos"}
-          >
-            <Text style={[styles.buttonText, includeInactive && styles.buttonTextActive]}>
-              {includeInactive ? "Ocultar inactivos" : "Mostrar inactivos"}
-            </Text>
-          </Pressable>
-          <Pressable
-            style={styles.button}
-            onPress={() => void loadData()}
-            testID="admin-catalog-refresh-btn"
-            nativeID="admin-catalog-refresh-btn"
-            accessibilityRole="button"
-            accessibilityLabel="Actualizar catálogo"
-          >
-            <Text style={styles.buttonText}>Actualizar</Text>
-          </Pressable>
-          <Pressable
-            style={styles.buttonPrimary}
-            onPress={() => handleCreate(activeTab)}
-            testID="admin-catalog-create-btn"
-            nativeID="admin-catalog-create-btn"
-            accessibilityRole="button"
-            accessibilityLabel="Crear nuevo elemento"
-          >
-            <Text style={styles.buttonPrimaryText}>Nuevo</Text>
-          </Pressable>
-        </View>
-      )}
+      systemActions={[
+        {
+          label: includeInactive ? "Ocultar inactivos" : "Mostrar inactivos",
+          onPress: () => setIncludeInactive(!includeInactive),
+          variant: "secondary",
+          testID: "admin-catalog-toggle-inactive",
+        },
+        {
+          label: "Actualizar",
+          onPress: () => void loadData(),
+          variant: "secondary",
+          testID: "admin-catalog-refresh-btn",
+        },
+        {
+          label: "Nuevo",
+          onPress: () => handleCreate(activeTab),
+          variant: "primary",
+          testID: "admin-catalog-create-btn",
+        },
+      ]}
     >
       {!!error && (
         <Text

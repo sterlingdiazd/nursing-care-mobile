@@ -31,6 +31,8 @@ export default function ToolsScreen() {
       eyebrow="Herramientas"
       title="Utilidades avanzadas"
       description="Opciones de soporte y desarrollo fuera del flujo principal."
+      primaryReturnPath="/(tabs)/account"
+      primaryReturnLabel="Volver a cuenta"
     >
       <View style={styles.card}>
         <Text style={styles.sectionEyebrow}>Token manual</Text>

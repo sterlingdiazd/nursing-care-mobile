@@ -62,24 +62,20 @@ export default function AdminDashboardScreen() {
       eyebrow="Administracion"
       title="Panel administrativo"
       description="Supervisa lo urgente primero y deja el resto como exploracion secundaria."
-      actions={
-        <>
-          <Pressable
-            {...automationProps(adminTestIds.dashboard.primaryAction)}
-            style={styles.primaryButton}
-            onPress={() => router.push("/admin/action-items" as any)}
-          >
-            <Text style={styles.primaryButtonText}>Ver acciones</Text>
-          </Pressable>
-          <Pressable
-            {...automationProps(adminTestIds.dashboard.requestsButton)}
-            style={styles.secondaryButton}
-            onPress={() => router.push("/admin/care-requests" as any)}
-          >
-            <Text style={styles.secondaryButtonText}>Abrir solicitudes</Text>
-          </Pressable>
-        </>
-      }
+      systemActions={[
+        {
+          label: "Abrir solicitudes",
+          onPress: () => router.push("/admin/care-requests" as any),
+          variant: "secondary",
+          testID: adminTestIds.dashboard.requestsButton,
+        },
+        {
+          label: "Ver acciones",
+          onPress: () => router.push("/admin/action-items" as any),
+          variant: "primary",
+          testID: adminTestIds.dashboard.primaryAction,
+        },
+      ]}
     >
       <View {...automationProps(adminTestIds.dashboard.screen)} style={styles.screenRoot}>
         {error ? (

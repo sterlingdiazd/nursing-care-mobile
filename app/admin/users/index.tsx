@@ -4,7 +4,7 @@
 // @do-not-edit: false
 
 import { useEffect, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
@@ -111,28 +111,8 @@ export default function AdminUsersScreen() {
     return null;
   }
 
-  return (
-    <MobileWorkspaceShell
-      eyebrow="Usuarios"
-      title="Gestion de usuarios"
-      description="Prioriza cuentas con riesgo operativo y deja los filtros como apoyo progresivo."
-      testID={adminTestIds.users.listScreen}
-      nativeID={adminTestIds.users.listScreen}
-      actions={(
-        <View style={styles.headerActions}>
-          <Pressable
-            style={styles.button}
-            onPress={() => setShowFilters(!showFilters)}
-            testID={adminTestIds.users.primaryAction}
-            nativeID={adminTestIds.users.primaryAction}
-            accessibilityRole="button"
-            accessibilityLabel={showFilters ? "Ocultar filtros" : "Mostrar filtros"}
-          >
-            <Text style={styles.buttonText}>{showFilters ? "Ocultar filtros" : "Filtros"}</Text>
-          </Pressable>
-        </View>
-      )}
-    >
+  const listHeader = (
+    <>
       <View style={styles.summaryCard}>
         <Text
           style={styles.summaryChip}
@@ -147,7 +127,6 @@ export default function AdminUsersScreen() {
           Usa los filtros solo cuando necesites acotar la revisión; la lista debe dejar visibles primero los estados sensibles.
         </Text>
       </View>
-
       {!!error && (
         <Text
           style={styles.error}
@@ -157,11 +136,9 @@ export default function AdminUsersScreen() {
           {error}
         </Text>
       )}
-
       {showFilters && (
         <View style={styles.filtersCard}>
           <Text style={styles.filtersTitle}>Filtros de búsqueda</Text>
-
           <Text style={styles.filterLabel}>Rol</Text>
           <View style={styles.filterChips}>
             {(["all", "ADMIN", "CLIENT", "NURSE"] as const).map((role) => {
@@ -182,7 +159,6 @@ export default function AdminUsersScreen() {
               );
             })}
           </View>
-
           <Text style={styles.filterLabel}>Tipo de perfil</Text>
           <View style={styles.filterChips}>
             {(["all", "ADMIN", "CLIENT", "NURSE"] as const).map((pt) => {
@@ -203,7 +179,6 @@ export default function AdminUsersScreen() {
               );
             })}
           </View>
-
           <Text style={styles.filterLabel}>Estado de cuenta</Text>
           <View style={styles.filterChips}>
             {(["all", "Active", "Inactive", "ProfileIncomplete", "AdminReview", "ManualIntervention"] as const).map((status) => {
@@ -224,7 +199,6 @@ export default function AdminUsersScreen() {
               );
             })}
           </View>
-
           <Text style={styles.filterLabel}>Buscar</Text>
           <TextInput
             style={styles.input}
@@ -236,24 +210,34 @@ export default function AdminUsersScreen() {
           />
         </View>
       )}
-
       {loading && <Text style={styles.loading}>Cargando...</Text>}
+    </>
+  );
 
-      {!loading && items.length === 0 && (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>No se encontraron usuarios.</Text>
-        </View>
-      )}
-
-      <ScrollView
-        style={styles.list}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
-      >
-        {items.map((item) => {
+  return (
+    <MobileWorkspaceShell
+      eyebrow="Usuarios"
+      title="Gestión de usuarios"
+      description="Prioriza cuentas con riesgo operativo y deja los filtros como apoyo progresivo."
+      flat
+      testID={adminTestIds.users.listScreen}
+      nativeID={adminTestIds.users.listScreen}
+      systemActions={[
+        {
+          label: showFilters ? "Ocultar filtros" : "Filtros",
+          onPress: () => setShowFilters(!showFilters),
+          variant: "secondary",
+          testID: adminTestIds.users.primaryAction,
+        },
+      ]}
+    >
+      <FlatList
+        data={items}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => {
           const badgeColors = statusBadgeStyle(item.accountStatus);
           return (
             <Pressable
-              key={item.id}
               onPress={() => router.push(`/admin/users/${item.id}` as never)}
               style={styles.card}
               testID={`admin-user-card-${item.id}`}
@@ -269,31 +253,26 @@ export default function AdminUsersScreen() {
                   </Text>
                 </View>
               </View>
-
               <Text style={styles.cardMeta}>{item.email}</Text>
               <Text style={styles.cardHint}>
                 {item.accountStatus === "Active"
                   ? "Cuenta lista para gestión normal."
                   : "Revisar estado, roles o activación antes de continuar."}
               </Text>
-
               <View style={styles.cardRow}>
                 <Text style={styles.cardLabel}>Roles:</Text>
                 <Text style={styles.cardValue}>
                   {item.roleNames.map(translateRole).join(", ") || "Sin roles"}
                 </Text>
               </View>
-
               <View style={styles.cardRow}>
                 <Text style={styles.cardLabel}>Perfil:</Text>
                 <Text style={styles.cardValue}>{translateProfileType(item.profileType)}</Text>
               </View>
-
               <View style={styles.cardRow}>
                 <Text style={styles.cardLabel}>Activo:</Text>
                 <Text style={styles.cardValue}>{item.isActive ? "Sí" : "No"}</Text>
               </View>
-
               {item.identificationNumber && (
                 <View style={styles.cardRow}>
                   <Text style={styles.cardLabel}>Cédula:</Text>
@@ -302,16 +281,27 @@ export default function AdminUsersScreen() {
               )}
             </Pressable>
           );
-        })}
-      </ScrollView>
+        }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContent}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        ListHeaderComponent={listHeader}
+        ListEmptyComponent={
+          !loading ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No se encontraron usuarios.</Text>
+            </View>
+          ) : null
+        }
+      />
     </MobileWorkspaceShell>
   );
 }
 
 const styles = StyleSheet.create({
-  headerActions: { flexDirection: "row", gap: 8 },
-  button: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: designTokens.color.border.strong },
-  buttonText: { color: designTokens.color.ink.accent, fontWeight: "700", fontSize: 14 },
+  listContent: { paddingBottom: 16 },
   summaryCard: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, marginBottom: 12 },
   summaryChip: { alignSelf: "flex-start", backgroundColor: designTokens.color.ink.primary, color: designTokens.color.ink.inverse, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 13, fontWeight: "800", marginBottom: 8 },
   summaryText: { color: designTokens.color.ink.secondary, fontSize: 13, lineHeight: 18 },
@@ -328,7 +318,6 @@ const styles = StyleSheet.create({
   input: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.strong, borderRadius: 14, padding: 14, color: designTokens.color.ink.primary },
   emptyState: { padding: 40, alignItems: "center" },
   emptyStateText: { color: designTokens.color.ink.secondary, fontSize: 16, textAlign: "center" },
-  list: { gap: 12 },
   card: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, marginBottom: 12, shadowColor: designTokens.color.ink.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 2 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
   cardTitle: { color: designTokens.color.ink.primary, fontWeight: "800", fontSize: 18, flex: 1 },

@@ -21,7 +21,12 @@ function getStatusColors(status: CareRequestDto["status"]) {
     case "Rejected":
       return { bg: designTokens.color.surface.danger, fg: designTokens.color.status.dangerText };
     case "Completed":
+    case "Invoiced":
+    case "Paid":
       return { bg: designTokens.color.status.infoBg, fg: designTokens.color.ink.accentStrong };
+    case "Cancelled":
+    case "Voided":
+      return { bg: designTokens.color.surface.secondary, fg: designTokens.color.ink.secondary };
     default:
       return { bg: designTokens.color.surface.warning, fg: designTokens.color.status.warningText };
   }
@@ -32,6 +37,10 @@ function getStatusLabel(status: CareRequestDto["status"]) {
     case "Approved": return "Aprobada";
     case "Rejected": return "Rechazada";
     case "Completed": return "Completada";
+    case "Cancelled": return "Cancelada";
+    case "Invoiced": return "Facturada";
+    case "Paid": return "Pagada";
+    case "Voided": return "Anulada";
     default: return "Pendiente";
   }
 }
@@ -83,7 +92,7 @@ export default function CareRequestsScreen() {
     [isAuthenticated, canOpenCareRequests],
   );
 
-  const { data, isLoading, isRefreshing, hasMore, loadMore, refresh, error } = usePaginatedList(fetchFn);
+  const { data, isLoading, refresh, error } = usePaginatedList(fetchFn);
 
   useEffect(() => {
     if (!isReady) return;
@@ -102,29 +111,23 @@ export default function CareRequestsScreen() {
       eyebrow="Cola de solicitudes"
       title="Solicitudes"
       description="Revisa el estado de cada servicio y abre el detalle cuando lo necesites."
-      actions={
-        <>
-          <Pressable
-            onPress={refresh}
-            style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
-            accessibilityRole="button"
-            accessibilityLabel="Actualizar cola de solicitudes"
-          >
-            <Text style={styles.secondaryButtonText}>Actualizar cola</Text>
-          </Pressable>
-
-          {(roles.includes("CLIENT") || roles.includes("ADMIN")) && (
-            <Pressable
-              onPress={() => router.push("/(tabs)/care-requests/create" as never)}
-              style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}
-              accessibilityRole="button"
-              accessibilityLabel="Crear nueva solicitud de cuidado"
-            >
-              <Text style={styles.primaryButtonText}>Crear nueva solicitud</Text>
-            </Pressable>
-          )}
-        </>
-      }
+      flat
+      systemActions={[
+        {
+          label: "Actualizar cola",
+          onPress: refresh,
+          variant: "secondary",
+        },
+        ...((roles.includes("CLIENT") || roles.includes("ADMIN"))
+          ? ([
+              {
+                label: "Crear nueva solicitud",
+                onPress: () => router.push("/(tabs)/care-requests/create" as never),
+                variant: "primary",
+              },
+            ] as const)
+          : []),
+      ]}
     >
       <FlatList
         testID={navigationTestIds.screens.careRequestsListRoot}
@@ -132,55 +135,37 @@ export default function CareRequestsScreen() {
         data={data}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <CareRequestCard item={item} />}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.3}
-        refreshing={isRefreshing}
-        onRefresh={refresh}
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        ListHeaderComponent={
+          error ? (
+            <View style={styles.errorCard}>
+              <Text style={styles.errorTitle}>No fue posible cargar las solicitudes</Text>
+              <Text style={styles.errorBody}>{error}</Text>
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
           isLoading ? (
             <View style={styles.loadingState}>
               <ActivityIndicator color={designTokens.color.ink.accentStrong} accessibilityLabel="Cargando..." />
             </View>
-          ) : error ? (
-            <View style={styles.errorCard}>
-              <Text style={styles.errorTitle}>No fue posible cargar las solicitudes</Text>
-              <Text style={styles.errorBody}>{error}</Text>
-            </View>
-          ) : (
+          ) : !error ? (
             <View style={styles.loadingState}>
               <Text style={styles.emptyText}>No hay solicitudes disponibles.</Text>
             </View>
-          )
+          ) : null
         }
-        ListFooterComponent={hasMore ? <ActivityIndicator color={designTokens.color.ink.accentStrong} /> : null}
       />
     </MobileWorkspaceShell>
   );
 }
 
 const styles = StyleSheet.create({
-  listContent: { paddingBottom: 24 },
-  separator: { height: 14 },
-  primaryButton: {
-    backgroundColor: designTokens.color.ink.accent,
-    borderRadius: 16,
-    paddingVertical: 15,
-    paddingHorizontal: 18,
-    alignItems: "center",
-  },
-  primaryButtonText: { color: designTokens.color.ink.inverse, fontWeight: "800", fontSize: 16 },
-  secondaryButton: {
-    borderRadius: 16,
-    paddingVertical: 15,
-    paddingHorizontal: 18,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: designTokens.color.border.subtle,
-    backgroundColor: designTokens.color.ink.inverse,
-  },
-  secondaryButtonText: { color: designTokens.color.ink.accent, fontWeight: "700", fontSize: 15 },
+  listContent: { gap: 14, paddingBottom: 16 },
   buttonPressed: { opacity: 0.88 },
   errorCard: {
     backgroundColor: designTokens.color.surface.danger,
