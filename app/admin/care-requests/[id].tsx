@@ -65,7 +65,11 @@ function formatCurrencyOrNA(value: number | null | undefined) {
 
 export default function AdminCareRequestDetailScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, billingAction, billingRefresh } = useLocalSearchParams<{
+    id: string;
+    billingAction?: string;
+    billingRefresh?: string;
+  }>();
   const [detail, setDetail] = useState<AdminCareRequestDetailDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -74,20 +78,46 @@ export default function AdminCareRequestDetailScreen() {
   const [pricingError, setPricingError] = useState<string | null>(null);
   const [pricingResult, setPricingResult] = useState<PricingVerificationResult | null>(null);
   const hasAdminAccess = roles.includes("ADMIN");
+  const expectedBillingReturnStatus =
+    billingAction === "invoice"
+      ? "Invoiced"
+      : billingAction === "pay"
+      ? "Paid"
+      : billingAction === "void"
+      ? "Voided"
+      : null;
 
   const load = useCallback(async () => {
-    if (!id) return;
+    if (!id) return null;
     try {
       setError(null);
       setLoading(true);
       const response = await getAdminCareRequestDetail(id);
       setDetail(response);
+      return response;
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : "No fue posible cargar el detalle de la solicitud.");
+      return null;
     } finally {
       setLoading(false);
     }
   }, [id]);
+
+  const loadAfterBillingReturn = useCallback(async () => {
+    if (!expectedBillingReturnStatus) {
+      void load();
+      return;
+    }
+
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const response = await load();
+      if (response?.status === expectedBillingReturnStatus) {
+        return;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 350));
+    }
+  }, [expectedBillingReturnStatus, load]);
 
   useEffect(() => {
     if (!isReady) return;
@@ -105,6 +135,22 @@ export default function AdminCareRequestDetailScreen() {
       void load();
     }, [hasAdminAccess, isAuthenticated, isReady, load, requiresProfileCompletion]),
   );
+
+  useEffect(() => {
+    if (!billingRefresh) return;
+    if (!isReady || !isAuthenticated || requiresProfileCompletion || !hasAdminAccess) {
+      return;
+    }
+
+    void loadAfterBillingReturn();
+  }, [
+    billingRefresh,
+    hasAdminAccess,
+    isAuthenticated,
+    isReady,
+    loadAfterBillingReturn,
+    requiresProfileCompletion,
+  ]);
 
   const handleVerifyPricing = async () => {
     if (!id) return;
@@ -160,7 +206,7 @@ export default function AdminCareRequestDetailScreen() {
         {...automationProps(adminTestIds.careRequests.detail.screen)}
         style={styles.pageRoot}
       >
-        {!loading && detail && (
+        {!loading && detail && (!expectedBillingReturnStatus || detail.status === expectedBillingReturnStatus) && (
           <Text
             testID={adminTestIds.careRequests.detail.loadedMarker}
             nativeID={adminTestIds.careRequests.detail.loadedMarker}

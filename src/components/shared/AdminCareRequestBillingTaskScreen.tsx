@@ -135,7 +135,18 @@ export default function AdminCareRequestBillingTaskScreen({
 
   const handleBackToDetail = () => {
     if (!id) return;
-    router.replace(`/admin/care-requests/${id}` as any);
+    const refreshParams = new URLSearchParams({
+      billingAction: action,
+      billingRefresh: Date.now().toString(),
+    });
+    const detailRoute = `/admin/care-requests/${id}?${refreshParams.toString()}`;
+
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      window.location.assign(detailRoute);
+      return;
+    }
+
+    router.replace(detailRoute as any);
   };
 
   const handleSubmit = async () => {
