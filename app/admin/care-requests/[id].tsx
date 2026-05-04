@@ -146,7 +146,7 @@ export default function AdminCareRequestDetailScreen() {
       )}
     >
       <View
-        {...automationProps("admin-care-detail-page")}
+        {...automationProps(adminTestIds.careRequests.detail.screen)}
         style={styles.pageRoot}
       >
         {!loading && detail && (
