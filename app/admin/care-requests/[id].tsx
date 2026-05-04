@@ -3,8 +3,9 @@
 // @diffs: DIFF-ADMIN-CR-002
 // @do-not-edit: false
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { router, useLocalSearchParams } from "expo-router";
 import { CollapsibleSection } from "@/src/components/shared/CollapsibleSection";
 
@@ -72,8 +73,9 @@ export default function AdminCareRequestDetailScreen() {
   const [isPricingLoading, setIsPricingLoading] = useState(false);
   const [pricingError, setPricingError] = useState<string | null>(null);
   const [pricingResult, setPricingResult] = useState<PricingVerificationResult | null>(null);
+  const hasAdminAccess = roles.includes("ADMIN");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!id) return;
     try {
       setError(null);
@@ -85,15 +87,24 @@ export default function AdminCareRequestDetailScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     if (!isReady) return;
     if (!isAuthenticated) return void router.replace("/login" as any);
     if (requiresProfileCompletion) return void router.replace("/register" as any);
-    if (!roles.includes("ADMIN")) return void router.replace("/" as any);
-    void load();
-  }, [id, isAuthenticated, isReady, requiresProfileCompletion, roles]);
+    if (!hasAdminAccess) return void router.replace("/" as any);
+  }, [hasAdminAccess, isAuthenticated, isReady, requiresProfileCompletion]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!isReady || !isAuthenticated || requiresProfileCompletion || !hasAdminAccess) {
+        return;
+      }
+
+      void load();
+    }, [hasAdminAccess, isAuthenticated, isReady, load, requiresProfileCompletion]),
+  );
 
   const handleVerifyPricing = async () => {
     if (!id) return;
@@ -119,7 +130,7 @@ export default function AdminCareRequestDetailScreen() {
     return getBillingTaskActions(detail.id, detail.status);
   }, [detail]);
 
-  if (!isReady || !isAuthenticated || !roles.includes("ADMIN")) {
+  if (!isReady || !isAuthenticated || !hasAdminAccess) {
     return null;
   }
 
