@@ -201,10 +201,15 @@ vi.mock('@/src/services/payrollService', () => ({
 }));
 
 // Mock MobileWorkspaceShell
+const _mockRouter = {
+  push: vi.fn(),
+  back: vi.fn(),
+  canGoBack: vi.fn(() => false),
+  replace: vi.fn(),
+};
+
 vi.mock('@/components/app/MobileWorkspaceShell', () => ({
   default: vi.fn(({ children, actions, footer, testID, nativeID, primaryReturnLabel, onPrimaryReturn, primaryReturnPath }) => {
-    const React = require('react');
-    const { router } = require('expo-router');
     const returnButton =
       primaryReturnLabel || primaryReturnPath || onPrimaryReturn
         ? React.createElement(
@@ -212,7 +217,7 @@ vi.mock('@/components/app/MobileWorkspaceShell', () => ({
             {
               testID: 'nav-shell-primary-return-button',
               nativeID: 'nav-shell-primary-return-button',
-              onPress: onPrimaryReturn ?? (() => router.replace(primaryReturnPath)),
+              onPress: onPrimaryReturn ?? (() => _mockRouter.replace(primaryReturnPath)),
             },
             primaryReturnLabel ?? 'Volver',
           )

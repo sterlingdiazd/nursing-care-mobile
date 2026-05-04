@@ -14,6 +14,7 @@ export default defineConfig({
         find: /^react-native\/.+$/,
         replacement: path.resolve(__dirname, "test/mocks/react-native-subpath.ts"),
       },
+
     ],
     extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
   },
