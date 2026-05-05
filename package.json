@@ -17,7 +17,7 @@
     "@react-native-community/datetimepicker": "8.4.4",
     "@react-native-picker/picker": "^2.11.4",
     "@react-navigation/native": "^7.1.8",
-    "axios": "^1.13.6",
+    "axios": "^1.16.0",
     "expo": "~54.0.32",
     "expo-blur": "~15.0.8",
     "expo-constants": "~18.0.13",
@@ -52,8 +52,9 @@
   },
   "private": true,
   "overrides": {
-    "picomatch": "^4.0.2",
-    "tar": ">=7.5.11",
-    "undici": ">=6.24.0"
+    "picomatch": "^4.0.4",
+    "tar": "^7.5.13",
+    "undici": "^6.21.1",
+    "axios": "^1.16.0"
   }
 }
