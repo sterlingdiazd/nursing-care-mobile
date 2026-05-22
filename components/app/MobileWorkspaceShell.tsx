@@ -9,41 +9,60 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { BlurView } from "expo-blur";
 import { router, type Href } from "expo-router";
 
-import { mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
+import AppFooter, { type FooterAction } from "@/src/components/navigation/AppFooter";
+import { mobileTheme } from "@/src/design-system/mobileStyles";
+import { designTokens } from "@/src/design-system/tokens";
 import { navigationTestIds } from "@/src/testing/testIds";
+import { goBackOrReplace } from "@/src/utils/navigationEscapes";
 
 interface MobileWorkspaceShellProps {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
-  description: string;
+  description?: string;
+  headerAccessory?: ReactNode;
+  /** Free-form action node (legacy callers). When provided, renders inside the action bar container with restored 502215f styling. */
   actions?: ReactNode;
+  /** Structured right-aligned actions; routes into AppFooter's 3-zone layout. */
+  systemActions?: FooterAction[];
+  /** Structured horizontally-scrolling middle actions; routes into AppFooter. */
+  workflowActions?: FooterAction[];
   primaryReturnPath?: Href;
   primaryReturnLabel?: string;
   onPrimaryReturn?: () => void;
+  /** Where the back action renders. Default "header" (small chevron). "footer" puts it in the AppFooter left zone. */
+  primaryReturnPlacement?: "header" | "footer";
   children: ReactNode;
   footer?: ReactNode;
   testID?: string;
   nativeID?: string;
+  /** When true, skip the internal vertical ScrollView so children (e.g. FlatList) own scrolling. */
+  disableScroll?: boolean;
 }
 
 export default function MobileWorkspaceShell({
   eyebrow,
   title,
   description,
+  headerAccessory,
   actions,
+  systemActions,
+  workflowActions,
   primaryReturnPath,
   primaryReturnLabel,
   onPrimaryReturn,
+  primaryReturnPlacement = "header",
   children,
   footer,
   testID,
   nativeID,
+  disableScroll = false,
 }: MobileWorkspaceShellProps) {
   const shouldRenderPrimaryReturn = Boolean(primaryReturnPath || onPrimaryReturn);
   const shouldRenderActions = shouldRenderPrimaryReturn || Boolean(actions);
+  const headerBack = shouldRenderPrimaryReturn && primaryReturnPlacement === "header";
+  const footerBack = shouldRenderPrimaryReturn && primaryReturnPlacement === "footer";
 
   const handlePrimaryReturn = () => {
     if (onPrimaryReturn) {
@@ -52,7 +71,10 @@ export default function MobileWorkspaceShell({
     }
 
     if (primaryReturnPath) {
-      router.replace(primaryReturnPath);
+      // Always honor navigation history first. The provided path is only a
+      // fallback for when the screen was opened directly (no back stack),
+      // never a hard override of where the user actually came from.
+      goBackOrReplace(router, primaryReturnPath);
     }
   };
 
@@ -69,45 +91,64 @@ export default function MobileWorkspaceShell({
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           keyboardVerticalOffset={0}
         >
-          <BlurView intensity={80} tint="light" style={styles.topBar}>
-            <Text style={styles.topBarTitle}>{title}</Text>
-          </BlurView>
-
-          <ScrollView
-            style={styles.container}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.hero}>
-              <Text style={styles.eyebrow}>{eyebrow}</Text>
-              <Text style={styles.title}>{title}</Text>
-              <Text style={styles.description}>{description}</Text>
-              {shouldRenderActions ? (
-                <View style={styles.actions}>
-                  {shouldRenderPrimaryReturn ? (
-                    <Pressable
-                      onPress={handlePrimaryReturn}
-                      accessibilityRole="button"
-                      accessibilityLabel={primaryReturnLabel ?? "Volver"}
-                      testID={navigationTestIds.shell.primaryReturnButton}
-                      nativeID={navigationTestIds.shell.primaryReturnButton}
-                      style={({ pressed }) => [
-                        styles.primaryReturnButton,
-                        pressed && styles.primaryReturnButtonPressed,
-                      ]}
-                    >
-                      <Text style={styles.primaryReturnButtonText}>
-                        {primaryReturnLabel ?? "Volver"}
-                      </Text>
-                    </Pressable>
-                  ) : null}
-                  {actions}
-                </View>
+          <View style={styles.header}>
+            {headerBack ? (
+              <Pressable
+                onPress={handlePrimaryReturn}
+                accessibilityRole="button"
+                accessibilityLabel={primaryReturnLabel ?? "Volver"}
+                testID={navigationTestIds.shell.primaryReturnButton}
+                nativeID={navigationTestIds.shell.primaryReturnButton}
+                style={({ pressed }) => [
+                  styles.backButton,
+                  pressed && styles.backButtonPressed,
+                ]}
+              >
+                <Text style={styles.backButtonText}>‹</Text>
+              </Pressable>
+            ) : null}
+            <View style={styles.headerTitleWrap}>
+              <Text style={styles.headerTitle} numberOfLines={1}>{title}</Text>
+              {description ? (
+                <Text style={styles.headerDescription} numberOfLines={2}>{description}</Text>
               ) : null}
             </View>
+            {headerAccessory ? <View style={styles.headerAccessory}>{headerAccessory}</View> : null}
+          </View>
 
-            <View style={styles.body}>{children}</View>
-          </ScrollView>
+          <View style={styles.contentViewport}>
+            {disableScroll ? (
+              <View style={[styles.body, styles.contentFrame]}>{children}</View>
+            ) : (
+              <ScrollView
+                style={styles.container}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+              >
+                <View style={styles.body}>{children}</View>
+              </ScrollView>
+            )}
+          </View>
+
+          {(systemActions && systemActions.length > 0) || (workflowActions && workflowActions.length > 0) || footerBack ? (
+            <AppFooter
+              primaryReturn={
+                footerBack
+                  ? { label: primaryReturnLabel, onPress: handlePrimaryReturn }
+                  : undefined
+              }
+              systemActions={systemActions}
+              workflowActions={workflowActions}
+            />
+          ) : actions ? (
+            <View
+              testID={navigationTestIds.footer.actionBar}
+              nativeID={navigationTestIds.footer.actionBar}
+              style={styles.actionBar}
+            >
+              {actions}
+            </View>
+          ) : null}
         </KeyboardAvoidingView>
         {footer ?? null}
       </View>
@@ -126,73 +167,77 @@ const styles = StyleSheet.create({
   },
   main: {
     flex: 1,
-    paddingHorizontal: 18,
     paddingBottom: 0,
   },
-  topBar: {
-    marginTop: 10,
-    marginBottom: 14,
-    borderRadius: 22,
-    backgroundColor: "rgba(252, 254, 253, 0.92)",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: mobileTheme.colors.border.subtle,
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 18,
+    paddingTop: 8,
+    paddingBottom: 16,
   },
-  topBarTitle: {
+  headerTitleWrap: {
+    flex: 1,
+  },
+  headerTitle: {
     color: mobileTheme.colors.ink.primary,
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: "800",
+  },
+  headerDescription: {
+    color: mobileTheme.colors.ink.secondary,
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  headerAccessory: {
+    flexShrink: 0,
+  },
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: mobileTheme.colors.surface.secondary,
+  },
+  backButtonPressed: {
+    opacity: 0.7,
+  },
+  backButtonText: {
+    fontSize: 28,
+    lineHeight: 28,
+    color: mobileTheme.colors.ink.primary,
+    fontWeight: "600",
   },
   container: {
     flex: 1,
   },
+  contentViewport: {
+    flex: 1,
+    minHeight: 0,
+    overflow: "hidden",
+  },
   scrollContent: {
+    paddingHorizontal: 18,
     paddingBottom: 24,
   },
-  hero: {
-    ...mobileSurfaceCard,
-    borderRadius: mobileTheme.radius.xl,
-    padding: 24,
-    marginBottom: 18,
+  contentFrame: {
+    flex: 1,
+    minHeight: 0,
+    paddingHorizontal: 18,
   },
-  eyebrow: {
-    ...mobileTheme.typography.eyebrow,
-    color: mobileTheme.colors.ink.muted,
-    marginBottom: 10,
-  },
-  title: {
-    fontSize: 30,
-    lineHeight: 36,
-    fontWeight: "800",
-    color: mobileTheme.colors.ink.primary,
-    marginBottom: 10,
-  },
-  description: {
-    fontSize: 15,
-    lineHeight: 24,
-    color: mobileTheme.colors.ink.secondary,
-  },
-  actions: {
-    marginTop: 20,
-    gap: 12,
-  },
-  primaryReturnButton: {
-    alignSelf: "flex-start",
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: mobileTheme.colors.border.strong,
-    backgroundColor: mobileTheme.colors.surface.secondary,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  primaryReturnButtonPressed: {
-    opacity: 0.85,
-  },
-  primaryReturnButtonText: {
-    color: mobileTheme.colors.ink.primary,
-    fontSize: 14,
-    fontWeight: "700",
+  actionBar: {
+    paddingHorizontal: designTokens.spacing.md,
+    paddingTop: 8,
+    paddingBottom: 8,
+    gap: 8,
+    borderTopWidth: 1,
+    borderTopColor: mobileTheme.colors.border.subtle,
+    backgroundColor: mobileTheme.colors.surface.primary,
+    boxShadow: "0px -2px 8px rgba(18, 48, 68, 0.04)",
+    elevation: 6,
   },
   body: {
     flex: 1,
