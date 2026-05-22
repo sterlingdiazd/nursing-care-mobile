@@ -226,6 +226,7 @@ export type AdminCareRequestStatus =
   | "Completed"
   | "Cancelled"
   | "Invoiced"
+  | "PaymentReported"
   | "Paid"
   | "Voided";
 

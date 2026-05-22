@@ -71,6 +71,15 @@ describe("route-first billing task contract", () => {
     ]);
   });
 
+  it("exposes confirm-pay and void for payment-reported requests", () => {
+    const actions = getBillingTaskActions("req-123", "PaymentReported");
+
+    expect(actions.map((action) => action.action)).toEqual(["pay", "void"]);
+    expect(actions[0].label).toBe("Confirmar pago recibido");
+    expect(actions[0].route).toBe("/admin/care-requests/req-123/pay");
+    expect(isBillingTaskAllowed("PaymentReported", "pay")).toBe(true);
+  });
+
   it("exposes receipt and void as tasks for paid requests", () => {
     const actions = getBillingTaskActions("req-123", "Paid");
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 
@@ -41,6 +41,8 @@ interface BillingTaskScreenProps {
   inputPlaceholder?: string;
   inputMultiline?: boolean;
   execute: (id: string, inputValue: string) => Promise<void>;
+  /** Optional content rendered above the input (e.g., the payment-proof image to verify). */
+  renderBeforeInput?: (detail: AdminCareRequestDetailDto) => ReactNode;
 }
 
 function automationProps(testId: string) {
@@ -82,6 +84,7 @@ export default function AdminCareRequestBillingTaskScreen({
   inputPlaceholder,
   inputMultiline = false,
   execute,
+  renderBeforeInput,
 }: BillingTaskScreenProps) {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -257,6 +260,8 @@ export default function AdminCareRequestBillingTaskScreen({
             <View style={styles.taskCard}>
               <Text style={styles.cardTitle}>Tarea de facturación</Text>
               <Text style={styles.taskDescription}>{description}</Text>
+
+              {renderBeforeInput ? renderBeforeInput(detail) : null}
 
               {inputTestID && inputLabel && (
                 <View style={styles.inputGroup}>

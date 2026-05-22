@@ -48,6 +48,7 @@ export function formatAdminCareRequestStatusLabel(status: string) {
   if (status === "Completed") return "Completado";
   if (status === "Cancelled") return "Cancelada";
   if (status === "Invoiced") return "Facturada";
+  if (status === "PaymentReported") return "Pago reportado";
   if (status === "Paid") return "Pagada";
   if (status === "Voided") return "Anulada";
   return status;
@@ -55,6 +56,7 @@ export function formatAdminCareRequestStatusLabel(status: string) {
 
 export function getAdminCareRequestStatusColor(status: string): string {
   if (status === "Paid") return designTokens.color.status.successText;
+  if (status === "PaymentReported") return designTokens.color.status.warningText;
   if (status === "Invoiced") return designTokens.color.status.warningText;
   if (status === "Voided") return designTokens.color.status.dangerText;
   if (status === "Completed") return designTokens.color.status.infoText;
@@ -86,6 +88,21 @@ export function getBillingTaskActions(
     return [
       {
         ...billingActionMeta.pay,
+        route: buildAdminCareRequestBillingRoute(id, "pay"),
+      },
+      {
+        ...billingActionMeta.void,
+        route: buildAdminCareRequestBillingRoute(id, "void"),
+      },
+    ];
+  }
+
+  if (status === "PaymentReported") {
+    return [
+      {
+        ...billingActionMeta.pay,
+        label: "Confirmar pago recibido",
+        description: "Revisar el comprobante y confirmar la recepción del dinero",
         route: buildAdminCareRequestBillingRoute(id, "pay"),
       },
       {
