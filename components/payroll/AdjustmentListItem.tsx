@@ -6,6 +6,7 @@ import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
 interface AdjustmentListItemProps {
   adjustment: AdminCompensationAdjustmentListItem;
   onDelete: (adjustment: AdminCompensationAdjustmentListItem) => void;
+  onEdit: (adjustment: AdminCompensationAdjustmentListItem) => void;
 }
 
 function formatCurrency(amount: number) {
@@ -20,7 +21,7 @@ function formatDate(dateString: string): string {
   return formatDateTimeES(dateString) || dateString;
 }
 
-export function AdjustmentListItem({ adjustment, onDelete }: AdjustmentListItemProps) {
+export function AdjustmentListItem({ adjustment, onDelete, onEdit }: AdjustmentListItemProps) {
   const isPositive = adjustment.amount >= 0;
 
   const handleDelete = () => {
@@ -40,7 +41,12 @@ export function AdjustmentListItem({ adjustment, onDelete }: AdjustmentListItemP
 
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
+      <TouchableOpacity
+        style={styles.content}
+        onPress={() => onEdit(adjustment)}
+        accessibilityRole="button"
+        accessibilityLabel={`Editar ajuste ${adjustment.label}`}
+      >
         <View style={styles.header}>
           <Text style={styles.label}>{adjustment.label}</Text>
           <Text style={[styles.amount, isPositive ? styles.amountPositive : styles.amountNegative]}>
@@ -52,7 +58,7 @@ export function AdjustmentListItem({ adjustment, onDelete }: AdjustmentListItemP
           <Text style={styles.nurse}>{adjustment.nurseDisplayName}</Text>
           <Text style={styles.date}>{formatDate(adjustment.createdAtUtc)}</Text>
         </View>
-      </View>
+      </TouchableOpacity>
 
       <TouchableOpacity
         style={styles.deleteButton}

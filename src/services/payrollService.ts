@@ -204,6 +204,15 @@ export async function createAdjustment(request: CreateCompensationAdjustmentRequ
   });
 }
 
+export async function updateAdjustment(id: string, request: { label: string; amount: number }): Promise<void> {
+  return requestVoid({
+    path: `/api/admin/payroll/adjustments/${id}`,
+    method: "PUT",
+    body: request,
+    auth: true,
+  });
+}
+
 export async function deleteAdjustment(id: string): Promise<void> {
   return requestVoid({
     path: `/api/admin/payroll/adjustments/${id}`,

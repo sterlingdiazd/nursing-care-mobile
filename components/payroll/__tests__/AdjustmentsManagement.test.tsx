@@ -27,7 +27,7 @@ describe("AdjustmentsManagement", () => {
   describe("AdjustmentListItem", () => {
     it("renders correctly with positive amount", () => {
       const component = renderer.create(
-        <AdjustmentListItem adjustment={mockAdjustment} onDelete={mockOnDelete} />
+        <AdjustmentListItem adjustment={mockAdjustment} onDelete={mockOnDelete} onEdit={() => {}} />
       );
       expect(component.toJSON()).toMatchSnapshot();
     });
@@ -35,7 +35,7 @@ describe("AdjustmentsManagement", () => {
     it("renders correctly with negative amount", () => {
       const negativeAdjustment = { ...mockAdjustment, amount: -1000, label: "Descuento" };
       const component = renderer.create(
-        <AdjustmentListItem adjustment={negativeAdjustment} onDelete={mockOnDelete} />
+        <AdjustmentListItem adjustment={negativeAdjustment} onDelete={mockOnDelete} onEdit={() => {}} />
       );
       expect(component.toJSON()).toMatchSnapshot();
     });

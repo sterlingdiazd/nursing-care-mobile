@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { CreateCompensationAdjustmentRequest } from "@/src/services/payrollService";
+import type { CreateCompensationAdjustmentRequest, AdminCompensationAdjustmentListItem } from "@/src/services/payrollService";
 import {
   getPayrollPeriods,
   getPayrollPeriodById,
@@ -24,11 +24,14 @@ interface CreateAdjustmentModalProps {
   visible: boolean;
   onClose: () => void;
   onSubmit: (data: CreateCompensationAdjustmentRequest) => Promise<void>;
+  editingAdjustment?: AdminCompensationAdjustmentListItem | null;
+  onUpdate?: (id: string, data: { label: string; amount: number }) => Promise<void>;
 }
 
 type PickerStep = "period" | "line" | null;
 
-export function CreateAdjustmentModal({ visible, onClose, onSubmit }: CreateAdjustmentModalProps) {
+export function CreateAdjustmentModal({ visible, onClose, onSubmit, editingAdjustment, onUpdate }: CreateAdjustmentModalProps) {
+  const isEdit = editingAdjustment != null;
   const [label, setLabel] = useState("");
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
@@ -56,6 +59,19 @@ export function CreateAdjustmentModal({ visible, onClose, onSubmit }: CreateAdju
 
   useEffect(() => {
     if (!visible) return;
+
+    if (isEdit && editingAdjustment) {
+      // Edit only label + amount; the target service execution is fixed, so no period/line load.
+      setLabel(editingAdjustment.label);
+      setAmount(String(editingAdjustment.amount));
+      setError(null);
+      setSelectedPeriod(null);
+      setPeriodLines([]);
+      setSelectedLine(null);
+      setActivePicker(null);
+      return;
+    }
+
     resetForm();
     if (!isReady || !isAuthenticated) return;
 
@@ -67,7 +83,7 @@ export function CreateAdjustmentModal({ visible, onClose, onSubmit }: CreateAdju
       .finally(() => { if (!cancelled) setOptionsLoading(false); });
 
     return () => { cancelled = true; };
-  }, [visible, isReady, isAuthenticated, resetForm]);
+  }, [visible, isReady, isAuthenticated, resetForm, isEdit]);
 
   const handleSelectPeriod = useCallback(async (period: AdminPayrollPeriodListItem) => {
     setSelectedPeriod(period);
@@ -94,19 +110,25 @@ export function CreateAdjustmentModal({ visible, onClose, onSubmit }: CreateAdju
   const periodLabel = (p: AdminPayrollPeriodListItem) => `${formatDateES(p.startDate)} – ${formatDateES(p.endDate)}`;
 
   const parsedAmount = parseFloat(amount);
-  const isValid = label.trim().length > 0 && parsedAmount !== 0 && !isNaN(parsedAmount) && selectedLine !== null;
+  const labelAmountValid = label.trim().length > 0 && parsedAmount !== 0 && !isNaN(parsedAmount);
+  const isValid = isEdit ? labelAmountValid : labelAmountValid && selectedLine !== null;
 
   const handleClose = () => { resetForm(); onClose(); };
 
   const handleSubmit = async () => {
-    if (!isValid || !selectedLine) return;
+    if (!isValid) return;
     setLoading(true);
     setError(null);
     try {
-      await onSubmit({ label: label.trim(), amount: parsedAmount, serviceExecutionId: selectedLine.serviceExecutionId });
+      if (isEdit && editingAdjustment && onUpdate) {
+        await onUpdate(editingAdjustment.id, { label: label.trim(), amount: parsedAmount });
+      } else {
+        if (!selectedLine) return;
+        await onSubmit({ label: label.trim(), amount: parsedAmount, serviceExecutionId: selectedLine.serviceExecutionId });
+      }
       handleClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error al crear el ajuste");
+      setError(e instanceof Error ? e.message : "Error al guardar el ajuste");
     } finally {
       setLoading(false);
     }
@@ -120,14 +142,14 @@ export function CreateAdjustmentModal({ visible, onClose, onSubmit }: CreateAdju
       visible={visible}
       onClose={handleClose}
       eyebrow="Nómina"
-      title="Nuevo ajuste"
+      title={isEdit ? "Editar ajuste" : "Nuevo ajuste"}
       error={error}
       onSubmit={handleSubmit}
-      submitLabel={loading ? "Creando..." : "Crear ajuste"}
+      submitLabel={loading ? (isEdit ? "Guardando..." : "Creando...") : isEdit ? "Guardar ajuste" : "Crear ajuste"}
       submitDisabled={!isValid}
       submitLoading={loading}
       submitTestID="adjustment-submit-button"
-      overlays={
+      overlays={isEdit ? null : (
         <>
           <PickerSheet visible={activePicker === "period"} title="Selecciona un período" onClose={() => setActivePicker(null)}>
             {periods.length === 0 ? (
@@ -168,33 +190,41 @@ export function CreateAdjustmentModal({ visible, onClose, onSubmit }: CreateAdju
             )}
           </PickerSheet>
         </>
-      }
+      )}
     >
-      <FormCard title="Servicio a ajustar">
-        <Field label="Período de nómina" required>
-          <SelectRow
-            icon="calendar"
-            value={selectedPeriod ? periodLabel(selectedPeriod) : null}
-            placeholder="Selecciona un período"
-            loading={optionsLoading}
-            onPress={() => setActivePicker("period")}
-            testID="adjustment-period-select"
-            accessibilityLabel="Seleccionar período de nómina"
-          />
-        </Field>
-        <Field label="Línea de servicio" required>
-          <SelectRow
-            icon="user-md"
-            value={selectedLine?.nurseDisplayName}
-            subtitle={selectedLine?.description}
-            placeholder={selectedPeriod ? "Selecciona una línea" : "Primero selecciona un período"}
-            loading={linesLoading}
-            onPress={() => setActivePicker(selectedPeriod ? "line" : "period")}
-            testID="adjustment-line-select"
-            accessibilityLabel="Seleccionar línea de servicio"
-          />
-        </Field>
-      </FormCard>
+      {isEdit ? (
+        <FormCard title="Servicio">
+          <Field label="Enfermera">
+            <SelectRow icon="user-md" value={editingAdjustment?.nurseDisplayName ?? "—"} placeholder="—" onPress={() => {}} disabled />
+          </Field>
+        </FormCard>
+      ) : (
+        <FormCard title="Servicio a ajustar">
+          <Field label="Período de nómina" required>
+            <SelectRow
+              icon="calendar"
+              value={selectedPeriod ? periodLabel(selectedPeriod) : null}
+              placeholder="Selecciona un período"
+              loading={optionsLoading}
+              onPress={() => setActivePicker("period")}
+              testID="adjustment-period-select"
+              accessibilityLabel="Seleccionar período de nómina"
+            />
+          </Field>
+          <Field label="Línea de servicio" required>
+            <SelectRow
+              icon="user-md"
+              value={selectedLine?.nurseDisplayName}
+              subtitle={selectedLine?.description}
+              placeholder={selectedPeriod ? "Selecciona una línea" : "Primero selecciona un período"}
+              loading={linesLoading}
+              onPress={() => setActivePicker(selectedPeriod ? "line" : "period")}
+              testID="adjustment-line-select"
+              accessibilityLabel="Seleccionar línea de servicio"
+            />
+          </Field>
+        </FormCard>
+      )}
 
       <FormCard title="Detalle del ajuste">
         <Field label="Etiqueta" required>

@@ -11,8 +11,10 @@ import { designTokens } from "@/src/design-system/tokens";
 import {
   getAdjustments,
   createAdjustment,
+  updateAdjustment,
   deleteAdjustment,
   type AdminCompensationAdjustmentListResult,
+  type AdminCompensationAdjustmentListItem,
   type CreateCompensationAdjustmentRequest,
 } from "@/src/services/payrollService";
 import SearchFilterBar from "@/src/components/shared/SearchFilterBar";
@@ -38,6 +40,7 @@ export default function AdjustmentsScreen() {
   const [adjustmentsLoading, setAdjustmentsLoading] = useState(true);
   const [adjustmentsError, setAdjustmentsError] = useState<string | null>(null);
   const [showCreateAdjustmentModal, setShowCreateAdjustmentModal] = useState(false);
+  const [editingAdjustment, setEditingAdjustment] = useState<AdminCompensationAdjustmentListItem | null>(null);
   const [adjustmentsRefreshing, setAdjustmentsRefreshing] = useState(false);
 
   // Search state — client-side filter by nurse name
@@ -94,6 +97,21 @@ export default function AdjustmentsScreen() {
     [loadAdjustments, showToast],
   );
 
+  const handleUpdateAdjustment = useCallback(
+    async (id: string, data: { label: string; amount: number }) => {
+      await updateAdjustment(id, data);
+      setEditingAdjustment(null);
+      showToast({ message: "Ajuste actualizado correctamente", variant: "success" });
+      void loadAdjustments();
+    },
+    [loadAdjustments, showToast],
+  );
+
+  const closeAdjustmentModal = useCallback(() => {
+    setShowCreateAdjustmentModal(false);
+    setEditingAdjustment(null);
+  }, []);
+
   const filteredItems = useMemo(() => {
     if (!adjustments) return [];
     if (!searchQuery) return adjustments.items;
@@ -149,6 +167,7 @@ export default function AdjustmentsScreen() {
                   key={adjustment.id}
                   adjustment={adjustment}
                   onDelete={handleDeleteAdjustment}
+                  onEdit={setEditingAdjustment}
                 />
               ))}
             </View>
@@ -157,9 +176,11 @@ export default function AdjustmentsScreen() {
       </View>
 
       <CreateAdjustmentModal
-        visible={showCreateAdjustmentModal}
-        onClose={() => setShowCreateAdjustmentModal(false)}
+        visible={showCreateAdjustmentModal || editingAdjustment != null}
+        onClose={closeAdjustmentModal}
         onSubmit={handleCreateAdjustment}
+        editingAdjustment={editingAdjustment}
+        onUpdate={handleUpdateAdjustment}
       />
     </MobileWorkspaceShell>
   );
