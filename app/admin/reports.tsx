@@ -284,7 +284,7 @@ function BacklogVisualizer({ data }: { data: AssignmentApprovalBacklogReportDto 
     <View style={styles.stack}>
       <MetricCard label="Sin enfermera" value={data.pendingUnassignedCount} color={designTokens.color.status.warningText} />
       <MetricCard label="Esperando aprobacion" value={data.pendingAssignedAwaitingApprovalCount} color={designTokens.color.ink.accent} />
-      <MetricCard label="Dias promedio espera" value={`${data.averageDaysPending.toFixed(1)}`} />
+      <MetricCard label="Dias promedio espera" value={`${(data.averageDaysPending ?? 0).toFixed(1)}`} />
     </View>
   );
 }
@@ -334,12 +334,12 @@ function UtilizationVisualizer({ data }: { data: NurseUtilizationReportDto }) {
         <Text style={[styles.tableHeaderText, { flex: 1, textAlign: "right" }]}>Comp.</Text>
         <Text style={[styles.tableHeaderText, { flex: 1, textAlign: "right" }]}>%</Text>
       </View>
-      {data.rows.slice(0, 10).map((row) => (
+      {(data.rows ?? []).slice(0, 10).map((row) => (
         <View key={row.nurseId} style={styles.tableRow}>
           <Text style={[styles.tableCell, { flex: 2 }]} numberOfLines={1}>{row.nurseName}</Text>
           <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>{row.completed}</Text>
           <Text style={[styles.tableCell, { flex: 1, textAlign: "right", fontWeight: "700" }]}>
-            {(row.completionRate * 100).toFixed(0)}%
+            {((row.completionRate ?? 0) * 100).toFixed(0)}%
           </Text>
         </View>
       ))}
@@ -354,11 +354,11 @@ function CompletionVisualizer({ data }: { data: CareRequestCompletionReportDto }
   return (
     <View style={styles.stack}>
       <MetricCard label="Total completadas" value={data.totalCompletedCount} color={designTokens.color.status.successText} />
-      <MetricCard label="Cierre promedio (dias)" value={data.averageDaysToComplete.toFixed(1)} />
+      <MetricCard label="Cierre promedio (dias)" value={(data.averageDaysToComplete ?? 0).toFixed(1)} />
 
       <Text style={styles.subTitle}>Tendencia por periodo</Text>
       <View style={styles.table}>
-        {Object.entries(data.completionsByRange).map(([range, count]) => (
+        {Object.entries(data.completionsByRange ?? {}).map(([range, count]) => (
           <View key={range} style={styles.tableRow}>
             <Text style={[styles.tableCell, { flex: 1 }]}>{range}</Text>
             <Text style={[styles.tableCell, { flex: 1, textAlign: "right", fontWeight: "700" }]}>{count}</Text>
@@ -374,11 +374,11 @@ function PriceVisualizer({ data }: { data: PriceUsageSummaryReportDto }) {
     <View style={styles.stack}>
       <Text style={styles.subTitle}>Ingresos por tipo de servicio</Text>
       <View style={styles.table}>
-        {data.topRequestTypes.map((row) => (
+        {(data.topRequestTypes ?? []).map((row) => (
           <View key={row.requestType} style={styles.tableRow}>
             <Text style={[styles.tableCell, { flex: 2 }]} numberOfLines={1}>{row.requestType}</Text>
             <Text style={[styles.tableCell, { flex: 1, textAlign: "right", fontWeight: "700" }]}>
-              ${(row.totalRevenue / 1000).toFixed(1)}k
+              ${((row.totalRevenue ?? 0) / 1000).toFixed(1)}k
             </Text>
           </View>
         ))}
@@ -386,7 +386,7 @@ function PriceVisualizer({ data }: { data: PriceUsageSummaryReportDto }) {
 
       <Text style={styles.subTitle}>Complejidad común</Text>
       <View style={styles.chipCloud}>
-        {data.topComplexityLevels.map(c => (
+        {(data.topComplexityLevels ?? []).map(c => (
           <View key={c} style={styles.chip}><Text style={styles.chipText}>{c}</Text></View>
         ))}
       </View>
@@ -405,7 +405,7 @@ function NotificationsVisualizer({ data }: { data: NotificationVolumeReportDto }
 
       <Text style={styles.subTitle}>Por categoria</Text>
       <View style={styles.table}>
-        {Object.entries(data.notificationsByCategory).map(([cat, count]) => (
+        {Object.entries(data.notificationsByCategory ?? {}).map(([cat, count]) => (
           <View key={cat} style={styles.tableRow}>
             <Text style={[styles.tableCell, { flex: 2 }]}>{cat}</Text>
             <Text style={[styles.tableCell, { flex: 1, textAlign: "right", fontWeight: "700" }]}>{count}</Text>

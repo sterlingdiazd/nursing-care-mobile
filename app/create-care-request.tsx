@@ -877,7 +877,7 @@ export default function CreateCareRequestScreen() {
                   <View style={styles.selectedTypeRow}>
                     <Text style={styles.selectedTypeLabel}>Seleccionado:</Text>
                     <Text style={styles.selectedTypeValue}>
-                      {selectedType.displayName} · RD${selectedType.basePrice.toLocaleString("es-DO")}
+                      {selectedType.displayName} · RD${(selectedType.basePrice ?? 0).toLocaleString("es-DO")}
                     </Text>
                   </View>
                 ) : null}

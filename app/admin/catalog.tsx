@@ -641,7 +641,7 @@ export default function AdminCatalogScreen() {
                           <Text style={styles.previewTypeLabel}>Codigo: {pricingPreviewItemCode}</Text>
                           <View style={styles.previewRow}>
                             <Text style={styles.previewRowLabel}>Precio base</Text>
-                            <Text style={styles.previewRowValue}>${pricingPreviewResult.basePrice.toFixed(2)}</Text>
+                            <Text style={styles.previewRowValue}>${(pricingPreviewResult.basePrice ?? 0).toFixed(2)}</Text>
                           </View>
                           <View style={styles.previewRow}>
                             <Text style={styles.previewRowLabel}>Factor de categoria</Text>
@@ -649,7 +649,7 @@ export default function AdminCatalogScreen() {
                           </View>
                           <View style={[styles.previewRow, styles.previewTotalRow]}>
                             <Text style={styles.previewTotalLabel}>Total</Text>
-                            <Text style={styles.previewTotalValue}>${pricingPreviewResult.grandTotal.toFixed(2)}</Text>
+                            <Text style={styles.previewTotalValue}>${(pricingPreviewResult.grandTotal ?? 0).toFixed(2)}</Text>
                           </View>
                         </View>
                       )}
