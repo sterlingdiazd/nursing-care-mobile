@@ -20,11 +20,16 @@ import type {
   AdminDeductionListItem,
   AdminDeductionListResult,
   CreateDeductionRequest,
+  UpdateDeductionRequest,
   AdminCompensationAdjustmentListItem,
   AdminCompensationAdjustmentListResult,
   CreateCompensationAdjustmentRequest,
   RecalculatePayrollRequest,
   RecalculatePayrollResult,
+  ScheduledDeductionListResult,
+  ScheduledDeductionDetail,
+  CreateScheduledDeductionRequest,
+  RescheduleScheduledDeductionRequest,
 } from "./payrollTypes";
 
 export async function getNursePayrollSummary(_userId: string): Promise<NursePayrollSummaryDto> {
@@ -108,8 +113,33 @@ export async function closePayrollPeriod(id: string): Promise<void> {
   });
 }
 
+export async function updatePayrollPeriod(id: string, request: CreatePayrollPeriodRequest): Promise<void> {
+  return requestVoid({
+    path: `/api/admin/payroll/periods/${id}`,
+    method: "PUT",
+    body: request,
+    auth: true,
+  });
+}
+
+export async function deletePayrollPeriod(id: string): Promise<void> {
+  return requestVoid({
+    path: `/api/admin/payroll/periods/${id}`,
+    method: "DELETE",
+    auth: true,
+  });
+}
+
 export function getPayrollPeriodExportUrl(id: string): string {
   return `${API_BASE_URL}/api/admin/payroll/periods/${id}/export`;
+}
+
+export function getPayrollPeriodReportPdfUrl(id: string): string {
+  return `${API_BASE_URL}/api/admin/payroll/periods/${id}/report/pdf`;
+}
+
+export function getPayrollPeriodReportXlsxUrl(id: string): string {
+  return `${API_BASE_URL}/api/admin/payroll/periods/${id}/report/xlsx`;
 }
 
 export async function getCompensationRules(): Promise<AdminCompensationRuleListResult> {
@@ -154,6 +184,14 @@ export async function deactivateCompensationRule(id: string): Promise<void> {
   });
 }
 
+export async function reactivateCompensationRule(id: string): Promise<void> {
+  return requestVoid({
+    path: `/api/admin/payroll/compensation-rules/${id}/reactivate`,
+    method: "POST",
+    auth: true,
+  });
+}
+
 export async function getDeductions(options?: {
   nurseId?: string | null;
   periodId?: string | null;
@@ -176,6 +214,15 @@ export async function createDeduction(request: CreateDeductionRequest): Promise<
   return requestJson<{ id: string }>({
     path: "/api/admin/payroll/deductions",
     method: "POST",
+    body: request,
+    auth: true,
+  });
+}
+
+export async function updateDeduction(id: string, request: UpdateDeductionRequest): Promise<void> {
+  return requestVoid({
+    path: `/api/admin/payroll/deductions/${id}`,
+    method: "PUT",
     body: request,
     auth: true,
   });
@@ -268,11 +315,83 @@ export async function approvePayrollLineOverride(lineId: string): Promise<void> 
 }
 
 export function getAdminPayrollVoucherUrl(periodId: string, nurseId: string): string {
-  return `${API_BASE_URL}/api/admin/payroll/periods/${periodId}/vouchers/${nurseId}`;
+  return `${API_BASE_URL}/api/admin/payroll/periods/${periodId}/voucher/${nurseId}`;
 }
 
 export function getAdminPayrollBulkVouchersUrl(periodId: string): string {
-  return `${API_BASE_URL}/api/admin/payroll/periods/${periodId}/vouchers`;
+  return `${API_BASE_URL}/api/admin/payroll/periods/${periodId}/vouchers/zip`;
+}
+
+// --- Scheduled Deductions ---
+
+export async function getScheduledDeductions(opts?: {
+  nurseId?: string | null;
+  status?: string | null;
+}): Promise<ScheduledDeductionListResult> {
+  const params = new URLSearchParams();
+  if (opts?.nurseId) params.set("nurseId", opts.nurseId);
+  if (opts?.status) params.set("status", opts.status);
+
+  const queryString = params.toString();
+  const path = `/api/admin/payroll/scheduled-deductions${queryString ? `?${queryString}` : ""}`;
+
+  return requestJson<ScheduledDeductionListResult>({
+    path,
+    method: "GET",
+    auth: true,
+  });
+}
+
+export async function getScheduledDeductionById(id: string): Promise<ScheduledDeductionDetail> {
+  return requestJson<ScheduledDeductionDetail>({
+    path: `/api/admin/payroll/scheduled-deductions/${id}`,
+    method: "GET",
+    auth: true,
+  });
+}
+
+export async function createScheduledDeduction(req: CreateScheduledDeductionRequest): Promise<{ id: string }> {
+  return requestJson<{ id: string }>({
+    path: "/api/admin/payroll/scheduled-deductions",
+    method: "POST",
+    body: req,
+    auth: true,
+  });
+}
+
+export async function payoffScheduledDeduction(id: string): Promise<void> {
+  return requestVoid({
+    path: `/api/admin/payroll/scheduled-deductions/${id}/payoff`,
+    method: "POST",
+    auth: true,
+  });
+}
+
+export async function rescheduleScheduledDeduction(id: string, req: RescheduleScheduledDeductionRequest): Promise<void> {
+  return requestVoid({
+    path: `/api/admin/payroll/scheduled-deductions/${id}/reschedule`,
+    method: "PUT",
+    body: req,
+    auth: true,
+  });
+}
+
+export async function skipScheduledInstallment(id: string, payrollPeriodId: string): Promise<void> {
+  return requestVoid({
+    path: `/api/admin/payroll/scheduled-deductions/${id}/skip`,
+    method: "POST",
+    body: { payrollPeriodId },
+    auth: true,
+  });
+}
+
+export async function cancelScheduledDeduction(id: string, reason: string): Promise<void> {
+  return requestVoid({
+    path: `/api/admin/payroll/scheduled-deductions/${id}/cancel`,
+    method: "POST",
+    body: { reason },
+    auth: true,
+  });
 }
 
 export type {
@@ -295,9 +414,14 @@ export type {
   AdminDeductionListItem,
   AdminDeductionListResult,
   CreateDeductionRequest,
+  UpdateDeductionRequest,
   AdminCompensationAdjustmentListItem,
   AdminCompensationAdjustmentListResult,
   CreateCompensationAdjustmentRequest,
   RecalculatePayrollRequest,
   RecalculatePayrollResult,
+  ScheduledDeductionListResult,
+  ScheduledDeductionDetail,
+  CreateScheduledDeductionRequest,
+  RescheduleScheduledDeductionRequest,
 } from "./payrollTypes";
