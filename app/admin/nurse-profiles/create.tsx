@@ -112,6 +112,21 @@ export default function AdminCreateNurseProfileScreen() {
       nativeID={adminTestIds.nurses.create.screen}
       primaryReturnPath={mobileNavigationEscapes.adminNurseProfiles}
       primaryReturnLabel="Volver a enfermeras"
+      actions={
+        <Pressable
+          testID={adminTestIds.nurses.create.submitButton}
+          nativeID={adminTestIds.nurses.create.submitButton}
+          style={styles.buttonPrimary}
+          onPress={handleSubmit}
+          disabled={submitting}
+          accessibilityRole="button"
+          accessibilityLabel={submitting ? "Procesando registro" : "Registrar enfermera"}
+          accessibilityState={{ busy: submitting }}
+        >
+          <Text style={styles.buttonPrimaryText}>{submitting ? "Procesando..." : "Registrar Enfermera"}</Text>
+        </Pressable>
+      }
+      disableScroll
     >
       <View style={styles.progressPanel}>
         <Text
@@ -126,7 +141,7 @@ export default function AdminCreateNurseProfileScreen() {
 
       {!!error && <Text testID={adminTestIds.nurses.create.errorBanner} nativeID={adminTestIds.nurses.create.errorBanner} style={styles.error}>{error}</Text>}
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={styles.formScroll} contentContainerStyle={styles.scrollContent}>
         {/* === SECTION: PERSONAL === */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Datos Básicos</Text>
@@ -261,24 +276,7 @@ export default function AdminCreateNurseProfileScreen() {
           )}
         </View>
 
-        <View style={{height: 80}} />
       </ScrollView>
-
-      {/* STICKY FOOTER */}
-      <View style={styles.stickyFooter}>
-        <Pressable
-          testID={adminTestIds.nurses.create.submitButton}
-          nativeID={adminTestIds.nurses.create.submitButton}
-          style={styles.buttonPrimary}
-          onPress={handleSubmit}
-          disabled={submitting}
-          accessibilityRole="button"
-          accessibilityLabel={submitting ? "Procesando registro" : "Registrar enfermera"}
-          accessibilityState={{ busy: submitting }}
-        >
-          <Text style={styles.buttonPrimaryText}>{submitting ? "Procesando..." : "Registrar Enfermera"}</Text>
-        </Pressable>
-      </View>
     </MobileWorkspaceShell>
   );
 }
@@ -290,6 +288,7 @@ const styles = StyleSheet.create({
   progressChipWarning: { backgroundColor: designTokens.color.status.warningBg, color: designTokens.color.status.warningText },
   progressChipSuccess: { backgroundColor: designTokens.color.status.successBg, color: designTokens.color.status.successText },
   progressHelper: { color: designTokens.color.ink.secondary, fontSize: 13, lineHeight: 18 },
+  formScroll: { flex: 1, minHeight: 0 },
   scrollContent: { paddingBottom: 24 },
   card: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 14, marginBottom: 12 },
   cardTitle: { fontSize: 18, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 6 },
@@ -318,7 +317,6 @@ const styles = StyleSheet.create({
   accordionIcon: { fontSize: 14, color: designTokens.color.ink.secondary, fontWeight: "700" },
   accordionContent: { padding: 16, borderTopWidth: 1, borderTopColor: designTokens.color.border.subtle },
 
-  stickyFooter: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingTop: 12, paddingBottom: Platform.OS === "ios" ? 32 : 16, backgroundColor: designTokens.color.surface.primary, borderTopWidth: 1, borderTopColor: designTokens.color.border.subtle, shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 12 },
   buttonPrimary: { backgroundColor: designTokens.color.ink.accent, borderRadius: 12, paddingVertical: 16, alignItems: "center" },
   buttonPrimaryText: { color: designTokens.color.ink.inverse, fontWeight: "800", fontSize: 16 },
 });
