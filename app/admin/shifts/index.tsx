@@ -10,6 +10,7 @@ import { router } from "expo-router";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
+import { StatusBadge } from "@/src/components/shared/StatusBadge";
 import {
   listAdminShifts,
   getAdminShiftDetail,
@@ -286,15 +287,11 @@ export default function AdminShiftsScreen() {
               >
                 <View style={styles.cardHeader}>
                   <Text style={styles.cardNurse}>{item.nurseDisplayName ?? "Enfermera sin nombre"}</Text>
-                  <View
-                    style={[styles.statusBadge, { backgroundColor: badgeColors.bg }]}
+                  <StatusBadge
+                    label={statusLabel(item.status)}
+                    colors={{ bg: badgeColors.bg, fg: badgeColors.text }}
                     testID={`admin-shifts-status-chip-card-${item.id}`}
-                    nativeID={`admin-shifts-status-chip-card-${item.id}`}
-                  >
-                    <Text style={[styles.statusBadgeText, { color: badgeColors.text }]}>
-                      {statusLabel(item.status)}
-                    </Text>
-                  </View>
+                  />
                 </View>
 
                 {item.careRequestReference && (
@@ -356,11 +353,10 @@ export default function AdminShiftsScreen() {
                   <View style={styles.detailField}>
                     <Text style={styles.detailLabel}>Estado</Text>
                     <View style={{ flexDirection: "row" }}>
-                      <View style={[styles.statusBadge, { backgroundColor: statusBadgeColors(selectedShift.status).bg }]}>
-                        <Text style={[styles.statusBadgeText, { color: statusBadgeColors(selectedShift.status).text }]}>
-                          {statusLabel(selectedShift.status)}
-                        </Text>
-                      </View>
+                      <StatusBadge
+                        label={statusLabel(selectedShift.status)}
+                        colors={{ bg: statusBadgeColors(selectedShift.status).bg, fg: statusBadgeColors(selectedShift.status).text }}
+                      />
                     </View>
                   </View>
 
@@ -474,8 +470,6 @@ const styles = StyleSheet.create({
   card: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, boxShadow: "0px 6px 12px rgba(18, 48, 68, 0.06)", elevation: 2 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
   cardNurse: { color: designTokens.color.ink.primary, fontWeight: "800", fontSize: 16, flex: 1 },
-  statusBadge: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, marginLeft: 8 },
-  statusBadgeText: { fontSize: 11, fontWeight: "700" },
   cardRef: { color: designTokens.color.ink.muted, fontSize: 13, marginBottom: 6 },
   cardDateRow: { flexDirection: "row", marginBottom: 4 },
   cardDateLabel: { color: designTokens.color.ink.muted, fontSize: 13, fontWeight: "700", width: 50 },

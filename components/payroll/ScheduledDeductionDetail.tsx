@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { designTokens } from "@/src/design-system/tokens";
+import { StatusBadge } from "@/src/components/shared/StatusBadge";
 import type { ScheduledDeductionDetail as ScheduledDeductionDetailType, ScheduledDeductionInstallmentRow } from "@/src/services/payrollTypes";
 import {
   payoffScheduledDeduction,
@@ -347,18 +348,12 @@ export function ScheduledDeductionDetail({ detail, onBack, onRefresh }: Schedule
     );
   };
 
-  const statusStyle =
+  const statusTone =
     plan.status === "Active"
-      ? styles.statusActive
+      ? "success" as const
       : plan.status === "Completed"
-        ? styles.statusCompleted
-        : styles.statusCancelled;
-  const statusTextStyle =
-    plan.status === "Active"
-      ? styles.statusTextActive
-      : plan.status === "Completed"
-        ? styles.statusTextCompleted
-        : styles.statusTextCancelled;
+        ? "neutral" as const
+        : "danger" as const;
 
   return (
     <ScrollView
@@ -386,9 +381,7 @@ export function ScheduledDeductionDetail({ detail, onBack, onRefresh }: Schedule
             </Text>
             <Text style={styles.nurseName}>{plan.nurseDisplayName}</Text>
           </View>
-          <View style={[styles.statusBadge, statusStyle]}>
-            <Text style={[styles.statusText, statusTextStyle]}>{statusLabel(plan.status)}</Text>
-          </View>
+          <StatusBadge label={statusLabel(plan.status)} tone={statusTone} />
         </View>
 
         {isAmortizing ? (
@@ -593,34 +586,6 @@ const styles = StyleSheet.create({
     color: designTokens.color.ink.secondary,
     marginTop: 4,
     fontWeight: "600",
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    alignSelf: "flex-start",
-  },
-  statusActive: {
-    backgroundColor: designTokens.color.surface.success,
-  },
-  statusCompleted: {
-    backgroundColor: designTokens.color.surface.tertiary,
-  },
-  statusCancelled: {
-    backgroundColor: designTokens.color.surface.danger,
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  statusTextActive: {
-    color: designTokens.color.status.successText,
-  },
-  statusTextCompleted: {
-    color: designTokens.color.ink.secondary,
-  },
-  statusTextCancelled: {
-    color: designTokens.color.status.dangerText,
   },
   metricsGrid: {
     flexDirection: "row",

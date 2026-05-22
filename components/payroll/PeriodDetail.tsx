@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useToast } from "@/src/components/shared/ToastProvider";
 import { Pagination } from "@/src/components/shared/Pagination";
+import { StatusBadge } from "@/src/components/shared/StatusBadge";
 import type { FooterAction } from "@/src/components/navigation/AppFooter";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
@@ -446,19 +447,11 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
               <Text style={styles.overviewTitle}>{statusTitle}</Text>
               <Text style={styles.overviewPeriod}>{periodLabel}</Text>
             </View>
-            <View
-              style={[styles.statusBadge, isOpen ? styles.statusOpen : styles.statusClosed]}
+            <StatusBadge
+              label={isOpen ? "Abierto" : "Cerrado"}
+              tone={isOpen ? "success" : "neutral"}
               testID={adminTestIds.payroll.periodStatusBadge}
-              nativeID={adminTestIds.payroll.periodStatusBadge}
-            >
-              <Text
-                style={[styles.statusText, isOpen ? styles.statusTextOpen : styles.statusTextClosed]}
-                testID="payroll-period-status-badge"
-                nativeID="payroll-period-status-badge"
-              >
-                {isOpen ? "Abierto" : "Cerrado"}
-              </Text>
-            </View>
+            />
           </View>
 
           <Text style={styles.overviewDescription}>{statusDescription}</Text>
@@ -945,27 +938,6 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 10,
     backgroundColor: designTokens.color.surface.secondary,
-  },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: designTokens.radius.pill,
-  },
-  statusOpen: {
-    backgroundColor: designTokens.color.surface.success,
-  },
-  statusClosed: {
-    backgroundColor: designTokens.color.surface.secondary,
-  },
-  statusText: {
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  statusTextOpen: {
-    color: designTokens.color.status.successText,
-  },
-  statusTextClosed: {
-    color: designTokens.color.ink.muted,
   },
   headerActions: {
     flexDirection: "row",

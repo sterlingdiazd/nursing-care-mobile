@@ -19,16 +19,7 @@ import {
 import { designTokens } from "@/src/design-system/tokens";
 import { useToast } from "@/src/components/shared/ToastProvider";
 import { formatDateES } from "@/src/utils/spanishTextValidator";
-
-function StatusBadge({ isOpen }: { isOpen: boolean }) {
-  return (
-    <View style={[styles.statusBadge, isOpen ? styles.statusBadgeOpen : styles.statusBadgeClosed]}>
-      <Text style={[styles.statusBadgeText, isOpen ? styles.statusTextOpen : styles.statusTextClosed]}>
-        {isOpen ? "Abierto" : "Cerrado"}
-      </Text>
-    </View>
-  );
-}
+import { StatusBadge } from "@/src/components/shared/StatusBadge";
 
 export default function NursePayrollScreen() {
   const { userId: paramUserId } = useLocalSearchParams<{ userId?: string }>();
@@ -168,7 +159,7 @@ export default function NursePayrollScreen() {
           <View style={styles.heroCard}>
             <View style={styles.heroTopRow}>
               <Text style={styles.heroEyebrow}>Período actual</Text>
-              <StatusBadge isOpen={currentPeriodOpen} />
+              <StatusBadge label={currentPeriodOpen ? "Abierto" : "Cerrado"} tone={currentPeriodOpen ? "success" : "neutral"} />
             </View>
             <Text style={styles.heroAmount}>
               {formatCurrency(summary.totalCompensationThisPeriod)}
@@ -208,7 +199,7 @@ export default function NursePayrollScreen() {
                       <Text style={styles.historyDate}>
                         {formatDateES(period.startDate)} – {formatDateES(period.endDate)}
                       </Text>
-                      <StatusBadge isOpen={isOpen} />
+                      <StatusBadge label={isOpen ? "Abierto" : "Cerrado"} tone={isOpen ? "success" : "neutral"} />
                     </View>
                     <View style={styles.historyBottomRow}>
                       <Text style={styles.historyInfo}>{period.totalNurses} servicios</Text>
@@ -379,16 +370,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingVertical: designTokens.spacing.lg,
   },
-  statusBadge: {
-    paddingHorizontal: designTokens.spacing.sm,
-    paddingVertical: 4,
-    borderRadius: designTokens.radius.pill,
-  },
-  statusBadgeOpen: { backgroundColor: designTokens.color.surface.success },
-  statusBadgeClosed: { backgroundColor: designTokens.color.surface.secondary },
-  statusBadgeText: { fontSize: 12, fontWeight: "700" },
-  statusTextOpen: { color: designTokens.color.status.successText },
-  statusTextClosed: { color: designTokens.color.ink.muted },
   historyGroup: { marginBottom: designTokens.spacing.md },
   historyItem: {
     padding: designTokens.spacing.lg,

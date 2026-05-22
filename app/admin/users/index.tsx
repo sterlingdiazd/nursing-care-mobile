@@ -11,6 +11,7 @@ import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { adminTestIds } from "@/src/testing/testIds";
 import { designTokens } from "@/src/design-system/tokens";
+import { StatusBadge } from "@/src/components/shared/StatusBadge";
 import {
   getAdminUsers,
   type AdminUserListItemDto,
@@ -263,11 +264,10 @@ export default function AdminUsersScreen() {
             >
               <View style={styles.cardHeader}>
                 <Text style={styles.cardTitle}>{item.displayName}</Text>
-                <View style={[styles.statusBadge, { backgroundColor: badgeColors.bg }]}>
-                  <Text style={[styles.statusBadgeText, { color: badgeColors.text }]}>
-                    {translateAccountStatus(item.accountStatus)}
-                  </Text>
-                </View>
+                <StatusBadge
+                  label={translateAccountStatus(item.accountStatus)}
+                  colors={{ bg: badgeColors.bg, fg: badgeColors.text }}
+                />
               </View>
 
               <Text style={styles.cardMeta}>{item.email}</Text>
@@ -332,8 +332,6 @@ const styles = StyleSheet.create({
   card: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, marginBottom: 12, boxShadow: "0px 6px 12px rgba(18, 48, 68, 0.06)", elevation: 2 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
   cardTitle: { color: designTokens.color.ink.primary, fontWeight: "800", fontSize: 18, flex: 1 },
-  statusBadge: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, marginLeft: 8 },
-  statusBadgeText: { fontSize: 11, fontWeight: "700" },
   cardMeta: { color: designTokens.color.ink.muted, fontSize: 14, marginBottom: 8 },
   cardHint: { color: designTokens.color.ink.secondary, fontSize: 13, marginBottom: 10 },
   cardRow: { flexDirection: "row", marginBottom: 4 },

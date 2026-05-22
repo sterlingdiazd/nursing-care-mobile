@@ -15,6 +15,7 @@ import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
+import { StatusBadge } from "@/src/components/shared/StatusBadge";
 import { logClientEvent } from "@/src/logging/clientLogger";
 import { getCareRequests } from "@/src/services/careRequestService";
 import { CareRequestDto } from "@/src/types/careRequest";
@@ -88,9 +89,7 @@ function CareRequestCard({ item }: { item: CareRequestDto }) {
         <Text style={styles.cardTitle} numberOfLines={2}>
           {item.careRequestDescription}
         </Text>
-        <View style={[styles.statusBadge, { backgroundColor: colors.bg }]}>
-          <Text style={[styles.statusText, { color: colors.fg }]}>{statusLabel}</Text>
-        </View>
+        <StatusBadge label={statusLabel} colors={{ bg: colors.bg, fg: colors.fg }} />
       </View>
       <Text style={styles.cardMeta}>Creada {formatDateTimeES(item.createdAtUtc)}</Text>
     </Pressable>
@@ -449,7 +448,5 @@ const styles = StyleSheet.create({
   },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", gap: 12, marginBottom: 10 },
   cardTitle: { flex: 1, color: designTokens.color.ink.primary, fontSize: 18, lineHeight: 24, fontWeight: "800" },
-  statusBadge: { alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 },
-  statusText: { fontSize: 12, fontWeight: "800", textTransform: "uppercase" },
   cardMeta: { color: designTokens.color.ink.muted, fontSize: 13, lineHeight: 19 },
 });
