@@ -7,6 +7,7 @@ import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
 import { designTokens } from "@/src/design-system/tokens";
+import { StatStrip } from "@/src/components/shared/MetricCard";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import {
   getAdminMobilePayrollSummary,
@@ -97,32 +98,11 @@ export default function PayrollHubScreen() {
         style={styles.screen}
       >
         {/* Compact summary strip */}
-        <View style={styles.statsStrip}>
-          <View style={styles.statCell}>
-            <Text style={styles.statLabel}>Períodos abiertos</Text>
-            <Text style={styles.statValue}>
-              {summaryLoading ? "—" : (summary?.openPeriodsCount ?? "—")}
-            </Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statCell}>
-            <Text style={styles.statLabel}>Compensación período</Text>
-            <Text style={styles.statValue} numberOfLines={1}>
-              {summaryLoading
-                ? "—"
-                : summary
-                  ? formatCurrency(summary.totalCompensationCurrentPeriod)
-                  : "—"}
-            </Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statCell}>
-            <Text style={styles.statLabel}>Enfermeras activas</Text>
-            <Text style={styles.statValue}>
-              {summaryLoading ? "—" : (summary?.activeNursesCount ?? "—")}
-            </Text>
-          </View>
-        </View>
+        <StatStrip items={[
+          { label: "Períodos abiertos", value: summaryLoading ? "—" : String(summary?.openPeriodsCount ?? "—") },
+          { label: "Compensación período", value: summaryLoading ? "—" : summary ? formatCurrency(summary.totalCompensationCurrentPeriod) : "—" },
+          { label: "Enfermeras activas", value: summaryLoading ? "—" : String(summary?.activeNursesCount ?? "—") },
+        ]} />
 
         {/* Section cards */}
         <View style={styles.grid}>
@@ -155,41 +135,6 @@ export default function PayrollHubScreen() {
 const styles = StyleSheet.create({
   screen: {
     gap: 16,
-  },
-  statsStrip: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: designTokens.radius.xl,
-    backgroundColor: designTokens.color.surface.secondary,
-    borderWidth: 1,
-    borderColor: designTokens.color.border.subtle,
-  },
-  statCell: {
-    flex: 1,
-    alignItems: "center",
-    gap: 2,
-  },
-  statDivider: {
-    width: 1,
-    alignSelf: "stretch",
-    backgroundColor: designTokens.color.border.subtle,
-    marginHorizontal: 6,
-  },
-  statLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: designTokens.color.ink.muted,
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
-    textAlign: "center",
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: designTokens.color.ink.primary,
-    textAlign: "center",
   },
   grid: {
     gap: 10,

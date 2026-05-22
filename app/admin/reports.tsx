@@ -31,6 +31,7 @@ import {
   type NotificationVolumeReportDto,
 } from "@/src/services/adminPortalService";
 import { getCachedAuthSession } from "@/src/services/authSession";
+import { MetricCard } from "@/src/components/shared/MetricCard";
 
 interface ReportMetadata {
   key: string;
@@ -257,20 +258,11 @@ function ReportVisualizer({ reportKey, data }: { reportKey: string; data: AdminR
   }
 }
 
-function MetricCard({ label, value, color = designTokens.color.ink.accentStrong }: { label: string; value: string | number; color?: string }) {
-  return (
-    <View style={styles.metricCard}>
-      <Text style={styles.metricLabel}>{label}</Text>
-      <Text style={[styles.metricValue, { color }]}>{value}</Text>
-    </View>
-  );
-}
-
 function PipelineVisualizer({ data }: { data: CareRequestPipelineReportDto }) {
   return (
     <View style={styles.grid}>
-      <MetricCard label="Pendientes" value={data.pendingCount} />
-      <MetricCard label="Aprobadas" value={data.approvedCount} />
+      <MetricCard label="Pendientes" value={data.pendingCount} color={designTokens.color.ink.accentStrong} />
+      <MetricCard label="Aprobadas" value={data.approvedCount} color={designTokens.color.ink.accentStrong} />
       <MetricCard label="Completadas" value={data.completedCount} color={designTokens.color.status.successText} />
       <MetricCard label="Rechazadas" value={data.rejectedCount} color={designTokens.color.ink.danger} />
       <MetricCard label="Sin asignar" value={data.unassignedCount} color={designTokens.color.status.warningText} />
@@ -284,7 +276,7 @@ function BacklogVisualizer({ data }: { data: AssignmentApprovalBacklogReportDto 
     <View style={styles.stack}>
       <MetricCard label="Sin enfermera" value={data.pendingUnassignedCount} color={designTokens.color.status.warningText} />
       <MetricCard label="Esperando aprobacion" value={data.pendingAssignedAwaitingApprovalCount} color={designTokens.color.ink.accent} />
-      <MetricCard label="Dias promedio espera" value={`${(data.averageDaysPending ?? 0).toFixed(1)}`} />
+      <MetricCard label="Dias promedio espera" value={`${(data.averageDaysPending ?? 0).toFixed(1)}`} color={designTokens.color.ink.accentStrong} />
     </View>
   );
 }
@@ -292,7 +284,7 @@ function BacklogVisualizer({ data }: { data: AssignmentApprovalBacklogReportDto 
 function OnboardingVisualizer({ data }: { data: NurseOnboardingReportDto }) {
   return (
     <View style={styles.grid}>
-      <MetricCard label="Total registradas" value={data.totalRegisteredCount} />
+      <MetricCard label="Total registradas" value={data.totalRegisteredCount} color={designTokens.color.ink.accentStrong} />
       <MetricCard label="En revision" value={data.pendingReviewCount} color={designTokens.color.status.warningText} />
       <MetricCard label="Activas" value={data.activeCount} color={designTokens.color.status.successText} />
       <MetricCard label="Inactivas" value={data.inactiveCount} color={designTokens.color.ink.muted} />
@@ -354,7 +346,7 @@ function CompletionVisualizer({ data }: { data: CareRequestCompletionReportDto }
   return (
     <View style={styles.stack}>
       <MetricCard label="Total completadas" value={data.totalCompletedCount} color={designTokens.color.status.successText} />
-      <MetricCard label="Cierre promedio (dias)" value={(data.averageDaysToComplete ?? 0).toFixed(1)} />
+      <MetricCard label="Cierre promedio (dias)" value={(data.averageDaysToComplete ?? 0).toFixed(1)} color={designTokens.color.ink.accentStrong} />
 
       <Text style={styles.subTitle}>Tendencia por periodo</Text>
       <View style={styles.table}>
@@ -398,7 +390,7 @@ function NotificationsVisualizer({ data }: { data: NotificationVolumeReportDto }
   return (
     <View style={styles.stack}>
       <View style={styles.grid}>
-        <MetricCard label="Total" value={data.totalNotificationsCount} />
+        <MetricCard label="Total" value={data.totalNotificationsCount} color={designTokens.color.ink.accentStrong} />
         <MetricCard label="Sin leer" value={data.unreadNotificationsCount} color={designTokens.color.status.warningText} />
         <MetricCard label="Pendientes" value={data.pendingActionItemsCount} color={designTokens.color.ink.danger} />
       </View>
@@ -434,9 +426,6 @@ const styles = StyleSheet.create({
   emptyText: { color: designTokens.color.ink.muted, fontSize: 14 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   stack: { gap: 12 },
-  metricCard: { backgroundColor: designTokens.color.surface.primary, borderRadius: 16, padding: 16, flex: 1, minWidth: "45%", borderWidth: 1, borderColor: designTokens.color.border.subtle },
-  metricLabel: { fontSize: 11, fontWeight: "700", color: designTokens.color.ink.muted, textTransform: "uppercase", marginBottom: 4 },
-  metricValue: { fontSize: 24, fontWeight: "800", color: designTokens.color.ink.primary },
   table: { borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 12, overflow: "hidden" },
   tableHeader: { flexDirection: "row", backgroundColor: designTokens.color.surface.primary, padding: 12, borderBottomWidth: 1, borderBottomColor: designTokens.color.border.subtle },
   tableHeaderText: { fontSize: 11, fontWeight: "700", color: designTokens.color.ink.muted, textTransform: "uppercase" },
