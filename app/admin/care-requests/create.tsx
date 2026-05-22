@@ -24,17 +24,23 @@ import {
 } from "@/src/services/adminPortalService";
 import { FormInput } from "@/src/components/form";
 import { adminTestIds } from "@/src/testing/testIds";
-import { getAvailableNurses } from "@/src/services/catalogOptionsService";
-import type { AvailableNurseOption } from "@/src/types/catalog";
+import { getAvailableNurses, getCareRequestOptions } from "@/src/services/catalogOptionsService";
+import type {
+  AvailableNurseOption,
+  CareRequestTypeOption,
+  CatalogOptionsResponse,
+} from "@/src/types/catalog";
 import { getAdminCareCreateProgress } from "@/src/utils/adminCreationUx";
-import { mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
-const CARE_TYPES = [
-  "Cuidado Básico",
-  "Cuidado Especializado",
-  "Terapia Física",
-  "Acompañamiento",
-];
+// User-facing labels for the catalog category codes that come back from the API.
+const CATEGORY_LABELS: Record<string, string> = {
+  hogar: "Hogar",
+  domicilio: "Domicilio",
+  medicos: "Médicos",
+};
+
+const CATEGORY_ORDER = ["hogar", "domicilio", "medicos"];
 
 const formatDateToIso = (date: Date) => {
   const year = date.getFullYear();
@@ -44,17 +50,18 @@ const formatDateToIso = (date: Date) => {
 };
 
 export default function CreateAdminCareRequestScreen() {
-  const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
+  const { isReady, isAuthenticated, requiresProfileCompletion, roles, token } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const isSubmittingRef = useRef(false);
   const scrollViewRef = useRef<ScrollView>(null);
+  const catalogFetchedRef = useRef(false);
 
   // Form state
   const [form, setForm] = useState<CreateAdminCareRequestDto>({
     clientUserId: "",
     careRequestDescription: "",
-    careRequestType: CARE_TYPES[0],
+    careRequestType: "",
     unit: 1,
     suggestedNurse: "",
     price: undefined,
@@ -68,8 +75,16 @@ export default function CreateAdminCareRequestScreen() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // UI state
-  const [customCareType, setCustomCareType] = useState("");
   const [showAdvancedPricing, setShowAdvancedPricing] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+
+  // Catalog of care-request types from the backend. Source of truth for
+  // service offerings — replaces the previous hardcoded 4-string list that
+  // didn't correspond to anything real in the database.
+  const [catalog, setCatalog] = useState<CatalogOptionsResponse | null>(null);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [activeCategoryCode, setActiveCategoryCode] = useState<string>("hogar");
 
   // Client search
   const [clientSearch, setClientSearch] = useState("");
@@ -116,6 +131,68 @@ export default function CreateAdminCareRequestScreen() {
       .catch(() => setNurses([]))
       .finally(() => setNurseLookupLoading(false));
   }, []);
+
+  // Load the catalog once auth is ready. fetchedRef guards against re-fetch on
+  // auth-sync flicker (token/roles/profileType updating in separate ticks).
+  useEffect(() => {
+    if (!isReady || !isAuthenticated || !token) return;
+    if (catalogFetchedRef.current) return;
+    catalogFetchedRef.current = true;
+    setCatalogLoading(true);
+    setCatalogError(null);
+    getCareRequestOptions(token)
+      .then((options) => {
+        setCatalog(options);
+        // Default to the category of the first available type — keeps the UI
+        // sensible if the backend ever reorders or reduces categories.
+        const first = options.careRequestTypes[0];
+        if (first) {
+          setActiveCategoryCode(first.careRequestCategoryCode);
+        }
+      })
+      .catch((err: unknown) => {
+        setCatalogError(
+          err instanceof Error ? err.message : "No fue posible cargar el catálogo de tipos.",
+        );
+      })
+      .finally(() => setCatalogLoading(false));
+  }, [isReady, isAuthenticated, token]);
+
+  // Group the flat list of types by their category code. Ordering: prefer
+  // the static CATEGORY_ORDER (hogar / domicilio / médicos), fall back to
+  // appearance order if the backend introduces a new category.
+  const typesByCategory = useMemo(() => {
+    const map = new Map<string, CareRequestTypeOption[]>();
+    if (!catalog) return map;
+    for (const t of catalog.careRequestTypes) {
+      const arr = map.get(t.careRequestCategoryCode);
+      if (arr) arr.push(t);
+      else map.set(t.careRequestCategoryCode, [t]);
+    }
+    return map;
+  }, [catalog]);
+
+  const orderedCategoryCodes = useMemo(() => {
+    if (!catalog) return [] as string[];
+    const present = Array.from(typesByCategory.keys());
+    const known = CATEGORY_ORDER.filter((code) => present.includes(code));
+    const extras = present.filter((code) => !CATEGORY_ORDER.includes(code));
+    return [...known, ...extras];
+  }, [catalog, typesByCategory]);
+
+  const selectedType = useMemo(() => {
+    if (!catalog) return null;
+    return catalog.careRequestTypes.find((t) => t.code === form.careRequestType) ?? null;
+  }, [catalog, form.careRequestType]);
+
+  // When a type is picked, switch the active category tab to match — keeps
+  // the chip the user just selected visible in the same view.
+  useEffect(() => {
+    if (selectedType && selectedType.careRequestCategoryCode !== activeCategoryCode) {
+      setActiveCategoryCode(selectedType.careRequestCategoryCode);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedType?.code]);
 
   const filteredNurses = useMemo(() => {
     const query = (form.suggestedNurse ?? "").trim().toLocaleLowerCase();
@@ -199,7 +276,7 @@ export default function CreateAdminCareRequestScreen() {
       setForm({
         clientUserId: "",
         careRequestDescription: "",
-        careRequestType: CARE_TYPES[0],
+        careRequestType: "",
         unit: 1,
         suggestedNurse: "",
         price: undefined,
@@ -211,7 +288,6 @@ export default function CreateAdminCareRequestScreen() {
       });
       setSelectedClient(null);
       setClientSearch("");
-      setCustomCareType("");
       setShowAdvancedPricing(false);
 
       // Redirigir a la lista en lugar del detalle
@@ -235,22 +311,52 @@ export default function CreateAdminCareRequestScreen() {
   const incrementUnit = () => setForm((prev) => ({ ...prev, unit: (prev.unit || 0) + 1 }));
   const decrementUnit = () => setForm((prev) => ({ ...prev, unit: Math.max(1, (prev.unit || 0) - 1) }));
 
-  // Check custom vs predefined care type
-  const activeTypeIsCustom = !CARE_TYPES.includes(form.careRequestType);
   const creationProgress = getAdminCareCreateProgress(form);
   const advancedPricingLocked = !creationProgress.coreReady;
+
+  // Dirty check for back-button confirmation. Treat any user-touched field
+  // (description, type, picked client, suggested nurse, custom unit) as dirty.
+  const isDirty =
+    !!form.clientUserId ||
+    form.careRequestDescription.trim().length > 0 ||
+    !!form.careRequestType ||
+    (form.unit ?? 1) !== 1 ||
+    !!form.suggestedNurse?.trim() ||
+    !!selectedClient ||
+    clientSearch.trim().length > 0;
+
+  const exitToList = () => {
+    setShowLeaveConfirm(false);
+    goBackOrReplace(router, mobileNavigationEscapes.adminCareRequests);
+  };
+
+  const handleBackPress = () => {
+    if (isDirty && !submitting) {
+      setShowLeaveConfirm(true);
+    } else {
+      exitToList();
+    }
+  };
 
   if (!isReady || !isAuthenticated || !roles.includes("ADMIN")) return null;
 
   return (
     <MobileWorkspaceShell
-      eyebrow="Crear Solicitud"
-      title="Nueva solicitud de cuidado"
-      description="Crear una solicitud de servicio en nombre de un cliente."
+      title="Nueva Solicitud"
       testID={adminTestIds.careRequests.create.screen}
       nativeID={adminTestIds.careRequests.create.screen}
-      primaryReturnPath={mobileNavigationEscapes.adminCareRequests}
-      primaryReturnLabel="Volver a solicitudes"
+      onPrimaryReturn={handleBackPress}
+      primaryReturnLabel="Volver"
+      workflowActions={[
+        {
+          label: submitting ? "Creando…" : "Crear",
+          onPress: handleSubmit,
+          variant: "primary",
+          disabled: submitting,
+          testID: adminTestIds.careRequests.create.submitButton,
+        },
+      ]}
+      disableScroll
     >
       <View style={styles.progressCard}>
         <Text
@@ -276,7 +382,7 @@ export default function CreateAdminCareRequestScreen() {
         </Text>
       )}
 
-      <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scrollContent}>
+      <ScrollView ref={scrollViewRef} style={styles.formScroll} contentContainerStyle={styles.scrollContent}>
 
         {/* === SECTION: CLIENT & BASIC INFO === */}
         <View style={styles.card}>
@@ -393,41 +499,75 @@ export default function CreateAdminCareRequestScreen() {
           )}
           {errors.careRequestDate && <Text style={styles.errorText}>{errors.careRequestDate}</Text>}
 
-          <Text style={styles.label}>Tipo de solicitud *</Text>
-          <View style={styles.chipsContainer}>
-            {CARE_TYPES.map(type => (
-              <Pressable
-                key={type}
-                style={[styles.chip, form.careRequestType === type && styles.chipActive]}
-                onPress={() => { setForm({ ...form, careRequestType: type }); setCustomCareType(""); }}
-                accessibilityRole="button"
-                accessibilityLabel={`Tipo de cuidado: ${type}`}
-                accessibilityState={{ selected: form.careRequestType === type }}
-              >
-                <Text style={[styles.chipText, form.careRequestType === type && styles.chipTextActive]}>{type}</Text>
-              </Pressable>
-            ))}
-          </View>
-          <FormInput
-            testID={adminTestIds.careRequests.create.customTypeInput}
-            accessibilityLabel="Especificar otro tipo de cuidado"
-            style={[
-              styles.input,
-              activeTypeIsCustom ? styles.inputActive : undefined,
-              errors.careRequestType ? styles.inputError : undefined,
-            ]}
-            placeholder="Otro tipo (especificar)"
-            value={activeTypeIsCustom ? form.careRequestType : customCareType}
-            onChangeText={(text) => {
-              setCustomCareType(text);
-              setForm({ ...form, careRequestType: text || CARE_TYPES[0] });
-            }}
-            onFocus={() => {
-              if (!activeTypeIsCustom) {
-                setForm({ ...form, careRequestType: "" });
-              }
-            }}
-          />
+          <Text style={styles.label}>Tipo de servicio *</Text>
+          {catalogLoading ? (
+            <View style={styles.catalogLoading}>
+              <ActivityIndicator color={designTokens.color.ink.accent} />
+              <Text style={styles.catalogLoadingText}>Cargando tipos…</Text>
+            </View>
+          ) : catalogError ? (
+            <Text style={styles.errorText}>{catalogError}</Text>
+          ) : (
+            <View>
+              {/* Category tabs — compact horizontal row, one per category. */}
+              <View style={styles.categoryRow}>
+                {orderedCategoryCodes.map((code) => {
+                  const active = code === activeCategoryCode;
+                  const label = CATEGORY_LABELS[code] ?? code;
+                  const count = typesByCategory.get(code)?.length ?? 0;
+                  return (
+                    <Pressable
+                      key={code}
+                      onPress={() => setActiveCategoryCode(code)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Categoría ${label}`}
+                      accessibilityState={{ selected: active }}
+                      style={[styles.categoryTab, active && styles.categoryTabActive]}
+                    >
+                      <Text style={[styles.categoryTabText, active && styles.categoryTabTextActive]}>
+                        {label}
+                      </Text>
+                      <Text style={[styles.categoryTabCount, active && styles.categoryTabCountActive]}>
+                        {count}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              {/* Chips for the active category only — keeps space tight. */}
+              <View style={styles.chipsContainer}>
+                {(typesByCategory.get(activeCategoryCode) ?? []).map((type) => {
+                  const active = form.careRequestType === type.code;
+                  return (
+                    <Pressable
+                      key={type.code}
+                      onPress={() => setForm((prev) => ({ ...prev, careRequestType: type.code }))}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Tipo ${type.displayName}`}
+                      accessibilityState={{ selected: active }}
+                      style={[styles.chip, active && styles.chipActive]}
+                    >
+                      <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                        {type.displayName}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              {/* Confirmation pill: shows the user what they picked, including
+                  base price + unit, so admin doesn't have to remember catalog. */}
+              {selectedType ? (
+                <View style={styles.selectedTypeRow}>
+                  <Text style={styles.selectedTypeLabel}>Seleccionado:</Text>
+                  <Text style={styles.selectedTypeValue}>
+                    {selectedType.displayName} · RD${selectedType.basePrice.toLocaleString("es-DO")}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          )}
           {errors.careRequestType && <Text style={styles.errorText}>{errors.careRequestType}</Text>}
 
           <Text style={styles.label}>Unidades *</Text>
@@ -575,25 +715,7 @@ export default function CreateAdminCareRequestScreen() {
           )}
         </View>
 
-        {/* Spacer for sticky footer */}
-        <View style={{height: 80}} />
       </ScrollView>
-
-      {/* STICKY FOOTER */}
-      <View style={styles.stickyFooter}>
-        <Pressable
-          testID={adminTestIds.careRequests.create.submitButton}
-          nativeID={adminTestIds.careRequests.create.submitButton}
-          style={styles.buttonPrimary}
-          onPress={handleSubmit}
-          disabled={submitting}
-          accessibilityRole="button"
-          accessibilityLabel={submitting ? "Creando solicitud de cuidado" : "Generar solicitud de cuidado"}
-          accessibilityState={{ busy: submitting }}
-        >
-          <Text style={styles.buttonPrimaryText}>{submitting ? "Creando Solicitud..." : "Generar Solicitud de Cuidado"}</Text>
-        </Pressable>
-      </View>
 
       {/* Modal for DatePicker on iOS */}
       {isDatePickerVisible && Platform.OS !== "web" ? (
@@ -629,6 +751,42 @@ export default function CreateAdminCareRequestScreen() {
         )
       ) : null}
 
+      {/* Leave-confirm modal — protects against accidental back-tap when the
+          form has unsaved input. */}
+      <Modal
+        transparent
+        animationType="fade"
+        visible={showLeaveConfirm}
+        onRequestClose={() => setShowLeaveConfirm(false)}
+      >
+        <View style={styles.leaveBackdrop}>
+          <View style={styles.leaveCard}>
+            <Text style={styles.leaveTitle}>¿Salir sin crear?</Text>
+            <Text style={styles.leaveBody}>
+              Tienes información sin enviar. Si sales ahora, los datos se perderán.
+            </Text>
+            <View style={styles.leaveActions}>
+              <Pressable
+                style={styles.leaveCancelButton}
+                onPress={() => setShowLeaveConfirm(false)}
+                accessibilityRole="button"
+                accessibilityLabel="Continuar editando"
+              >
+                <Text style={styles.leaveCancelText}>Continuar</Text>
+              </Pressable>
+              <Pressable
+                style={styles.leaveConfirmButton}
+                onPress={exitToList}
+                accessibilityRole="button"
+                accessibilityLabel="Salir y descartar cambios"
+              >
+                <Text style={styles.leaveConfirmText}>Salir</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </MobileWorkspaceShell>
   );
 }
@@ -640,6 +798,7 @@ const styles = StyleSheet.create({
   statusChipWarning: { backgroundColor: designTokens.color.status.warningBg, color: designTokens.color.status.warningText },
   statusChipSuccess: { backgroundColor: designTokens.color.status.successBg, color: designTokens.color.status.successText },
   progressHelper: { color: designTokens.color.ink.secondary, fontSize: 13, lineHeight: 18 },
+  formScroll: { flex: 1, minHeight: 0 },
   scrollContent: { paddingBottom: 24 },
   card: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 14, marginBottom: 12 },
   cardTitle: { fontSize: 18, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 12 },
@@ -652,10 +811,33 @@ const styles = StyleSheet.create({
   textArea: { minHeight: 80, textAlignVertical: "top" },
 
   chipsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 },
-  chip: { backgroundColor: designTokens.color.surface.secondary, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: designTokens.color.border.subtle },
+  chip: { backgroundColor: designTokens.color.surface.secondary, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1, borderColor: designTokens.color.border.subtle },
   chipActive: { backgroundColor: designTokens.color.ink.accent, borderColor: designTokens.color.ink.accentStrong },
-  chipText: { color: designTokens.color.ink.secondary, fontWeight: "600", fontSize: 14 },
+  chipText: { color: designTokens.color.ink.secondary, fontWeight: "600", fontSize: 13 },
   chipTextActive: { color: designTokens.color.ink.inverse },
+
+  catalogLoading: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8 },
+  catalogLoadingText: { color: designTokens.color.ink.secondary, fontSize: 13 },
+  categoryRow: { flexDirection: "row", gap: 6, marginBottom: 10, padding: 4, backgroundColor: designTokens.color.surface.secondary, borderRadius: 14, borderWidth: 1, borderColor: designTokens.color.border.subtle },
+  categoryTab: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 8, paddingHorizontal: 6, borderRadius: 10, backgroundColor: "transparent" },
+  categoryTabActive: { backgroundColor: designTokens.color.surface.primary, boxShadow: "0px 1px 2px rgba(15, 23, 42, 0.08)", elevation: 1 },
+  categoryTabText: { color: designTokens.color.ink.secondary, fontWeight: "700", fontSize: 13 },
+  categoryTabTextActive: { color: designTokens.color.ink.primary },
+  categoryTabCount: { color: designTokens.color.ink.muted, fontSize: 11, fontWeight: "700", minWidth: 16, textAlign: "center" },
+  categoryTabCountActive: { color: designTokens.color.ink.accent },
+  selectedTypeRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 10, backgroundColor: designTokens.color.status.successBg, alignSelf: "flex-start" },
+  selectedTypeLabel: { color: designTokens.color.status.successText, fontSize: 12, fontWeight: "700" },
+  selectedTypeValue: { color: designTokens.color.ink.primary, fontSize: 13, fontWeight: "600" },
+
+  leaveBackdrop: { flex: 1, backgroundColor: "rgba(15, 23, 42, 0.45)", justifyContent: "center", alignItems: "center", padding: 24 },
+  leaveCard: { backgroundColor: designTokens.color.surface.primary, borderRadius: 18, padding: 20, width: "100%", maxWidth: 360, gap: 8 },
+  leaveTitle: { fontSize: 17, fontWeight: "800", color: designTokens.color.ink.primary },
+  leaveBody: { fontSize: 14, color: designTokens.color.ink.secondary, lineHeight: 20 },
+  leaveActions: { flexDirection: "row", gap: 8, marginTop: 12 },
+  leaveCancelButton: { flex: 1, borderRadius: 12, borderWidth: 1, borderColor: designTokens.color.border.strong, alignItems: "center", paddingVertical: 12 },
+  leaveCancelText: { color: designTokens.color.ink.primary, fontWeight: "700" },
+  leaveConfirmButton: { flex: 1, borderRadius: 12, backgroundColor: designTokens.color.ink.danger, alignItems: "center", paddingVertical: 12 },
+  leaveConfirmText: { color: designTokens.color.ink.inverse, fontWeight: "800" },
 
   stepperContainer: { flexDirection: "row", alignItems: "center", backgroundColor: designTokens.color.surface.secondary, borderRadius: 12, alignSelf: "flex-start", borderWidth: 1, borderColor: designTokens.color.border.strong },
   stepperBtn: { paddingHorizontal: 20, paddingVertical: 12 },
@@ -703,7 +885,6 @@ const styles = StyleSheet.create({
   dateModalConfirmButton: { flex: 1, borderRadius: 10, backgroundColor: designTokens.color.ink.accent, alignItems: "center", paddingVertical: 12 },
   dateModalConfirmText: { color: designTokens.color.ink.inverse, fontWeight: "700" },
 
-  stickyFooter: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingTop: 12, paddingBottom: Platform.OS === "ios" ? 32 : 16, backgroundColor: designTokens.color.surface.primary, borderTopWidth: 1, borderTopColor: designTokens.color.border.subtle, shadowColor: "#000" /* RN shadow requires raw hex */, shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 12 },
   buttonPrimary: { backgroundColor: designTokens.color.ink.accent, borderRadius: 12, paddingVertical: 16, alignItems: "center" },
   buttonPrimaryText: { color: designTokens.color.ink.inverse, fontWeight: "800", fontSize: 16 },
   buttonPressed: { opacity: 0.8 },
