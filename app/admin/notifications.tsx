@@ -1,9 +1,21 @@
-import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
-import { mobileSecondaryButton, mobileSecondarySurface, mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
+import {
+  mobileSecondaryButton,
+  mobileSurfaceCard,
+  mobileTheme,
+} from "@/src/design-system/mobileStyles";
 import { useAuth } from "@/src/context/AuthContext";
 import {
   archiveAdminNotification,
@@ -12,6 +24,7 @@ import {
   markAdminNotificationAsRead,
   markAdminNotificationAsUnread,
   type AdminNotificationDto,
+  type AdminNotificationStatus,
 } from "@/src/services/adminPortalService";
 import { adminTestIds } from "@/src/testing/testIds";
 import {
@@ -21,222 +34,412 @@ import {
   getNotificationSecondaryActionLabel,
   getNotificationStatusLabel,
   resolveAdminOperationalDeepLink,
-  sortAdminNotifications,
 } from "@/src/utils/adminOperationalUx";
+import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+
+const PAGE_SIZE = 10;
+
+const STATUS_FILTERS: ReadonlyArray<{ key: AdminNotificationStatus; label: string }> = [
+  { key: "Active", label: "Activas" },
+  { key: "Unread", label: "No Leídas" },
+  { key: "ActionRequired", label: "Acción" },
+  { key: "Archived", label: "Archivadas" },
+  { key: "All", label: "Todas" },
+];
 
 export default function AdminNotificationsScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
   const [items, setItems] = useState<AdminNotificationDto[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [isFetching, setIsFetching] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [status, setStatus] = useState<AdminNotificationStatus>("Active");
+  const [page, setPage] = useState(1);
+  const scrollRef = useRef<ScrollView | null>(null);
 
-  const load = async () => {
+  const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  const load = async (
+    nextStatus: AdminNotificationStatus,
+    nextPage: number,
+    mode: "initial" | "refresh" | "navigate" = "initial",
+  ) => {
     try {
       setError(null);
-      const response = await getAdminNotifications();
-      setItems(sortAdminNotifications(response));
+      if (mode === "refresh") setIsRefreshing(true);
+      else setIsFetching(true);
+      const response = await getAdminNotifications({
+        status: nextStatus,
+        page: nextPage,
+        pageSize: PAGE_SIZE,
+      });
+      setItems(response.items);
+      setTotalCount(response.totalCount);
+      setPage(response.page);
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "No fue posible cargar notificaciones.");
+      setError(
+        nextError instanceof Error ? nextError.message : "No fue posible cargar notificaciones.",
+      );
+    } finally {
+      setIsFetching(false);
+      setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
-    if (!isReady) return;
-    if (!isAuthenticated) return void router.replace("/login");
+    if (!isReady || !isAuthenticated) return;
     if (requiresProfileCompletion) return void router.replace("/register");
     if (!roles.includes("ADMIN")) return void router.replace("/");
-    void load();
+    void load(status, 1, "initial");
+    // Initial fetch only — subsequent loads happen via filter/page handlers.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles]);
+
+  useEffect(() => {
+    if (isReady && !isAuthenticated) router.replace("/login");
+  }, [isReady, isAuthenticated]);
 
   const runAction = async (work: () => Promise<void>) => {
     try {
       await work();
-      await load();
+      // Re-fetch the current page after a mutation; counts may shift filters.
+      await load(status, page, "refresh");
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "No fue posible actualizar la notificacion.");
+      setError(
+        nextError instanceof Error ? nextError.message : "No fue posible actualizar la notificación.",
+      );
     }
   };
 
-  const unreadCount = items.filter((item) => !item.readAtUtc).length;
-  const actionRequiredCount = items.filter((item) => item.requiresAction).length;
-  const leadItem = items[0] ?? null;
+  const handleStatusChange = (next: AdminNotificationStatus) => {
+    if (next === status) return;
+    setStatus(next);
+    setItems([]);
+    void load(next, 1, "navigate");
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  };
+
+  const handlePageChange = (nextPage: number) => {
+    if (nextPage < 1 || nextPage > pageCount || nextPage === page) return;
+    void load(status, nextPage, "navigate");
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  };
+
+  const showingFrom = items.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const showingTo = (page - 1) * PAGE_SIZE + items.length;
+
+  const renderPageChips = () => {
+    if (pageCount <= 1) return null;
+    const around = new Set<number>([1, pageCount, page - 1, page, page + 1]);
+    const visible = Array.from(around).filter((n) => n >= 1 && n <= pageCount).sort((a, b) => a - b);
+    const chips: Array<{ kind: "page" | "ellipsis"; value: number; key: string }> = [];
+    let prev = 0;
+    for (const n of visible) {
+      if (n - prev > 1) chips.push({ kind: "ellipsis", value: 0, key: `e-${prev}` });
+      chips.push({ kind: "page", value: n, key: `p-${n}` });
+      prev = n;
+    }
+    return (
+      <View style={styles.paginationRow}>
+        <Pressable
+          disabled={page <= 1}
+          onPress={() => handlePageChange(page - 1)}
+          accessibilityRole="button"
+          accessibilityLabel="Página anterior"
+          style={({ pressed }) => [
+            styles.pageNav,
+            (page <= 1 || pressed) && styles.pageNavDisabled,
+          ]}
+        >
+          <Text style={styles.pageNavText}>‹</Text>
+        </Pressable>
+        {chips.map((c) =>
+          c.kind === "ellipsis" ? (
+            <Text key={c.key} style={styles.pageEllipsis}>
+              …
+            </Text>
+          ) : (
+            <Pressable
+              key={c.key}
+              onPress={() => handlePageChange(c.value)}
+              accessibilityRole="button"
+              accessibilityLabel={`Página ${c.value}`}
+              style={[styles.pageChip, c.value === page && styles.pageChipActive]}
+            >
+              <Text style={[styles.pageChipText, c.value === page && styles.pageChipTextActive]}>
+                {c.value}
+              </Text>
+            </Pressable>
+          ),
+        )}
+        <Pressable
+          disabled={page >= pageCount}
+          onPress={() => handlePageChange(page + 1)}
+          accessibilityRole="button"
+          accessibilityLabel="Página siguiente"
+          style={({ pressed }) => [
+            styles.pageNav,
+            (page >= pageCount || pressed) && styles.pageNavDisabled,
+          ]}
+        >
+          <Text style={styles.pageNavText}>›</Text>
+        </Pressable>
+      </View>
+    );
+  };
 
   return (
     <MobileWorkspaceShell
-      eyebrow="Notificaciones"
       title="Notificaciones"
-      description="Una accion dominante por tarjeta y opciones secundarias solo cuando las necesitas."
-      actions={
-        <Pressable style={styles.button} onPress={() => void load()}>
-          <Text style={styles.buttonText}>Actualizar</Text>
-        </Pressable>
-      }
+      onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.adminHome)}
+      primaryReturnLabel="Volver"
     >
-      <View {...automationProps(adminTestIds.notifications.screen)} style={styles.screenRoot}>
-        {error ? (
-          <Text {...automationProps(adminTestIds.notifications.errorBanner)} style={styles.error}>
-            {error}
-          </Text>
-        ) : null}
-
-        <View {...automationProps(adminTestIds.notifications.statusChip)} style={styles.summaryCard}>
-          <Text style={styles.summaryLabel}>Bandeja activa</Text>
-          <Text style={styles.summaryValue}>{unreadCount}</Text>
-          <Text style={styles.summaryHelper}>
-            {actionRequiredCount > 0 ? `${actionRequiredCount} requieren accion · ` : ""}
-            {items.length} notificaciones visibles
-          </Text>
-        </View>
-
-        <Pressable
-          {...automationProps(adminTestIds.notifications.primaryAction)}
-          style={[styles.primaryLeadAction, styles.leadButton, !leadItem && styles.leadButtonDisabled]}
-          disabled={!leadItem}
-          onPress={() => {
-            if (!leadItem) return;
-            if (leadItem.deepLinkPath) {
-              router.push(resolveAdminOperationalDeepLink(leadItem.deepLinkPath) as any);
-              return;
-            }
-            void runAction(() =>
-              leadItem.readAtUtc ? markAdminNotificationAsUnread(leadItem.id) : markAdminNotificationAsRead(leadItem.id),
-            );
-          }}
+      <ScrollView
+        ref={scrollRef}
+        {...automationProps(adminTestIds.notifications.screen)}
+        contentContainerStyle={styles.scroll}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={() => void load(status, page, "refresh")}
+            tintColor={mobileTheme.colors.ink.accent}
+          />
+        }
+      >
+        {/* Status filter chips — always visible, render-first */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filtersRow}
         >
-          <Text style={styles.leadButtonText}>
-            {leadItem ? getNotificationPrimaryActionLabel(leadItem) : "Sin notificaciones urgentes"}
-          </Text>
-        </Pressable>
-
-        <View style={styles.list}>
-          {items.map((item, index) => {
-            const presentation = getAdminSeverityPresentation(item.severity);
-            const isExpanded = expandedId === item.id;
-            const isLead = index === 0;
-
+          {STATUS_FILTERS.map((f) => {
+            const active = f.key === status;
             return (
-              <View
-                key={item.id}
-                style={[
-                  styles.card,
-                  {
-                    backgroundColor: presentation.backgroundColor,
-                    borderColor: presentation.borderColor,
-                  },
-                ]}
+              <Pressable
+                key={f.key}
+                onPress={() => handleStatusChange(f.key)}
+                accessibilityRole="button"
+                accessibilityLabel={`Filtro ${f.label}`}
+                testID={`admin-notifications-filter-${f.key.toLowerCase()}`}
+                nativeID={`admin-notifications-filter-${f.key.toLowerCase()}`}
+                style={[styles.filterChip, active && styles.filterChipActive]}
               >
-                <View style={styles.cardHeader}>
-                  <View style={styles.chipsRow}>
-                    <Text style={[styles.severityChip, { color: presentation.textColor }]}>
-                      {presentation.label}
-                    </Text>
-                    <Text style={styles.stateChip}>{getNotificationStatusLabel(item)}</Text>
-                  </View>
-                  <Text style={styles.source}>{item.category}</Text>
-                </View>
-
-                <Text style={styles.title}>{item.title}</Text>
-                <Text style={styles.body}>{item.body}</Text>
-                {item.source ? <Text style={styles.meta}>Origen: {item.source}</Text> : null}
-
-                <Pressable
-                  style={[styles.cardButton, isLead && styles.cardButtonLead]}
-                  onPress={() => {
-                    if (item.deepLinkPath) {
-                      router.push(resolveAdminOperationalDeepLink(item.deepLinkPath) as any);
-                      return;
-                    }
-                    void runAction(() =>
-                      item.readAtUtc ? markAdminNotificationAsUnread(item.id) : markAdminNotificationAsRead(item.id),
-                    );
-                  }}
-                >
-                  <Text style={[styles.cardButtonText, isLead && styles.cardButtonTextLead]}>
-                    {getNotificationPrimaryActionLabel(item)}
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  {...(isLead ? automationProps(adminTestIds.notifications.secondaryToggle) : {})}
-                  style={styles.secondaryToggle}
-                  onPress={() => setExpandedId(isExpanded ? null : item.id)}
-                >
-                  <Text style={styles.secondaryToggleText}>
-                    {isExpanded ? "Ocultar acciones secundarias" : "Ver acciones secundarias"}
-                  </Text>
-                </Pressable>
-
-                {isExpanded ? (
-                  <View style={styles.secondaryActions}>
-                    <Pressable
-                      style={styles.secondaryAction}
-                      onPress={() =>
-                        void runAction(() =>
-                          item.readAtUtc ? markAdminNotificationAsUnread(item.id) : markAdminNotificationAsRead(item.id),
-                        )
-                      }
-                    >
-                      <Text style={styles.secondaryActionText}>{getNotificationSecondaryActionLabel(item)}</Text>
-                    </Pressable>
-                    <Pressable
-                      style={styles.secondaryAction}
-                      onPress={() => void runAction(() => dismissAdminNotification(item.id))}
-                    >
-                      <Text style={styles.secondaryActionText}>Descartar</Text>
-                    </Pressable>
-                    <Pressable
-                      style={styles.secondaryAction}
-                      onPress={() => void runAction(() => archiveAdminNotification(item.id))}
-                    >
-                      <Text style={styles.secondaryActionText}>Archivar</Text>
-                    </Pressable>
-                  </View>
-                ) : null}
-              </View>
+                <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
+                  {f.label}
+                </Text>
+              </Pressable>
             );
           })}
+        </ScrollView>
+
+        {error ? (
+          <View style={styles.errorBanner}>
+            <Text
+              {...automationProps(adminTestIds.notifications.errorBanner)}
+              style={styles.errorText}
+            >
+              {error}
+            </Text>
+          </View>
+        ) : null}
+
+        {/* Summary chip — totalCount, derived from response */}
+        <View
+          {...automationProps(adminTestIds.notifications.statusChip)}
+          style={styles.summaryRow}
+        >
+          <Text style={styles.summaryText}>
+            {isFetching && items.length === 0
+              ? "Cargando…"
+              : totalCount === 0
+              ? "0 notificaciones"
+              : `Mostrando ${showingFrom}–${showingTo} de ${totalCount}`}
+          </Text>
         </View>
-      </View>
+
+        {isFetching && items.length === 0 ? (
+          <View style={styles.loadingWrap}>
+            <ActivityIndicator color={mobileTheme.colors.ink.accent} />
+          </View>
+        ) : items.length === 0 ? (
+          <View style={styles.emptyWrap}>
+            <Text style={styles.emptyTitle}>No hay notificaciones en este filtro</Text>
+            <Text style={styles.emptyHint}>Prueba otro filtro o desliza para actualizar.</Text>
+          </View>
+        ) : (
+          <View style={styles.list}>
+            {items.map((item, index) => {
+              const presentation = getAdminSeverityPresentation(item.severity);
+              const isExpanded = expandedId === item.id;
+              const isLead = index === 0;
+
+              return (
+                <View
+                  key={item.id}
+                  style={[
+                    styles.card,
+                    {
+                      backgroundColor: presentation.backgroundColor,
+                      borderColor: presentation.borderColor,
+                    },
+                  ]}
+                >
+                  <View style={styles.cardHeader}>
+                    <View style={styles.chipsRow}>
+                      <Text style={[styles.severityChip, { color: presentation.textColor }]}>
+                        {presentation.label}
+                      </Text>
+                      <Text style={styles.stateChip}>{getNotificationStatusLabel(item)}</Text>
+                    </View>
+                    <Text style={styles.source}>{item.category}</Text>
+                  </View>
+
+                  <Text style={styles.title}>{item.title}</Text>
+                  <Text style={styles.body}>{item.body}</Text>
+                  {item.source ? <Text style={styles.meta}>Origen: {item.source}</Text> : null}
+
+                  <Pressable
+                    {...(isLead ? automationProps(adminTestIds.notifications.primaryAction) : {})}
+                    style={[styles.cardButton, isLead && styles.cardButtonLead]}
+                    onPress={() => {
+                      if (item.deepLinkPath) {
+                        router.push(resolveAdminOperationalDeepLink(item.deepLinkPath) as any);
+                        return;
+                      }
+                      void runAction(() =>
+                        item.readAtUtc
+                          ? markAdminNotificationAsUnread(item.id)
+                          : markAdminNotificationAsRead(item.id),
+                      );
+                    }}
+                  >
+                    <Text style={[styles.cardButtonText, isLead && styles.cardButtonTextLead]}>
+                      {getNotificationPrimaryActionLabel(item)}
+                    </Text>
+                  </Pressable>
+
+                  <Pressable
+                    {...(isLead ? automationProps(adminTestIds.notifications.secondaryToggle) : {})}
+                    style={styles.secondaryToggle}
+                    onPress={() => setExpandedId(isExpanded ? null : item.id)}
+                  >
+                    <Text style={styles.secondaryToggleText}>
+                      {isExpanded ? "Ocultar más" : "Más acciones"}
+                    </Text>
+                  </Pressable>
+
+                  {isExpanded ? (
+                    <View style={styles.secondaryActions}>
+                      <Pressable
+                        style={styles.secondaryAction}
+                        onPress={() =>
+                          void runAction(() =>
+                            item.readAtUtc
+                              ? markAdminNotificationAsUnread(item.id)
+                              : markAdminNotificationAsRead(item.id),
+                          )
+                        }
+                      >
+                        <Text style={styles.secondaryActionText}>
+                          {getNotificationSecondaryActionLabel(item)}
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        style={styles.secondaryAction}
+                        onPress={() => void runAction(() => dismissAdminNotification(item.id))}
+                      >
+                        <Text style={styles.secondaryActionText}>Descartar</Text>
+                      </Pressable>
+                      <Pressable
+                        style={styles.secondaryAction}
+                        onPress={() => void runAction(() => archiveAdminNotification(item.id))}
+                      >
+                        <Text style={styles.secondaryActionText}>Archivar</Text>
+                      </Pressable>
+                    </View>
+                  ) : null}
+                </View>
+              );
+            })}
+          </View>
+        )}
+
+        {renderPageChips()}
+      </ScrollView>
     </MobileWorkspaceShell>
   );
 }
 
 const styles = StyleSheet.create({
-  screenRoot: {
-    gap: 16,
+  scroll: {
+    gap: 12,
+    paddingBottom: 24,
   },
-  summaryCard: {
-    ...mobileSurfaceCard,
-    padding: 16,
-    gap: 4,
+  filtersRow: {
+    flexDirection: "row",
+    gap: 8,
+    paddingVertical: 4,
   },
-  summaryLabel: {
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: mobileTheme.colors.surface.secondary,
+    borderWidth: 1,
+    borderColor: mobileTheme.colors.border.subtle,
+  },
+  filterChipActive: {
+    backgroundColor: mobileTheme.colors.ink.accent,
+    borderColor: mobileTheme.colors.ink.accentStrong,
+  },
+  filterChipText: {
+    color: mobileTheme.colors.ink.secondary,
+    fontSize: 12,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  filterChipTextActive: {
+    color: mobileTheme.colors.ink.inverse,
+  },
+  summaryRow: {
+    paddingHorizontal: 4,
+  },
+  summaryText: {
     color: mobileTheme.colors.ink.secondary,
     fontSize: 12,
     fontWeight: "700",
-    textTransform: "uppercase",
   },
-  summaryValue: {
+  loadingWrap: {
+    paddingVertical: 48,
+    alignItems: "center",
+  },
+  emptyWrap: {
+    paddingVertical: 48,
+    alignItems: "center",
+    gap: 6,
+  },
+  emptyTitle: {
     color: mobileTheme.colors.ink.primary,
-    fontWeight: "900",
-    fontSize: 30,
-    lineHeight: 34,
+    fontSize: 15,
+    fontWeight: "800",
   },
-  summaryHelper: {
+  emptyHint: {
     color: mobileTheme.colors.ink.secondary,
     fontSize: 13,
-    lineHeight: 19,
   },
   list: {
     gap: 12,
   },
   card: {
     ...mobileSurfaceCard,
-    padding: 16,
-    gap: 10,
+    padding: 14,
+    gap: 8,
   },
   cardHeader: {
-    gap: 6,
+    gap: 4,
   },
   chipsRow: {
     flexDirection: "row",
@@ -245,32 +448,35 @@ const styles = StyleSheet.create({
   },
   severityChip: {
     fontWeight: "800",
-    fontSize: 12,
+    fontSize: 11,
     textTransform: "uppercase",
     letterSpacing: 0.4,
   },
   stateChip: {
     color: mobileTheme.colors.ink.secondary,
-    fontWeight: "700",
-    fontSize: 12,
+    fontWeight: "800",
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
   },
   source: {
     color: mobileTheme.colors.ink.secondary,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
   },
   title: {
     color: mobileTheme.colors.ink.primary,
-    fontWeight: "800",
-    fontSize: 17,
+    fontWeight: "900",
+    fontSize: 16,
   },
   body: {
     color: mobileTheme.colors.ink.secondary,
+    fontSize: 14,
     lineHeight: 20,
   },
   meta: {
     color: mobileTheme.colors.ink.muted,
-    fontSize: 13,
+    fontSize: 12,
   },
   cardButton: {
     ...mobileSecondaryButton,
@@ -289,31 +495,14 @@ const styles = StyleSheet.create({
   cardButtonTextLead: {
     color: mobileTheme.colors.ink.inverse,
   },
-  leadButton: {
-    alignSelf: "stretch",
-    paddingHorizontal: 18,
-  },
-  leadButtonDisabled: {
-    opacity: 0.65,
-  },
-  leadButtonText: {
-    color: mobileTheme.colors.ink.inverse,
-    fontWeight: "800",
-  },
-  primaryLeadAction: {
-    ...mobileSecondaryButton,
-    backgroundColor: mobileTheme.colors.ink.accent,
-  },
   secondaryToggle: {
-    ...mobileSecondaryButton,
     alignSelf: "flex-start",
-    paddingHorizontal: 14,
-    minHeight: 44,
+    paddingVertical: 4,
   },
   secondaryToggleText: {
-    color: mobileTheme.colors.ink.accentStrong,
-    fontWeight: "700",
-    fontSize: 13,
+    color: mobileTheme.colors.ink.accent,
+    fontWeight: "800",
+    fontSize: 12,
   },
   secondaryActions: {
     gap: 8,
@@ -326,21 +515,67 @@ const styles = StyleSheet.create({
   },
   secondaryActionText: {
     color: mobileTheme.colors.ink.accentStrong,
-    fontWeight: "700",
+    fontWeight: "800",
   },
-  button: {
-    ...mobileSecondaryButton,
-    paddingHorizontal: 16,
-  },
-  buttonText: {
-    color: mobileTheme.colors.ink.accentStrong,
-    fontWeight: "700",
-  },
-  error: {
-    ...mobileSecondarySurface,
+  errorBanner: {
+    backgroundColor: mobileTheme.colors.surface.danger,
     borderColor: mobileTheme.colors.border.danger,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+  },
+  errorText: {
     color: mobileTheme.colors.status.dangerText,
-    padding: 14,
+    fontSize: 13,
     fontWeight: "700",
+  },
+  paginationRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 6,
+    paddingTop: 12,
+  },
+  pageChip: {
+    minWidth: 32,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: mobileTheme.colors.surface.secondary,
+    alignItems: "center",
+  },
+  pageChipActive: {
+    backgroundColor: mobileTheme.colors.ink.accent,
+  },
+  pageChipText: {
+    color: mobileTheme.colors.ink.secondary,
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  pageChipTextActive: {
+    color: mobileTheme.colors.ink.inverse,
+  },
+  pageEllipsis: {
+    color: mobileTheme.colors.ink.muted,
+    fontSize: 13,
+    fontWeight: "800",
+    paddingHorizontal: 4,
+  },
+  pageNav: {
+    minWidth: 32,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: mobileTheme.colors.surface.secondary,
+    alignItems: "center",
+  },
+  pageNavDisabled: {
+    opacity: 0.4,
+  },
+  pageNavText: {
+    color: mobileTheme.colors.ink.primary,
+    fontSize: 18,
+    fontWeight: "900",
+    lineHeight: 18,
   },
 });
