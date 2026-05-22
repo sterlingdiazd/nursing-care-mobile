@@ -1,22 +1,39 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { type FooterAction } from "@/src/components/navigation/AppFooter";
 import { useAuth } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
+import { mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
 import {
   getNurseProfileForAdmin,
   setNurseOperationalAccessForAdmin,
   type NurseProfileAdminRecordDto,
 } from "@/src/services/adminPortalService";
-import { mobileAdminActionButton, mobileAdminActionButtonText } from "@/src/design-system/mobileStyles";
 import { adminTestIds } from "@/src/testing/testIds";
-import { mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+import { formatDateES } from "@/src/utils/spanishTextValidator";
+
+type StatusTone = "success" | "warning" | "danger" | "neutral";
+
+function statusToneStyle(tone: StatusTone) {
+  switch (tone) {
+    case "success":
+      return { bg: designTokens.color.surface.success, fg: designTokens.color.status.successText };
+    case "warning":
+      return { bg: designTokens.color.surface.warning, fg: designTokens.color.status.warningText };
+    case "danger":
+      return { bg: designTokens.color.surface.danger, fg: designTokens.color.status.dangerText };
+    default:
+      return { bg: designTokens.color.surface.secondary, fg: designTokens.color.ink.primary };
+  }
+}
 
 function formatTimestamp(value: string | null) {
   if (!value) return "N/A";
-  return new Intl.DateTimeFormat("es-DO", { dateStyle: "medium" }).format(new Date(value));
+  return formatDateES(value);
 }
 
 export default function AdminNurseProfileDetailScreen() {
@@ -26,6 +43,7 @@ export default function AdminNurseProfileDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const fetchedIdRef = useRef<string | null>(null);
 
   const load = async () => {
     if (!id) return;
@@ -35,19 +53,28 @@ export default function AdminNurseProfileDetailScreen() {
       const response = await getNurseProfileForAdmin(id);
       setDetail(response);
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "No fue posible cargar el perfil de la enfermera.");
+      setError(
+        nextError instanceof Error
+          ? nextError.message
+          : "No fue posible cargar el perfil de la enfermera.",
+      );
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (!isReady) return;
-    if (!isAuthenticated) return void router.replace("/login" as any);
-    if (requiresProfileCompletion) return void router.replace("/register" as any);
-    if (!roles.includes("ADMIN")) return void router.replace("/" as any);
+    if (!isReady || !isAuthenticated) return;
+    if (requiresProfileCompletion) return void router.replace("/register");
+    if (!roles.includes("ADMIN")) return void router.replace("/");
+    if (!id || fetchedIdRef.current === id) return;
+    fetchedIdRef.current = id;
     void load();
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles, id]);
+
+  useEffect(() => {
+    if (isReady && !isAuthenticated) router.replace("/login");
+  }, [isReady, isAuthenticated]);
 
   const handleToggleOperationalAccess = async () => {
     if (!detail) return;
@@ -57,278 +84,296 @@ export default function AdminNurseProfileDetailScreen() {
       await setNurseOperationalAccessForAdmin(detail.userId, newStatus);
       setDetail({ ...detail, nurseProfileIsActive: newStatus });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No fue posible cambiar el acceso operacional");
+      setError(err instanceof Error ? err.message : "No fue posible cambiar el acceso operacional.");
     } finally {
       setToggling(false);
     }
   };
 
-  if (!isReady || !isAuthenticated || !roles.includes("ADMIN")) {
-    return null;
-  }
+  if (!isReady || !isAuthenticated || !roles.includes("ADMIN")) return null;
+
+  const accessActive = detail?.nurseProfileIsActive ?? false;
+
+  const workflowActions: FooterAction[] = detail
+    ? [
+        {
+          label: accessActive ? "Desactivar" : "Activar",
+          onPress: () => void handleToggleOperationalAccess(),
+          variant: "secondary",
+          disabled: toggling,
+          testID: adminTestIds.nurses.detailOperationalToggleButton,
+        },
+        ...(detail.isPendingReview
+          ? [
+              {
+                label: "Revisar",
+                onPress: () => router.push(`/admin/nurse-profiles/${id}/review` as never),
+                variant: "primary" as const,
+                testID: adminTestIds.nurses.detailReviewButton,
+              },
+            ]
+          : [
+              {
+                label: "Editar",
+                onPress: () => router.push(`/admin/nurse-profiles/${id}/edit` as never),
+                variant: "primary" as const,
+                testID: adminTestIds.nurses.detailPrimaryAction,
+              },
+            ]),
+      ]
+    : [];
 
   return (
     <MobileWorkspaceShell
-      eyebrow="Perfil de Enfermera"
-      title={detail ? `${detail.name} ${detail.lastName}` : "Cargando..."}
-      description="Información completa del perfil de enfermera."
+      title={detail ? [detail.name, detail.lastName].filter(Boolean).join(" ") || detail.email : "Cargando..."}
       testID={adminTestIds.nurses.detailScreen}
       nativeID={adminTestIds.nurses.detailScreen}
-      primaryReturnPath={mobileNavigationEscapes.adminNurseProfiles}
-      primaryReturnLabel="Volver a enfermeras"
-      actions={(
-        <View style={styles.headerActions}>
-          <Pressable
-            style={styles.button}
-            onPress={() => void load()}
-            accessibilityRole="button"
-            accessibilityLabel="Actualizar perfil de enfermera"
-          >
-            <Text style={styles.buttonText}>Actualizar</Text>
-          </Pressable>
-          {detail && (
-            <Pressable
-              testID={adminTestIds.nurses.detailPrimaryAction}
-              nativeID={adminTestIds.nurses.detailPrimaryAction}
-              style={styles.buttonPrimary}
-              onPress={() => router.push(`/admin/nurse-profiles/${id}/edit` as any)}
-              accessibilityRole="button"
-              accessibilityLabel="Editar perfil de enfermera"
-            >
-              <Text style={styles.buttonPrimaryText}>Editar</Text>
-            </Pressable>
-          )}
-        </View>
-      )}
+      onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.adminNurseProfiles)}
+      primaryReturnLabel="Volver"
+      workflowActions={workflowActions}
     >
-      {!!error && (
-        <Text
-          testID={adminTestIds.nurses.detailErrorBanner}
-          nativeID={adminTestIds.nurses.detailErrorBanner}
-          style={styles.error}
-        >
-          {error}
-        </Text>
-      )}
-      {loading && <Text style={styles.loading}>Cargando...</Text>}
+      {error ? (
+        <View style={styles.errorBanner}>
+          <Text
+            testID={adminTestIds.nurses.detailErrorBanner}
+            nativeID={adminTestIds.nurses.detailErrorBanner}
+            style={styles.errorText}
+          >
+            {error}
+          </Text>
+        </View>
+      ) : null}
 
-      {detail && (
-        <ScrollView>
-          {/* Status Indicators */}
-          <View style={styles.statusCard}>
-            <View style={styles.statusRow}>
-              {detail.isProfileComplete && (
-                <View style={styles.badgeSuccess}>
-                  <Text style={styles.badgeTextSuccess}>✓ Perfil completo</Text>
-                </View>
-              )}
-              {detail.isPendingReview && (
-                <View style={styles.badgeWarning}>
-                  <Text style={styles.badgeTextWarning}>⚠️ Pendiente de revisión</Text>
-                </View>
-              )}
-              {detail.isAssignmentReady && (
-                <View style={styles.badgeSuccess}>
-                  <Text style={styles.badgeTextSuccess}>✓ Lista para asignación</Text>
-                </View>
-              )}
-            </View>
-            <Text
+      {loading && !detail ? <Text style={styles.loading}>Cargando...</Text> : null}
+
+      {detail ? (
+        <ScrollView contentContainerStyle={styles.scroll}>
+          {/* Status row — pills come from the canonical status palette */}
+          <View style={styles.statusRow}>
+            {detail.isProfileComplete ? (
+              <StatusPill tone="success" label="Perfil completo" />
+            ) : null}
+            {detail.isPendingReview ? <StatusPill tone="warning" label="Pendiente revisión" /> : null}
+            {detail.isAssignmentReady ? (
+              <StatusPill tone="success" label="Lista para asignación" />
+            ) : null}
+            <StatusPill
+              tone={accessActive ? "success" : "danger"}
+              label={accessActive ? "Acceso activo" : "Acceso inactivo"}
               testID={adminTestIds.nurses.detailStatusChip}
-              nativeID={adminTestIds.nurses.detailStatusChip}
-              style={styles.statusChip}
-            >
-              Acceso operacional: {detail.nurseProfileIsActive ? "Activo" : "Inactivo"}
-            </Text>
+            />
           </View>
 
-          {/* Personal Info */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Información Personal</Text>
-            <View style={styles.field}>
-              <Text style={styles.fieldLabel}>Nombre completo</Text>
-              <Text style={styles.fieldValue}>{detail.name} {detail.lastName}</Text>
-            </View>
-            <View style={styles.field}>
-              <Text style={styles.fieldLabel}>Correo electrónico</Text>
-              <Text style={styles.fieldValue}>{detail.email}</Text>
-            </View>
-            {detail.identificationNumber && (
-              <View style={styles.field}>
-                <Text style={styles.fieldLabel}>Cédula</Text>
-                <Text style={styles.fieldValue}>{detail.identificationNumber}</Text>
-              </View>
-            )}
-            {detail.phone && (
-              <View style={styles.field}>
-                <Text style={styles.fieldLabel}>Teléfono</Text>
-                <Text style={styles.fieldValue}>{detail.phone}</Text>
-              </View>
-            )}
+            {detail.name ? <Field label="Nombre" value={detail.name} /> : null}
+            {detail.lastName ? <Field label="Apellido" value={detail.lastName} /> : null}
+            <Field label="Correo" value={detail.email} />
+            {detail.identificationNumber ? (
+              <Field label="Cédula" value={detail.identificationNumber} />
+            ) : null}
+            {detail.phone ? <Field label="Teléfono" value={detail.phone} /> : null}
           </View>
 
-          {/* Professional Info */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Información Profesional</Text>
-            {detail.hireDate && (
-              <View style={styles.field}>
-                <Text style={styles.fieldLabel}>Fecha de contratación</Text>
-                <Text style={styles.fieldValue}>{formatTimestamp(detail.hireDate)}</Text>
-              </View>
-            )}
-            {detail.specialty && (
-              <View style={styles.field}>
-                <Text style={styles.fieldLabel}>Especialidad</Text>
-                <Text style={styles.fieldValue}>{detail.specialty}</Text>
-              </View>
-            )}
-            {detail.licenseId && (
-              <View style={styles.field}>
-                <Text style={styles.fieldLabel}>Licencia</Text>
-                <Text style={styles.fieldValue}>{detail.licenseId}</Text>
-              </View>
-            )}
-            {detail.category && (
-              <View style={styles.field}>
-                <Text style={styles.fieldLabel}>Categoría</Text>
-                <Text style={styles.fieldValue}>{detail.category}</Text>
-              </View>
-            )}
+            {detail.hireDate ? (
+              <Field label="Fecha de Contratación" value={formatTimestamp(detail.hireDate)} />
+            ) : null}
+            {detail.specialty ? <Field label="Especialidad" value={detail.specialty} /> : null}
+            {detail.licenseId ? <Field label="Licencia" value={detail.licenseId} /> : null}
+            {detail.category ? <Field label="Categoría" value={detail.category} /> : null}
           </View>
 
-          {/* Banking Info */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Información Bancaria</Text>
             {detail.bankName ? (
               <>
-                <View style={styles.field}>
-                  <Text style={styles.fieldLabel}>Banco</Text>
-                  <Text style={styles.fieldValue}>{detail.bankName}</Text>
-                </View>
-                {detail.accountNumber && (
-                  <View style={styles.field}>
-                    <Text style={styles.fieldLabel}>Número de cuenta</Text>
-                    <Text style={styles.fieldValue}>{detail.accountNumber}</Text>
-                  </View>
-                )}
+                <Field label="Banco" value={detail.bankName} />
+                {detail.accountNumber ? (
+                  <Field label="Número de Cuenta" value={detail.accountNumber} />
+                ) : null}
               </>
             ) : (
-              <Text style={styles.emptyText}>No se ha proporcionado información bancaria.</Text>
+              <Text style={styles.emptyText}>Sin información bancaria.</Text>
             )}
           </View>
 
-          {/* Workload Summary */}
-          {detail.workload && (
+          {detail.workload ? (
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Carga de Trabajo</Text>
-              <View style={styles.field}>
-                <Text style={styles.fieldLabel}>Total de solicitudes asignadas</Text>
-                <Text style={styles.fieldValue}>{detail.workload.totalAssignedCareRequests || 0}</Text>
+              <View style={styles.workloadRow}>
+                <WorkloadStat label="Total" value={detail.workload.totalAssignedCareRequests ?? 0} />
+                <WorkloadStat
+                  label="Pendientes"
+                  value={detail.workload.pendingAssignedCareRequests ?? 0}
+                />
+                <WorkloadStat
+                  label="Aprobadas"
+                  value={detail.workload.approvedAssignedCareRequests ?? 0}
+                />
+                <WorkloadStat
+                  label="Rechazadas"
+                  value={detail.workload.rejectedAssignedCareRequests ?? 0}
+                />
+                <WorkloadStat
+                  label="Completadas"
+                  value={detail.workload.completedAssignedCareRequests ?? 0}
+                />
               </View>
-              <View style={styles.field}>
-                <Text style={styles.fieldLabel}>Pendientes</Text>
-                <Text style={styles.fieldValue}>{detail.workload.pendingAssignedCareRequests || 0}</Text>
-              </View>
-              <View style={styles.field}>
-                <Text style={styles.fieldLabel}>Aprobadas</Text>
-                <Text style={styles.fieldValue}>{detail.workload.approvedAssignedCareRequests || 0}</Text>
-              </View>
-              <View style={styles.field}>
-                <Text style={styles.fieldLabel}>Rechazadas</Text>
-                <Text style={styles.fieldValue}>{detail.workload.rejectedAssignedCareRequests || 0}</Text>
-              </View>
-              <View style={styles.field}>
-                <Text style={styles.fieldLabel}>Completadas</Text>
-                <Text style={styles.fieldValue}>{detail.workload.completedAssignedCareRequests || 0}</Text>
-              </View>
-              {detail.workload.lastCareRequestAtUtc && (
-                <View style={styles.field}>
-                  <Text style={styles.fieldLabel}>Última solicitud</Text>
-                  <Text style={styles.fieldValue}>{formatTimestamp(detail.workload.lastCareRequestAtUtc)}</Text>
-                </View>
-              )}
+              {detail.workload.lastCareRequestAtUtc ? (
+                <Field
+                  label="Última Solicitud"
+                  value={formatTimestamp(detail.workload.lastCareRequestAtUtc)}
+                />
+              ) : null}
             </View>
-          )}
+          ) : null}
 
-          {/* Status and Actions */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Estado y Acciones</Text>
-            <View style={styles.field}>
-              <Text style={styles.fieldLabel}>Usuario activo</Text>
-              <Text style={styles.fieldValue}>{detail.userIsActive ? "Sí" : "No"}</Text>
-            </View>
-            <View style={styles.field}>
-              <Text style={styles.fieldLabel}>Acceso operacional</Text>
-              <Text style={styles.fieldValue}>{detail.nurseProfileIsActive ? "Activo" : "Inactivo"}</Text>
-            </View>
-            
-            <Pressable
-              testID={adminTestIds.nurses.detailOperationalToggleButton}
-              nativeID={adminTestIds.nurses.detailOperationalToggleButton}
-              style={[styles.toggleButton, toggling && styles.toggleButtonDisabled]}
-              onPress={handleToggleOperationalAccess}
-              disabled={toggling}
-            >
-              <Text style={styles.toggleButtonText}>
-                {toggling ? "Cambiando..." : detail.nurseProfileIsActive ? "Desactivar acceso operacional" : "Activar acceso operacional"}
-              </Text>
-            </Pressable>
-
-            {detail.isPendingReview && (
-              <Pressable
-                testID={adminTestIds.nurses.detailReviewButton}
-                nativeID={adminTestIds.nurses.detailReviewButton}
-                style={styles.reviewButton}
-                onPress={() => router.push(`/admin/nurse-profiles/${id}/review` as any)}
-              >
-                <Text style={styles.reviewButtonText}>Revisar y Completar Perfil</Text>
-              </Pressable>
-            )}
-          </View>
-
-          {/* Metadata */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Información del Sistema</Text>
-            <View style={styles.field}>
-              <Text style={styles.fieldLabel}>ID de usuario</Text>
-              <Text style={styles.fieldValueMono}>{detail.userId}</Text>
-            </View>
-            <View style={styles.field}>
-              <Text style={styles.fieldLabel}>Fecha de creación</Text>
-              <Text style={styles.fieldValue}>{formatTimestamp(detail.createdAtUtc)}</Text>
-            </View>
+            <Text style={styles.cardTitle}>Cuenta</Text>
+            <Field label="Fecha de Registro" value={formatTimestamp(detail.createdAtUtc)} />
           </View>
         </ScrollView>
-      )}
+      ) : null}
     </MobileWorkspaceShell>
   );
 }
 
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.field}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <Text style={styles.fieldValue}>{value}</Text>
+    </View>
+  );
+}
+
+function StatusPill({
+  tone,
+  label,
+  testID,
+}: {
+  tone: StatusTone;
+  label: string;
+  testID?: string;
+}) {
+  const colors = statusToneStyle(tone);
+  return (
+    <View
+      style={[styles.statusPill, { backgroundColor: colors.bg }]}
+      testID={testID}
+      nativeID={testID}
+    >
+      <Text style={[styles.statusPillText, { color: colors.fg }]}>{label}</Text>
+    </View>
+  );
+}
+
+function WorkloadStat({ label, value }: { label: string; value: number }) {
+  return (
+    <View style={styles.workloadStat}>
+      <Text style={styles.workloadValue}>{value}</Text>
+      <Text style={styles.workloadLabel}>{label}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  headerActions: { flexDirection: "row", gap: 8 },
-  button: { backgroundColor: designTokens.color.surface.secondary, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },
-  buttonText: { color: designTokens.color.ink.primary, fontWeight: "700", fontSize: 14 },
-  buttonPrimary: { ...mobileAdminActionButton, paddingHorizontal: 16, paddingVertical: 10 },
-  buttonPrimaryText: { ...mobileAdminActionButtonText },
-  error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: 12, borderRadius: 12, marginBottom: 12 },
-  loading: { color: designTokens.color.ink.secondary, fontSize: 14, textAlign: "center", padding: 20 },
-  statusCard: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 14, marginBottom: 12 },
-  statusRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  statusChip: { marginTop: 10, alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 12, fontWeight: "800", backgroundColor: designTokens.color.surface.secondary, borderWidth: 1, borderColor: designTokens.color.border.subtle, color: designTokens.color.ink.primary },
-  badgeSuccess: { backgroundColor: designTokens.color.surface.success, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6 },
-  badgeTextSuccess: { color: designTokens.color.status.successText, fontSize: 12, fontWeight: "700" },
-  badgeWarning: { backgroundColor: designTokens.color.surface.warning, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6 },
-  badgeTextWarning: { color: designTokens.color.status.warningText, fontSize: 12, fontWeight: "700" },
-  card: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 14, marginBottom: 12 },
-  cardTitle: { fontSize: 16, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 12 },
-  field: { marginBottom: 8 },
-  fieldLabel: { color: designTokens.color.status.dangerText, fontSize: 12, fontWeight: "800", textTransform: "uppercase", marginBottom: 2 },
-  fieldValue: { color: designTokens.color.ink.primary, fontSize: 15 },
-  fieldValueMono: { color: designTokens.color.ink.primary, fontSize: 13, fontFamily: "monospace" },
-  emptyText: { color: designTokens.color.ink.secondary, fontSize: 14, fontStyle: "italic" },
-  toggleButton: { ...mobileAdminActionButton, paddingVertical: 12, marginTop: 12 },
-  toggleButtonDisabled: { opacity: 0.5 },
-  toggleButtonText: { ...mobileAdminActionButtonText },
-  reviewButton: { ...mobileAdminActionButton, paddingVertical: 12, marginTop: 8 },
-  reviewButtonText: { ...mobileAdminActionButtonText },
+  scroll: {
+    gap: 12,
+    paddingBottom: 24,
+  },
+  statusRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  statusPill: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  statusPillText: {
+    fontSize: 11,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  card: {
+    ...mobileSurfaceCard,
+    padding: 14,
+    gap: 6,
+  },
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: "900",
+    color: designTokens.color.ink.primary,
+    marginBottom: 4,
+  },
+  field: {
+    paddingVertical: 4,
+  },
+  fieldLabel: {
+    color: designTokens.color.ink.secondary,
+    fontSize: 11,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+    marginBottom: 2,
+  },
+  fieldValue: {
+    color: designTokens.color.ink.primary,
+    fontSize: 15,
+  },
+  emptyText: {
+    color: designTokens.color.ink.muted,
+    fontSize: 14,
+  },
+  workloadRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginVertical: 6,
+  },
+  workloadStat: {
+    flexBasis: "30%",
+    flexGrow: 1,
+    backgroundColor: designTokens.color.surface.secondary,
+    borderRadius: 12,
+    padding: 10,
+    alignItems: "center",
+  },
+  workloadValue: {
+    color: mobileTheme.colors.ink.accent,
+    fontSize: 22,
+    fontWeight: "900",
+  },
+  workloadLabel: {
+    color: designTokens.color.ink.secondary,
+    fontSize: 11,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+    marginTop: 2,
+  },
+  errorBanner: {
+    backgroundColor: designTokens.color.surface.danger,
+    borderColor: designTokens.color.border.danger,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+  },
+  errorText: {
+    color: designTokens.color.status.dangerText,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  loading: {
+    color: designTokens.color.ink.secondary,
+    fontSize: 14,
+    textAlign: "center",
+    paddingVertical: 24,
+  },
 });
