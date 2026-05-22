@@ -118,11 +118,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     zIndex: 9999,
     ...{
-      shadowColor: "#123044",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.12,
-      shadowRadius: 12,
-      elevation: 6,
+      boxShadow: "0px 4px 12px rgba(18, 48, 68, 0.12)",
+elevation: 6,
     },
   },
   touchable: {
