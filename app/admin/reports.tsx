@@ -39,46 +39,34 @@ interface ReportMetadata {
   description: string;
 }
 
+// Decision-driving reports surfaced to the owner. Low-value count-only reports (onboarding,
+// active/inactive users, notification volume) are intentionally not listed; revenue mix lives in
+// the Finanzas dashboard. The backend keys still exist if needed.
 const REPORTS: ReportMetadata[] = [
   {
     key: "care-request-pipeline",
     label: "Estado de solicitudes",
-    description: "Distribucion por estado (Pendiente, Aprobada, etc).",
+    description: "Qué requiere acción ahora: vencidas y sin asignar.",
   },
   {
     key: "assignment-approval-backlog",
     label: "Pendientes",
-    description: "Mide el retraso en la gestion de solicitudes.",
-  },
-  {
-    key: "nurse-onboarding",
-    label: "Registro de enfermeras",
-    description: "Seguimiento del embudo de registro personal.",
-  },
-  {
-    key: "active-inactive-users",
-    label: "Usuarios activos e inactivos",
-    description: "Conteo de usuarios por rol y estado.",
+    description: "Cuánto tardas en asignar y aprobar (espera promedio).",
   },
   {
     key: "nurse-utilization",
     label: "Productividad",
-    description: "Tasa de cumplimiento por profesional.",
+    description: "Utilización por enfermera y capacidad ociosa.",
   },
   {
     key: "care-request-completion",
     label: "Servicios completados",
-    description: "Analisis de cierre y tiempos de atencion.",
+    description: "Throughput y tiempo de cierre en el tiempo.",
   },
   {
     key: "price-usage-summary",
     label: "Resumen de servicios",
     description: "Distribucion por tipo y complejidad.",
-  },
-  {
-    key: "notification-volume",
-    label: "Alertas y notificaciones",
-    description: "Estadisticas de comunicacion y alertas.",
   },
 ];
 
@@ -261,25 +249,58 @@ function ReportVisualizer({ reportKey, data }: { reportKey: string; data: AdminR
   }
 }
 
-function PipelineVisualizer({ data }: { data: CareRequestPipelineReportDto }) {
+type InsightTone = "success" | "warning" | "danger" | "info";
+
+function ReportInsight({ tone, text }: { tone: InsightTone; text: string }) {
+  const palette = {
+    success: { bg: designTokens.color.surface.success, fg: designTokens.color.status.successText },
+    warning: { bg: designTokens.color.surface.warning, fg: designTokens.color.status.warningText },
+    danger: { bg: designTokens.color.surface.danger, fg: designTokens.color.status.dangerText },
+    info: { bg: designTokens.color.surface.accent, fg: designTokens.color.ink.accentStrong },
+  }[tone];
   return (
-    <View style={styles.grid}>
-      <MetricCard label="Pendientes" value={data.pendingCount} color={designTokens.color.ink.accentStrong} />
-      <MetricCard label="Aprobadas" value={data.approvedCount} color={designTokens.color.ink.accentStrong} />
-      <MetricCard label="Completadas" value={data.completedCount} color={designTokens.color.status.successText} />
-      <MetricCard label="Rechazadas" value={data.rejectedCount} color={designTokens.color.ink.danger} />
-      <MetricCard label="Sin asignar" value={data.unassignedCount} color={designTokens.color.status.warningText} />
-      <MetricCard label="Vencidas" value={data.overdueCount} color={designTokens.color.status.dangerText} />
+    <View style={[styles.insight, { backgroundColor: palette.bg, borderLeftColor: palette.fg }]}>
+      <Text style={[styles.insightText, { color: palette.fg }]}>{text}</Text>
+    </View>
+  );
+}
+
+function PipelineVisualizer({ data }: { data: CareRequestPipelineReportDto }) {
+  const total = data.pendingCount + data.approvedCount + data.completedCount + data.rejectedCount;
+  const completionRate = total > 0 ? Math.round((data.completedCount / total) * 100) : 0;
+  const insight = data.overdueCount > 0
+    ? { tone: "danger" as const, text: `${data.overdueCount} vencida(s)${data.unassignedCount > 0 ? ` y ${data.unassignedCount} sin asignar` : ""} requieren acción ahora.` }
+    : data.unassignedCount > 0
+      ? { tone: "warning" as const, text: `${data.unassignedCount} solicitud(es) sin asignar — asígnalas para no acumular retraso.` }
+      : { tone: "success" as const, text: `Sin vencidas ni sin asignar. Tasa de completadas: ${completionRate}%.` };
+  return (
+    <View>
+      <ReportInsight tone={insight.tone} text={insight.text} />
+      <View style={styles.grid}>
+        <MetricCard label="Pendientes" value={data.pendingCount} color={designTokens.color.ink.accentStrong} />
+        <MetricCard label="Aprobadas" value={data.approvedCount} color={designTokens.color.ink.accentStrong} />
+        <MetricCard label="Completadas" value={data.completedCount} color={designTokens.color.status.successText} />
+        <MetricCard label="Rechazadas" value={data.rejectedCount} color={designTokens.color.ink.danger} />
+        <MetricCard label="Sin asignar" value={data.unassignedCount} color={designTokens.color.status.warningText} />
+        <MetricCard label="Vencidas" value={data.overdueCount} color={designTokens.color.status.dangerText} />
+      </View>
     </View>
   );
 }
 
 function BacklogVisualizer({ data }: { data: AssignmentApprovalBacklogReportDto }) {
+  const days = data.averageDaysPending ?? 0;
+  const waiting = data.pendingUnassignedCount + data.pendingAssignedAwaitingApprovalCount;
+  const tone: InsightTone = waiting === 0 ? "success" : days >= 4 ? "danger" : days >= 2 ? "warning" : "info";
+  const text = waiting === 0
+    ? "Sin solicitudes en espera. Gestión al día."
+    : `${waiting} en espera · ${days.toFixed(1)} días promedio. ${data.pendingUnassignedCount} por asignar y ${data.pendingAssignedAwaitingApprovalCount} por aprobar.`;
   return (
     <View style={styles.stack}>
+      <ReportInsight tone={tone} text={text} />
       <MetricCard label="Sin enfermera" value={data.pendingUnassignedCount} color={designTokens.color.status.warningText} />
       <MetricCard label="Esperando aprobacion" value={data.pendingAssignedAwaitingApprovalCount} color={designTokens.color.ink.accent} />
-      <MetricCard label="Dias promedio espera" value={`${(data.averageDaysPending ?? 0).toFixed(1)}`} color={designTokens.color.ink.accentStrong} />
+      <MetricCard label="Dias promedio espera" value={`${days.toFixed(1)}`} color={designTokens.color.ink.accentStrong} />
     </View>
   );
 }
@@ -322,10 +343,21 @@ function UsersVisualizer({ data }: { data: ActiveInactiveUsersReportDto }) {
 }
 
 function UtilizationVisualizer({ data }: { data: NurseUtilizationReportDto }) {
+  const rows = data.rows ?? [];
+  const avg = rows.length ? Math.round((rows.reduce((s, r) => s + (r.completionRate ?? 0), 0) / rows.length) * 100) : 0;
+  const idle = rows.filter((r) => (r.completionRate ?? 0) < 0.6).length;
+  const tone: InsightTone = rows.length === 0 ? "info" : idle > 0 ? "warning" : "success";
+  const text = rows.length === 0
+    ? "Sin datos de enfermeras en el período."
+    : idle > 0
+      ? `Utilización promedio ${avg}%. ${idle} enfermera(s) por debajo de 60% — capacidad ociosa disponible.`
+      : `Utilización promedio ${avg}%. Equipo bien aprovechado.`;
   return (
-    <View style={styles.table}>
-      <View style={styles.tableHeader}>
-        <Text style={[styles.tableHeaderText, { flex: 2 }]}>Enfermera</Text>
+    <View>
+      <ReportInsight tone={tone} text={text} />
+      <View style={styles.table}>
+        <View style={styles.tableHeader}>
+          <Text style={[styles.tableHeaderText, { flex: 2 }]}>Enfermera</Text>
         <Text style={[styles.tableHeaderText, { flex: 1, textAlign: "right" }]}>Comp.</Text>
         <Text style={[styles.tableHeaderText, { flex: 1, textAlign: "right" }]}>%</Text>
       </View>
@@ -338,18 +370,25 @@ function UtilizationVisualizer({ data }: { data: NurseUtilizationReportDto }) {
           </Text>
         </View>
       ))}
-      {(data.rows?.length ?? 0) > 10 && (
-        <Text style={styles.tableNote}>Mostrando top 10 resultados.</Text>
-      )}
+        {(data.rows?.length ?? 0) > 10 && (
+          <Text style={styles.tableNote}>Mostrando top 10 resultados.</Text>
+        )}
+      </View>
     </View>
   );
 }
 
 function CompletionVisualizer({ data }: { data: CareRequestCompletionReportDto }) {
+  const days = data.averageDaysToComplete ?? 0;
+  const tone: InsightTone = data.totalCompletedCount === 0 ? "info" : days >= 5 ? "warning" : "success";
+  const text = data.totalCompletedCount === 0
+    ? "Sin servicios completados en el período."
+    : `${data.totalCompletedCount} completadas · cierre promedio ${days.toFixed(1)} días.`;
   return (
     <View style={styles.stack}>
+      <ReportInsight tone={tone} text={text} />
       <MetricCard label="Total completadas" value={data.totalCompletedCount} color={designTokens.color.status.successText} />
-      <MetricCard label="Cierre promedio (dias)" value={(data.averageDaysToComplete ?? 0).toFixed(1)} color={designTokens.color.ink.accentStrong} />
+      <MetricCard label="Cierre promedio (dias)" value={days.toFixed(1)} color={designTokens.color.ink.accentStrong} />
 
       <Text style={styles.subTitle}>Tendencia por periodo</Text>
       <View style={styles.table}>
@@ -424,6 +463,8 @@ const styles = StyleSheet.create({
   emptyText: { color: designTokens.color.ink.muted, fontSize: 14 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   stack: { gap: 12 },
+  insight: { borderRadius: 12, padding: 14, borderLeftWidth: 4, marginBottom: 14 },
+  insightText: { fontSize: 14, fontWeight: "700", lineHeight: 20 },
   table: { borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 12, overflow: "hidden" },
   tableHeader: { flexDirection: "row", backgroundColor: designTokens.color.surface.primary, padding: 12, borderBottomWidth: 1, borderBottomColor: designTokens.color.border.subtle },
   tableHeaderText: { fontSize: 11, fontWeight: "700", color: designTokens.color.ink.muted, textTransform: "uppercase" },
