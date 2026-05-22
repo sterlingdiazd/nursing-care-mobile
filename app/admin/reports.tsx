@@ -10,7 +10,7 @@ import {
   View,
 } from "react-native";
 import { router } from "expo-router";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
@@ -124,8 +124,9 @@ export default function AdminReportsScreen() {
   };
 
   useEffect(() => {
+    if (!isReady || !isAuthenticated) return;
     void loadReportData();
-  }, [selectedReportKey]);
+  }, [isReady, isAuthenticated, selectedReportKey]);
 
   const handleExport = async () => {
     if (isExporting) return;
@@ -138,9 +139,9 @@ export default function AdminReportsScreen() {
       if (!token) throw new Error("No hay sesion activa para exportar.");
 
       const filename = `reporte-${selectedReportKey}-${Date.now()}.csv`;
-      const fileUri = (FileSystem as any).documentDirectory + filename;
+      const fileUri = FileSystem.documentDirectory + filename;
 
-      const downloadRes = await (FileSystem as any).downloadAsync(url, fileUri, {
+      const downloadRes = await FileSystem.downloadAsync(url, fileUri, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -424,7 +425,7 @@ const styles = StyleSheet.create({
   reportCardActive: { backgroundColor: designTokens.color.ink.primary, borderColor: designTokens.color.ink.primary },
   reportLabel: { fontSize: 14, fontWeight: "600", color: designTokens.color.ink.primary },
   reportLabelActive: { color: designTokens.color.ink.inverse },
-  dataContainer: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 22, padding: 20, minHeight: 400, shadowColor: designTokens.color.ink.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 14, elevation: 2, borderWidth: 1, borderColor: designTokens.color.border.subtle },
+  dataContainer: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 22, padding: 20, minHeight: 400, boxShadow: "0px 6px 14px rgba(18, 48, 68, 0.06)", elevation: 2, borderWidth: 1, borderColor: designTokens.color.border.subtle },
   reportTitle: { fontSize: 20, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 4 },
   reportDescription: { fontSize: 13, color: designTokens.color.ink.muted, marginBottom: 24, lineHeight: 18 },
   loaderContainer: { flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: 60 },
