@@ -93,12 +93,14 @@ describe("Auth UI Screens", () => {
       expect(findByText(component, "Entrar")).toBeTruthy();
     });
 
-    it("shows validation error for empty email on blur", async () => {
+    it("shows validation error for empty email on submit", async () => {
+      // Login validates on submit only — onBlur validation was removed to avoid
+      // an iOS keychain-autofill race that raised false "correo obligatorio".
       const component = await renderScreen(<LoginScreen />);
-      const emailInput = component.root.findByProps({ testID: authTestIds.login.emailInput });
+      const submitButton = component.root.findByProps({ testID: authTestIds.login.submitButton });
 
       await act(async () => {
-        emailInput.props.onBlur();
+        await submitButton.props.onPress();
       });
 
       expect(findByText(component, "El correo es obligatorio")).toBeTruthy();
