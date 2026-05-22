@@ -62,6 +62,17 @@ export function stepQuincena(startIso: string, dir: -1 | 1): CreatePayrollPeriod
   return standardQuincena(prev);
 }
 
+/** A run of `count` consecutive quincenas starting with the one that contains `anchor`. */
+export function upcomingQuincenas(count: number, anchor: Date = new Date()): CreatePayrollPeriodRequest[] {
+  const list: CreatePayrollPeriodRequest[] = [];
+  let q = standardQuincena(anchor);
+  for (let i = 0; i < count; i += 1) {
+    list.push(q);
+    q = stepQuincena(q.startDate, 1);
+  }
+  return list;
+}
+
 /** Inclusive overlap test for two ISO date ranges (same rule as the backend). */
 export function rangesOverlap(aStart: string, aEnd: string, bStart: string, bEnd: string): boolean {
   return aStart <= bEnd && bStart <= aEnd;

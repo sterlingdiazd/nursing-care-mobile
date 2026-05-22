@@ -1,11 +1,18 @@
 import { useState, useEffect, useMemo } from "react";
+import { StyleSheet, Text, View } from "react-native";
+import Slider from "@react-native-community/slider";
 import type { CreateScheduledDeductionRequest } from "@/src/services/payrollTypes";
 import { getAvailableNurses } from "@/src/services/catalogOptionsService";
+import { getPayrollPeriods } from "@/src/services/payrollService";
+import type { AdminPayrollPeriodListItem } from "@/src/services/payrollService";
 import type { AvailableNurseOption } from "@/src/types/catalog";
 import { useAuth } from "@/src/context/AuthContext";
 import { adminTestIds } from "@/src/testing/testIds/adminTestIds";
 import { DateField } from "@/src/components/form";
 import { formatDOP } from "@/src/utils/currency";
+import { formatDateES } from "@/src/utils/spanishTextValidator";
+import { designTokens } from "@/src/design-system/tokens";
+import { upcomingQuincenas, nextQuincenaAfter, standardQuincena } from "@/src/utils/payrollPeriods";
 import {
   FormModalScaffold,
   FormCard,
@@ -68,10 +75,12 @@ export function CreateScheduledDeductionModal({ visible, onClose, onSubmit }: Cr
   const [label, setLabel] = useState("");
   const [startPeriodDate, setStartPeriodDate] = useState("");
   const [notes, setNotes] = useState("");
+  const [periods, setPeriods] = useState<AdminPayrollPeriodListItem[]>([]);
+  const [showPeriodPicker, setShowPeriodPicker] = useState(false);
 
   const [capital, setCapital] = useState("");
-  const [interestRate, setInterestRate] = useState("");
-  const [totalInstallments, setTotalInstallments] = useState("");
+  const [interestRate, setInterestRate] = useState("5");
+  const [totalInstallments, setTotalInstallments] = useState("12");
 
   const [recurringAmount, setRecurringAmount] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -82,8 +91,8 @@ export function CreateScheduledDeductionModal({ visible, onClose, onSubmit }: Cr
 
   const resetForm = () => {
     setNurse(null); setNurseQuery(""); setConcept("Loan"); setModality("Amortizing"); setCadence("Monthly");
-    setLabel(""); setStartPeriodDate(""); setNotes(""); setCapital(""); setInterestRate(""); setTotalInstallments("");
-    setRecurringAmount(""); setEndDate(""); setMaxOccurrences(""); setError(null); setShowNursePicker(false);
+    setLabel(""); setStartPeriodDate(""); setNotes(""); setCapital(""); setInterestRate("5"); setTotalInstallments("12");
+    setRecurringAmount(""); setEndDate(""); setMaxOccurrences(""); setError(null); setShowNursePicker(false); setShowPeriodPicker(false);
   };
 
   useEffect(() => {
@@ -92,9 +101,15 @@ export function CreateScheduledDeductionModal({ visible, onClose, onSubmit }: Cr
     if (!isReady || !isAuthenticated) return;
     let cancelled = false;
     setOptionsLoading(true);
-    getAvailableNurses()
-      .then((list) => { if (!cancelled) setNurses(list); })
-      .catch(() => { if (!cancelled) setError("No se pudieron cargar las enfermeras."); })
+    Promise.all([getAvailableNurses(), getPayrollPeriods({ pageNumber: 1, pageSize: 50 })])
+      .then(([nurseList, periodResult]) => {
+        if (cancelled) return;
+        setNurses(nurseList);
+        setPeriods(periodResult.items);
+        // Default the loan to start next quincena (the first one after the latest existing period).
+        setStartPeriodDate(nextQuincenaAfter(periodResult.items).startDate);
+      })
+      .catch(() => { if (!cancelled) setError("No se pudieron cargar las enfermeras o los períodos."); })
       .finally(() => { if (!cancelled) setOptionsLoading(false); });
     return () => { cancelled = true; };
   }, [visible, isReady, isAuthenticated]);
@@ -110,6 +125,24 @@ export function CreateScheduledDeductionModal({ visible, onClose, onSubmit }: Cr
     return nurses.filter((n) =>
       [n.displayName, n.specialty, n.category].filter(Boolean).some((field) => field.toLowerCase().includes(query)));
   }, [nurses, nurseQuery]);
+
+  // Quincena selector: a computed run of upcoming quincenas, labelled with the real period status
+  // when one already exists for that start date (else "Aún no creada"). The choice maps to a date;
+  // the loan attaches to that period whenever it is created/opened (no need to materialize periods).
+  const quincenas = useMemo(() => upcomingQuincenas(18, new Date()), []);
+  const periodStatusByStart = useMemo(() => {
+    const m = new Map<string, string>();
+    periods.forEach((p) => m.set(p.startDate, p.status));
+    return m;
+  }, [periods]);
+  const quincenaRange = (startIso: string) => {
+    const q = standardQuincena(new Date(`${startIso}T12:00:00`));
+    return `${formatDateES(q.startDate)} – ${formatDateES(q.endDate)}`;
+  };
+  const quincenaStatusLabel = (startIso: string) => {
+    const s = periodStatusByStart.get(startIso);
+    return s === "Open" ? "Período abierto" : s === "Closed" ? "Período cerrado" : "Aún no creada";
+  };
 
   const isAmortizing = modality === "Amortizing";
 
@@ -193,31 +226,46 @@ export function CreateScheduledDeductionModal({ visible, onClose, onSubmit }: Cr
       submitTestID={sm.submitButton}
       cancelTestID={sm.cancelButton}
       overlays={
-        <PickerSheet visible={showNursePicker} title="Selecciona una enfermera" onClose={() => { setShowNursePicker(false); setNurseQuery(""); }}>
-          <PickerSearchInput
-            value={nurseQuery}
-            onChangeText={setNurseQuery}
-            placeholder="Buscar por nombre o especialidad"
-            autoCapitalize="none"
-            testID={sm.nurseSearch}
-            nativeID={sm.nurseSearch}
-            accessibilityLabel="Buscar enfermera"
-          />
-          {filteredNurses.length === 0 ? (
-            <PickerEmpty text="No se encontraron enfermeras." />
-          ) : (
-            filteredNurses.map((n) => (
+        <>
+          <PickerSheet visible={showNursePicker} title="Selecciona una enfermera" onClose={() => { setShowNursePicker(false); setNurseQuery(""); }}>
+            <PickerSearchInput
+              value={nurseQuery}
+              onChangeText={setNurseQuery}
+              placeholder="Buscar por nombre o especialidad"
+              autoCapitalize="none"
+              testID={sm.nurseSearch}
+              nativeID={sm.nurseSearch}
+              accessibilityLabel="Buscar enfermera"
+            />
+            {filteredNurses.length === 0 ? (
+              <PickerEmpty text="No se encontraron enfermeras." />
+            ) : (
+              filteredNurses.map((n) => (
+                <PickerOption
+                  key={n.userId}
+                  title={n.displayName}
+                  subtitle={nurseSubtitle(n) || null}
+                  selected={nurse?.userId === n.userId}
+                  onPress={() => { setNurse(n); setShowNursePicker(false); setNurseQuery(""); }}
+                  accessibilityLabel={`Seleccionar enfermera ${n.displayName}`}
+                />
+              ))
+            )}
+          </PickerSheet>
+
+          <PickerSheet visible={showPeriodPicker} title="Quincena de inicio" onClose={() => setShowPeriodPicker(false)}>
+            {quincenas.map((q) => (
               <PickerOption
-                key={n.userId}
-                title={n.displayName}
-                subtitle={nurseSubtitle(n) || null}
-                selected={nurse?.userId === n.userId}
-                onPress={() => { setNurse(n); setShowNursePicker(false); setNurseQuery(""); }}
-                accessibilityLabel={`Seleccionar enfermera ${n.displayName}`}
+                key={q.startDate}
+                title={`${formatDateES(q.startDate)} – ${formatDateES(q.endDate)}`}
+                subtitle={quincenaStatusLabel(q.startDate)}
+                selected={startPeriodDate === q.startDate}
+                onPress={() => { setStartPeriodDate(q.startDate); setShowPeriodPicker(false); }}
+                accessibilityLabel={`Seleccionar quincena ${formatDateES(q.startDate)}`}
               />
-            ))
-          )}
-        </PickerSheet>
+            ))}
+          </PickerSheet>
+        </>
       }
     >
       <FormCard title="Enfermera y concepto">
@@ -257,14 +305,18 @@ export function CreateScheduledDeductionModal({ visible, onClose, onSubmit }: Cr
             accessibilityLabel="Etiqueta del descuento fijo"
           />
         </Field>
-        <DateField
-          label="Inicio del período"
-          required
-          value={startPeriodDate}
-          onChange={setStartPeriodDate}
-          testID={sm.startDateInput}
-          accessibilityLabel="Fecha de inicio del período"
-        />
+        <Field label="Período de inicio" required>
+          <SelectRow
+            icon="calendar"
+            value={startPeriodDate ? quincenaRange(startPeriodDate) : null}
+            subtitle={startPeriodDate ? quincenaStatusLabel(startPeriodDate) : null}
+            placeholder="Selecciona una quincena"
+            loading={optionsLoading}
+            onPress={() => setShowPeriodPicker(true)}
+            testID={sm.startDateInput}
+            accessibilityLabel="Seleccionar quincena de inicio"
+          />
+        </Field>
 
         {isAmortizing ? (
           <>
@@ -272,10 +324,30 @@ export function CreateScheduledDeductionModal({ visible, onClose, onSubmit }: Cr
               <TextField icon="money" prefix="RD$" emphasize value={capital} onChangeText={(t) => setCapital(parseDecimal(t))} placeholder="10000" keyboardType="decimal-pad" testID={sm.capitalInput} nativeID={sm.capitalInput} accessibilityLabel="Capital del préstamo" />
             </Field>
             <Field label="Tasa de interés">
-              <TextField suffix="%" value={interestRate} onChangeText={(t) => setInterestRate(parseDecimal(t))} placeholder="0" keyboardType="decimal-pad" testID={sm.interestInput} nativeID={sm.interestInput} accessibilityLabel="Tasa de interés en porcentaje" />
+              <TextField suffix="%" value={interestRate} onChangeText={(t) => setInterestRate(parseDecimal(t))} placeholder="5" keyboardType="decimal-pad" testID={sm.interestInput} nativeID={sm.interestInput} accessibilityLabel="Tasa de interés en porcentaje" />
             </Field>
             <Field label="# de cuotas" required>
-              <TextField value={totalInstallments} onChangeText={(t) => setTotalInstallments(parseInteger(t))} placeholder="12" keyboardType="number-pad" testID={sm.installmentsInput} nativeID={sm.installmentsInput} accessibilityLabel="Número de cuotas" />
+              <View style={styles.sliderRow}>
+                <Text style={styles.sliderValue}>{totalInstallments || "12"} cuota{(parseInt(totalInstallments, 10) || 12) === 1 ? "" : "s"}</Text>
+                <Slider
+                  style={styles.slider}
+                  minimumValue={1}
+                  maximumValue={36}
+                  step={1}
+                  value={parseInt(totalInstallments, 10) || 12}
+                  onValueChange={(v) => setTotalInstallments(String(Math.round(v)))}
+                  minimumTrackTintColor={designTokens.color.ink.accent}
+                  maximumTrackTintColor={designTokens.color.border.subtle}
+                  thumbTintColor={designTokens.color.ink.accentStrong}
+                  testID={sm.installmentsInput}
+                  nativeID={sm.installmentsInput}
+                  accessibilityLabel="Número de cuotas"
+                />
+                <View style={styles.sliderScale}>
+                  <Text style={styles.scaleText}>1</Text>
+                  <Text style={styles.scaleText}>36</Text>
+                </View>
+              </View>
             </Field>
           </>
         ) : (
@@ -307,3 +379,19 @@ export function CreateScheduledDeductionModal({ visible, onClose, onSubmit }: Cr
     </FormModalScaffold>
   );
 }
+
+const styles = StyleSheet.create({
+  sliderRow: {
+    backgroundColor: designTokens.color.surface.secondary,
+    borderWidth: 1.5,
+    borderColor: designTokens.color.border.subtle,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 2,
+  },
+  sliderValue: { fontSize: 18, fontWeight: "800", color: designTokens.color.ink.primary },
+  slider: { width: "100%", height: 40 },
+  sliderScale: { flexDirection: "row", justifyContent: "space-between", marginTop: -4 },
+  scaleText: { fontSize: 11, color: designTokens.color.ink.muted, fontWeight: "600" },
+});

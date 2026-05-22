@@ -125,6 +125,10 @@ vi.mock('@react-native-community/datetimepicker', () => ({
   default: createMockComponent('DateTimePicker'),
 }));
 
+vi.mock('@react-native-community/slider', () => ({
+  default: createMockComponent('Slider'),
+}));
+
 vi.mock('expo-file-system', () => ({
   documentDirectory: '/mock-documents/',
   writeAsStringAsync: vi.fn(),

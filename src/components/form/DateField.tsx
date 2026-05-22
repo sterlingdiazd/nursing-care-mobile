@@ -18,10 +18,18 @@ const toIso = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
+// Anchor at LOCAL noon so the device timezone offset can never push the wall-clock day across a
+// midnight boundary (the cause of the "shows May 1, saves Apr 30" off-by-one on the spinner).
 const parseIso = (value?: string): Date | null => {
   if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
-  const parsed = new Date(`${value}T00:00:00`);
+  const parsed = new Date(`${value}T12:00:00`);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const noonToday = (): Date => {
+  const d = new Date();
+  d.setHours(12, 0, 0, 0);
+  return d;
 };
 
 interface DateFieldProps {
@@ -59,10 +67,10 @@ export function DateField({
   errorMessage,
 }: DateFieldProps) {
   const [pickerVisible, setPickerVisible] = useState(false);
-  const [draft, setDraft] = useState<Date>(() => parseIso(value) ?? new Date());
+  const [draft, setDraft] = useState<Date>(() => parseIso(value) ?? noonToday());
 
   const open = () => {
-    setDraft(parseIso(value) ?? new Date());
+    setDraft(parseIso(value) ?? noonToday());
     setPickerVisible(true);
   };
   const close = () => setPickerVisible(false);
@@ -171,7 +179,7 @@ export function DateField({
           </Modal>
         ) : (
           <DateTimePicker
-            value={parseIso(value) ?? new Date()}
+            value={parseIso(value) ?? noonToday()}
             mode="date"
             display="default"
             onChange={handleNativeChange}
