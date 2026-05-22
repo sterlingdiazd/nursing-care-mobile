@@ -37,10 +37,10 @@ describe("adminPortalService", () => {
   });
 
   it("carga notificaciones con filtros", async () => {
-    vi.mocked(requestJson).mockResolvedValue([]);
-    await getAdminNotifications({ unreadOnly: true, includeArchived: true });
+    vi.mocked(requestJson).mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 10 });
+    await getAdminNotifications({ status: "Unread", page: 2, pageSize: 10 });
     expect(requestJson).toHaveBeenCalledWith({
-      path: "/api/admin/notifications?includeArchived=true&unreadOnly=true",
+      path: "/api/admin/notifications?status=Unread&page=2&pageSize=10",
       method: "GET",
       auth: true,
     });

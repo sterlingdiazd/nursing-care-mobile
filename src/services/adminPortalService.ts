@@ -17,6 +17,9 @@ export interface AdminDashboardSnapshotDto {
   activeNursesCount: number;
   activeClientsCount: number;
   unreadAdminNotificationsCount: number;
+  pendingDashboardTasksCount: number;
+  completedDashboardTasksTodayCount: number;
+  totalDashboardTasksTodayCount: number;
   highSeverityAlerts: AdminDashboardAlertDto[];
   generatedAtUtc: string;
 }
@@ -75,18 +78,34 @@ export async function getAdminActionItems() {
   });
 }
 
-export async function getAdminNotifications(params?: { includeArchived?: boolean; unreadOnly?: boolean }) {
-  const searchParams = new URLSearchParams();
-  if (params?.includeArchived) {
-    searchParams.set("includeArchived", "true");
-  }
-  if (params?.unreadOnly) {
-    searchParams.set("unreadOnly", "true");
-  }
+export type AdminNotificationStatus =
+  | "Active"
+  | "Unread"
+  | "ActionRequired"
+  | "Archived"
+  | "All";
 
-  const suffix = searchParams.toString();
-  return requestJson<AdminNotificationDto[]>({
-    path: `/api/admin/notifications${suffix ? `?${suffix}` : ""}`,
+export interface AdminNotificationListPageDto {
+  items: AdminNotificationDto[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface GetAdminNotificationsParams {
+  status?: AdminNotificationStatus;
+  page?: number;
+  pageSize?: number;
+}
+
+export async function getAdminNotifications(params: GetAdminNotificationsParams = {}) {
+  const searchParams = new URLSearchParams();
+  searchParams.set("status", params.status ?? "Active");
+  searchParams.set("page", String(params.page ?? 1));
+  searchParams.set("pageSize", String(params.pageSize ?? 10));
+
+  return requestJson<AdminNotificationListPageDto>({
+    path: `/api/admin/notifications?${searchParams.toString()}`,
     method: "GET",
     auth: true,
   });
