@@ -1,17 +1,8 @@
-import { Tabs } from "expo-router";
-import AppTabBar from "@/src/components/navigation/AppTabBar";
+import { Stack } from "expo-router";
 
+// (tabs) is a file-system grouping; the actual BottomBar lives at the root
+// layout so it persists across every authenticated route including
+// non-(tabs) admin sub-routes like /admin/payroll.
 export default function TabsLayout() {
-  return (
-    <Tabs
-      tabBar={(props) => <AppTabBar {...props} />}
-      screenOptions={{ headerShown: false }}
-    >
-      <Tabs.Screen name="index" />
-      <Tabs.Screen name="care-requests" />
-      <Tabs.Screen name="nurse" />
-      <Tabs.Screen name="admin" />
-      <Tabs.Screen name="account" />
-    </Tabs>
-  );
+  return <Stack screenOptions={{ headerShown: false }} />;
 }
