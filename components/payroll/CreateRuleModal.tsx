@@ -24,6 +24,7 @@ interface CreateRuleModalProps {
   onClose: () => void;
   onSubmit: (data: CreateCompensationRuleRequest | UpdateCompensationRuleRequest) => Promise<void>;
   onDeactivate?: () => Promise<void>;
+  onReactivate?: () => void;
   editingRule?: AdminCompensationRuleListItem | null;
 }
 
@@ -33,7 +34,7 @@ const EMPLOYMENT_TYPES = [
   { value: "Contractor", label: "Contratista" },
 ];
 
-export function CreateRuleModal({ visible, onClose, onSubmit, onDeactivate, editingRule }: CreateRuleModalProps) {
+export function CreateRuleModal({ visible, onClose, onSubmit, onDeactivate, onReactivate, editingRule }: CreateRuleModalProps) {
   const { showToast } = useToast();
   const [name, setName] = useState("");
   const [employmentType, setEmploymentType] = useState("FullTime");
@@ -130,6 +131,27 @@ export function CreateRuleModal({ visible, onClose, onSubmit, onDeactivate, edit
               handleClose();
             } catch (e) {
               showToast({ variant: "error", message: "No fue posible desactivar la regla." });
+            }
+          }
+        },
+      ]
+    );
+  };
+
+  const handleReactivate = () => {
+    Alert.alert(
+      "Reactivar Regla",
+      "¿Estás seguro de reactivar esta regla?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Reactivar",
+          style: "default",
+          onPress: () => {
+            try {
+              onReactivate?.();
+            } catch (e) {
+              showToast({ variant: "error", message: "No fue posible reactivar la regla." });
             }
           }
         },
@@ -288,6 +310,18 @@ export function CreateRuleModal({ visible, onClose, onSubmit, onDeactivate, edit
               <Text style={styles.deactivateButtonText}>Desactivar Regla</Text>
             </TouchableOpacity>
           )}
+
+          {editingRule && editingRule.isActive === false && onReactivate && (
+            <TouchableOpacity
+              style={styles.reactivateButton}
+              onPress={handleReactivate}
+              testID="rule-reactivate-button"
+              accessibilityRole="button"
+              accessibilityLabel="Reactivar esta regla de compensación"
+            >
+              <Text style={styles.reactivateButtonText}>Reactivar</Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </Modal>
@@ -303,7 +337,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: designTokens.color.border.subtle,
   },
@@ -313,53 +348,59 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 17,
-    fontWeight: "600",
+    fontWeight: "700",
     color: designTokens.color.ink.primary,
   },
   submitButton: {
     fontSize: 16,
     color: designTokens.color.ink.accentStrong,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   submitButtonDisabled: {
     color: designTokens.color.border.strong,
   },
   form: {
     flex: 1,
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   errorCard: {
     backgroundColor: designTokens.color.surface.danger,
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.danger,
+    padding: designTokens.spacing.md,
+    borderRadius: designTokens.radius.md,
+    marginBottom: designTokens.spacing.lg,
   },
   errorText: {
     color: designTokens.color.status.dangerText,
+    fontSize: 14,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "700",
     color: designTokens.color.ink.primary,
-    marginTop: 16,
-    marginBottom: 12,
+    marginTop: designTokens.spacing.lg,
+    marginBottom: designTokens.spacing.md,
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: designTokens.spacing.xl,
   },
   label: {
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "700",
     color: designTokens.color.ink.primary,
-    marginBottom: 6,
+    marginBottom: designTokens.spacing.sm,
   },
   input: {
     borderWidth: 1,
     borderColor: designTokens.color.border.subtle,
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: designTokens.radius.md,
+    paddingHorizontal: designTokens.spacing.lg,
+    paddingVertical: 14,
     fontSize: 16,
     color: designTokens.color.ink.primary,
+    backgroundColor: designTokens.color.surface.secondary,
   },
   optionsRow: {
     flexDirection: "row",
@@ -367,8 +408,8 @@ const styles = StyleSheet.create({
   },
   optionButton: {
     flex: 1,
-    padding: 10,
-    borderRadius: 8,
+    padding: 12,
+    borderRadius: designTokens.radius.md,
     borderWidth: 1,
     borderColor: designTokens.color.border.subtle,
     alignItems: "center",
@@ -388,12 +429,24 @@ const styles = StyleSheet.create({
   deactivateButton: {
     backgroundColor: designTokens.color.surface.danger,
     padding: 14,
-    borderRadius: 8,
+    borderRadius: designTokens.radius.md,
     alignItems: "center",
     marginTop: 24,
   },
   deactivateButtonText: {
     color: designTokens.color.ink.danger,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  reactivateButton: {
+    backgroundColor: designTokens.color.surface.success,
+    padding: 14,
+    borderRadius: designTokens.radius.md,
+    alignItems: "center",
+    marginTop: 16,
+  },
+  reactivateButtonText: {
+    color: designTokens.color.status.successText,
     fontSize: 16,
     fontWeight: "600",
   },
