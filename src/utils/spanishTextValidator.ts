@@ -72,19 +72,36 @@ export function validateSpanishText(text: string): SpanishTextValidation {
   return { isValid: issues.length === 0, issues };
 }
 
-/** Format date as DD/MM/YYYY */
+/**
+ * Format date as DD-MM-YYYY (Dominican Republic convention: dash-separated,
+ * day-first). Hand-formatted because `toLocaleDateString` returns slashes
+ * and there's no locale switch to force dashes consistently across platforms.
+ */
 export function formatDateES(date: string | Date): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   if (isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('es-DO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${dd}-${mm}-${yyyy}`;
 }
 
-/** Format date+time as DD/MM/YYYY HH:MM:SS AM/PM */
+/**
+ * Format date+time as DD-MM-YYYY HH:MM:SS AM/PM (12-hour). Used for any
+ * timestamp shown to the user (audit logs, created-at, last-modified, etc).
+ */
 export function formatDateTimeES(date: string | Date): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   if (isNaN(d.getTime())) return '';
-  return d.toLocaleString('es-DO', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
-  });
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  let hours = d.getHours();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  const hh = String(hours).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  const ss = String(d.getSeconds()).padStart(2, '0');
+  return `${dd}-${mm}-${yyyy} ${hh}:${mi}:${ss} ${ampm}`;
 }
