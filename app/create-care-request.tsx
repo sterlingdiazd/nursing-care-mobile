@@ -21,14 +21,33 @@ import { useAuth } from "@/src/context/AuthContext";
 import { createCorrelationId, logClientEvent } from "@/src/logging/clientLogger";
 import { getAvailableNurses, getCareRequestOptions } from "@/src/services/catalogOptionsService";
 import { createCareRequest, getCareRequests } from "@/src/services/careRequestService";
-import type { AvailableNurseOption, CatalogOptionsResponse } from "@/src/types/catalog";
+import {
+  getAdminClients,
+  type AdminClientListItemDto,
+} from "@/src/services/adminPortalService";
+import type {
+  AvailableNurseOption,
+  CareRequestTypeOption,
+  CatalogOptionsResponse,
+} from "@/src/types/catalog";
 import { CreateCareRequestDto } from "@/src/types/careRequest";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { estimateCareRequestPricingFromCatalog } from "@/src/utils/pricingFromCatalogOptions";
 
+// Category labels + order — keep in sync with the admin create page so the
+// two surfaces look the same. The list shown to the user is built by
+// grouping `catalog.careRequestTypes` by their `careRequestCategoryCode`.
+const CATEGORY_LABELS: Record<string, string> = {
+  hogar: "Hogar",
+  domicilio: "Domicilio",
+  medicos: "Médicos",
+};
+const CATEGORY_ORDER = ["hogar", "domicilio", "medicos"];
+
 export default function CreateCareRequestScreen() {
   const { isAuthenticated, isReady, token, userId, roles } = useAuth();
-  const canCreateRequest = roles.includes("CLIENT") || roles.includes("ADMIN");
+  const isAdminCaller = roles.includes("ADMIN");
+  const canCreateRequest = roles.includes("CLIENT") || isAdminCaller;
   const [form, setForm] = useState<CreateCareRequestDto>({
     careRequestDescription: "",
     suggestedNurse: "",
@@ -55,9 +74,47 @@ export default function CreateCareRequestScreen() {
   const [selectedNurse, setSelectedNurse] = useState<AvailableNurseOption | null>(null);
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
   const [draftServiceDate, setDraftServiceDate] = useState<Date>(new Date());
-  
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [activeCategoryCode, setActiveCategoryCode] = useState<string>("hogar");
+
+  // Client selector (admin-only). When ADMIN creates a care request, the form
+  // requires picking a real CLIENT user. The selected client's userId is sent
+  // as `clientUserId`; the backend uses it instead of the JWT subject.
+  const [clientSearchTerm, setClientSearchTerm] = useState("");
+  const [selectedClient, setSelectedClient] = useState<AdminClientListItemDto | null>(null);
+  const [clientOptions, setClientOptions] = useState<AdminClientListItemDto[]>([]);
+  const [clientLookupLoading, setClientLookupLoading] = useState(false);
+  const [clientLookupError, setClientLookupError] = useState<string | null>(null);
+  const [showClientOptions, setShowClientOptions] = useState(false);
+
   // UX States
   const [draftCareRequestType, setDraftCareRequestType] = useState("");
+
+  // Form is "dirty" when the user touched any meaningful field. Initial defaults
+  // (empty description, no type, unit=1, distance=local, complexity=estandar)
+  // are NOT dirty — only user edits beyond that count.
+  const isDirty =
+    form.careRequestDescription.trim().length > 0 ||
+    !!form.careRequestType ||
+    !!form.suggestedNurse?.trim() ||
+    !!form.careRequestDate ||
+    (form.unit ?? 1) !== 1 ||
+    !!selectedNurse ||
+    !!selectedClient ||
+    clientSearchTerm.trim().length > 0;
+
+  const exitToList = () => {
+    setShowLeaveConfirm(false);
+    goBackOrReplace(router, mobileNavigationEscapes.createCareRequest);
+  };
+
+  const handleBackPress = () => {
+    if (isDirty && !isLoading) {
+      setShowLeaveConfirm(true);
+    } else {
+      exitToList();
+    }
+  };
 
   const incrementUnit = () => setForm((prev) => ({ ...prev, unit: (prev.unit || 0) + 1 }));
   const decrementUnit = () => setForm((prev) => ({ ...prev, unit: Math.max(1, (prev.unit || 0) - 1) }));
@@ -94,6 +151,38 @@ export default function CreateCareRequestScreen() {
     catalogOptions?.careRequestCategories.find((c) => c.code === selectedCategory)?.displayName ??
     selectedCategory;
 
+  // Group flat list of types by their category code. Ordering: prefer the
+  // static CATEGORY_ORDER (hogar → domicilio → médicos), fall back to
+  // appearance order if the backend ever introduces a new category.
+  const typesByCategory = useMemo(() => {
+    const map = new Map<string, CareRequestTypeOption[]>();
+    if (!catalogOptions) return map;
+    for (const t of catalogOptions.careRequestTypes) {
+      const arr = map.get(t.careRequestCategoryCode);
+      if (arr) arr.push(t);
+      else map.set(t.careRequestCategoryCode, [t]);
+    }
+    return map;
+  }, [catalogOptions]);
+
+  const orderedCategoryCodes = useMemo(() => {
+    if (!catalogOptions) return [] as string[];
+    const present = Array.from(typesByCategory.keys());
+    const known = CATEGORY_ORDER.filter((code) => present.includes(code));
+    const extras = present.filter((code) => !CATEGORY_ORDER.includes(code));
+    return [...known, ...extras];
+  }, [catalogOptions, typesByCategory]);
+
+  // Sync the active category tab with the picked type — when the user picks
+  // a service from one category, the tab for that category becomes active so
+  // the chip stays visible on subsequent re-renders.
+  useEffect(() => {
+    if (selectedType && selectedType.careRequestCategoryCode !== activeCategoryCode) {
+      setActiveCategoryCode(selectedType.careRequestCategoryCode);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedType?.code]);
+
   const pricingEstimate = useMemo(() => {
     if (!catalogOptions || !form.careRequestType) {
       return null;
@@ -126,6 +215,22 @@ export default function CreateCareRequestScreen() {
     isMedicos,
     existingSameUnitTypeCount,
   ]);
+
+  const filteredClientSuggestions = useMemo(() => {
+    const query = normalizeSearchValue(clientSearchTerm);
+    if (!query) return clientOptions.slice(0, 8);
+    return clientOptions
+      .filter((client) => {
+        const fields = [
+          client.displayName,
+          client.email,
+          client.identificationNumber ?? "",
+          client.phone ?? "",
+        ];
+        return fields.some((value) => normalizeSearchValue(value).includes(query));
+      })
+      .slice(0, 8);
+  }, [clientOptions, clientSearchTerm]);
 
   const filteredNurseSuggestions = useMemo(() => {
     const query = normalizeSearchValue(form.suggestedNurse ?? "");
@@ -168,6 +273,9 @@ export default function CreateCareRequestScreen() {
     });
     setSelectedNurse(null);
     setShowSuggestedNurseOptions(false);
+    setSelectedClient(null);
+    setClientSearchTerm("");
+    setShowClientOptions(false);
     setDraftCareRequestType(firstType);
     setSuccessMessage(null);
     setFormError(null);
@@ -259,6 +367,13 @@ export default function CreateCareRequestScreen() {
       return;
     }
 
+    if (isAdminCaller && !selectedClient) {
+      const msg = "Selecciona el cliente para el cual se crea la solicitud.";
+      setFormError(msg);
+      showAlert("Cliente requerido", msg);
+      return;
+    }
+
     const correlationId = createCorrelationId();
 
     isSubmittingRef.current = true;
@@ -277,6 +392,10 @@ export default function CreateCareRequestScreen() {
         {
           ...form,
           suggestedNurse: selectedNurse?.displayName,
+          // Admin caller: send the picked client's userId so the backend
+          // creates the request FOR that client (not for the admin).
+          // Client caller: leave undefined; backend uses the JWT subject.
+          clientUserId: isAdminCaller ? selectedClient?.userId : undefined,
         },
         correlationId,
       );
@@ -371,6 +490,38 @@ export default function CreateCareRequestScreen() {
       .finally(() => setNurseLookupLoading(false));
   }, [canCreateRequest, token]);
 
+  // Load the client list for admins. Searches re-fetch on the server when the
+  // term gets long enough; while typing 1–2 chars we filter the cached page
+  // client-side to avoid spamming the API.
+  useEffect(() => {
+    if (!isAdminCaller || !token) {
+      setClientOptions([]);
+      return;
+    }
+    let cancelled = false;
+    setClientLookupLoading(true);
+    setClientLookupError(null);
+    const trimmed = clientSearchTerm.trim();
+    const params = trimmed.length >= 3 ? { search: trimmed, status: "active" as const } : { status: "active" as const };
+    getAdminClients(params)
+      .then((clients) => {
+        if (cancelled) return;
+        setClientOptions(clients);
+        setClientLookupError(null);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setClientOptions([]);
+        setClientLookupError(err instanceof Error ? err.message : "No fue posible cargar la lista de clientes.");
+      })
+      .finally(() => {
+        if (!cancelled) setClientLookupLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdminCaller, token, clientSearchTerm]);
+
   useEffect(() => {
     if (!isReady || !isAuthenticated || !userId || !form.careRequestType) {
       setExistingSameUnitTypeCount(0);
@@ -389,13 +540,20 @@ export default function CreateCareRequestScreen() {
 
   return (
     <MobileWorkspaceShell
-      eyebrow="Nueva solicitud"
-      title="Crea una solicitud clara con un flujo guiado."
-      description="La captura ahora se organiza como una experiencia de trabajo: contexto principal primero, opciones guiadas despues y ajustes opcionales al final."
+      title="Nueva Solicitud"
       testID={careRequestTestIds.create.screen}
       nativeID={careRequestTestIds.create.screen}
-      primaryReturnLabel="Volver a solicitudes"
-      onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.createCareRequest)}
+      primaryReturnLabel="Volver"
+      onPrimaryReturn={handleBackPress}
+      workflowActions={[
+        {
+          label: isLoading ? "Creando…" : "Crear",
+          onPress: onSubmit,
+          variant: "primary",
+          disabled: isLoading || !canCreateRequest,
+          testID: careRequestTestIds.create.submitButton,
+        },
+      ]}
     >
       <View style={styles.flow}>
           {!!formError && (
@@ -415,12 +573,124 @@ export default function CreateCareRequestScreen() {
               <Text style={styles.successBannerText}>{successMessage}</Text>
             </View>
           )}
+          {isAdminCaller ? (
+            <View style={styles.card}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Cliente</Text>
+              </View>
+
+              <FormInput
+                testID={careRequestTestIds.create.clientInput}
+                value={selectedClient ? `${selectedClient.displayName}` : clientSearchTerm}
+                onChangeText={(text) => {
+                  setClientSearchTerm(text);
+                  if (selectedClient && normalizeSearchValue(selectedClient.displayName) !== normalizeSearchValue(text)) {
+                    setSelectedClient(null);
+                  }
+                  setShowClientOptions(true);
+                }}
+                onFocus={() => setShowClientOptions(true)}
+                placeholder="Buscar por nombre, correo, cédula o teléfono"
+                editable={!isLoading}
+                style={[styles.input, isLoading && styles.inputDisabled]}
+              />
+
+              {selectedClient ? (
+                <View style={styles.selectedClientRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.selectedClientName} numberOfLines={1}>
+                      {selectedClient.displayName}
+                    </Text>
+                    <Text style={styles.selectedClientMeta} numberOfLines={1}>
+                      {selectedClient.email}
+                      {selectedClient.identificationNumber ? ` • Cédula ${selectedClient.identificationNumber}` : ""}
+                    </Text>
+                  </View>
+                  <Pressable
+                    testID={careRequestTestIds.create.clientClearButton}
+                    nativeID={careRequestTestIds.create.clientClearButton}
+                    accessibilityRole="button"
+                    accessibilityLabel="Quitar cliente seleccionado"
+                    onPress={() => {
+                      setSelectedClient(null);
+                      setClientSearchTerm("");
+                      setShowClientOptions(true);
+                    }}
+                    hitSlop={8}
+                    style={({ pressed }) => [styles.selectedClientClear, pressed && styles.buttonPressed]}
+                  >
+                    <Text style={styles.selectedClientClearText}>Cambiar</Text>
+                  </Pressable>
+                </View>
+              ) : null}
+
+              {showClientOptions && !selectedClient && !isLoading ? (
+                <View
+                  style={styles.autocompletePanel}
+                  testID={careRequestTestIds.create.clientOptions}
+                  nativeID={careRequestTestIds.create.clientOptions}
+                >
+                  {clientLookupLoading ? (
+                    <View style={styles.autocompleteLoadingRow}>
+                      <ActivityIndicator color={designTokens.color.ink.accentStrong} accessibilityLabel="Cargando..." />
+                      <Text style={styles.autocompleteHelperText}>Buscando clientes...</Text>
+                    </View>
+                  ) : clientLookupError ? (
+                    <View style={styles.autocompleteLoadingRow}>
+                      <Text style={styles.autocompleteHelperText}>{clientLookupError}</Text>
+                    </View>
+                  ) : filteredClientSuggestions.length === 0 ? (
+                    <View style={styles.autocompleteLoadingRow}>
+                      <Text style={styles.autocompleteHelperText}>
+                        {clientSearchTerm.trim().length === 0
+                          ? "No hay clientes activos."
+                          : "No se encontraron clientes para esa búsqueda."}
+                      </Text>
+                    </View>
+                  ) : (
+                    <ScrollView
+                      keyboardShouldPersistTaps="handled"
+                      nestedScrollEnabled
+                      style={styles.autocompleteList}
+                    >
+                      {filteredClientSuggestions.map((client) => {
+                        const meta = [
+                          client.email,
+                          client.identificationNumber ? `Cédula ${client.identificationNumber}` : null,
+                          client.phone,
+                        ]
+                          .filter(Boolean)
+                          .join(" • ");
+                        return (
+                          <Pressable
+                            key={client.userId}
+                            testID={careRequestTestIds.create.clientOption(client.userId)}
+                            nativeID={careRequestTestIds.create.clientOption(client.userId)}
+                            onPress={() => {
+                              setSelectedClient(client);
+                              setClientSearchTerm(client.displayName);
+                              setShowClientOptions(false);
+                            }}
+                            style={({ pressed }) => [
+                              styles.autocompleteOption,
+                              pressed && styles.buttonPressed,
+                            ]}
+                          >
+                            <Text style={styles.autocompletePrimaryText}>{client.displayName}</Text>
+                            {meta ? <Text style={styles.autocompleteSecondaryText}>{meta}</Text> : null}
+                          </Pressable>
+                        );
+                      })}
+                    </ScrollView>
+                  )}
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+
           <View style={styles.card}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Datos de la solicitud</Text>
-              <Text style={styles.sectionCopy}>
-                Esta solicitud se enviara al mismo backend protegido que usa la app web.
-              </Text>
+              <Text style={styles.sectionTitle}>Datos de la Solicitud</Text>
             </View>
 
             {catalogError ? (
@@ -545,33 +815,76 @@ export default function CreateCareRequestScreen() {
                 <Text style={styles.dateSecondaryActionText}>Limpiar fecha</Text>
               </Pressable>
             </View>
-            <Text style={styles.helperText}>
-              La enfermera asignada no podra completar la solicitud antes de la fecha indicada.
-            </Text>
-
             <Text style={styles.label}>Servicio *</Text>
             {catalogLoading ? (
-               <ActivityIndicator color={designTokens.color.ink.accentStrong} style={{ alignSelf: "flex-start", marginVertical: 8 }} />
+              <View style={styles.catalogLoading}>
+                <ActivityIndicator color={designTokens.color.ink.accent} />
+                <Text style={styles.catalogLoadingText}>Cargando tipos…</Text>
+              </View>
+            ) : catalogError ? (
+              <Text style={styles.helperError}>{catalogError}</Text>
             ) : (
-              <View style={styles.chipsContainer}>
-                {(catalogOptions?.careRequestTypes ?? []).map(row => (
-                  <Pressable
-                    key={row.code}
-                    accessibilityRole="button"
-                    accessibilityLabel={row.displayName}
-                    accessibilityState={{ selected: form.careRequestType === row.code }}
-                    onPress={() => setForm({ ...form, careRequestType: row.code })}
-                    style={[styles.chip, form.careRequestType === row.code && styles.chipActive]}
-                  >
-                    <Text style={[styles.chipText, form.careRequestType === row.code && styles.chipTextActive]}>
-                      {row.displayName}
+              <View>
+                {/* Category tabs — compact horizontal row, one per category. */}
+                <View style={styles.categoryRow}>
+                  {orderedCategoryCodes.map((code) => {
+                    const active = code === activeCategoryCode;
+                    const label = CATEGORY_LABELS[code] ?? code;
+                    const count = typesByCategory.get(code)?.length ?? 0;
+                    return (
+                      <Pressable
+                        key={code}
+                        onPress={() => setActiveCategoryCode(code)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Categoría ${label}`}
+                        accessibilityState={{ selected: active }}
+                        style={[styles.categoryTab, active && styles.categoryTabActive]}
+                      >
+                        <Text style={[styles.categoryTabText, active && styles.categoryTabTextActive]}>
+                          {label}
+                        </Text>
+                        <Text style={[styles.categoryTabCount, active && styles.categoryTabCountActive]}>
+                          {count}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                {/* Chips for the active category only — keeps the picker compact. */}
+                <View style={styles.chipsContainer}>
+                  {(typesByCategory.get(activeCategoryCode) ?? []).map((row) => {
+                    const active = form.careRequestType === row.code;
+                    return (
+                      <Pressable
+                        key={row.code}
+                        accessibilityRole="button"
+                        accessibilityLabel={row.displayName}
+                        accessibilityState={{ selected: active }}
+                        onPress={() => setForm({ ...form, careRequestType: row.code })}
+                        style={[styles.chip, active && styles.chipActive]}
+                      >
+                        <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                          {row.displayName}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                {/* Confirmation pill with picked service + base price. */}
+                {selectedType ? (
+                  <View style={styles.selectedTypeRow}>
+                    <Text style={styles.selectedTypeLabel}>Seleccionado:</Text>
+                    <Text style={styles.selectedTypeValue}>
+                      {selectedType.displayName} · RD${selectedType.basePrice.toLocaleString("es-DO")}
                     </Text>
-                  </Pressable>
-                ))}
+                  </View>
+                ) : null}
               </View>
             )}
 
-            <Text style={styles.label}>Cantidad *</Text>
+            <Text style={[styles.label, styles.labelSpaced]}>Cantidad *</Text>
             <View style={styles.stepperContainer}>
               <Pressable accessibilityRole="button" accessibilityLabel="Disminuir cantidad" onPress={decrementUnit} style={styles.stepperBtn}><Text style={styles.stepperBtnText}>-</Text></Pressable>
               <Text style={styles.stepperValue}>{form.unit}</Text>
@@ -589,9 +902,6 @@ export default function CreateCareRequestScreen() {
               editable={!isLoading}
               style={[styles.input, styles.textArea, isLoading && styles.inputDisabled]}
             />
-            <Text style={styles.helperText}>
-              {form.careRequestDescription.trim().length} caracteres
-            </Text>
           </View>
 
           {/* === CARD 2: NURSE === */}
@@ -668,56 +978,25 @@ export default function CreateCareRequestScreen() {
                   )}
                 </View>
               )}
-            <Text style={styles.helperText}>
-              Administracion decidira si asigna la enfermera sugerida u otra disponible.
-            </Text>
           </View>
 
-          {/* ADVANCED PRICING REMOVED FOR CLIENT APP */}
-
-          {/* === CARD 3: CHECKLIST AND ESTIMATION === */}
-          <View style={styles.card}>
-            <View style={styles.checklist}>
-              <Text style={styles.checklistTitle}>Estimacion de servicio</Text>
-              <Text style={styles.checkItem}>
-                Total estimado: {Number.isFinite(estimatedTotal) ? estimatedTotal.toFixed(2) : "0.00"}
+          {/* Compact estimation summary — no raw enum codes, no verbose
+              checklist. Only what the user needs to confirm before tapping
+              Crear: total, picked service. */}
+          {selectedType ? (
+            <View style={styles.estimateCard}>
+              <Text style={styles.estimateLabel}>Total estimado</Text>
+              <Text style={styles.estimateAmount}>
+                RD${(Number.isFinite(estimatedTotal) ? estimatedTotal : 0).toLocaleString("es-DO", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </Text>
-              <Text style={styles.checkItem}>
-                Servicio: {selectedType?.displayName ?? form.careRequestType}
-              </Text>
-              <Text style={styles.checkItem}>
-                Tipo de unidad: {derivedUnitType} • Categoria: {categoryDisplayName}
-              </Text>
-            </View>
-
-            <View style={styles.checklist}>
-              <Text style={styles.checklistTitle}>Checklist de envio</Text>
-              <Text style={styles.checkItem}>
-                {userId ? "• Usuario autenticado identificado" : "• Falta el usuario autenticado"}
-              </Text>
-              <Text style={styles.checkItem}>
-                {form.careRequestDescription.trim().length > 24
-                  ? "• La descripcion tiene contexto suficiente"
-                  : "• Agrega una descripcion mas especifica"}
-              </Text>
-              <Text style={styles.checkItem}>
-                • Se aplicara el descuento por volumen segun solicitudes previas del mismo usuario
+              <Text style={styles.estimateService}>
+                {selectedType.displayName} · {form.unit ?? 1}× {categoryDisplayName}
               </Text>
             </View>
-
-            <View style={{height: 80}} />
-          </View>
-      </View>
-      <View style={styles.stickyFooter}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Generar Solicitud de Cuidado"
-          style={styles.buttonPrimary}
-          onPress={onSubmit}
-          disabled={isLoading || !canCreateRequest}
-        >
-          <Text style={styles.buttonPrimaryText}>{isLoading ? "Creando Solicitud..." : "Generar Solicitud de Cuidado"}</Text>
-        </Pressable>
+          ) : null}
       </View>
       {isDatePickerVisible && Platform.OS !== "web" ? (
         Platform.OS === "ios" ? (
@@ -751,9 +1030,102 @@ export default function CreateCareRequestScreen() {
           />
         )
       ) : null}
+
+      <Modal
+        visible={showLeaveConfirm}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowLeaveConfirm(false)}
+      >
+        <Pressable style={modalStyles.overlay} onPress={() => setShowLeaveConfirm(false)}>
+          <Pressable style={modalStyles.sheet} onPress={(e) => e.stopPropagation()}>
+            <Text style={modalStyles.title}>¿Salir sin guardar?</Text>
+            <Text style={modalStyles.body}>
+              Tienes datos sin guardar. Si sales ahora se perderán.
+            </Text>
+            <View style={modalStyles.actions}>
+              <Pressable
+                style={[modalStyles.button, modalStyles.buttonSecondary]}
+                onPress={() => setShowLeaveConfirm(false)}
+                accessibilityRole="button"
+                accessibilityLabel="Continuar editando"
+              >
+                <Text style={modalStyles.buttonText}>Continuar Editando</Text>
+              </Pressable>
+              <Pressable
+                style={[modalStyles.button, modalStyles.buttonDanger]}
+                onPress={exitToList}
+                accessibilityRole="button"
+                accessibilityLabel="Descartar y salir"
+              >
+                <Text style={[modalStyles.buttonText, modalStyles.buttonTextInverse]}>
+                  Descartar
+                </Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </MobileWorkspaceShell>
   );
 }
+
+const modalStyles = StyleSheet.create({
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  sheet: {
+    backgroundColor: designTokens.color.surface.primary,
+    borderRadius: 18,
+    padding: 20,
+    width: "100%",
+    maxWidth: 400,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: designTokens.color.ink.primary,
+    marginBottom: 6,
+  },
+  body: {
+    color: designTokens.color.ink.secondary,
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  actions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  button: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  buttonSecondary: {
+    backgroundColor: designTokens.color.surface.secondary,
+  },
+  buttonDanger: {
+    backgroundColor: designTokens.color.ink.danger,
+  },
+  buttonText: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: designTokens.color.ink.primary,
+  },
+  buttonTextInverse: {
+    color: designTokens.color.ink.inverse,
+  },
+});
 
 const styles = StyleSheet.create({
   flow: {
@@ -761,27 +1133,96 @@ const styles = StyleSheet.create({
   },
   subtitle: { fontSize: 13, color: designTokens.color.ink.secondary, marginBottom: 12 },
   chipsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 },
-  chip: { backgroundColor: designTokens.color.surface.secondary, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: "rgba(23, 48, 66, 0.15)" },
+  chip: { backgroundColor: designTokens.color.surface.secondary, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1, borderColor: "rgba(23, 48, 66, 0.15)" },
   chipActive: { backgroundColor: designTokens.color.ink.accentStrong, borderColor: designTokens.color.ink.primary },
-  chipText: { color: designTokens.color.ink.secondary, fontWeight: "600", fontSize: 14 },
+  chipText: { color: designTokens.color.ink.secondary, fontWeight: "600", fontSize: 13 },
   chipTextActive: { color: designTokens.color.ink.inverse },
+
+  catalogLoading: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8 },
+  catalogLoadingText: { color: designTokens.color.ink.secondary, fontSize: 13 },
+  helperError: { color: designTokens.color.ink.danger, fontSize: 13, marginTop: 6 },
+  categoryRow: {
+    flexDirection: "row",
+    gap: 6,
+    marginBottom: 10,
+    padding: 4,
+    backgroundColor: designTokens.color.surface.secondary,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(23, 48, 66, 0.12)",
+  },
+  categoryTab: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    backgroundColor: "transparent",
+  },
+  categoryTabActive: {
+    backgroundColor: designTokens.color.surface.primary,
+    boxShadow: "0px 1px 2px rgba(15, 23, 42, 0.08)",
+    elevation: 1,
+  },
+  categoryTabText: { color: designTokens.color.ink.secondary, fontWeight: "700", fontSize: 13 },
+  categoryTabTextActive: { color: designTokens.color.ink.primary },
+  categoryTabCount: { color: designTokens.color.ink.muted, fontSize: 11, fontWeight: "700", minWidth: 16, textAlign: "center" },
+  categoryTabCountActive: { color: designTokens.color.ink.accent },
+  selectedTypeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    backgroundColor: designTokens.color.status.successBg,
+    alignSelf: "flex-start",
+  },
+  selectedTypeLabel: { color: designTokens.color.status.successText, fontSize: 12, fontWeight: "700" },
+  selectedTypeValue: { color: designTokens.color.ink.primary, fontSize: 13, fontWeight: "600" },
+
+  estimateCard: {
+    backgroundColor: designTokens.color.surface.primary,
+    borderWidth: 1,
+    borderColor: "rgba(23, 48, 66, 0.12)",
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 12,
+    gap: 4,
+  },
+  estimateLabel: {
+    color: designTokens.color.ink.secondary,
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  estimateAmount: {
+    color: designTokens.color.ink.primary,
+    fontSize: 26,
+    fontWeight: "800",
+  },
+  estimateService: {
+    color: designTokens.color.ink.secondary,
+    fontSize: 13,
+  },
 
   stepperContainer: { flexDirection: "row", alignItems: "center", backgroundColor: designTokens.color.surface.secondary, borderRadius: 12, alignSelf: "flex-start", borderWidth: 1, borderColor: "rgba(23, 48, 66, 0.15)", marginBottom: 18 },
   stepperBtn: { paddingHorizontal: 20, paddingVertical: 12 },
   stepperBtnText: { fontSize: 20, fontWeight: "700", color: designTokens.color.ink.primary },
   stepperValue: { fontSize: 16, fontWeight: "800", color: designTokens.color.ink.primary, minWidth: 40, textAlign: "center" },
 
-  stickyFooter: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingTop: 12, paddingBottom: Platform.OS === "ios" ? 32 : 16, backgroundColor: designTokens.color.ink.inverse, borderTopWidth: 1, borderTopColor: designTokens.color.border.subtle, shadowColor: designTokens.color.ink.primary, shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 12 },
   buttonPrimary: { backgroundColor: designTokens.color.ink.accentStrong, borderRadius: 12, paddingVertical: 16, alignItems: "center" },
   buttonPrimaryText: { color: designTokens.color.ink.inverse, fontWeight: "800", fontSize: 16 },
   card: {
     backgroundColor: designTokens.color.surface.primary,
     borderRadius: 12,
     padding: 16,
-    shadowColor: "#000", /* RN shadow requires raw hex */
-    shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 8,
+    boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.06)",
     elevation: 2,
     borderWidth: 1,
     borderColor: "rgba(23, 48, 66, 0.08)",
@@ -818,6 +1259,9 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: designTokens.color.ink.primary,
     marginBottom: 8,
+  },
+  labelSpaced: {
+    marginTop: 16,
   },
   input: {
     borderWidth: 1,
@@ -970,6 +1414,40 @@ const styles = StyleSheet.create({
   autocompleteHelperText: {
     fontSize: 13,
     color: designTokens.color.ink.secondary,
+  },
+  selectedClientRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 8,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: designTokens.color.surface.accent,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.accent,
+  },
+  selectedClientName: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: designTokens.color.ink.primary,
+  },
+  selectedClientMeta: {
+    marginTop: 2,
+    fontSize: 12,
+    color: designTokens.color.ink.secondary,
+  },
+  selectedClientClear: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: designTokens.color.surface.primary,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.subtle,
+  },
+  selectedClientClearText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: designTokens.color.ink.accent,
   },
   checklist: {
     backgroundColor: designTokens.color.surface.secondary,
