@@ -64,39 +64,78 @@ export default function LoginScreen() {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
 
-  // Validation functions
-  const validateEmailField = (value: string) => {
-    if (!value) {
-      setEmailError(t("auth.correo_obligatorio"));
-    } else if (!validateEmail(value)) {
-      setEmailError(t("auth.correo_formato_invalido"));
-    } else {
-      setEmailError("");
-    }
+  // Pure validators — return the error string (or empty for "valid"). Do NOT
+  // touch state. Callers decide when to commit. Trim on the way in: iOS
+  // autofill sometimes injects a trailing space or newline, which would fail
+  // the email regex and surface as a false "correo inválido".
+  const computeEmailError = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return t("auth.correo_obligatorio");
+    if (!validateEmail(trimmed)) return t("auth.correo_formato_invalido");
+    return "";
   };
 
-  const validatePasswordField = (value: string) => {
-    if (!value) {
-      setPasswordError(t("auth.contrasena_obligatoria"));
-    } else {
-      setPasswordError("");
-    }
+  const computePasswordError = (value: string) => {
+    if (!value) return t("auth.contrasena_obligatoria");
+    return "";
   };
 
-  // Handle login submission
+  // No onBlur validation. Login validates on submit only. Reason:
+  // iOS Safari keychain autofill races against React. When the user picks a
+  // saved credential, iOS writes the value into the email DOM input and
+  // moves focus to password — that focus shift fires email's onBlur. If
+  // onBlur ran any validator, it would read empty state (autofill skipped
+  // onChangeText) and falsely raise "El correo es obligatorio" on a field
+  // that visibly holds a perfectly good email. Reading the DOM as a fallback
+  // doesn't help reliably because the DOM-write and the focus-blur
+  // interleave non-deterministically — sometimes blur fires before the value
+  // commits. The robust answer is to not run validation on blur at all.
+  // Submit-time validation covers everything (handleSubmit reads the DOM).
+
+  // iOS keychain autofill in Mobile Safari (the Expo web target the device
+  // loads) populates the underlying <input> value but does NOT always fire
+  // React Native Web's onChangeText. That left local state empty and the
+  // validator falsely reported "El correo es obligatorio" even though the
+  // input visibly held an email. At submit time on web, fall back to reading
+  // the DOM directly when state is empty.
+  const readAutofilledValue = (testId: string): string => {
+    if (Platform.OS !== "web" || typeof document === "undefined") return "";
+    const el = document.querySelector(`[data-testid="${testId}"]`) as HTMLInputElement | null;
+    return el?.value ?? "";
+  };
+
   const handleSubmit = async () => {
-    clearError();
-    validateEmailField(email);
-    validatePasswordField(password);
+    // CRITICAL ORDER: read the DOM input values BEFORE any setState. Any
+    // setState (including clearError) triggers a re-render that lets React
+    // overwrite the DOM input's value with the controlled `value` prop —
+    // which is empty when state didn't catch the autofill. Reading first
+    // captures whatever iOS/Safari injected before React clobbers it.
+    const domEmail = readAutofilledValue(authTestIds.login.emailInput).trim();
+    const domPassword = readAutofilledValue(authTestIds.login.passwordInput);
 
-    if (emailError || passwordError || !email || !password) {
+    const resolvedEmail = email.trim() || domEmail;
+    const resolvedPassword = password || domPassword;
+
+    clearError();
+    if (resolvedEmail && !email.trim()) setEmail(resolvedEmail);
+    if (resolvedPassword && !password) setPassword(resolvedPassword);
+
+    // Compute validation results as locals — never the closure-captured
+    // emailError/passwordError state, which is one render behind a setState
+    // and was the cause of the previous "needs 3 clicks" bug.
+    const nextEmailError = computeEmailError(resolvedEmail);
+    const nextPasswordError = computePasswordError(resolvedPassword);
+    setEmailError(nextEmailError);
+    setPasswordError(nextPasswordError);
+
+    if (nextEmailError || nextPasswordError) {
       hapticFeedback.error();
       return;
     }
 
     try {
       hapticFeedback.selection();
-      const response = await login(email.trim(), password);
+      const response = await login(resolvedEmail, resolvedPassword);
       router.replace(resolvePostAuthRoute(response));
     } catch (e) {
       hapticFeedback.error();
@@ -175,9 +214,8 @@ export default function LoginScreen() {
               value={email}
               onChangeText={(text) => {
                 setEmail(text);
-                if (emailError) validateEmailField(text);
+                if (emailError) setEmailError("");
               }}
-              onBlur={() => validateEmailField(email)}
               error={emailError}
               keyboardType="email-address"
               autoCapitalize="none"
@@ -192,9 +230,8 @@ export default function LoginScreen() {
               value={password}
               onChangeText={(text) => {
                 setPassword(text);
-                if (passwordError) validatePasswordField(text);
+                if (passwordError) setPasswordError("");
               }}
-              onBlur={() => validatePasswordField(password)}
               error={passwordError}
               secureTextEntry
               autoComplete="password"
@@ -239,7 +276,12 @@ export default function LoginScreen() {
             </FormButton>
           </View>
 
-          {/* Footer removed — single login flow */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>¿No tienes cuenta?</Text>
+            <TouchableOpacity onPress={() => router.push("/register")} accessibilityRole="link">
+              <Text style={styles.registerLink}>Registrar</Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
