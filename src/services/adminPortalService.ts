@@ -548,6 +548,9 @@ export interface NurseProfileAdminRecordDto {
   bankName: string | null;
   accountNumber: string | null;
   category: string | null;
+  visitDailyRate?: number;
+  homeCareMonthlyRate?: number;
+  homeCareMonthlyExpectedDays?: number;
   workload?: NurseWorkloadSummaryDto;
 }
 
@@ -563,6 +566,9 @@ export interface NurseProfileIdentityRequest {
   bankName: string;
   accountNumber?: string | null;
   category: string;
+  visitDailyRate?: number;
+  homeCareMonthlyRate?: number;
+  homeCareMonthlyExpectedDays?: number;
 }
 
 export interface CreateNurseProfileRequest extends NurseProfileIdentityRequest {

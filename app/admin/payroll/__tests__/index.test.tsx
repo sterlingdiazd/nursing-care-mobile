@@ -39,7 +39,6 @@ describe("PayrollHubScreen", () => {
     expect(component.root).toBeTruthy();
     // Hub renders section card labels
     expect(component.root.findByProps({ children: "Períodos" })).toBeTruthy();
-    expect(component.root.findByProps({ children: "Reglas" })).toBeTruthy();
     expect(component.root.findByProps({ children: "Deducciones únicas" })).toBeTruthy();
     expect(component.root.findByProps({ children: "Descuentos fijos" })).toBeTruthy();
     expect(component.root.findByProps({ children: "Ajustes" })).toBeTruthy();
@@ -139,23 +138,6 @@ describe("PeriodsScreen", () => {
     await act(async () => { recalcButton.props.onPress(); });
 
     expect(component.root.findByProps({ testID: "admin-payroll-recalculate-confirm-dialog" })).toBeTruthy();
-  });
-});
-
-// ── Rules ─────────────────────────────────────────────────────────────────────
-
-describe("RulesScreen", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("renders without crashing", async () => {
-    const { getCompensationRules } = await import("@/src/services/payrollService");
-    vi.mocked(getCompensationRules).mockResolvedValue({ items: [], totalCount: 0 });
-
-    const RulesScreen = (await import("../rules")).default;
-
-    expect(() => renderWithProviders(<RulesScreen />)).not.toThrow();
   });
 });
 

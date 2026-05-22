@@ -603,6 +603,11 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
                     {breakdown}
                   </Text>
                 ) : null}
+                {line.serviceSubtotal > 0 ? (
+                  <Text style={styles.lineMargin} numberOfLines={1}>
+                    {`Cliente ${formatCurrency(line.serviceSubtotal)}  ·  Pago ${formatCurrency(line.netCompensation)}  ·  Margen ${formatCurrency(line.serviceSubtotal - line.netCompensation)}`}
+                  </Text>
+                ) : null}
                 {isOpen ? (
                   <View style={styles.lineActions}>
                     {line.pendingOverrideId ? (
@@ -1159,6 +1164,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
     color: designTokens.color.ink.muted,
+    marginBottom: 8,
+  },
+  lineMargin: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: designTokens.color.ink.secondary,
     marginBottom: 8,
   },
   lineActions: {

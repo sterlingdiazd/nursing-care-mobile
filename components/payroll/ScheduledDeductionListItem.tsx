@@ -43,6 +43,13 @@ function statusLabel(status: string): string {
 
 export function ScheduledDeductionListItem({ item, onPress }: ScheduledDeductionListItemProps) {
   const isAmortizing = item.modality === "Amortizing";
+  // Standardized installment progress, shown on the second line for every item.
+  // Amortizing always has a fixed total; recurring shows progress only when capped.
+  const progressLabel = isAmortizing
+    ? `Cuota ${item.installmentsPaid} de ${item.totalInstallments}`
+    : item.maxOccurrences != null
+      ? `Cuota ${item.installmentsGenerated} de ${item.maxOccurrences}`
+      : null;
   const statusStyle =
     item.status === "Active"
       ? styles.statusActive
@@ -76,18 +83,16 @@ export function ScheduledDeductionListItem({ item, onPress }: ScheduledDeduction
         </View>
       </View>
 
-      <Text style={styles.nurse} numberOfLines={1}>{item.nurseDisplayName}</Text>
+      <View style={styles.secondLine}>
+        <Text style={styles.nurse} numberOfLines={1}>{item.nurseDisplayName}</Text>
+        {progressLabel && <Text style={styles.progress}>{progressLabel}</Text>}
+      </View>
 
       {isAmortizing ? (
         <View style={styles.metricsRow}>
           <View style={styles.metricCell}>
             <Text style={styles.metricLabel}>Saldo</Text>
             <Text style={styles.metricValue}>{formatCurrency(item.remainingBalance)}</Text>
-          </View>
-          <View style={styles.metricDivider} />
-          <View style={styles.metricCell}>
-            <Text style={styles.metricLabel}>Cuotas</Text>
-            <Text style={styles.metricValue}>{item.installmentsPaid}/{item.totalInstallments}</Text>
           </View>
           <View style={styles.metricDivider} />
           <View style={styles.metricCell}>
@@ -101,15 +106,7 @@ export function ScheduledDeductionListItem({ item, onPress }: ScheduledDeduction
             <Text style={styles.metricLabel}>Monto</Text>
             <Text style={styles.metricValue}>{formatCurrency(item.recurringAmount)}</Text>
           </View>
-          {item.maxOccurrences != null ? (
-            <>
-              <View style={styles.metricDivider} />
-              <View style={styles.metricCell}>
-                <Text style={styles.metricLabel}>Ocurrencias</Text>
-                <Text style={styles.metricValue}>{item.installmentsGenerated}/{item.maxOccurrences}</Text>
-              </View>
-            </>
-          ) : item.endDate ? (
+          {item.maxOccurrences == null && item.endDate ? (
             <>
               <View style={styles.metricDivider} />
               <View style={styles.metricCell}>
@@ -182,10 +179,22 @@ const styles = StyleSheet.create({
   statusTextCancelled: {
     color: designTokens.color.status.dangerText,
   },
+  secondLine: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
   nurse: {
+    flex: 1,
+    marginRight: 8,
     fontSize: 13,
     color: designTokens.color.ink.muted,
-    marginBottom: 8,
+  },
+  progress: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: designTokens.color.ink.secondary,
   },
   metricsRow: {
     flexDirection: "row",

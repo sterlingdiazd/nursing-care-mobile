@@ -36,14 +36,6 @@ const SECTION_CARDS: SectionCard[] = [
     testID: "payroll-hub-card-periods",
   },
   {
-    key: "rules",
-    label: "Reglas",
-    helper: "Reglas de compensación",
-    icon: "sliders",
-    path: "/admin/payroll/rules",
-    testID: "payroll-hub-card-rules",
-  },
-  {
     key: "deductions",
     label: "Deducciones únicas",
     helper: "Deducciones puntuales por período",

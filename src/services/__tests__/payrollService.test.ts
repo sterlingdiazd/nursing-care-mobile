@@ -86,15 +86,6 @@ describe("payrollService", () => {
     );
   });
 
-  it("getCompensationRules, createCompensationRule, updateCompensationRule, deactivateCompensationRule should cover all rule operations", () => {
-    // Expected: GET /compensation-rules with query params
-    // POST /compensation-rules with full rule data
-    // PUT /compensation-rules/{id} with update payload
-    // DELETE /compensation-rules/{id}
-    // All use correct auth, payloads, and return types
-    expect(true).toBe(true);
-  });
-
   it("getDeductions, createDeduction, deleteDeduction should handle deduction flows", () => {
     // Expected: GET /deductions with optional nurseId/periodId query
     // POST /deductions with CreateDeductionRequest

@@ -36,6 +36,9 @@ export default function AdminCreateNurseProfileScreen() {
     accountNumber: "",
     category: CATEGORIES[0],
     isOperationallyActive: true,
+    visitDailyRate: 0,
+    homeCareMonthlyRate: 0,
+    homeCareMonthlyExpectedDays: 30,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -252,6 +255,50 @@ export default function AdminCreateNurseProfileScreen() {
           )}
         </View>
 
+        {/* === SECTION: PAGO === */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Pago a la enfermera</Text>
+          <Text style={styles.helperText}>Independiente del precio al cliente. Se paga por días trabajados.</Text>
+
+          <Text style={styles.label}>Tarifa por día (domicilio) RD$</Text>
+          <FormInput
+            testID="admin-create-nurse-visit-rate-input"
+            accessibilityLabel="Tarifa de pago por día para domicilio"
+            style={styles.input}
+            placeholder="Ej: 1700"
+            keyboardType="numeric"
+            value={form.visitDailyRate ? String(form.visitDailyRate) : ""}
+            onChangeText={(text) => setForm({ ...form, visitDailyRate: Number(text.replace(/[^0-9.]/g, "")) || 0 })}
+          />
+
+          <View style={styles.row}>
+            <View style={styles.col}>
+              <Text style={styles.label}>Monto mensual (casa hogar) RD$</Text>
+              <FormInput
+                testID="admin-create-nurse-home-monthly-input"
+                accessibilityLabel="Monto mensual de casa hogar"
+                style={styles.input}
+                placeholder="Ej: 30000"
+                keyboardType="numeric"
+                value={form.homeCareMonthlyRate ? String(form.homeCareMonthlyRate) : ""}
+                onChangeText={(text) => setForm({ ...form, homeCareMonthlyRate: Number(text.replace(/[^0-9.]/g, "")) || 0 })}
+              />
+            </View>
+            <View style={styles.col}>
+              <Text style={styles.label}>Días esperados/mes</Text>
+              <FormInput
+                testID="admin-create-nurse-home-days-input"
+                accessibilityLabel="Días esperados de trabajo en el mes"
+                style={styles.input}
+                placeholder="30"
+                keyboardType="numeric"
+                value={form.homeCareMonthlyExpectedDays ? String(form.homeCareMonthlyExpectedDays) : ""}
+                onChangeText={(text) => setForm({ ...form, homeCareMonthlyExpectedDays: Number(text.replace(/[^0-9]/g, "")) || 30 })}
+              />
+            </View>
+          </View>
+        </View>
+
         {/* === SECTION: BANKING === */}
         <View style={styles.accordionWrap}>
           <Pressable
@@ -297,6 +344,7 @@ const styles = StyleSheet.create({
   inputActive: { borderColor: designTokens.color.ink.accent, borderWidth: 2 },
   inputError: { borderColor: designTokens.color.ink.danger },
   errorText: { color: designTokens.color.ink.danger, fontSize: 12, marginTop: 4 },
+  helperText: { color: designTokens.color.ink.secondary, fontSize: 12, marginTop: 2, marginBottom: 4 },
 
   row: { flexDirection: "row", gap: 8 },
   col: { flex: 1 },

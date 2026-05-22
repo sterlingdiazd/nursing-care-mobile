@@ -31,6 +31,9 @@ const EMPTY_FORM: UpdateNurseProfileRequest = {
   bankName: "",
   accountNumber: "",
   category: "",
+  visitDailyRate: 0,
+  homeCareMonthlyRate: 0,
+  homeCareMonthlyExpectedDays: 30,
 };
 
 function dtoToForm(d: NurseProfileAdminRecordDto): UpdateNurseProfileRequest {
@@ -46,6 +49,9 @@ function dtoToForm(d: NurseProfileAdminRecordDto): UpdateNurseProfileRequest {
     bankName: d.bankName || "",
     accountNumber: d.accountNumber || "",
     category: d.category || "",
+    visitDailyRate: d.visitDailyRate ?? 0,
+    homeCareMonthlyRate: d.homeCareMonthlyRate ?? 0,
+    homeCareMonthlyExpectedDays: d.homeCareMonthlyExpectedDays ?? 30,
   };
 }
 
@@ -53,6 +59,7 @@ function formsEqual(a: UpdateNurseProfileRequest, b: UpdateNurseProfileRequest) 
   const keys: (keyof UpdateNurseProfileRequest)[] = [
     "name", "lastName", "identificationNumber", "phone", "email",
     "hireDate", "specialty", "licenseId", "bankName", "accountNumber", "category",
+    "visitDailyRate", "homeCareMonthlyRate", "homeCareMonthlyExpectedDays",
   ];
   return keys.every((k) => (a[k] ?? "") === (b[k] ?? ""));
 }
@@ -356,6 +363,30 @@ export default function AdminEditNurseProfileScreen() {
                 onChangeText={(v) => updateField("category", v)}
                 errorMessage={errors.category}
                 accessibilityLabel="Categoría"
+              />
+              <FormInput
+                testID="admin-edit-nurse-visit-rate-input"
+                label="Tarifa por día (domicilio) RD$"
+                value={form.visitDailyRate ? String(form.visitDailyRate) : ""}
+                onChangeText={(v) => setForm((prev) => ({ ...prev, visitDailyRate: Number(v.replace(/[^0-9.]/g, "")) || 0 }))}
+                keyboardType="numeric"
+                accessibilityLabel="Tarifa de pago por día para domicilio"
+              />
+              <FormInput
+                testID="admin-edit-nurse-home-monthly-input"
+                label="Monto mensual (casa hogar) RD$"
+                value={form.homeCareMonthlyRate ? String(form.homeCareMonthlyRate) : ""}
+                onChangeText={(v) => setForm((prev) => ({ ...prev, homeCareMonthlyRate: Number(v.replace(/[^0-9.]/g, "")) || 0 }))}
+                keyboardType="numeric"
+                accessibilityLabel="Monto mensual de casa hogar"
+              />
+              <FormInput
+                testID="admin-edit-nurse-home-days-input"
+                label="Días esperados/mes (casa hogar)"
+                value={form.homeCareMonthlyExpectedDays ? String(form.homeCareMonthlyExpectedDays) : ""}
+                onChangeText={(v) => setForm((prev) => ({ ...prev, homeCareMonthlyExpectedDays: Number(v.replace(/[^0-9]/g, "")) || 30 }))}
+                keyboardType="numeric"
+                accessibilityLabel="Días esperados de trabajo en el mes"
               />
             </View>
           ) : null}

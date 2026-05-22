@@ -42,6 +42,11 @@ const DEDUCTION_TYPES = [
 
 type ActivePicker = "nurse" | "period" | null;
 
+// A one-time deduction is a single payment. Labels that encode installments
+// ("cuota 2 de 6", "1/4", ...) belong to a fixed plan (Descuentos Fijos).
+const INSTALLMENT_PATTERN = /\bcuotas?\b|\d+\s*\/\s*\d+|\b\d+\s+de\s+\d+\b/i;
+const looksLikeInstallment = (text: string) => INSTALLMENT_PATTERN.test(text);
+
 export function CreateDeductionModal({
   visible,
   onClose,
@@ -130,9 +135,10 @@ export function CreateDeductionModal({
     );
   }, [nurses, nurseQuery]);
 
-  const isValid = isEditMode
+  const isInstallmentLabel = looksLikeInstallment(label);
+  const isValid = !isInstallmentLabel && (isEditMode
     ? label.trim().length > 0 && parseFloat(amount) > 0
-    : label.trim().length > 0 && parseFloat(amount) > 0 && nurse !== null;
+    : label.trim().length > 0 && parseFloat(amount) > 0 && nurse !== null);
 
   const handleClose = () => {
     resetForm();
@@ -273,6 +279,11 @@ export function CreateDeductionModal({
               nativeID="deduction-label-input"
               accessibilityLabel="Etiqueta de la deducción"
             />
+            {isInstallmentLabel && (
+              <Text style={styles.installmentHint}>
+                Para descuentos en cuotas usa Descuentos Fijos. Esta pantalla es solo para descuentos de un solo pago.
+              </Text>
+            )}
           </View>
 
           <View style={styles.inputGroup}>
@@ -526,6 +537,11 @@ const styles = StyleSheet.create({
   errorText: {
     color: designTokens.color.status.dangerText,
     fontSize: 14,
+  },
+  installmentHint: {
+    color: designTokens.color.status.dangerText,
+    fontSize: 12,
+    marginTop: designTokens.spacing.sm,
   },
   inputGroup: {
     marginBottom: designTokens.spacing.xl,

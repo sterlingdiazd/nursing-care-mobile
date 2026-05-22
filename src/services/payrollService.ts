@@ -12,11 +12,6 @@ import type {
   AdminPayrollStaffSummary,
   AdminPayrollPeriodDetail,
   CreatePayrollPeriodRequest,
-  AdminCompensationRuleListItem,
-  AdminCompensationRuleDetail,
-  AdminCompensationRuleListResult,
-  CreateCompensationRuleRequest,
-  UpdateCompensationRuleRequest,
   AdminDeductionListItem,
   AdminDeductionListResult,
   CreateDeductionRequest,
@@ -140,56 +135,6 @@ export function getPayrollPeriodReportPdfUrl(id: string): string {
 
 export function getPayrollPeriodReportXlsxUrl(id: string): string {
   return `${API_BASE_URL}/api/admin/payroll/periods/${id}/report/xlsx`;
-}
-
-export async function getCompensationRules(): Promise<AdminCompensationRuleListResult> {
-  return requestJson<AdminCompensationRuleListResult>({
-    path: "/api/admin/payroll/compensation-rules",
-    method: "GET",
-    auth: true,
-  });
-}
-
-export async function getCompensationRuleById(id: string): Promise<AdminCompensationRuleDetail> {
-  return requestJson<AdminCompensationRuleDetail>({
-    path: `/api/admin/payroll/compensation-rules/${id}`,
-    method: "GET",
-    auth: true,
-  });
-}
-
-export async function createCompensationRule(request: CreateCompensationRuleRequest): Promise<{ id: string }> {
-  return requestJson<{ id: string }>({
-    path: "/api/admin/payroll/compensation-rules",
-    method: "POST",
-    body: request,
-    auth: true,
-  });
-}
-
-export async function updateCompensationRule(id: string, request: UpdateCompensationRuleRequest): Promise<void> {
-  return requestVoid({
-    path: `/api/admin/payroll/compensation-rules/${id}`,
-    method: "PUT",
-    body: request,
-    auth: true,
-  });
-}
-
-export async function deactivateCompensationRule(id: string): Promise<void> {
-  return requestVoid({
-    path: `/api/admin/payroll/compensation-rules/${id}`,
-    method: "DELETE",
-    auth: true,
-  });
-}
-
-export async function reactivateCompensationRule(id: string): Promise<void> {
-  return requestVoid({
-    path: `/api/admin/payroll/compensation-rules/${id}/reactivate`,
-    method: "POST",
-    auth: true,
-  });
 }
 
 export async function getDeductions(options?: {
@@ -406,11 +351,6 @@ export type {
   AdminPayrollStaffSummary,
   AdminPayrollPeriodDetail,
   CreatePayrollPeriodRequest,
-  AdminCompensationRuleListItem,
-  AdminCompensationRuleDetail,
-  AdminCompensationRuleListResult,
-  CreateCompensationRuleRequest,
-  UpdateCompensationRuleRequest,
   AdminDeductionListItem,
   AdminDeductionListResult,
   CreateDeductionRequest,

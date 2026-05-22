@@ -1,8 +1,6 @@
 export { PeriodListItem } from "./PeriodListItem";
 export { CreatePeriodModal } from "./CreatePeriodModal";
 export { PeriodDetail } from "./PeriodDetail";
-export { RuleListItem } from "./RuleListItem";
-export { CreateRuleModal } from "./CreateRuleModal";
 export { DeductionListItem } from "./DeductionListItem";
 export { CreateDeductionModal } from "./CreateDeductionModal";
 export { AdjustmentListItem } from "./AdjustmentListItem";

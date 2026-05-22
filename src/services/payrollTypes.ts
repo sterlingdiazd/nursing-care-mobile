@@ -67,6 +67,7 @@ export interface AdminPayrollLineItem {
   adjustmentsTotal: number;
   deductionsTotal: number;
   netCompensation: number;
+  serviceSubtotal: number; // subtotal cobrado al cliente; margen = serviceSubtotal - netCompensation
   createdAtUtc: string;
   pendingOverrideId?: string | null;
 }
@@ -102,52 +103,6 @@ export interface CreatePayrollPeriodRequest {
   endDate: string;
   cutoffDate: string;
   paymentDate: string;
-}
-
-export interface AdminCompensationRuleListItem {
-  id: string;
-  name: string;
-  employmentType: string;
-  baseCompensationPercent: number;
-  transportIncentivePercent: number;
-  complexityBonusPercent: number;
-  medicalSuppliesPercent: number;
-  isActive: boolean;
-  createdAtUtc: string;
-}
-
-export interface AdminCompensationRuleDetail {
-  id: string;
-  name: string;
-  employmentType: string;
-  baseCompensationPercent: number;
-  transportIncentivePercent: number;
-  complexityBonusPercent: number;
-  medicalSuppliesPercent: number;
-  isActive: boolean;
-  createdAtUtc: string;
-}
-
-export interface AdminCompensationRuleListResult {
-  items: AdminCompensationRuleListItem[];
-  totalCount: number;
-}
-
-export interface CreateCompensationRuleRequest {
-  name: string;
-  employmentType: string;
-  baseCompensationPercent: number;
-  transportIncentivePercent: number;
-  complexityBonusPercent: number;
-  medicalSuppliesPercent: number;
-}
-
-export interface UpdateCompensationRuleRequest {
-  name: string;
-  baseCompensationPercent: number;
-  transportIncentivePercent: number;
-  complexityBonusPercent: number;
-  medicalSuppliesPercent: number;
 }
 
 export interface AdminDeductionListItem {
