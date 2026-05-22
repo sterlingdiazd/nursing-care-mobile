@@ -23,6 +23,7 @@ import {
 import { adminTestIds } from "@/src/testing/testIds/adminTestIds";
 import { useToast } from "@/src/components/shared/ToastProvider";
 import { formatDateES } from "@/src/utils/spanishTextValidator";
+import { formatDOP } from "@/src/utils/currency";
 import { DateField } from "@/src/components/form";
 
 function formatPeriodRange(start?: string | null, end?: string | null, fallback?: string): string {
@@ -36,9 +37,7 @@ interface ScheduledDeductionDetailProps {
   onRefresh: () => Promise<void>;
 }
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP" }).format(value);
-}
+const formatCurrency = formatDOP;
 
 function conceptLabel(type: string): string {
   switch (type) {
@@ -355,6 +354,14 @@ export function ScheduledDeductionDetail({ detail, onBack, onRefresh }: Schedule
         ? "neutral" as const
         : "danger" as const;
 
+  // Visual hierarchy: one hero figure (outstanding balance) + a cuotas progress bar; the rest are
+  // smaller supporting facts.
+  const paidCount = isAmortizing ? plan.installmentsPaid : plan.installmentsGenerated;
+  const totalCount = isAmortizing ? plan.totalInstallments : (plan.maxOccurrences ?? 0);
+  const progress = totalCount > 0 ? Math.min(1, paidCount / totalCount) : 0;
+  const heroLabel = isAmortizing ? "Saldo pendiente" : "Monto recurrente";
+  const heroValue = isAmortizing ? formatCurrency(plan.remainingBalance) : formatCurrency(plan.recurringAmount);
+
   return (
     <ScrollView
       style={styles.container}
@@ -371,8 +378,8 @@ export function ScheduledDeductionDetail({ detail, onBack, onRefresh }: Schedule
         {" "}
       </Text>
 
-      {/* Header card */}
-      <View style={styles.headerCard}>
+      {/* Header / hero card */}
+      <View style={styles.card}>
         <View style={styles.headerTop}>
           <View style={styles.headerTitleWrap}>
             <Text style={styles.planLabel}>{plan.label}</Text>
@@ -384,104 +391,79 @@ export function ScheduledDeductionDetail({ detail, onBack, onRefresh }: Schedule
           <StatusBadge label={statusLabel(plan.status)} tone={statusTone} />
         </View>
 
-        {isAmortizing ? (
-          <View style={styles.metricsGrid}>
-            <View style={styles.metricBlock}>
-              <Text style={styles.metricLabel}>Saldo</Text>
-              <Text style={styles.metricValue}>{formatCurrency(plan.remainingBalance)}</Text>
-            </View>
-            <View style={styles.metricBlock}>
-              <Text style={styles.metricLabel}>Total a pagar</Text>
-              <Text style={styles.metricValue}>{formatCurrency(plan.totalRepayable)}</Text>
-            </View>
-            <View style={styles.metricBlock}>
-              <Text style={styles.metricLabel}>Capital</Text>
-              <Text style={styles.metricValue}>{formatCurrency(plan.principalAmount)}</Text>
-            </View>
-            <View style={styles.metricBlock}>
-              <Text style={styles.metricLabel}>Tasa</Text>
-              <Text style={styles.metricValue}>{plan.interestRatePercent}%</Text>
-            </View>
-            <View style={styles.metricBlock}>
-              <Text style={styles.metricLabel}>Cuota</Text>
-              <Text style={styles.metricValue}>{formatCurrency(plan.installmentAmount)}</Text>
-            </View>
-            <View style={styles.metricBlock}>
-              <Text style={styles.metricLabel}>Cuotas</Text>
-              <Text style={styles.metricValue}>{plan.installmentsPaid}/{plan.totalInstallments}</Text>
-            </View>
-          </View>
-        ) : (
-          <View style={styles.metricsGrid}>
-            <View style={styles.metricBlock}>
-              <Text style={styles.metricLabel}>Monto</Text>
-              <Text style={styles.metricValue}>{formatCurrency(plan.recurringAmount)}</Text>
-            </View>
-            <View style={styles.metricBlock}>
-              <Text style={styles.metricLabel}>Ocurrencias</Text>
-              <Text style={styles.metricValue}>
-                {plan.installmentsGenerated}
-                {plan.maxOccurrences != null ? `/${plan.maxOccurrences}` : ""}
+        <View style={styles.hero}>
+          <Text style={styles.heroLabel}>{heroLabel}</Text>
+          <Text style={styles.heroValue} numberOfLines={1} adjustsFontSizeToFit>{heroValue}</Text>
+        </View>
+
+        {totalCount > 0 ? (
+          <View style={styles.progressWrap}>
+            <View style={styles.progressHeader}>
+              <Text style={styles.progressText}>
+                {paidCount} de {totalCount} {isAmortizing ? "cuotas pagadas" : "ocurrencias"}
               </Text>
+              <Text style={styles.progressPct}>{Math.round(progress * 100)}%</Text>
             </View>
-            {plan.endDate && (
-              <View style={styles.metricBlock}>
-                <Text style={styles.metricLabel}>Fin</Text>
-                <Text style={styles.metricValue}>{formatDateES(plan.endDate)}</Text>
-              </View>
-            )}
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, { width: `${Math.max(2, progress * 100)}%` }]} />
+            </View>
           </View>
-        )}
+        ) : null}
+
+        <View style={styles.facts}>
+          {isAmortizing ? (
+            <>
+              <Fact label="Capital" value={formatCurrency(plan.principalAmount)} />
+              <Fact label="Tasa de interés" value={`${plan.interestRatePercent}%`} />
+              <Fact label="Cuota" value={formatCurrency(plan.installmentAmount)} />
+              <Fact label="Total a pagar" value={formatCurrency(plan.totalRepayable)} last />
+            </>
+          ) : (
+            <>
+              <Fact label="Cuota" value={formatCurrency(plan.recurringAmount)} />
+              {plan.endDate ? <Fact label="Fecha de fin" value={formatDateES(plan.endDate)} last /> : null}
+            </>
+          )}
+        </View>
       </View>
 
-      {/* Actions — gated by status === "Active" */}
+      {/* Actions — gated by status === "Active". Routine ops first, destructive grouped below. */}
       {isActive && (
-        <View style={styles.actionsRow}>
-          {isAmortizing && (
-            <TouchableOpacity
-              style={[styles.actionBtn, styles.actionBtnDanger, actionLoading && styles.actionBtnDisabled]}
-              onPress={handlePayoff}
+        <View style={styles.actionsCard}>
+          <View style={styles.actionRow}>
+            <ActionBtn
+              label="Reprogramar"
+              variant="secondary"
+              onPress={() => setShowReschedule(true)}
               disabled={actionLoading}
-              testID={adminTestIds.payroll.scheduledPayoffButton}
-              accessibilityRole="button"
-              accessibilityLabel="Liquidación anticipada"
-            >
-              <Text style={[styles.actionBtnText, styles.actionBtnTextDanger]}>Liquidación anticipada</Text>
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            style={[styles.actionBtn, actionLoading && styles.actionBtnDisabled]}
-            onPress={() => setShowReschedule(true)}
-            disabled={actionLoading}
-            testID={adminTestIds.payroll.scheduledRescheduleButton}
-            accessibilityRole="button"
-            accessibilityLabel="Reprogramar"
-          >
-            <Text style={styles.actionBtnText}>Reprogramar</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionBtn, actionLoading && styles.actionBtnDisabled]}
-            onPress={handleSkip}
-            disabled={actionLoading || pendingInstallments.length === 0}
-            testID={adminTestIds.payroll.scheduledSkipButton}
-            accessibilityRole="button"
-            accessibilityLabel="Omitir cuota"
-          >
-            <Text style={styles.actionBtnText}>Omitir cuota</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionBtn, styles.actionBtnDanger, actionLoading && styles.actionBtnDisabled]}
-            onPress={handleCancel}
-            disabled={actionLoading}
-            testID={adminTestIds.payroll.scheduledCancelButton}
-            accessibilityRole="button"
-            accessibilityLabel="Anular"
-          >
-            <Text style={[styles.actionBtnText, styles.actionBtnTextDanger]}>Anular</Text>
-          </TouchableOpacity>
+              testID={adminTestIds.payroll.scheduledRescheduleButton}
+            />
+            <ActionBtn
+              label="Omitir cuota"
+              variant="secondary"
+              onPress={handleSkip}
+              disabled={actionLoading || pendingInstallments.length === 0}
+              testID={adminTestIds.payroll.scheduledSkipButton}
+            />
+          </View>
+          <View style={styles.actionRow}>
+            {isAmortizing ? (
+              <ActionBtn
+                label="Liquidación anticipada"
+                variant="danger"
+                onPress={handlePayoff}
+                disabled={actionLoading}
+                testID={adminTestIds.payroll.scheduledPayoffButton}
+              />
+            ) : null}
+            <ActionBtn
+              label="Anular"
+              variant="danger"
+              onPress={handleCancel}
+              disabled={actionLoading}
+              testID={adminTestIds.payroll.scheduledCancelButton}
+            />
+          </View>
         </View>
       )}
 
@@ -511,26 +493,42 @@ export function ScheduledDeductionDetail({ detail, onBack, onRefresh }: Schedule
   );
 }
 
+function Fact({ label, value, last }: { label: string; value: string; last?: boolean }) {
+  return (
+    <View style={[styles.fact, last ? styles.factLast : null]}>
+      <Text style={styles.factLabel}>{label}</Text>
+      <Text style={styles.factValue}>{value}</Text>
+    </View>
+  );
+}
+
+function ActionBtn({ label, variant, onPress, disabled, testID }: { label: string; variant: "secondary" | "danger"; onPress: () => void; disabled?: boolean; testID: string }) {
+  const danger = variant === "danger";
+  return (
+    <TouchableOpacity
+      style={[styles.actionBtn, danger ? styles.actionBtnDanger : styles.actionBtnSecondary, disabled ? styles.actionBtnDisabled : null]}
+      onPress={onPress}
+      disabled={disabled}
+      testID={testID}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      <Text style={[styles.actionBtnText, danger ? styles.actionBtnTextDanger : styles.actionBtnTextSecondary]} numberOfLines={1}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
 function InstallmentRow({ inst }: { inst: ScheduledDeductionInstallmentRow }) {
   const periodText = formatPeriodRange(inst.periodStart, inst.periodEnd, inst.label);
-
   return (
-    <View style={styles.installmentRow}>
+    <View style={[styles.installmentRow, !inst.paid ? styles.installmentRowPending : null]}>
       <View style={styles.installmentLeft}>
-        {inst.sequence != null && (
-          <Text style={styles.installmentSeq}>#{inst.sequence}</Text>
-        )}
-        <View>
-          <Text style={styles.installmentPeriod}>{periodText}</Text>
-        </View>
+        {inst.sequence != null ? <Text style={styles.installmentSeq}>#{inst.sequence}</Text> : null}
+        <Text style={styles.installmentPeriod} numberOfLines={1}>{periodText}</Text>
       </View>
       <View style={styles.installmentRight}>
         <Text style={styles.installmentAmount}>{formatCurrency(inst.amount)}</Text>
-        <View style={[styles.installmentBadge, inst.paid ? styles.badgePaid : styles.badgePending]}>
-          <Text style={[styles.installmentBadgeText, inst.paid ? styles.badgeTextPaid : styles.badgeTextPending]}>
-            {inst.paid ? "Pagada" : "Pendiente"}
-          </Text>
-        </View>
+        <StatusBadge label={inst.paid ? "Pagada" : "Pendiente"} tone={inst.paid ? "success" : "warning"} />
       </View>
     </View>
   );
@@ -551,98 +549,72 @@ const styles = StyleSheet.create({
     width: 1,
     opacity: 0,
   },
-  headerCard: {
+  card: {
     marginHorizontal: 16,
     marginTop: 8,
-    backgroundColor: designTokens.color.surface.secondary,
-    borderRadius: 12,
-    padding: 14,
+    marginBottom: 12,
+    backgroundColor: designTokens.color.surface.primary,
+    borderRadius: 16,
+    padding: 16,
     borderWidth: 1,
     borderColor: designTokens.color.border.subtle,
-    marginBottom: 12,
+    boxShadow: "0px 4px 10px rgba(18, 48, 68, 0.04)",
+    elevation: 2,
   },
   headerTop: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 12,
-  },
-  headerTitleWrap: {
-    flex: 1,
-    marginRight: 8,
-  },
-  planLabel: {
-    fontSize: 17,
-    fontWeight: "800",
-    color: designTokens.color.ink.primary,
-  },
-  planMeta: {
-    fontSize: 12,
-    color: designTokens.color.ink.muted,
-    marginTop: 2,
-  },
-  nurseName: {
-    fontSize: 13,
-    color: designTokens.color.ink.secondary,
-    marginTop: 4,
-    fontWeight: "600",
-  },
-  metricsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
     gap: 8,
   },
-  metricBlock: {
-    minWidth: "30%",
-    flex: 1,
-    backgroundColor: designTokens.color.surface.tertiary,
-    borderRadius: 8,
-    padding: 8,
+  headerTitleWrap: { flex: 1 },
+  planLabel: { fontSize: 18, fontWeight: "800", color: designTokens.color.ink.primary },
+  planMeta: { fontSize: 12, color: designTokens.color.ink.muted, marginTop: 2 },
+  nurseName: { fontSize: 13, color: designTokens.color.ink.secondary, marginTop: 4, fontWeight: "600" },
+
+  hero: { marginTop: 16 },
+  heroLabel: { fontSize: 11, fontWeight: "700", color: designTokens.color.ink.muted, textTransform: "uppercase", letterSpacing: 0.5 },
+  heroValue: { fontSize: 30, fontWeight: "900", color: designTokens.color.ink.accentStrong, marginTop: 2 },
+
+  progressWrap: { marginTop: 14, gap: 6 },
+  progressHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  progressText: { fontSize: 12, color: designTokens.color.ink.secondary, fontWeight: "600" },
+  progressPct: { fontSize: 12, color: designTokens.color.ink.accentStrong, fontWeight: "800" },
+  progressTrack: { height: 8, borderRadius: 999, backgroundColor: designTokens.color.surface.tertiary, overflow: "hidden" },
+  progressFill: { height: 8, borderRadius: 999, backgroundColor: designTokens.color.ink.accent },
+
+  facts: { marginTop: 16, borderTopWidth: 1, borderTopColor: designTokens.color.border.subtle },
+  fact: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
+    paddingVertical: 9,
+    borderBottomWidth: 1,
+    borderBottomColor: designTokens.color.border.subtle,
+    gap: 12,
   },
-  metricLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: designTokens.color.ink.muted,
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
-    marginBottom: 2,
-  },
-  metricValue: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: designTokens.color.ink.primary,
-  },
-  actionsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    paddingHorizontal: 16,
-    gap: 8,
-    marginBottom: 16,
-  },
+  factLast: { borderBottomWidth: 0 },
+  factLabel: { fontSize: 13, color: designTokens.color.ink.muted },
+  factValue: { fontSize: 14, fontWeight: "700", color: designTokens.color.ink.primary },
+
+  actionsCard: { marginHorizontal: 16, marginBottom: 16, gap: 8 },
+  actionRow: { flexDirection: "row", gap: 8 },
   actionBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: designTokens.color.surface.accent,
-    borderWidth: 1,
-    borderColor: designTokens.color.border.accent,
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
   },
-  actionBtnDanger: {
-    backgroundColor: designTokens.color.surface.danger,
-    borderColor: designTokens.color.border.danger,
-  },
-  actionBtnDisabled: {
-    opacity: 0.5,
-  },
-  actionBtnText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: designTokens.color.ink.accentStrong,
-  },
-  actionBtnTextDanger: {
-    color: designTokens.color.status.dangerText,
-  },
+  actionBtnSecondary: { backgroundColor: designTokens.color.surface.primary, borderColor: designTokens.color.border.accent },
+  actionBtnDanger: { backgroundColor: designTokens.color.surface.danger, borderColor: designTokens.color.border.danger },
+  actionBtnDisabled: { opacity: 0.5 },
+  actionBtnText: { fontSize: 14, fontWeight: "700" },
+  actionBtnTextSecondary: { color: designTokens.color.ink.accentStrong },
+  actionBtnTextDanger: { color: designTokens.color.status.dangerText },
+
   sectionTitle: {
     fontSize: 13,
     fontWeight: "700",
@@ -652,75 +624,27 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 8,
   },
-  installmentsList: {
-    marginHorizontal: 16,
-    borderRadius: 10,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: designTokens.color.border.subtle,
-    backgroundColor: designTokens.color.surface.secondary,
-  },
+  installmentsList: { marginHorizontal: 16, gap: 8 },
   installmentRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: designTokens.color.border.subtle,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    backgroundColor: designTokens.color.surface.primary,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.subtle,
+    boxShadow: "0px 4px 10px rgba(18, 48, 68, 0.04)",
+    elevation: 1,
   },
-  installmentLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    flex: 1,
-  },
-  installmentSeq: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: designTokens.color.ink.muted,
-    minWidth: 24,
-  },
-  installmentPeriod: {
-    fontSize: 13,
-    color: designTokens.color.ink.secondary,
-  },
-  installmentRight: {
-    alignItems: "flex-end",
-    gap: 4,
-  },
-  installmentAmount: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: designTokens.color.ink.primary,
-  },
-  installmentBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  badgePaid: {
-    backgroundColor: designTokens.color.surface.success,
-  },
-  badgePending: {
-    backgroundColor: designTokens.color.surface.warning,
-  },
-  installmentBadgeText: {
-    fontSize: 10,
-    fontWeight: "700",
-  },
-  badgeTextPaid: {
-    color: designTokens.color.status.successText,
-  },
-  badgeTextPending: {
-    color: designTokens.color.status.warningText,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: designTokens.color.ink.muted,
-    padding: 16,
-    textAlign: "center",
-  },
+  installmentRowPending: { borderLeftWidth: 4, borderLeftColor: designTokens.color.border.warning },
+  installmentLeft: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
+  installmentSeq: { fontSize: 12, fontWeight: "800", color: designTokens.color.ink.muted, minWidth: 28 },
+  installmentPeriod: { fontSize: 13, color: designTokens.color.ink.secondary, flex: 1 },
+  installmentRight: { alignItems: "flex-end", gap: 6 },
+  installmentAmount: { fontSize: 15, fontWeight: "800", color: designTokens.color.ink.primary },
+  emptyText: { fontSize: 14, color: designTokens.color.ink.muted, padding: 16, textAlign: "center" },
 });
 
 const rescheduleStyles = StyleSheet.create({
