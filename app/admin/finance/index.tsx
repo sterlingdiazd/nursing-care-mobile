@@ -117,6 +117,10 @@ function Resumen({ data }: { data: FinanceOverview }) {
       color: statusColor(h.status),
       valueLabel: `${Math.round(h.value)}%`,
       label: h.key === "margin" ? "Margen" : h.key === "labor" ? "Nómina" : "Cobranza",
+      onPress: () =>
+        h.key === "collection"
+          ? goDetail(data, "pending", "Pendiente de cobro")
+          : goDetail(data, "services", "Servicios del período"),
     }));
 
   return (

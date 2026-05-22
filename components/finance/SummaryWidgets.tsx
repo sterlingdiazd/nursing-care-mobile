@@ -12,20 +12,28 @@ export function RingGauge({
   valueLabel,
   label,
   size = 78,
+  onPress,
 }: {
   percent: number;
   color: string;
   valueLabel: string;
   label: string;
   size?: number;
+  onPress?: () => void;
 }) {
   const p = Math.max(0, Math.min(100, percent));
   const data = [
     { value: p <= 0 ? 0.01 : p, color },
     { value: Math.max(0.01, 100 - p), color: t.cardSoft },
   ];
+  const Wrapper: any = onPress ? Pressable : View;
   return (
-    <View style={styles.gauge}>
+    <Wrapper
+      style={({ pressed }: { pressed?: boolean }) => [styles.gauge, pressed && onPress ? { opacity: 0.7 } : null]}
+      onPress={onPress}
+      accessibilityRole={onPress ? "button" : undefined}
+      accessibilityLabel={onPress ? `Ver detalle de ${label}` : undefined}
+    >
       <PieChart
         donut
         radius={size / 2}
@@ -36,7 +44,7 @@ export function RingGauge({
         centerLabelComponent={() => <Text style={[styles.gaugeValue, { color }]}>{valueLabel}</Text>}
       />
       <Text style={styles.gaugeLabel}>{label}</Text>
-    </View>
+    </Wrapper>
   );
 }
 
@@ -85,11 +93,11 @@ function HeroChip({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function HealthRow({ items }: { items: { percent: number; color: string; valueLabel: string; label: string }[] }) {
+export function HealthRow({ items }: { items: { percent: number; color: string; valueLabel: string; label: string; onPress?: () => void }[] }) {
   return (
     <View style={styles.healthRow}>
       {items.map((it, i) => (
-        <RingGauge key={i} percent={it.percent} color={it.color} valueLabel={it.valueLabel} label={it.label} />
+        <RingGauge key={i} percent={it.percent} color={it.color} valueLabel={it.valueLabel} label={it.label} onPress={it.onPress} />
       ))}
     </View>
   );
