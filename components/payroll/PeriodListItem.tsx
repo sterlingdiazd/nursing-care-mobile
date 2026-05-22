@@ -58,6 +58,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
     borderColor: designTokens.color.border.subtle,
+    boxShadow: "0px 4px 10px rgba(18, 48, 68, 0.05)",
   },
   header: {
     flexDirection: "row",

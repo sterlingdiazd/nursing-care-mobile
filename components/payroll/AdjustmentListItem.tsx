@@ -1,6 +1,7 @@
 import { StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native";
 import type { AdminCompensationAdjustmentListItem } from "@/src/services/payrollService";
 import { designTokens } from "@/src/design-system/tokens";
+import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
 
 interface AdjustmentListItemProps {
   adjustment: AdminCompensationAdjustmentListItem;
@@ -16,15 +17,7 @@ function formatCurrency(amount: number) {
 }
 
 function formatDate(dateString: string): string {
-  try {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat("es-DO", {
-      dateStyle: "medium",
-      timeStyle: "short"
-    }).format(date);
-  } catch {
-    return dateString;
-  }
+  return formatDateTimeES(dateString) || dateString;
 }
 
 export function AdjustmentListItem({ adjustment, onDelete }: AdjustmentListItemProps) {
@@ -67,7 +60,7 @@ export function AdjustmentListItem({ adjustment, onDelete }: AdjustmentListItemP
         accessibilityRole="button"
         accessibilityLabel={`Eliminar ajuste ${adjustment.label}`}
       >
-        <Text style={styles.deleteButtonText}>x</Text>
+        <Text style={styles.deleteButtonText}>×</Text>
       </TouchableOpacity>
     </View>
   );
@@ -75,12 +68,15 @@ export function AdjustmentListItem({ adjustment, onDelete }: AdjustmentListItemP
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: designTokens.color.surface.secondary,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
+    backgroundColor: designTokens.color.surface.primary,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
     flexDirection: "row",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: designTokens.color.border.subtle,
+    boxShadow: "0px 4px 10px rgba(18, 48, 68, 0.05)",
   },
   content: {
     flex: 1,

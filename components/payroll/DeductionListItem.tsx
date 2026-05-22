@@ -1,10 +1,11 @@
-import { StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native";
+import { Pressable, StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native";
 import type { AdminDeductionListItem } from "@/src/services/payrollService";
 import { designTokens } from "@/src/design-system/tokens";
 
 interface DeductionListItemProps {
   deduction: AdminDeductionListItem;
   onDelete: (deduction: AdminDeductionListItem) => void;
+  onPress?: (deduction: AdminDeductionListItem) => void;
 }
 
 function formatCurrency(amount: number) {
@@ -16,13 +17,15 @@ function formatCurrency(amount: number) {
 
 function deductionTypeLabel(type: string): string {
   switch (type) {
-    case "Fixed": return "Fijo";
-    case "Percentage": return "Porcentaje";
+    case "Loan": return "Préstamo";
+    case "Advance": return "Adelanto";
+    case "Insurance": return "Seguro";
+    case "Other": return "Otro";
     default: return type;
   }
 }
 
-export function DeductionListItem({ deduction, onDelete }: DeductionListItemProps) {
+export function DeductionListItem({ deduction, onDelete, onPress }: DeductionListItemProps) {
   const handleDelete = () => {
     Alert.alert(
       "Eliminar Deducción",
@@ -40,7 +43,14 @@ export function DeductionListItem({ deduction, onDelete }: DeductionListItemProp
 
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
+      <Pressable
+        style={styles.content}
+        onPress={onPress ? () => onPress(deduction) : undefined}
+        testID={`deduction-item-${deduction.id}`}
+        nativeID={`deduction-item-${deduction.id}`}
+        accessibilityRole="button"
+        accessibilityLabel={`Editar deducción ${deduction.label}`}
+      >
         <View style={styles.header}>
           <Text style={styles.label}>{deduction.label}</Text>
           <Text style={styles.amount}>{formatCurrency(deduction.amount)}</Text>
@@ -52,15 +62,15 @@ export function DeductionListItem({ deduction, onDelete }: DeductionListItemProp
             <Text style={styles.typeText}>{deductionTypeLabel(deduction.deductionType)}</Text>
           </View>
         </View>
-      </View>
+      </Pressable>
 
       <TouchableOpacity
         style={styles.deleteButton}
         onPress={handleDelete}
         accessibilityRole="button"
-        accessibilityLabel={`Eliminar deduccion ${deduction.label}`}
+        accessibilityLabel={`Eliminar deducción ${deduction.label}`}
       >
-        <Text style={styles.deleteButtonText}>x</Text>
+        <Text style={styles.deleteButtonText}>×</Text>
       </TouchableOpacity>
     </View>
   );
@@ -68,12 +78,15 @@ export function DeductionListItem({ deduction, onDelete }: DeductionListItemProp
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: designTokens.color.surface.secondary,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
+    backgroundColor: designTokens.color.surface.primary,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
     flexDirection: "row",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: designTokens.color.border.subtle,
+    boxShadow: "0px 4px 10px rgba(18, 48, 68, 0.05)",
   },
   content: {
     flex: 1,

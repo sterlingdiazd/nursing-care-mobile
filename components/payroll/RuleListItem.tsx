@@ -62,10 +62,13 @@ export function RuleListItem({ rule, onPress }: RuleListItemProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: designTokens.color.surface.secondary,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
+    backgroundColor: designTokens.color.surface.primary,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.subtle,
+    boxShadow: "0px 4px 10px rgba(18, 48, 68, 0.05)",
   },
   header: {
     marginBottom: 8,
