@@ -13,10 +13,11 @@ import {
 } from "@/src/services/adminPortalService";
 import { adminTestIds } from "@/src/testing/testIds";
 import { mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
 
 function formatTimestamp(value: string | null) {
   if (!value) return "N/A";
-  return new Intl.DateTimeFormat("es-DO", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+  return formatDateTimeES(value);
 }
 
 function formatCurrency(value: number) {

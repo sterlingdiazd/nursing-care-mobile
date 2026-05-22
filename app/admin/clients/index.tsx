@@ -16,9 +16,10 @@ import {
   type AdminClientListStatus,
 } from "@/src/services/adminPortalService";
 import { adminTestIds } from "@/src/testing/testIds";
+import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
 
 function formatTimestamp(value: string) {
-  return new Intl.DateTimeFormat("es-DO", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+  return formatDateTimeES(value);
 }
 
 function getInactiveCount(items: AdminClientListItemDto[]) {
