@@ -81,17 +81,8 @@ export function resolvePostAuthRoute(
     return "/register";
   }
 
-  if (roles.includes("ADMIN")) {
-    return "/admin";
-  }
-
-  if (response.requiresAdminReview && roles.includes("NURSE")) {
-    return "/";
-  }
-
-  if (canAccessCareRequests(response)) {
-    return "/care-requests";
-  }
-
+  // ADMIN, NURSE under review, fully-onboarded NURSE/CLIENT — all land on Inicio.
+  // The home tab renders the appropriate per-role experience (admin dashboard for ADMIN).
+  void roles; void canAccessCareRequests;
   return "/";
 }

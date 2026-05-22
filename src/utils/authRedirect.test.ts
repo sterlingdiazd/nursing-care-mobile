@@ -17,14 +17,14 @@ describe("resolvePostAuthRoute", () => {
     ).toBe("/register");
   });
 
-  it("routes admins to the admin workspace", () => {
+  it("routes admins to the home dashboard", () => {
     expect(
       resolvePostAuthRoute({
         roles: ["ADMIN"],
         requiresProfileCompletion: false,
         requiresAdminReview: false,
       }),
-    ).toBe("/admin");
+    ).toBe("/");
   });
 
   it("keeps nurses under review out of operational screens", () => {
@@ -37,24 +37,24 @@ describe("resolvePostAuthRoute", () => {
     ).toBe("/");
   });
 
-  it("routes active nurses to the care requests queue", () => {
+  it("routes active nurses to the home dashboard", () => {
     expect(
       resolvePostAuthRoute({
         roles: ["NURSE"],
         requiresProfileCompletion: false,
         requiresAdminReview: false,
       }),
-    ).toBe("/care-requests");
+    ).toBe("/");
   });
 
-  it("routes clients to the care requests queue", () => {
+  it("routes clients to the home dashboard", () => {
     expect(
       resolvePostAuthRoute({
         roles: ["CLIENT"],
         requiresProfileCompletion: false,
         requiresAdminReview: false,
       }),
-    ).toBe("/care-requests");
+    ).toBe("/");
   });
 
   it("falls back to the home screen for unknown roles", () => {
