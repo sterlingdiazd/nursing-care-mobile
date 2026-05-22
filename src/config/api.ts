@@ -9,7 +9,12 @@ import { Platform } from "react-native";
  * 1. Environment variable (for explicit override or web platform testing)
  * 2. Dynamic IP detection via Expo (best for physical devices on LAN)
  * 3. Fallback to localhost for web/testing
- * 4. Default sslip.io URL
+ *
+ * The app talks to the backend over the plain HTTP LAN URL (http://<ip>:<port>).
+ * We deliberately do NOT route through sslip.io/HTTPS: the local cert path is
+ * the recurring cause of "device does not trust the certificate" failures on
+ * physical iPhones. The backend binds to 0.0.0.0:<port> and ATS permits the
+ * local network, so HTTP over the LAN IP is the supported transport.
  */
 const getApiBaseUrl = (): string => {
   const apiPort = process.env.EXPO_PUBLIC_API_PORT || "5050";
@@ -54,15 +59,13 @@ const getApiBaseUrl = (): string => {
     }
   }
 
-  // Construct URL using detected IP (convert to sslip.io domain for HTTPS)
+  // Construct the plain HTTP LAN URL from the detected dev-machine IP.
   if (hostIp && hostIp !== "localhost" && hostIp !== "127.0.0.1") {
-    const dynamicDomain = hostIp.replace(/\./g, "-") + ".sslip.io";
-    return `https://${dynamicDomain}:${apiPort}`;
+    return `http://${hostIp}:${apiPort}`;
   }
 
-  // Priority 4: Fallback with reasonable defaults
-  // This will be used if IP detection fails completely
-  return `https://10-0-0-34.sslip.io:${apiPort}`;
+  // Fallback when IP detection fails completely (e.g. simulator/web).
+  return defaultLocalUrl;
 };
 
 export const API_BASE_URL = getApiBaseUrl();
