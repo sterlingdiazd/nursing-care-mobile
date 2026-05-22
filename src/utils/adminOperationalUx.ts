@@ -5,6 +5,7 @@ import type {
 } from "@/src/services/adminPortalService";
 import { designTokens } from "@/src/design-system/tokens";
 import { Platform } from "react-native";
+import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
 
 type AdminSeverity = "High" | "Medium" | "Low";
 
@@ -34,12 +35,12 @@ export function resolveAdminOperationalDeepLink(path: string | null | undefined)
 
   if (path.includes("/admin/care-requests") && path.includes("selected=")) {
     const id = path.split("selected=")[1]?.split("&")[0];
-    return id ? `/admin/care-requests/${id}` : "/admin/care-requests";
+    return id ? `/care-requests/${id}` : "/admin/care-requests";
   }
 
   if (path.startsWith("/admin/care-requests/")) {
     const id = path.replace("/admin/care-requests/", "").split("?")[0];
-    return `/admin/care-requests/${id}`;
+    return `/care-requests/${id}`;
   }
 
   if (path.startsWith("/admin/care-requests")) {
@@ -48,7 +49,7 @@ export function resolveAdminOperationalDeepLink(path: string | null | undefined)
 
   if (path.startsWith("/care-requests/")) {
     const id = path.replace("/care-requests/", "").split("?")[0];
-    return `/admin/care-requests/${id}`;
+    return `/care-requests/${id}`;
   }
 
   if (path.startsWith("/care-requests")) {
@@ -169,19 +170,28 @@ export function buildAdminDashboardStatusSummary(snapshot: AdminDashboardSnapsho
       overdue > 0
         ? `Hay ${overdue} solicitud${overdue === 1 ? "" : "es"} vencida${overdue === 1 ? "" : "s"}`
         : "Panel estable",
-    helper: `${activeAlerts} alerta${activeAlerts === 1 ? "" : "s"} visibles · actualizado ${new Intl.DateTimeFormat("es-DO", {
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(snapshot.generatedAtUtc))}`,
+    helper: `${activeAlerts} alerta${activeAlerts === 1 ? "" : "s"} visibles · actualizado ${formatDateTimeES(snapshot.generatedAtUtc)}`,
     severity: overdue > 0 || snapshot.careRequestsWaitingForAssignmentCount > 0 ? "High" : "Low",
   } as const;
 }
 
 export function getAdminActionItemPrimaryLabel(item: AdminActionItemDto) {
-  if (item.deepLinkPath.startsWith("/admin/care-requests")) return "Abrir solicitud";
-  if (item.deepLinkPath.startsWith("/admin/nurse-profiles")) return "Abrir perfil";
-  if (item.deepLinkPath.startsWith("/admin/users")) return "Abrir usuario";
-  return "Abrir elemento";
+  // A path that includes `selected=<id>` or ends in a literal id segment drills
+  // into a single record; the bare collection path opens the list.
+  const path = item.deepLinkPath;
+  const targetsSingleRecord =
+    /\/[a-f0-9-]{8,}/i.test(path) || /[?&]selected=/.test(path);
+
+  if (path.startsWith("/admin/care-requests")) {
+    return targetsSingleRecord ? "Abrir solicitud" : "Ver solicitudes";
+  }
+  if (path.startsWith("/admin/nurse-profiles")) {
+    return targetsSingleRecord ? "Abrir perfil" : "Ver perfiles";
+  }
+  if (path.startsWith("/admin/users")) {
+    return targetsSingleRecord ? "Abrir usuario" : "Ver usuarios";
+  }
+  return targetsSingleRecord ? "Abrir elemento" : "Ver lista";
 }
 
 export function getAdminActionItemStatusLabel(item: AdminActionItemDto) {
