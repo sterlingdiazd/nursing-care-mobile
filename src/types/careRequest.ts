@@ -1,6 +1,11 @@
 export interface CreateCareRequestDto {
   careRequestDescription: string;
   careRequestType: string;
+  /**
+   * Required when the caller is ADMIN — the user id of the client the request is FOR.
+   * Ignored / can be omitted when the caller is a CLIENT creating their own request.
+   */
+  clientUserId?: string;
   unit?: number;
   suggestedNurse?: string;
   price?: number;
