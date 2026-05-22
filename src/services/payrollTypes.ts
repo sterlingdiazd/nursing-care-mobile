@@ -93,6 +93,8 @@ export interface AdminPayrollPeriodDetail {
   closedAtUtc?: string | null;
   lines: AdminPayrollLineItem[];
   staffSummary: AdminPayrollStaffSummary[];
+  /** True only while Open with no lines and no deductions/installments — editable/deletable. */
+  canModify: boolean;
 }
 
 export interface CreatePayrollPeriodRequest {
@@ -172,6 +174,12 @@ export interface CreateDeductionRequest {
   deductionType: string;
 }
 
+export interface UpdateDeductionRequest {
+  label: string;
+  amount: number;
+  deductionType: string;
+}
+
 export interface AdminCompensationAdjustmentListItem {
   id: string;
   serviceExecutionId: string;
@@ -221,4 +229,76 @@ export interface NursePayrollPeriodDetailDto {
   endDate: string;
   status: string;
   services: NursePayrollServiceLineDto[];
+}
+
+// --- Scheduled Deductions ---
+
+export interface ScheduledDeductionListItem {
+  id: string;
+  nurseUserId: string;
+  nurseDisplayName: string;
+  deductionType: "Loan" | "Advance" | "Insurance" | "Other";
+  label: string;
+  modality: "Amortizing" | "RecurringFixed" | "OneTime";
+  cadence: "Monthly" | "PerPeriod";
+  status: "Active" | "Completed" | "Cancelled";
+  startPeriodDate: string;
+  principalAmount: number;
+  interestRatePercent: number;
+  totalRepayable: number;
+  installmentAmount: number;
+  totalInstallments: number;
+  recurringAmount: number;
+  endDate: string | null;
+  maxOccurrences: number | null;
+  installmentsGenerated: number;
+  installmentsPaid: number;
+  amountSettled: number;
+  remainingBalance: number;
+  notes: string | null;
+  createdAtUtc: string;
+  closedAtUtc: string | null;
+}
+
+export interface ScheduledDeductionListResult {
+  items: ScheduledDeductionListItem[];
+  totalCount: number;
+}
+
+export interface ScheduledDeductionInstallmentRow {
+  sequence: number | null;
+  payrollPeriodId: string | null;
+  periodStart: string | null;
+  periodEnd: string | null;
+  label: string;
+  amount: number;
+  paid: boolean;
+}
+
+export interface ScheduledDeductionDetail {
+  plan: ScheduledDeductionListItem;
+  installments: ScheduledDeductionInstallmentRow[];
+}
+
+export interface CreateScheduledDeductionRequest {
+  nurseUserId: string;
+  deductionType: "Loan" | "Advance" | "Insurance" | "Other";
+  label: string;
+  modality: "Amortizing" | "RecurringFixed" | "OneTime";
+  cadence: "Monthly" | "PerPeriod";
+  startPeriodDate: string;
+  notes?: string;
+  principalAmount?: number;
+  interestRatePercent?: number;
+  totalInstallments?: number;
+  recurringAmount?: number;
+  endDate?: string;
+  maxOccurrences?: number;
+}
+
+export interface RescheduleScheduledDeductionRequest {
+  installmentAmount?: number;
+  recurringAmount?: number;
+  endDate?: string;
+  maxOccurrences?: number;
 }
