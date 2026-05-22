@@ -10,6 +10,7 @@ import { getAvailableNurses } from "@/src/services/catalogOptionsService";
 import type { AvailableNurseOption } from "@/src/types/catalog";
 import { useAuth } from "@/src/context/AuthContext";
 import { formatDateES } from "@/src/utils/spanishTextValidator";
+import { formatDOP } from "@/src/utils/currency";
 import {
   FormModalScaffold,
   FormCard,
@@ -45,8 +46,6 @@ type ActivePicker = "nurse" | "period" | null;
 // ("cuota 2 de 6", "1/4", ...) belong to a fixed plan (Descuentos Fijos).
 const INSTALLMENT_PATTERN = /\bcuotas?\b|\d+\s*\/\s*\d+|\b\d+\s+de\s+\d+\b/i;
 const looksLikeInstallment = (text: string) => INSTALLMENT_PATTERN.test(text);
-
-const money = (n: number) => `RD$ ${n.toLocaleString("es-DO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export function CreateDeductionModal({
   visible,
@@ -320,7 +319,7 @@ export function CreateDeductionModal({
         )}
       </FormCard>
 
-      {amountNum > 0 ? <SummaryBanner label="Se descontará" value={money(amountNum)} tag={typeLabel} /> : null}
+      {amountNum > 0 ? <SummaryBanner label="Se descontará" value={formatDOP(amountNum)} tag={typeLabel} /> : null}
     </FormModalScaffold>
   );
 }

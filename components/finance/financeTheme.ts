@@ -1,4 +1,5 @@
 import type { HealthStatus } from "@/src/services/financeService";
+import { formatDOP, formatDOPCompact } from "@/src/utils/currency";
 
 // Self-contained dark palette for the finance dashboard (the rest of the app stays light).
 // Derived from the brand navy/teal so it still feels like the same product.
@@ -26,20 +27,9 @@ export function statusColor(status: HealthStatus): string {
   return status === "green" ? financeTheme.green : status === "amber" ? financeTheme.amber : financeTheme.red;
 }
 
-const dop = new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP", minimumFractionDigits: 2 });
-
-export function fmtMoney(value: number): string {
-  return dop.format(value ?? 0);
-}
-
-/** Compact money for tight spaces: RD$ 284.5K, RD$ 1.2M. */
-export function fmtMoneyCompact(value: number): string {
-  const v = value ?? 0;
-  const abs = Math.abs(v);
-  if (abs >= 1_000_000) return `RD$ ${(v / 1_000_000).toFixed(1)}M`;
-  if (abs >= 10_000) return `RD$ ${(v / 1_000).toFixed(1)}K`;
-  return dop.format(v);
-}
+// Money formatting delegates to the shared DOP util (single source of truth across the app).
+export const fmtMoney = formatDOP;
+export const fmtMoneyCompact = formatDOPCompact;
 
 /** "+12.0%" / "−3.0%" / null when no comparison. */
 export function fmtDeltaPercent(deltaPercent: number | null): string | null {

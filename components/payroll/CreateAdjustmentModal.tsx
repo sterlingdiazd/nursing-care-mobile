@@ -7,6 +7,7 @@ import {
 import type { AdminPayrollPeriodListItem, AdminPayrollLineItem } from "@/src/services/payrollService";
 import { useAuth } from "@/src/context/AuthContext";
 import { formatDateES } from "@/src/utils/spanishTextValidator";
+import { formatDOP } from "@/src/utils/currency";
 import {
   FormModalScaffold,
   FormCard,
@@ -26,8 +27,6 @@ interface CreateAdjustmentModalProps {
 }
 
 type PickerStep = "period" | "line" | null;
-
-const money = (n: number) => `RD$ ${Math.abs(n).toLocaleString("es-DO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export function CreateAdjustmentModal({ visible, onClose, onSubmit }: CreateAdjustmentModalProps) {
   const [label, setLabel] = useState("");
@@ -229,7 +228,7 @@ export function CreateAdjustmentModal({ visible, onClose, onSubmit }: CreateAdju
       {hasAmount && parsedAmount !== 0 ? (
         <SummaryBanner
           label={parsedAmount >= 0 ? "Bonificación" : "Deducción"}
-          value={`${parsedAmount >= 0 ? "+" : "−"}${money(parsedAmount)}`}
+          value={`${parsedAmount >= 0 ? "+" : "−"}${formatDOP(Math.abs(parsedAmount))}`}
           tag={parsedAmount >= 0 ? "Suma" : "Resta"}
         />
       ) : null}

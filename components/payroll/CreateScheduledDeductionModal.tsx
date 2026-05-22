@@ -5,6 +5,7 @@ import type { AvailableNurseOption } from "@/src/types/catalog";
 import { useAuth } from "@/src/context/AuthContext";
 import { adminTestIds } from "@/src/testing/testIds/adminTestIds";
 import { DateField } from "@/src/components/form";
+import { formatDOP } from "@/src/utils/currency";
 import {
   FormModalScaffold,
   FormCard,
@@ -175,7 +176,7 @@ export function CreateScheduledDeductionModal({ visible, onClose, onSubmit }: Cr
   };
 
   const nurseSubtitle = (n: AvailableNurseOption) => [n.specialty, n.category].filter(Boolean).join(" · ");
-  const formatCurrency = (value: number) => new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP" }).format(value);
+  const formatCurrency = formatDOP;
   const sm = adminTestIds.payroll.scheduledModal;
 
   return (
