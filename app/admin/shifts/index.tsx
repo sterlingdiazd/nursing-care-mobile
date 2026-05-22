@@ -19,11 +19,12 @@ import {
   type ShiftChangeHistoryItemDto,
   type ShiftRecordStatus,
 } from "@/src/services/adminShiftsService";
+import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
 
 const PAGE_SIZE = 20;
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("es-DO", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+  return formatDateTimeES(value);
 }
 
 function statusLabel(status: ShiftRecordStatus): string {
@@ -470,7 +471,7 @@ const styles = StyleSheet.create({
   emptyState: { padding: 40, alignItems: "center" },
   emptyStateText: { color: designTokens.color.ink.secondary, fontSize: 16 },
   list: { gap: 12 },
-  card: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, shadowColor: designTokens.color.ink.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 2 },
+  card: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, boxShadow: "0px 6px 12px rgba(18, 48, 68, 0.06)", elevation: 2 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
   cardNurse: { color: designTokens.color.ink.primary, fontWeight: "800", fontSize: 16, flex: 1 },
   statusBadge: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, marginLeft: 8 },
