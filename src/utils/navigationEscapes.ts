@@ -12,6 +12,8 @@ export const mobileNavigationEscapes = {
   adminClients: "/admin/clients" as const,
   adminNurseProfiles: "/admin/nurse-profiles" as const,
   adminUsers: "/admin/users" as const,
+  adminHome: "/" as const,
+  adminPayroll: "/admin/payroll" as const,
 } as const;
 
 export function buildAdminNurseProfileDetailPath(id: string) {
