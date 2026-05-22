@@ -15,9 +15,10 @@ import {
   updateAdminSetting,
   type SystemSettingDto,
 } from "@/src/services/adminShiftsService";
+import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("es-DO", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+  return formatDateTimeES(value);
 }
 
 function groupByCategory(settings: SystemSettingDto[]): Map<string, SystemSettingDto[]> {
@@ -307,7 +308,7 @@ const styles = StyleSheet.create({
   emptyStateText: { color: designTokens.color.ink.secondary, fontSize: 16 },
   categorySection: { marginBottom: 20 },
   categoryTitle: { fontSize: 13, fontWeight: "800", color: designTokens.color.ink.muted, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10, paddingHorizontal: 4 },
-  settingCard: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, marginBottom: 4, shadowColor: designTokens.color.ink.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 2 },
+  settingCard: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, marginBottom: 4, boxShadow: "0px 6px 12px rgba(18, 48, 68, 0.06)", elevation: 2 },
   settingCardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
   settingKey: { color: designTokens.color.ink.primary, fontWeight: "800", fontSize: 15, flex: 1 },
   settingEditHint: { color: designTokens.color.ink.accent, fontSize: 13, fontWeight: "700" },

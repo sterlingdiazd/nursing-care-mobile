@@ -16,9 +16,10 @@ import {
   type AuditLogListItemDto,
   type AuditLogDetailDto,
 } from "@/src/services/adminPortalService";
+import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
 
 function formatTimestamp(value: string) {
-  return new Intl.DateTimeFormat("es-DO", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+  return formatDateTimeES(value);
 }
 
 function roleLabel(role: string) {
@@ -332,7 +333,7 @@ const styles = StyleSheet.create({
   summary: { flexDirection: "row", justifyContent: "space-between", marginBottom: 12, paddingHorizontal: 4 },
   summaryText: { color: designTokens.color.ink.muted, fontSize: 14, fontWeight: "600" },
   list: { gap: 12 },
-  card: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, shadowColor: designTokens.color.ink.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 2 },
+  card: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, boxShadow: "0px 6px 12px rgba(18, 48, 68, 0.06)", elevation: 2 },
   timestamp: { color: designTokens.color.status.warningText, fontWeight: "800", fontSize: 12, marginBottom: 4 },
   actor: { color: designTokens.color.ink.muted, fontSize: 14, marginBottom: 4 },
   action: { color: designTokens.color.ink.primary, fontWeight: "800", fontSize: 16, marginBottom: 4 },
