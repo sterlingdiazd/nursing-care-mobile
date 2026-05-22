@@ -183,16 +183,17 @@ export async function requestVoid({
   }
 
   if (!response.ok) {
+    const isExpiredAuth = response.status === 401 && shouldUseAuth;
     logClientEvent(
       "mobile.http",
-      "Request failed",
+      isExpiredAuth ? "Auth expired" : "Request failed",
       {
         correlationId,
         responseCorrelationId,
         status: response.status,
         responseText,
       },
-      "error",
+      isExpiredAuth ? "info" : "error",
     );
 
     if (response.status === 204) {
@@ -312,9 +313,10 @@ export async function requestJson<T>({
   }
 
   if (!response.ok) {
+    const isExpiredAuth = response.status === 401 && shouldUseAuth;
     logClientEvent(
       "mobile.http",
-      "Request failed",
+      isExpiredAuth ? "Auth expired" : "Request failed",
       {
         correlationId: responseCorrelationId ?? correlationId,
         method,
@@ -322,7 +324,7 @@ export async function requestJson<T>({
         status: response.status,
         response: responseText,
       },
-      "error",
+      isExpiredAuth ? "info" : "error",
     );
 
     throw new Error(getDisplayErrorMessage(responseText, response.status));
