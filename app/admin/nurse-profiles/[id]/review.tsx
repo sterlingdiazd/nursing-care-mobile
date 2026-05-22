@@ -14,12 +14,13 @@ import {
 import { adminTestIds } from "@/src/testing/testIds";
 import { getAdminNurseReviewProgress } from "@/src/utils/adminCreationUx";
 import { buildAdminNurseProfileDetailPath, goBackOrReplace } from "@/src/utils/navigationEscapes";
+import { formatDateES } from "@/src/utils/spanishTextValidator";
 
 const CATEGORIES = ["Auxiliar", "Tecnico", "Profesional", "Especialista"];
 
 function formatDate(value: string | null | undefined) {
   if (!value) return "N/A";
-  return new Intl.DateTimeFormat("es-DO", { dateStyle: "medium" }).format(new Date(value));
+  return formatDateES(value);
 }
 
 export default function AdminReviewNurseProfileScreen() {
