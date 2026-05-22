@@ -75,181 +75,103 @@ function Dashboard({ data, open }: { data: FinanceOverview; open: (c: DrilldownC
   const s = data.summary;
   const marginColor = s.marginPercent >= 40 ? t.green : s.marginPercent >= 30 ? t.amber : t.red;
 
+  // Every amount/summary opens its source-record detail (the records that generate the number).
+  const goDetail = (metric: string, title: string) =>
+    router.push({
+      pathname: "/admin/finance/detail",
+      params: { metric, from: data.from, to: data.to, title },
+    } as never);
+
+  const healthTarget: Record<string, { metric: string; title: string }> = {
+    margin: { metric: "services", title: "Servicios del período" },
+    labor: { metric: "services", title: "Servicios del período" },
+    collection: { metric: "pending", title: "Pendiente de cobro" },
+    loans: { metric: "loans", title: "Préstamos a enfermeras" },
+  };
+
   return (
     <View style={{ gap: 14 }}>
-      <HeroMetric
-        label="Ingresos del período"
-        value={s.revenue.value}
-        deltaPercent={s.revenue.deltaPercent}
-        collected={s.collected.value}
-        trend={data.monthlyTrend}
-      />
+      <Pressable onPress={() => goDetail("services", "Servicios del período")} accessibilityRole="button" accessibilityLabel="Ver detalle de ingresos">
+        <HeroMetric
+          label="Ingresos del período"
+          value={s.revenue.value}
+          deltaPercent={s.revenue.deltaPercent}
+          collected={s.collected.value}
+          trend={data.monthlyTrend}
+        />
+      </Pressable>
 
       <View style={styles.kpiRow}>
-        <KpiCard
-          label="Cobrado"
-          value={fmtMoney(s.collected.value)}
-          deltaPercent={s.collected.deltaPercent}
-          onPress={() =>
-            open({
-              title: "Cobrado",
-              explanation: "Dinero que ya entró (pagos confirmados por ti). Crece a medida que confirmas comprobantes.",
-              rows: [
-                { label: "Cobrado en el período", value: fmtMoney(s.collected.value), emphasize: true },
-                { label: "Período anterior", value: fmtMoney(s.collected.previousValue) },
-                { label: "Pendiente de cobro", value: fmtMoney(s.pending) },
-              ],
-            })
-          }
-        />
-        <KpiCard
-          label="Pendiente"
-          value={fmtMoney(s.pending)}
-          valueColor={s.pending > 0 ? t.amber : t.text}
-          onPress={() =>
-            open({
-              title: "Pendiente de cobro",
-              explanation: "Servicios facturados que aún no se han confirmado como pagados.",
-              rows: data.topClients
-                .filter((c) => c.pending > 0)
-                .map((c) => ({ label: c.clientName, value: fmtMoney(c.pending) })),
-            })
-          }
-        />
-        <KpiCard
-          label="Margen"
-          value={pct(s.marginPercent)}
-          valueColor={marginColor}
-          footnote={fmtMoney(s.grossMargin.value)}
-          onPress={() =>
-            open({
-              title: "Margen bruto",
-              explanation: "Lo que queda después de pagar a las enfermeras (ingresos − nómina). Meta 40%+.",
-              rows: [
-                { label: "Ingresos", value: fmtMoney(s.revenue.value) },
-                { label: "Costo de nómina", value: fmtMoney(s.laborCost.value) },
-                { label: "Margen", value: fmtMoney(s.grossMargin.value), emphasize: true },
-                { label: "Margen %", value: pct(s.marginPercent), emphasize: true },
-              ],
-              bullets: data.byCategory.map((c) => `${c.displayName}: ${pct(c.marginPercent)} de margen`),
-            })
-          }
-        />
+        <KpiCard label="Cobrado" value={fmtMoney(s.collected.value)} deltaPercent={s.collected.deltaPercent} onPress={() => goDetail("collected", "Cobrado")} />
+        <KpiCard label="Pendiente" value={fmtMoney(s.pending)} valueColor={s.pending > 0 ? t.amber : t.text} onPress={() => goDetail("pending", "Pendiente de cobro")} />
+        <KpiCard label="Margen" value={pct(s.marginPercent)} valueColor={marginColor} footnote={fmtMoney(s.grossMargin.value)} onPress={() => goDetail("services", "Servicios del período")} />
       </View>
 
       {data.health.length > 0 ? (
         <View style={{ gap: 10 }}>
-          {data.health.map((h) => (
-            <HealthCard
-              key={h.key}
-              item={h}
-              onPress={() =>
-                open({
-                  title: h.title,
-                  explanation: h.explanation,
-                  rows: [
-                    { label: "Actual", value: h.valueLabel, emphasize: true },
-                    { label: "Meta", value: h.key === "loans" ? "≤ 15% de nómina" : `${h.target}` },
-                  ],
-                  bullets: h.drivers,
-                })
-              }
-            />
-          ))}
+          {data.health.map((h) => {
+            const target = healthTarget[h.key] ?? { metric: "services", title: h.title };
+            return <HealthCard key={h.key} item={h} onPress={() => goDetail(target.metric, target.title)} />;
+          })}
         </View>
       ) : null}
 
       {data.insights.length > 0 ? (
         <View style={{ gap: 10 }}>
           {data.insights.map((i) => (
-            <InsightCard
-              key={i.key}
-              item={i}
-              onPress={() => open({ title: i.title, explanation: i.detail })}
-            />
+            <InsightCard key={i.key} item={i} onPress={() => open({ title: i.title, explanation: i.detail })} />
           ))}
         </View>
       ) : null}
 
       {data.byCategory.length > 0 ? (
-        <SectionCard title="Ingresos por categoría" subtitle="Dónde se generan tus ingresos">
+        <SectionCard title="Ingresos por categoría" subtitle="Dónde se generan tus ingresos" onPress={() => goDetail("category", "Por categoría")}>
           <RevenueDonut data={data.byCategory} />
         </SectionCard>
       ) : null}
 
       {data.byServiceLine.length > 1 ? (
-        <SectionCard title="Domicilio vs Casa hogar" subtitle="Cuál línea deja más margen">
+        <SectionCard title="Domicilio vs Casa hogar" subtitle="Cuál línea deja más margen" onPress={() => goDetail("line", "Por línea de servicio")}>
           <View style={{ gap: 12 }}>
             {data.byServiceLine.map((l) => (
-              <Pressable
-                key={l.serviceLine}
-                onPress={() =>
-                  open({
-                    title: l.serviceLine,
-                    rows: [
-                      { label: "Ingresos", value: fmtMoney(l.revenue) },
-                      { label: "Nómina", value: fmtMoney(l.labor) },
-                      { label: "Margen", value: fmtMoney(l.margin), emphasize: true },
-                      { label: "Margen %", value: pct(l.marginPercent), emphasize: true },
-                    ],
-                  })
-                }
-                style={({ pressed }) => [styles.lineRow, pressed ? { opacity: 0.85 } : null]}
-              >
+              <View key={l.serviceLine} style={styles.lineRow}>
                 <Text style={styles.lineName}>{l.serviceLine}</Text>
                 <Text style={styles.lineRev}>{fmtMoney(l.revenue)}</Text>
                 <Text style={[styles.linePct, { color: l.marginPercent >= 40 ? t.green : t.amber }]}>{pct(l.marginPercent)}</Text>
-              </Pressable>
+              </View>
             ))}
           </View>
         </SectionCard>
       ) : null}
 
       {data.topClients.length > 0 ? (
-        <SectionCard title="Top clientes" subtitle="Quién aporta más facturación">
+        <SectionCard title="Top clientes" subtitle="Quién aporta más facturación" onPress={() => goDetail("clients", "Por cliente")}>
           <TopClientsBars data={data.topClients} />
         </SectionCard>
       ) : null}
 
       {data.monthlyTrend.length > 1 ? (
-        <SectionCard title="Tendencia (6 meses)" subtitle="Ingresos y margen en el tiempo">
+        <SectionCard title="Tendencia (6 meses)" subtitle="Ingresos y margen en el tiempo" onPress={() => goDetail("services", "Servicios del período")}>
           <TrendArea data={data.monthlyTrend} />
         </SectionCard>
       ) : null}
 
       {data.nurseParticipation.length > 0 ? (
-        <SectionCard title="Participación por enfermera" subtitle="Quién genera más y cuánto se le paga">
+        <SectionCard title="Participación por enfermera" subtitle="Quién genera más y cuánto se le paga" onPress={() => goDetail("nurses", "Participación por enfermera")}>
           <View style={{ gap: 10 }}>
             {data.nurseParticipation.slice(0, 8).map((n, i) => (
-              <Pressable
-                key={`${n.nurseName}-${i}`}
-                onPress={() =>
-                  open({
-                    title: n.nurseName,
-                    rows: [
-                      { label: "Servicios", value: `${n.servicesCount}` },
-                      { label: "Días trabajados", value: `${n.daysWorked}` },
-                      { label: "Ingreso generado", value: fmtMoney(n.revenueGenerated) },
-                      { label: "Pago neto", value: fmtMoney(n.netPay) },
-                      { label: "Participación", value: pct(n.participationPercent), emphasize: true },
-                      { label: "Margen aportado", value: fmtMoney(n.marginContributed), emphasize: true },
-                      { label: "Préstamo pendiente", value: fmtMoney(n.loanOutstanding) },
-                    ],
-                  })
-                }
-                style={({ pressed }) => [styles.nurseRow, pressed ? { opacity: 0.85 } : null]}
-              >
+              <View key={`${n.nurseName}-${i}`} style={styles.nurseRow}>
                 <Text style={styles.nurseName} numberOfLines={1}>{n.nurseName}</Text>
                 <Text style={styles.nurseMeta}>{n.servicesCount} serv · {pct(n.participationPercent)}</Text>
                 <Text style={styles.nursePay}>{fmtMoney(n.netPay)}</Text>
-              </Pressable>
+              </View>
             ))}
           </View>
         </SectionCard>
       ) : null}
 
       {data.loans.length > 0 ? (
-        <SectionCard title="Préstamos a enfermeras" subtitle={`Exposición total: ${fmtMoney(data.totalLoansOutstanding)}`}>
+        <SectionCard title="Préstamos a enfermeras" subtitle={`Exposición total: ${fmtMoney(data.totalLoansOutstanding)}`} onPress={() => goDetail("loans", "Préstamos a enfermeras")}>
           <View style={{ gap: 10 }}>
             {data.loans.map((l, i) => (
               <View key={`${l.nurseName}-${i}`} style={styles.loanRow}>

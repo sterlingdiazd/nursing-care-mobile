@@ -1,5 +1,6 @@
 import { type ReactNode } from "react";
-import { Dimensions, StyleSheet, Text, View } from "react-native";
+import { Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
+import { FontAwesome } from "@expo/vector-icons";
 import { LineChart, PieChart } from "react-native-gifted-charts";
 import type { CategoryMargin, ClientRevenueRow, TrendPoint } from "@/src/services/financeService";
 import { financeTheme as t, fmtMoneyCompact } from "./financeTheme";
@@ -8,13 +9,31 @@ const W = Dimensions.get("window").width;
 const CHART_W = W - 68; // screen padding (18*2) + card padding (16*2)
 const SLICE_COLORS = [t.accent, "#7C5CFC", t.green, t.amber, t.red, "#9FB7C2"];
 
-export function SectionCard({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
+export function SectionCard({
+  title,
+  subtitle,
+  children,
+  onPress,
+}: {
+  title: string;
+  subtitle?: string;
+  children: ReactNode;
+  onPress?: () => void;
+}) {
+  const Wrapper: any = onPress ? Pressable : View;
   return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+    <Wrapper
+      style={({ pressed }: { pressed?: boolean }) => [styles.section, pressed && onPress ? { opacity: 0.9 } : null]}
+      onPress={onPress}
+      accessibilityRole={onPress ? "button" : undefined}
+    >
+      <View style={styles.sectionTitleRow}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        {onPress ? <FontAwesome name="chevron-right" size={12} color={t.textMuted} /> : null}
+      </View>
       {subtitle ? <Text style={styles.sectionSub}>{subtitle}</Text> : null}
       <View style={styles.sectionBody}>{children}</View>
-    </View>
+    </Wrapper>
   );
 }
 
@@ -124,6 +143,7 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 4,
   },
+  sectionTitleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
   sectionTitle: { color: t.text, fontSize: 16, fontWeight: "800" },
   sectionSub: { color: t.textMuted, fontSize: 12 },
   sectionBody: { marginTop: 10 },

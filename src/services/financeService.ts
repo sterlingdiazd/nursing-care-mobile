@@ -102,6 +102,35 @@ export interface FinanceOverview {
   insights: Insight[];
 }
 
+export interface FinanceDetailRow {
+  cells: string[];
+  emphasize: boolean;
+}
+
+export interface FinanceDetail {
+  title: string;
+  explanation: string | null;
+  columns: string[];
+  rows: FinanceDetailRow[];
+  totalsRow: string[] | null;
+  footnote: string | null;
+}
+
+export async function getFinanceDetail(
+  metric: string,
+  params?: { from?: string; to?: string },
+): Promise<FinanceDetail> {
+  const qs = new URLSearchParams();
+  qs.append("metric", metric);
+  if (params?.from) qs.append("from", params.from);
+  if (params?.to) qs.append("to", params.to);
+  return requestJson<FinanceDetail>({
+    path: `/api/admin/finance/detail?${qs.toString()}`,
+    method: "GET",
+    auth: true,
+  });
+}
+
 export async function getFinanceOverview(params?: { from?: string; to?: string }): Promise<FinanceOverview> {
   const qs = new URLSearchParams();
   if (params?.from) qs.append("from", params.from);
