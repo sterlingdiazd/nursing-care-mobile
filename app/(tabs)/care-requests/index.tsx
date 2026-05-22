@@ -215,7 +215,9 @@ export default function CareRequestsScreen() {
     };
     for (const r of data) {
       if (r.status === "Pending" || r.status === "Approved") out.Active += 1;
-      out[r.status] = (out[r.status] ?? 0) + 1;
+      if (r.status in out) {
+        out[r.status as StatusFilter] = (out[r.status as StatusFilter] ?? 0) + 1;
+      }
     }
     return out;
   }, [data]);

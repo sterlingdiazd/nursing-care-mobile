@@ -32,7 +32,17 @@ export interface CareRequestDto {
   careRequestDate?: string | null;
   suggestedNurse?: string | null;
   assignedNurse?: string | null;
-  status: "Pending" | "Approved" | "Rejected" | "Completed" | "Cancelled";
+  status:
+    | "Pending"
+    | "Approved"
+    | "Rejected"
+    | "Completed"
+    | "Cancelled"
+    | "Invoiced"
+    | "PaymentReported"
+    | "Paid"
+    | "Voided";
+  invoiceNumber?: string | null;
   createdAtUtc: string;
   updatedAtUtc: string;
   approvedAtUtc: string | null;

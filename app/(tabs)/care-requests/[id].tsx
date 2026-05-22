@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   ActivityIndicator,
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -10,6 +11,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import type { FooterAction } from "@/src/components/navigation/AppFooter";
 import { useAuth } from "@/src/context/AuthContext";
@@ -20,6 +22,7 @@ import {
   assignCareRequestNurse,
   getActiveNurseProfiles,
   getCareRequestById,
+  reportPayment,
   transitionCareRequest,
   type ActiveNurseProfileSummary,
 } from "@/src/services/careRequestService";
@@ -43,12 +46,20 @@ function getStatusPalette(status: CareRequestDto["status"]) {
         rail: designTokens.color.status.dangerText,
       };
     case "Completed":
+    case "Invoiced":
       return {
         bg: designTokens.color.status.infoBg,
         fg: designTokens.color.ink.accentStrong,
         rail: designTokens.color.ink.accentStrong,
       };
+    case "Paid":
+      return {
+        bg: designTokens.color.surface.success,
+        fg: designTokens.color.status.successText,
+        rail: designTokens.color.status.successText,
+      };
     case "Cancelled":
+    case "Voided":
       return {
         bg: designTokens.color.surface.secondary,
         fg: designTokens.color.ink.secondary,
@@ -69,6 +80,10 @@ function getStatusLabel(status: CareRequestDto["status"]) {
     case "Rejected": return "Rechazada";
     case "Completed": return "Completada";
     case "Cancelled": return "Cancelada";
+    case "Invoiced": return "Facturada";
+    case "PaymentReported": return "Pago reportado";
+    case "Paid": return "Pagada";
+    case "Voided": return "Anulada";
     default: return "Pendiente";
   }
 }
@@ -106,6 +121,7 @@ export default function CareRequestDetailScreen() {
   const [pricingSheetVisible, setPricingSheetVisible] = useState(false);
   const [assignmentSheetVisible, setAssignmentSheetVisible] = useState(false);
   const [overflowSheetVisible, setOverflowSheetVisible] = useState(false);
+  const [paymentSheetVisible, setPaymentSheetVisible] = useState(false);
   const [nurseSearchQuery, setNurseSearchQuery] = useState("");
 
   const loadCareRequest = async () => {
@@ -126,6 +142,23 @@ export default function CareRequestDetailScreen() {
   };
 
   useEffect(() => { void loadCareRequest(); }, [id]);
+
+  const runReportPayment = async (imageUri: string, mimeType: string, note: string) => {
+    if (!id) return;
+    setIsActing(true);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      await reportPayment(id, imageUri, mimeType, note);
+      setPaymentSheetVisible(false);
+      setSuccessMessage("Pago reportado. La administración verificará el comprobante y confirmará la recepción.");
+      await loadCareRequest();
+    } catch (nextError: any) {
+      setError(nextError?.message ?? "No se pudo reportar el pago.");
+    } finally {
+      setIsActing(false);
+    }
+  };
 
   useEffect(() => {
     if (!roles.includes("ADMIN")) {
@@ -226,6 +259,8 @@ export default function CareRequestDetailScreen() {
   const canCancel =
     (roles.includes("CLIENT") || isAdmin) &&
     (careRequest.status === "Pending" || careRequest.status === "Approved");
+  // Client reports a payment once the service is invoiced (ownership re-checked server-side).
+  const canReportPayment = roles.includes("CLIENT") && careRequest.status === "Invoiced";
 
   // Build action set
   let primaryAction: FooterAction | null = null;
@@ -240,6 +275,13 @@ export default function CareRequestDetailScreen() {
     primaryAction = {
       label: "Completar",
       onPress: () => void runAction("complete"),
+      variant: "primary",
+      disabled: isActing,
+    };
+  } else if (canReportPayment) {
+    primaryAction = {
+      label: "Reportar pago",
+      onPress: () => setPaymentSheetVisible(true),
       variant: "primary",
       disabled: isActing,
     };
@@ -462,7 +504,123 @@ export default function CareRequestDetailScreen() {
         actions={overflowActions}
         onClose={() => setOverflowSheetVisible(false)}
       />
+
+      <PaymentProofSheet
+        visible={paymentSheetVisible}
+        submitting={isActing}
+        onClose={() => setPaymentSheetVisible(false)}
+        onSubmit={runReportPayment}
+      />
     </>
+  );
+}
+
+function PaymentProofSheet({
+  visible,
+  submitting,
+  onClose,
+  onSubmit,
+}: {
+  visible: boolean;
+  submitting: boolean;
+  onClose: () => void;
+  onSubmit: (imageUri: string, mimeType: string, note: string) => void;
+}) {
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [mimeType, setMimeType] = useState<string>("image/jpeg");
+  const [note, setNote] = useState("");
+  const [pickError, setPickError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!visible) {
+      setImageUri(null);
+      setMimeType("image/jpeg");
+      setNote("");
+      setPickError(null);
+    }
+  }, [visible]);
+
+  const pickImage = async () => {
+    setPickError(null);
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      setPickError("Necesitamos permiso para acceder a tus fotos.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      setImageUri(asset.uri);
+      setMimeType(asset.mimeType ?? "image/jpeg");
+    }
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={styles.sheetBackdrop}>
+        <View style={styles.sheet}>
+          <View style={styles.sheetHeader}>
+            <Text style={styles.sheetTitle}>Reportar pago</Text>
+            <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Cerrar">
+              <Text style={styles.sheetCloseText}>Cerrar</Text>
+            </Pressable>
+          </View>
+
+          <Text style={styles.sheetHint}>
+            Adjunta una foto de la factura o la captura de la transferencia. La administración
+            verificará el pago en el banco antes de confirmarlo.
+          </Text>
+
+          <Pressable
+            onPress={() => void pickImage()}
+            style={styles.proofPickButton}
+            accessibilityRole="button"
+            accessibilityLabel="Elegir imagen del comprobante"
+            testID="report-payment-pick-image"
+          >
+            <Text style={styles.proofPickButtonText}>
+              {imageUri ? "Cambiar imagen" : "Elegir imagen del comprobante"}
+            </Text>
+          </Pressable>
+
+          {imageUri ? (
+            <Image source={{ uri: imageUri }} style={styles.proofPreview} resizeMode="contain" />
+          ) : null}
+
+          {pickError ? <Text style={styles.errorBanner}>{pickError}</Text> : null}
+
+          <TextInput
+            value={note}
+            onChangeText={setNote}
+            placeholder="Nota (referencia bancaria, banco, etc.)"
+            placeholderTextColor={designTokens.color.ink.muted}
+            style={styles.proofNoteInput}
+            multiline
+            testID="report-payment-note"
+          />
+
+          <Pressable
+            onPress={() => imageUri && onSubmit(imageUri, mimeType, note)}
+            disabled={!imageUri || submitting}
+            style={({ pressed }) => [
+              styles.proofSubmitButton,
+              (!imageUri || submitting) && styles.proofSubmitButtonDisabled,
+              pressed && imageUri && !submitting && { opacity: 0.85 },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Enviar reporte de pago"
+            testID="report-payment-submit"
+          >
+            <Text style={styles.proofSubmitButtonText}>
+              {submitting ? "Enviando..." : "Enviar reporte de pago"}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -713,6 +871,56 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: designTokens.color.ink.danger, lineHeight: 21, textAlign: "center",
+  },
+  sheetHint: {
+    color: designTokens.color.ink.secondary,
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 14,
+  },
+  proofPickButton: {
+    borderWidth: 1,
+    borderColor: designTokens.color.border.strong,
+    borderRadius: designTokens.radius.md,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  proofPickButtonText: {
+    color: designTokens.color.ink.accentStrong,
+    fontWeight: "700",
+    fontSize: 15,
+  },
+  proofPreview: {
+    width: "100%",
+    height: 220,
+    borderRadius: designTokens.radius.md,
+    backgroundColor: designTokens.color.surface.secondary,
+    marginBottom: 12,
+  },
+  proofNoteInput: {
+    borderWidth: 1,
+    borderColor: designTokens.color.border.subtle,
+    borderRadius: designTokens.radius.md,
+    padding: 12,
+    minHeight: 64,
+    color: designTokens.color.ink.primary,
+    textAlignVertical: "top",
+    marginBottom: 14,
+  },
+  proofSubmitButton: {
+    backgroundColor: designTokens.color.ink.accentStrong,
+    borderRadius: designTokens.radius.md,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  proofSubmitButtonDisabled: {
+    backgroundColor: designTokens.color.border.strong,
+  },
+  proofSubmitButtonText: {
+    color: designTokens.color.ink.inverse,
+    fontWeight: "700",
+    fontSize: 16,
   },
   card: {
     backgroundColor: mobileTheme.colors.surface.primary,

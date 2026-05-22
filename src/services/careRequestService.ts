@@ -1,9 +1,76 @@
 import { requestJson } from "@/src/services/httpClient";
+import { API_BASE_URL } from "@/src/config/api";
+import { getCachedAuthSession, loadAuthSession } from "@/src/services/authSession";
 import {
   CareRequestDto,
   CareRequestTransitionAction,
   CreateCareRequestDto,
 } from "@/src/types/careRequest";
+
+async function currentAuthToken(): Promise<string> {
+  const session = getCachedAuthSession() ?? (await loadAuthSession());
+  const token = session?.token;
+  if (!token) {
+    throw new Error("Sesión no disponible. Inicia sesión nuevamente.");
+  }
+  return token;
+}
+
+/**
+ * Uploads a payment-proof image (invoice photo / transfer screenshot) and reports the payment.
+ * Uses raw fetch with FormData (requestJson forces application/json which breaks multipart).
+ */
+export async function reportPayment(
+  id: string,
+  imageUri: string,
+  mimeType: string,
+  note?: string,
+): Promise<CareRequestDto> {
+  const token = await currentAuthToken();
+  const form = new FormData();
+  const ext = (mimeType.split("/")[1] || "jpg").replace("jpeg", "jpg");
+  form.append("proof", { uri: imageUri, type: mimeType, name: `comprobante-${Date.now()}.${ext}` } as unknown as Blob);
+  if (note && note.trim()) {
+    form.append("note", note.trim());
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/care-requests/${id}/report-payment`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` }, // no Content-Type: fetch sets the multipart boundary
+    body: form,
+  });
+
+  const text = await response.text();
+  if (!response.ok) {
+    let message = "No se pudo reportar el pago.";
+    try {
+      const problem = JSON.parse(text);
+      message = problem.detail || problem.title || message;
+    } catch {
+      /* keep default */
+    }
+    throw new Error(message);
+  }
+  return text ? (JSON.parse(text) as CareRequestDto) : ({} as CareRequestDto);
+}
+
+/** Admin: fetch the uploaded payment-proof image as a data URI for an <Image> source. */
+export async function getPaymentProofImageDataUri(id: string): Promise<string> {
+  const token = await currentAuthToken();
+  const response = await fetch(`${API_BASE_URL}/api/admin/care-requests/${id}/payment-proof`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    throw new Error("No se pudo cargar el comprobante de pago.");
+  }
+  const blob = await response.blob();
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("No se pudo procesar la imagen del comprobante."));
+    reader.readAsDataURL(blob);
+  });
+}
 
 export interface CreateCareRequestResponse {
   id: string;

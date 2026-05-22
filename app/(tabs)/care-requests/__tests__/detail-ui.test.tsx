@@ -40,6 +40,13 @@ vi.mock("@/src/services/careRequestService", () => ({
   getActiveNurseProfiles: mockGetActiveNurseProfiles,
   assignCareRequestNurse: mockAssignCareRequestNurse,
   transitionCareRequest: mockTransitionCareRequest,
+  reportPayment: vi.fn(),
+}));
+
+vi.mock("expo-image-picker", () => ({
+  requestMediaLibraryPermissionsAsync: vi.fn(async () => ({ granted: true })),
+  launchImageLibraryAsync: vi.fn(async () => ({ canceled: true, assets: [] })),
+  MediaTypeOptions: { Images: "Images" },
 }));
 
 import CareRequestDetailScreen from "../[id]";
