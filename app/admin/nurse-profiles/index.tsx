@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
   emptyState: { padding: 40, alignItems: "center" },
   emptyStateText: { color: designTokens.color.ink.secondary, fontSize: 16, textAlign: "center" },
   list: { gap: 12 },
-  card: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, marginBottom: 12, shadowColor: "#000" /* RN shadow requires raw hex */, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 2 },
+  card: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, marginBottom: 12, boxShadow: "0px 6px 12px rgba(18, 48, 68, 0.06)", elevation: 2 },
   cardPending: { borderColor: designTokens.color.ink.warning, borderWidth: 1.5 },
   pendingBadge: { backgroundColor: designTokens.color.surface.warning, borderRadius: 10, padding: 8, marginBottom: 8, alignSelf: "flex-start" },
   pendingBadgeText: { color: designTokens.color.status.warningText, fontSize: 12, fontWeight: "700", textAlign: "center" },
