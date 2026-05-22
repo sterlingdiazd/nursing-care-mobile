@@ -15,16 +15,16 @@ import {
 } from "@/src/utils/adminOperationalUx";
 
 describe("resolveAdminOperationalDeepLink", () => {
-  it("keeps admin care request detail navigation inside the admin route tree", () => {
-    expect(resolveAdminOperationalDeepLink("/admin/care-requests/request-123")).toBe("/admin/care-requests/request-123");
+  it("routes admin care request detail to the unified care-requests route", () => {
+    expect(resolveAdminOperationalDeepLink("/admin/care-requests/request-123")).toBe("/care-requests/request-123");
   });
 
-  it("translates selected-list deep links to an explicit admin detail route", () => {
-    expect(resolveAdminOperationalDeepLink("/admin/care-requests?selected=request-456")).toBe("/admin/care-requests/request-456");
+  it("translates selected-list deep links to an explicit detail route", () => {
+    expect(resolveAdminOperationalDeepLink("/admin/care-requests?selected=request-456")).toBe("/care-requests/request-456");
   });
 
-  it("upgrades legacy client care request paths to admin routes", () => {
-    expect(resolveAdminOperationalDeepLink("/care-requests/request-789")).toBe("/admin/care-requests/request-789");
+  it("normalizes care request detail paths to the unified care-requests route", () => {
+    expect(resolveAdminOperationalDeepLink("/care-requests/request-789")).toBe("/care-requests/request-789");
   });
 
   it("falls back to the admin dashboard when the link is missing", () => {
@@ -129,6 +129,9 @@ describe("dashboard triage", () => {
       activeNursesCount: 12,
       activeClientsCount: 18,
       unreadAdminNotificationsCount: 5,
+      pendingDashboardTasksCount: 14,
+      completedDashboardTasksTodayCount: 6,
+      totalDashboardTasksTodayCount: 20,
       highSeverityAlerts: [],
       generatedAtUtc: "2026-04-22T08:00:00Z",
     });
@@ -158,6 +161,9 @@ describe("dashboard triage", () => {
       activeNursesCount: 12,
       activeClientsCount: 18,
       unreadAdminNotificationsCount: 5,
+      pendingDashboardTasksCount: 14,
+      completedDashboardTasksTodayCount: 6,
+      totalDashboardTasksTodayCount: 20,
       highSeverityAlerts: [],
       generatedAtUtc: "2026-04-22T08:00:00Z",
     });
@@ -179,10 +185,24 @@ describe("action item labels", () => {
         summary: "Solicitud",
         requiredAction: "Abrir",
         assignedOwner: null,
-        deepLinkPath: "/admin/care-requests/request-1",
+        deepLinkPath: "/admin/care-requests/3fa85f64-5717-4562-b3fc-2c963f66afa6",
         detectedAtUtc: "2026-04-22T08:00:00Z",
       }),
     ).toBe("Abrir solicitud");
+    expect(
+      getAdminActionItemPrimaryLabel({
+        id: "item-2",
+        severity: "High",
+        state: "Unread",
+        entityType: "CareRequest",
+        entityIdentifier: "REQ-2",
+        summary: "Solicitudes",
+        requiredAction: "Revisar",
+        assignedOwner: null,
+        deepLinkPath: "/admin/care-requests?view=overdue",
+        detectedAtUtc: "2026-04-22T08:00:00Z",
+      }),
+    ).toBe("Ver solicitudes");
     expect(
       getAdminActionItemStatusLabel({
         id: "item-1",
@@ -193,7 +213,7 @@ describe("action item labels", () => {
         summary: "Solicitud",
         requiredAction: "Abrir",
         assignedOwner: null,
-        deepLinkPath: "/admin/care-requests/request-1",
+        deepLinkPath: "/admin/care-requests/3fa85f64-5717-4562-b3fc-2c963f66afa6",
         detectedAtUtc: "2026-04-22T08:00:00Z",
       }),
     ).toContain("Urgente");
