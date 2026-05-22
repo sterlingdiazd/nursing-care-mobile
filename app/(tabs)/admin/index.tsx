@@ -37,6 +37,7 @@ const menuGroups: Array<{ title: string; items: MenuItem[] }> = [
   {
     title: "Operación",
     items: [
+      { key: "finance", label: "Finanzas", path: "/admin/finance", icon: "line-chart" },
       { key: "payroll", label: "Nómina", path: "/admin/payroll", icon: "money" },
       { key: "reports", label: "Reportes", path: "/admin/reports", icon: "bar-chart" },
       { key: "audit", label: "Auditoría", path: "/admin/audit-logs", icon: "history" },

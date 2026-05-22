@@ -375,9 +375,9 @@ export function CreateScheduledDeductionModal({ visible, onClose, onSubmit }: Cr
             </View>
           </View>
 
-          {/* Cadencia */}
+          {/* Frecuencia */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Cadencia</Text>
+            <Text style={styles.label}>Frecuencia</Text>
             <View
               style={styles.segmented}
               testID={adminTestIds.payroll.scheduledModal.cadenceSegmented}

@@ -1,0 +1,147 @@
+import { type ReactNode } from "react";
+import { Dimensions, StyleSheet, Text, View } from "react-native";
+import { LineChart, PieChart } from "react-native-gifted-charts";
+import type { CategoryMargin, ClientRevenueRow, TrendPoint } from "@/src/services/financeService";
+import { financeTheme as t, fmtMoneyCompact } from "./financeTheme";
+
+const W = Dimensions.get("window").width;
+const CHART_W = W - 68; // screen padding (18*2) + card padding (16*2)
+const SLICE_COLORS = [t.accent, "#7C5CFC", t.green, t.amber, t.red, "#9FB7C2"];
+
+export function SectionCard({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      {subtitle ? <Text style={styles.sectionSub}>{subtitle}</Text> : null}
+      <View style={styles.sectionBody}>{children}</View>
+    </View>
+  );
+}
+
+export function RevenueDonut({ data }: { data: CategoryMargin[] }) {
+  const total = data.reduce((s, d) => s + d.revenue, 0) || 1;
+  const pie = data.map((d, i) => ({ value: d.revenue, color: SLICE_COLORS[i % SLICE_COLORS.length] }));
+  return (
+    <View style={styles.donutRow}>
+      <PieChart
+        donut
+        radius={66}
+        innerRadius={44}
+        data={pie}
+        backgroundColor={t.card}
+        innerCircleColor={t.card}
+        centerLabelComponent={() => (
+          <View style={{ alignItems: "center" }}>
+            <Text style={styles.donutCenterLabel}>Ingresos</Text>
+            <Text style={styles.donutCenterValue}>{fmtMoneyCompact(total)}</Text>
+          </View>
+        )}
+      />
+      <View style={styles.legend}>
+        {data.map((d, i) => (
+          <View key={d.category} style={styles.legendRow}>
+            <View style={[styles.legendDot, { backgroundColor: SLICE_COLORS[i % SLICE_COLORS.length] }]} />
+            <Text style={styles.legendLabel} numberOfLines={1}>{d.displayName}</Text>
+            <Text style={styles.legendPct}>{Math.round((d.revenue / total) * 100)}%</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+export function TrendArea({ data }: { data: TrendPoint[] }) {
+  const revenue = data.map((p) => ({ value: p.revenue, label: p.label.slice(0, 2) }));
+  const margin = data.map((p) => ({ value: p.margin }));
+  return (
+    <View>
+      <View style={styles.trendLegend}>
+        <Legend color={t.accent} text="Ingresos" />
+        <Legend color={t.green} text="Margen" />
+      </View>
+      <LineChart
+        areaChart
+        curved
+        data={revenue}
+        data2={margin}
+        width={CHART_W - 48}
+        height={150}
+        hideDataPoints
+        thickness={2}
+        color1={t.accent}
+        color2={t.green}
+        startFillColor1={t.accent}
+        endFillColor1={t.navy}
+        startOpacity={0.35}
+        endOpacity={0.02}
+        yAxisThickness={0}
+        xAxisThickness={0}
+        hideRules
+        noOfSections={3}
+        yAxisTextStyle={styles.axisText}
+        xAxisLabelTextStyle={styles.axisText}
+        backgroundColor="transparent"
+      />
+    </View>
+  );
+}
+
+export function TopClientsBars({ data }: { data: ClientRevenueRow[] }) {
+  const top = data.slice(0, 5);
+  const max = Math.max(...top.map((d) => d.billed), 1);
+  return (
+    <View style={{ gap: 12 }}>
+      {top.map((d, i) => (
+        <View key={`${d.clientName}-${i}`} style={{ gap: 5 }}>
+          <View style={styles.barHeader}>
+            <Text style={styles.barLabel} numberOfLines={1}>{d.clientName}</Text>
+            <Text style={styles.barValue}>{fmtMoneyCompact(d.billed)}</Text>
+          </View>
+          <View style={styles.barTrack}>
+            <View style={[styles.barFill, { width: `${Math.max(4, (d.billed / max) * 100)}%` }]} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function Legend({ color, text }: { color: string; text: string }) {
+  return (
+    <View style={styles.legendRow2}>
+      <View style={[styles.legendDot, { backgroundColor: color }]} />
+      <Text style={styles.legendLabel2}>{text}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  section: {
+    backgroundColor: t.card,
+    borderRadius: t.radius,
+    borderWidth: 1,
+    borderColor: t.cardBorder,
+    padding: 16,
+    gap: 4,
+  },
+  sectionTitle: { color: t.text, fontSize: 16, fontWeight: "800" },
+  sectionSub: { color: t.textMuted, fontSize: 12 },
+  sectionBody: { marginTop: 10 },
+  donutRow: { flexDirection: "row", alignItems: "center", gap: 16 },
+  donutCenterLabel: { color: t.textMuted, fontSize: 10 },
+  donutCenterValue: { color: t.text, fontSize: 13, fontWeight: "800" },
+  legend: { flex: 1, gap: 9 },
+  legendRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  legendRow2: { flexDirection: "row", alignItems: "center", gap: 6 },
+  legendDot: { width: 10, height: 10, borderRadius: 3 },
+  legendLabel: { color: t.text, fontSize: 13, flex: 1 },
+  legendLabel2: { color: t.textMuted, fontSize: 12, fontWeight: "600" },
+  legendPct: { color: t.textMuted, fontSize: 12, fontWeight: "700" },
+  trendLegend: { flexDirection: "row", gap: 14, marginBottom: 8 },
+  axisText: { color: t.textMuted, fontSize: 10 },
+  barHeader: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
+  barLabel: { color: t.text, fontSize: 13, flex: 1 },
+  barValue: { color: t.textMuted, fontSize: 12, fontWeight: "700" },
+  barTrack: { height: 8, borderRadius: 999, backgroundColor: t.cardSoft, overflow: "hidden" },
+  barFill: { height: 8, borderRadius: 999, backgroundColor: t.accent },
+});
