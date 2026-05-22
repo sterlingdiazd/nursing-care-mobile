@@ -4,7 +4,6 @@ import {
   Alert,
   FlatList,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -32,6 +31,7 @@ import {
 } from "@/src/services/adminPortalService";
 import { getCachedAuthSession } from "@/src/services/authSession";
 import { MetricCard } from "@/src/components/shared/MetricCard";
+import { SelectRow, PickerSheet, PickerOption } from "@/components/payroll/FormModalScaffold";
 
 interface ReportMetadata {
   key: string;
@@ -90,6 +90,7 @@ export default function AdminReportsScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showReportPicker, setShowReportPicker] = useState(false);
 
   // For mobile, default to last 30 days if empty
   const [from, setFrom] = useState("");
@@ -192,25 +193,13 @@ export default function AdminReportsScreen() {
 
         <View style={styles.selectorContainer}>
           <Text style={styles.sectionTitle}>Tipo de reporte</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.reportList}>
-            {REPORTS.map((report) => {
-              const isActive = selectedReportKey === report.key;
-              return (
-                <Pressable
-                  key={report.key}
-                  style={[styles.reportCard, isActive && styles.reportCardActive]}
-                  onPress={() => setSelectedReportKey(report.key)}
-                  accessibilityRole="tab"
-                  accessibilityLabel={`Reporte: ${report.label}`}
-                  accessibilityState={{ selected: isActive }}
-                >
-                  <Text style={[styles.reportLabel, isActive && styles.reportLabelActive]}>
-                    {report.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
+          <SelectRow
+            value={selectedReport.label}
+            placeholder="Selecciona un reporte"
+            onPress={() => setShowReportPicker(true)}
+            testID="report-type-select"
+            accessibilityLabel="Seleccionar tipo de reporte"
+          />
         </View>
 
         <View style={styles.dataContainer}>
@@ -231,6 +220,20 @@ export default function AdminReportsScreen() {
           )}
         </View>
       </View>
+
+      <PickerSheet visible={showReportPicker} title="Tipo de reporte" onClose={() => setShowReportPicker(false)}>
+        {REPORTS.map((report) => (
+          <PickerOption
+            key={report.key}
+            title={report.label}
+            subtitle={report.description}
+            selected={selectedReportKey === report.key}
+            onPress={() => { setSelectedReportKey(report.key); setShowReportPicker(false); }}
+            testID={`report-option-${report.key}`}
+            accessibilityLabel={`Reporte: ${report.label}`}
+          />
+        ))}
+      </PickerSheet>
     </MobileWorkspaceShell>
   );
 }
@@ -412,11 +415,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   selectorContainer: { marginBottom: 20 },
   sectionTitle: { fontSize: 13, fontWeight: "700", color: designTokens.color.ink.muted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 },
-  reportList: { flexDirection: "row" },
-  reportCard: { backgroundColor: designTokens.color.ink.inverse, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 999, borderWidth: 1, borderColor: designTokens.color.border.strong, marginRight: 10, minWidth: 120, alignItems: "center" },
-  reportCardActive: { backgroundColor: designTokens.color.ink.primary, borderColor: designTokens.color.ink.primary },
-  reportLabel: { fontSize: 14, fontWeight: "600", color: designTokens.color.ink.primary },
-  reportLabelActive: { color: designTokens.color.ink.inverse },
   dataContainer: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 22, padding: 20, minHeight: 400, boxShadow: "0px 6px 14px rgba(18, 48, 68, 0.06)", elevation: 2, borderWidth: 1, borderColor: designTokens.color.border.subtle },
   reportTitle: { fontSize: 20, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 4 },
   reportDescription: { fontSize: 13, color: designTokens.color.ink.muted, marginBottom: 24, lineHeight: 18 },
