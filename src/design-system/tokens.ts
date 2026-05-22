@@ -57,25 +57,16 @@ export const designTokens = {
   },
   shadow: {
     card: {
-      shadowColor: "#123044",
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.06,
-      shadowRadius: 18,
-      elevation: 2,
+      boxShadow: "0px 6px 18px rgba(18, 48, 68, 0.06)",
+elevation: 2,
     },
     raised: {
-      shadowColor: "#123044",
-      shadowOffset: { width: 0, height: 12 },
-      shadowOpacity: 0.08,
-      shadowRadius: 24,
-      elevation: 3,
+      boxShadow: "0px 12px 24px rgba(18, 48, 68, 0.08)",
+elevation: 3,
     },
     accent: {
-      shadowColor: "#2e7da3",
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.14,
-      shadowRadius: 20,
-      elevation: 4,
+      boxShadow: "0px 8px 20px rgba(46, 125, 163, 0.14)",
+elevation: 4,
     },
   },
   typography: {
