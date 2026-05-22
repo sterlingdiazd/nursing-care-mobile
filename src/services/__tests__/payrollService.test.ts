@@ -1,5 +1,11 @@
 // @vitest-environment node
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@/src/config/api", () => ({
+  API_BASE_URL: "http://api.example.test",
+}));
+
+vi.unmock("@/src/services/payrollService");
 
 /**
  * Payroll Service Unit Tests
@@ -50,6 +56,34 @@ describe("payrollService", () => {
     // Expected: POST /api/admin/payroll/periods/{id}/close
     // Uses requestVoid, expects no return value on success
     expect(true).toBe(true);
+  });
+
+  it("admin payroll voucher URL builders should match backend routes", async () => {
+    const {
+      getAdminPayrollBulkVouchersUrl,
+      getAdminPayrollVoucherUrl,
+    } = await import("../payrollService");
+
+    expect(getAdminPayrollVoucherUrl("period-1", "nurse-1")).toBe(
+      "http://api.example.test/api/admin/payroll/periods/period-1/voucher/nurse-1",
+    );
+    expect(getAdminPayrollBulkVouchersUrl("period-1")).toBe(
+      "http://api.example.test/api/admin/payroll/periods/period-1/vouchers/zip",
+    );
+  });
+
+  it("admin payroll professional report URL builders should match backend routes", async () => {
+    const {
+      getPayrollPeriodReportPdfUrl,
+      getPayrollPeriodReportXlsxUrl,
+    } = await import("../payrollService");
+
+    expect(getPayrollPeriodReportPdfUrl("period-1")).toBe(
+      "http://api.example.test/api/admin/payroll/periods/period-1/report/pdf",
+    );
+    expect(getPayrollPeriodReportXlsxUrl("period-1")).toBe(
+      "http://api.example.test/api/admin/payroll/periods/period-1/report/xlsx",
+    );
   });
 
   it("getCompensationRules, createCompensationRule, updateCompensationRule, deactivateCompensationRule should cover all rule operations", () => {
