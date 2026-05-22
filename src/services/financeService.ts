@@ -102,17 +102,27 @@ export interface FinanceOverview {
   insights: Insight[];
 }
 
-export interface FinanceDetailRow {
-  cells: string[];
+export interface FinanceField {
+  label: string;
+  value: string;
   emphasize: boolean;
+}
+
+export interface FinanceDetailRow {
+  primary: string;
+  meta: string;
+  amount: string;
+  barFraction: number;
+  facts: FinanceField[];
 }
 
 export interface FinanceDetail {
   title: string;
   explanation: string | null;
-  columns: string[];
+  headline: string;
+  headlineCaption: string;
+  summary: FinanceField[];
   rows: FinanceDetailRow[];
-  totalsRow: string[] | null;
   footnote: string | null;
 }
 

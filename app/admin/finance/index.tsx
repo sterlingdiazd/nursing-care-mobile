@@ -1,24 +1,33 @@
 import { useCallback, useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { FontAwesome } from "@expo/vector-icons";
-import { getFinanceOverview, type FinanceOverview } from "@/src/services/financeService";
-import { financeTheme as t, fmtMoney } from "@/components/finance/financeTheme";
-import { HeroMetric } from "@/components/finance/HeroMetric";
-import { KpiCard } from "@/components/finance/KpiCard";
-import { HealthCard, InsightCard } from "@/components/finance/InsightCard";
+import { getFinanceOverview, type FinanceOverview, type HealthIndicator } from "@/src/services/financeService";
+import { financeTheme as t, fmtMoney, fmtMoneyCompact, statusColor } from "@/components/finance/financeTheme";
+import { SegmentedTabs } from "@/components/finance/SegmentedTabs";
+import { GananciaHero, HealthRow, FocusCard } from "@/components/finance/SummaryWidgets";
 import { RevenueDonut, SectionCard, TopClientsBars, TrendArea } from "@/components/finance/FinanceCharts";
 import { DashboardSkeleton } from "@/components/finance/DashboardSkeleton";
-import { DrilldownSheet, type DrilldownContent } from "@/components/finance/DrilldownSheet";
+
+const TABS = [
+  { key: "resumen", label: "Resumen" },
+  { key: "ingresos", label: "Ingresos" },
+  { key: "equipo", label: "Equipo" },
+  { key: "tendencia", label: "Tendencia" },
+];
 
 const pct = (v: number) => `${(v ?? 0).toFixed(1)}%`;
+
+function statusIcon(status: string) {
+  return status === "green" ? "check-circle" : status === "amber" ? "exclamation-circle" : "times-circle";
+}
 
 export default function AdminFinanceDashboard() {
   const [data, setData] = useState<FinanceOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sheet, setSheet] = useState<DrilldownContent | null>(null);
+  const [tab, setTab] = useState("resumen");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -39,191 +48,205 @@ export default function AdminFinanceDashboard() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="Volver">
+        <Pressable onPress={() => router.back()} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel="Volver">
           <FontAwesome name="chevron-left" size={16} color={t.text} />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.eyebrow}>Finanzas</Text>
           <Text style={styles.title}>Panel del negocio</Text>
         </View>
-        <Pressable onPress={() => void load()} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="Actualizar">
+        <Pressable onPress={() => void load()} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel="Actualizar">
           <FontAwesome name="refresh" size={15} color={t.text} />
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} testID="admin-finance-dashboard">
+      <View style={styles.body}>
         {loading ? (
           <DashboardSkeleton />
         ) : error ? (
           <View style={styles.errorBox}>
             <Text style={styles.errorText}>{error}</Text>
-            <Pressable onPress={() => void load()} style={styles.retry}>
-              <Text style={styles.retryText}>Reintentar</Text>
-            </Pressable>
+            <Pressable onPress={() => void load()} style={styles.retry}><Text style={styles.retryText}>Reintentar</Text></Pressable>
           </View>
         ) : data ? (
-          <Dashboard data={data} open={setSheet} />
+          <>
+            <SegmentedTabs tabs={TABS} active={tab} onChange={setTab} />
+            <View style={styles.segment}>
+              {tab === "resumen" ? <Resumen data={data} /> : null}
+              {tab === "ingresos" ? <Ingresos data={data} /> : null}
+              {tab === "equipo" ? <Equipo data={data} /> : null}
+              {tab === "tendencia" ? <Tendencia data={data} /> : null}
+            </View>
+          </>
         ) : null}
-      </ScrollView>
-
-      <DrilldownSheet visible={sheet != null} content={sheet} onClose={() => setSheet(null)} />
+      </View>
     </SafeAreaView>
   );
 }
 
-function Dashboard({ data, open }: { data: FinanceOverview; open: (c: DrilldownContent) => void }) {
+function goDetail(data: FinanceOverview, metric: string, title: string) {
+  router.push({ pathname: "/admin/finance/detail", params: { metric, from: data.from, to: data.to, title } } as never);
+}
+
+/** The single highest-priority action: worst health indicator, else pending collections, else healthy. */
+function pickFocus(data: FinanceOverview): { title: string; detail: string; value: string; color: string; metric: string; metricTitle: string } {
+  const detailFor = (h: HealthIndicator) =>
+    h.key === "loans" ? { metric: "loans", title: "Préstamos a enfermeras" }
+      : h.key === "collection" ? { metric: "pending", title: "Pendiente de cobro" }
+      : { metric: "services", title: "Servicios del período" };
+  const worst = data.health.find((h) => h.status === "red") ?? data.health.find((h) => h.status === "amber");
+  if (worst) {
+    const d = detailFor(worst);
+    return { title: worst.title, detail: worst.explanation, value: worst.valueLabel, color: statusColor(worst.status), metric: d.metric, metricTitle: d.title };
+  }
+  if (data.summary.pending > 0) {
+    return { title: "Cobros por confirmar", detail: "Confirma los pagos recibidos para reflejarlos como ingreso.", value: fmtMoney(data.summary.pending), color: t.amber, metric: "pending", metricTitle: "Pendiente de cobro" };
+  }
+  return { title: "Negocio saludable", detail: "Todos los indicadores están en meta este período.", value: "✓", color: t.green, metric: "services", metricTitle: "Servicios del período" };
+}
+
+function Resumen({ data }: { data: FinanceOverview }) {
   const s = data.summary;
-  const marginColor = s.marginPercent >= 40 ? t.green : s.marginPercent >= 30 ? t.amber : t.red;
-
-  // Every amount/summary opens its source-record detail (the records that generate the number).
-  const goDetail = (metric: string, title: string) =>
-    router.push({
-      pathname: "/admin/finance/detail",
-      params: { metric, from: data.from, to: data.to, title },
-    } as never);
-
-  const healthTarget: Record<string, { metric: string; title: string }> = {
-    margin: { metric: "services", title: "Servicios del período" },
-    labor: { metric: "services", title: "Servicios del período" },
-    collection: { metric: "pending", title: "Pendiente de cobro" },
-    loans: { metric: "loans", title: "Préstamos a enfermeras" },
-  };
+  const band = s.marginPercent >= 40 ? "green" : s.marginPercent >= 30 ? "amber" : "red";
+  const focus = pickFocus(data);
+  const healthItems = ["margin", "labor", "collection"]
+    .map((k) => data.health.find((h) => h.key === k))
+    .filter((h): h is HealthIndicator => !!h)
+    .map((h) => ({
+      percent: Math.min(100, Math.max(0, h.value)),
+      color: statusColor(h.status),
+      valueLabel: `${Math.round(h.value)}%`,
+      label: h.key === "margin" ? "Margen" : h.key === "labor" ? "Nómina" : "Cobranza",
+    }));
 
   return (
-    <View style={{ gap: 14 }}>
-      <Pressable onPress={() => goDetail("services", "Servicios del período")} accessibilityRole="button" accessibilityLabel="Ver detalle de ingresos">
-        <HeroMetric
-          label="Ingresos del período"
-          value={s.revenue.value}
-          deltaPercent={s.revenue.deltaPercent}
-          collected={s.collected.value}
-          trend={data.monthlyTrend}
-        />
-      </Pressable>
+    <View style={{ gap: 12 }}>
+      <GananciaHero
+        ganancia={fmtMoney(s.grossMargin.value)}
+        marginPercent={s.marginPercent}
+        statusColor={statusColor(band)}
+        statusIcon={statusIcon(band)}
+        ingresos={fmtMoney(s.revenue.value)}
+        cobrado={fmtMoney(s.collected.value)}
+        marginTrend={data.monthlyTrend.map((p) => p.margin)}
+      />
+      {healthItems.length > 0 ? <HealthRow items={healthItems} /> : null}
+      <FocusCard
+        title={focus.title}
+        detail={focus.detail}
+        value={focus.value}
+        color={focus.color}
+        onPress={() => goDetail(data, focus.metric, focus.metricTitle)}
+      />
+    </View>
+  );
+}
 
-      <View style={styles.kpiRow}>
-        <KpiCard label="Cobrado" value={fmtMoney(s.collected.value)} deltaPercent={s.collected.deltaPercent} onPress={() => goDetail("collected", "Cobrado")} />
-        <KpiCard label="Pendiente" value={fmtMoney(s.pending)} valueColor={s.pending > 0 ? t.amber : t.text} onPress={() => goDetail("pending", "Pendiente de cobro")} />
-        <KpiCard label="Margen" value={pct(s.marginPercent)} valueColor={marginColor} footnote={fmtMoney(s.grossMargin.value)} onPress={() => goDetail("services", "Servicios del período")} />
-      </View>
-
-      {data.health.length > 0 ? (
-        <View style={{ gap: 10 }}>
-          {data.health.map((h) => {
-            const target = healthTarget[h.key] ?? { metric: "services", title: h.title };
-            return <HealthCard key={h.key} item={h} onPress={() => goDetail(target.metric, target.title)} />;
-          })}
-        </View>
-      ) : null}
-
-      {data.insights.length > 0 ? (
-        <View style={{ gap: 10 }}>
-          {data.insights.map((i) => (
-            <InsightCard key={i.key} item={i} onPress={() => open({ title: i.title, explanation: i.detail })} />
-          ))}
-        </View>
-      ) : null}
-
-      {data.byCategory.length > 0 ? (
-        <SectionCard title="Ingresos por categoría" subtitle="Dónde se generan tus ingresos" onPress={() => goDetail("category", "Por categoría")}>
-          <RevenueDonut data={data.byCategory} />
-        </SectionCard>
-      ) : null}
-
-      {data.byServiceLine.length > 1 ? (
-        <SectionCard title="Domicilio vs Casa hogar" subtitle="Cuál línea deja más margen" onPress={() => goDetail("line", "Por línea de servicio")}>
-          <View style={{ gap: 12 }}>
-            {data.byServiceLine.map((l) => (
-              <View key={l.serviceLine} style={styles.lineRow}>
-                <Text style={styles.lineName}>{l.serviceLine}</Text>
-                <Text style={styles.lineRev}>{fmtMoney(l.revenue)}</Text>
-                <Text style={[styles.linePct, { color: l.marginPercent >= 40 ? t.green : t.amber }]}>{pct(l.marginPercent)}</Text>
-              </View>
-            ))}
-          </View>
-        </SectionCard>
-      ) : null}
-
+function Ingresos({ data }: { data: FinanceOverview }) {
+  const best = [...data.byServiceLine].sort((a, b) => b.marginPercent - a.marginPercent)[0];
+  return (
+    <View style={{ gap: 12 }}>
+      <SectionCard
+        title="Ingresos por categoría"
+        subtitle={best ? `${best.serviceLine} es tu línea más rentable (${pct(best.marginPercent)})` : "Dónde se generan tus ingresos"}
+        onPress={() => goDetail(data, "category", "Por categoría")}
+      >
+        <RevenueDonut data={data.byCategory} />
+      </SectionCard>
       {data.topClients.length > 0 ? (
-        <SectionCard title="Top clientes" subtitle="Quién aporta más facturación" onPress={() => goDetail("clients", "Por cliente")}>
+        <SectionCard title="Top clientes" subtitle="Quién aporta más facturación" onPress={() => goDetail(data, "clients", "Por cliente")}>
           <TopClientsBars data={data.topClients} />
         </SectionCard>
       ) : null}
+    </View>
+  );
+}
 
-      {data.monthlyTrend.length > 1 ? (
-        <SectionCard title="Tendencia (6 meses)" subtitle="Ingresos y margen en el tiempo" onPress={() => goDetail("services", "Servicios del período")}>
-          <TrendArea data={data.monthlyTrend} />
-        </SectionCard>
-      ) : null}
-
-      {data.nurseParticipation.length > 0 ? (
-        <SectionCard title="Participación por enfermera" subtitle="Quién genera más y cuánto se le paga" onPress={() => goDetail("nurses", "Participación por enfermera")}>
-          <View style={{ gap: 10 }}>
-            {data.nurseParticipation.slice(0, 8).map((n, i) => (
-              <View key={`${n.nurseName}-${i}`} style={styles.nurseRow}>
-                <Text style={styles.nurseName} numberOfLines={1}>{n.nurseName}</Text>
-                <Text style={styles.nurseMeta}>{n.servicesCount} serv · {pct(n.participationPercent)}</Text>
-                <Text style={styles.nursePay}>{fmtMoney(n.netPay)}</Text>
-              </View>
-            ))}
+function BarList({ items }: { items: { name: string; valueLabel: string; sub?: string; fraction: number }[] }) {
+  return (
+    <View style={{ gap: 12 }}>
+      {items.map((it, i) => (
+        <View key={`${it.name}-${i}`} style={{ gap: 5 }}>
+          <View style={styles.barHeader}>
+            <Text style={styles.barName} numberOfLines={1}>{it.name}</Text>
+            <Text style={styles.barValue}>{it.valueLabel}</Text>
           </View>
+          {it.sub ? <Text style={styles.barSub}>{it.sub}</Text> : null}
+          <View style={styles.barTrack}><View style={[styles.barFill, { width: `${Math.max(3, it.fraction * 100)}%` }]} /></View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function Equipo({ data }: { data: FinanceOverview }) {
+  const nurses = data.nurseParticipation.slice(0, 5);
+  const maxRev = Math.max(...nurses.map((n) => n.revenueGenerated), 1);
+  const loans = data.loans.slice(0, 5);
+  const maxLoan = Math.max(...loans.map((l) => l.outstandingBalance), 1);
+  return (
+    <View style={{ gap: 12 }}>
+      <SectionCard title="Participación por enfermera" subtitle="Quién genera más ingreso" onPress={() => goDetail(data, "nurses", "Participación por enfermera")}>
+        <BarList items={nurses.map((n) => ({ name: n.nurseName, valueLabel: fmtMoneyCompact(n.revenueGenerated), sub: `${n.servicesCount} serv · pago ${fmtMoneyCompact(n.netPay)}`, fraction: n.revenueGenerated / maxRev }))} />
+      </SectionCard>
+      {loans.length > 0 ? (
+        <SectionCard title="Préstamos a enfermeras" subtitle={`Exposición total: ${fmtMoney(data.totalLoansOutstanding)}`} onPress={() => goDetail(data, "loans", "Préstamos a enfermeras")}>
+          <BarList items={loans.map((l) => ({ name: l.nurseName, valueLabel: fmtMoney(l.outstandingBalance), fraction: l.outstandingBalance / maxLoan }))} />
         </SectionCard>
       ) : null}
+    </View>
+  );
+}
 
-      {data.loans.length > 0 ? (
-        <SectionCard title="Préstamos a enfermeras" subtitle={`Exposición total: ${fmtMoney(data.totalLoansOutstanding)}`} onPress={() => goDetail("loans", "Préstamos a enfermeras")}>
-          <View style={{ gap: 10 }}>
-            {data.loans.map((l, i) => (
-              <View key={`${l.nurseName}-${i}`} style={styles.loanRow}>
-                <Text style={styles.loanName} numberOfLines={1}>{l.nurseName}</Text>
-                <Text style={styles.loanBal}>{fmtMoney(l.outstandingBalance)}</Text>
-              </View>
-            ))}
-          </View>
-        </SectionCard>
-      ) : null}
+function Tendencia({ data }: { data: FinanceOverview }) {
+  const s = data.summary;
+  const delta = (dp: number | null) => (dp == null ? "—" : `${dp > 0 ? "+" : dp < 0 ? "−" : ""}${Math.abs(dp).toFixed(1)}%`);
+  const dColor = (dp: number | null) => (dp == null ? t.textMuted : dp >= 0 ? t.green : t.red);
+  return (
+    <View style={{ gap: 12 }}>
+      <SectionCard title="Tendencia (6 meses)" subtitle="Ingresos y margen en el tiempo">
+        <TrendArea data={data.monthlyTrend} />
+      </SectionCard>
+      <View style={styles.deltaRow}>
+        <DeltaChip label="Ingresos" value={delta(s.revenue.deltaPercent)} color={dColor(s.revenue.deltaPercent)} />
+        <DeltaChip label="Margen" value={delta(s.grossMargin.deltaPercent)} color={dColor(s.grossMargin.deltaPercent)} />
+        <DeltaChip label="Cobrado" value={delta(s.collected.deltaPercent)} color={dColor(s.collected.deltaPercent)} />
+      </View>
+    </View>
+  );
+}
 
-      <View style={{ height: 12 }} />
+function DeltaChip({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <View style={styles.deltaChip}>
+      <Text style={styles.deltaLabel}>{label}</Text>
+      <Text style={[styles.deltaValue, { color }]}>{value}</Text>
+      <Text style={styles.deltaSub}>vs período anterior</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: t.bg },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-  },
-  backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 999,
-    backgroundColor: t.card,
-    borderWidth: 1,
-    borderColor: t.cardBorder,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 18, paddingVertical: 12 },
+  iconBtn: { width: 38, height: 38, borderRadius: 999, backgroundColor: t.card, borderWidth: 1, borderColor: t.cardBorder, alignItems: "center", justifyContent: "center" },
   eyebrow: { color: t.accent, fontSize: 11, fontWeight: "800", letterSpacing: 1, textTransform: "uppercase" },
   title: { color: t.text, fontSize: 22, fontWeight: "800" },
-  scroll: { paddingHorizontal: 18, paddingBottom: 28 },
+  body: { flex: 1, paddingHorizontal: 18, paddingTop: 4, gap: 14 },
+  segment: { flex: 1 },
+  barHeader: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
+  barName: { color: t.text, fontSize: 13, fontWeight: "700", flex: 1 },
+  barValue: { color: t.textMuted, fontSize: 12.5, fontWeight: "700" },
+  barSub: { color: t.textMuted, fontSize: 11 },
+  barTrack: { height: 8, borderRadius: 999, backgroundColor: t.cardSoft, overflow: "hidden" },
+  barFill: { height: 8, borderRadius: 999, backgroundColor: t.accent },
+  deltaRow: { flexDirection: "row", gap: 10 },
+  deltaChip: { flex: 1, backgroundColor: t.card, borderRadius: t.radiusSm, borderWidth: 1, borderColor: t.cardBorder, padding: 12, gap: 3 },
+  deltaLabel: { color: t.textMuted, fontSize: 10.5, fontWeight: "700", textTransform: "uppercase" },
+  deltaValue: { fontSize: 17, fontWeight: "800" },
+  deltaSub: { color: t.textMuted, fontSize: 9.5 },
   errorBox: { backgroundColor: t.card, borderRadius: t.radius, padding: 20, gap: 14, alignItems: "center" },
   errorText: { color: t.textMuted, fontSize: 14, textAlign: "center" },
   retry: { backgroundColor: t.accent, borderRadius: 999, paddingHorizontal: 22, paddingVertical: 10 },
   retryText: { color: t.navy, fontWeight: "800" },
-  kpiRow: { flexDirection: "row", gap: 10 },
-  lineRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  lineName: { color: t.text, fontSize: 14, fontWeight: "700", flex: 1 },
-  lineRev: { color: t.textMuted, fontSize: 13 },
-  linePct: { fontSize: 14, fontWeight: "800", width: 64, textAlign: "right" },
-  nurseRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  nurseName: { color: t.text, fontSize: 14, fontWeight: "700", flex: 1 },
-  nurseMeta: { color: t.textMuted, fontSize: 12 },
-  nursePay: { color: t.text, fontSize: 13, fontWeight: "700", width: 92, textAlign: "right" },
-  loanRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
-  loanName: { color: t.text, fontSize: 14, flex: 1 },
-  loanBal: { color: t.amber, fontSize: 14, fontWeight: "800" },
 });
