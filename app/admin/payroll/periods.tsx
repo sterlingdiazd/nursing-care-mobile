@@ -9,6 +9,7 @@ import { useToast } from "@/src/components/shared/ToastProvider";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { designTokens } from "@/src/design-system/tokens";
 import { formatDateES, formatDateTimeES } from "@/src/utils/spanishTextValidator";
+import { nextQuincenaAfter } from "@/src/utils/payrollPeriods";
 import {
   getPayrollPeriods,
   getPayrollPeriodById,
@@ -148,6 +149,18 @@ export default function PeriodsScreen() {
     void loadPeriods();
   }, [editingPeriod, loadPeriods, showToast]);
 
+  const handleCreateStandardPeriod = useCallback(async () => {
+    try {
+      const data = nextQuincenaAfter(periodList?.items ?? []);
+      await createPayrollPeriod(data);
+      showToast({ message: "Período estándar creado correctamente", variant: "success" });
+      void loadPeriods();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "No fue posible crear el período estándar.";
+      showToast({ message, variant: "error" });
+    }
+  }, [periodList, loadPeriods, showToast]);
+
   const handleStartEditPeriod = useCallback(() => {
     if (!selectedPeriod) return;
     setEditingPeriod(selectedPeriod);
@@ -257,9 +270,15 @@ export default function PeriodsScreen() {
       });
     }
     actions.push({
+      label: "+ Estándar",
+      onPress: () => void handleCreateStandardPeriod(),
+      variant: "primary",
+      testID: "admin-payroll-create-standard-period-button",
+    });
+    actions.push({
       label: "+ Período",
       onPress: () => setShowCreatePeriodModal(true),
-      variant: "primary",
+      variant: "secondary",
       testID: "admin-payroll-create-period-button",
     });
     return actions;
@@ -413,6 +432,7 @@ export default function PeriodsScreen() {
         visible={showCreatePeriodModal}
         onClose={() => { setShowCreatePeriodModal(false); setEditingPeriod(null); }}
         onSubmit={handleSubmitPeriod}
+        existingPeriods={periodList?.items ?? []}
         period={editingPeriod ? {
           startDate: editingPeriod.startDate,
           endDate: editingPeriod.endDate,
