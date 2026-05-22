@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { Platform } from "react-native";
 
 export interface ClientLogEntry {
   id: string;
@@ -82,7 +83,7 @@ export function logClientEvent(
 
   entries = [entry, ...entries].slice(0, MAX_ENTRIES);
 
-  const logMethod = level === "error" ? console.error : console.info;
+  const logMethod = level === "error" && Platform.OS === "web" ? console.error : console.info;
   logMethod(`[${source}] ${message}`, entry.data ?? "");
 
   emit();
