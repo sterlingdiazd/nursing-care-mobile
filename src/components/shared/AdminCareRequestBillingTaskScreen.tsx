@@ -22,6 +22,7 @@ import {
   mobileSurfaceCard,
   mobileTheme,
 } from "@/src/design-system/mobileStyles";
+import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
 
 interface BillingTaskScreenProps {
   action: AdminCareRequestBillingAction;
@@ -57,7 +58,7 @@ function automationProps(testId: string) {
 
 function formatTimestamp(value: string | null | undefined) {
   if (!value) return "No disponible";
-  return new Intl.DateTimeFormat("es-DO", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+  return formatDateTimeES(value);
 }
 
 function formatCurrency(value: number) {
