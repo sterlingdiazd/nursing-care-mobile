@@ -15,7 +15,7 @@ const TONES: Record<BadgeTone, { bg: string; fg: string }> = {
 export function StatusBadge({ label, tone = "neutral", testID }: { label: string; tone?: BadgeTone; testID?: string }) {
   const c = TONES[tone];
   return (
-    <View style={[styles.badge, { backgroundColor: c.bg }]} testID={testID}>
+    <View style={[styles.badge, { backgroundColor: c.bg }]} testID={testID} nativeID={testID}>
       <Text style={[styles.text, { color: c.fg }]}>{label}</Text>
     </View>
   );

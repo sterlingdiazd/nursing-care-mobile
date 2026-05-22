@@ -1,6 +1,7 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type { AdminPayrollPeriodListItem } from "@/src/services/payrollService";
 import { designTokens } from "@/src/design-system/tokens";
+import { StatusBadge } from "@/src/components/shared/StatusBadge";
 
 interface PeriodListItemProps {
   period: AdminPayrollPeriodListItem;
@@ -21,15 +22,11 @@ export function PeriodListItem({ period, onPress }: PeriodListItemProps) {
         <Text style={styles.dates}>
           {period.startDate} - {period.endDate}
         </Text>
-        <View
-          style={[styles.statusBadge, isOpen ? styles.statusOpen : styles.statusClosed]}
+        <StatusBadge
+          label={isOpen ? "Abierto" : "Cerrado"}
+          tone={isOpen ? "success" : "neutral"}
           testID="payroll-period-status-badge"
-          nativeID="payroll-period-status-badge"
-        >
-          <Text style={[styles.statusText, isOpen ? styles.statusTextOpen : styles.statusTextClosed]}>
-            {isOpen ? "Abierto" : "Cerrado"}
-          </Text>
-        </View>
+        />
       </View>
 
       <View style={styles.details}>
@@ -70,27 +67,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     color: designTokens.color.ink.primary,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  statusOpen: {
-    backgroundColor: designTokens.color.surface.success,
-  },
-  statusClosed: {
-    backgroundColor: designTokens.color.surface.secondary,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  statusTextOpen: {
-    color: designTokens.color.status.successText,
-  },
-  statusTextClosed: {
-    color: designTokens.color.ink.muted,
   },
   details: {
     flexDirection: "row",

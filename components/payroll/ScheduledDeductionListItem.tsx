@@ -3,6 +3,7 @@ import type { ScheduledDeductionListItem as ScheduledDeductionListItemType } fro
 import { designTokens } from "@/src/design-system/tokens";
 import { adminTestIds } from "@/src/testing/testIds/adminTestIds";
 import { formatDateES } from "@/src/utils/spanishTextValidator";
+import { StatusBadge, type BadgeTone } from "@/src/components/shared/StatusBadge";
 
 interface ScheduledDeductionListItemProps {
   item: ScheduledDeductionListItemType;
@@ -50,18 +51,8 @@ export function ScheduledDeductionListItem({ item, onPress }: ScheduledDeduction
     : item.maxOccurrences != null
       ? `Cuota ${item.installmentsGenerated} de ${item.maxOccurrences}`
       : null;
-  const statusStyle =
-    item.status === "Active"
-      ? styles.statusActive
-      : item.status === "Completed"
-        ? styles.statusCompleted
-        : styles.statusCancelled;
-  const statusTextStyle =
-    item.status === "Active"
-      ? styles.statusTextActive
-      : item.status === "Completed"
-        ? styles.statusTextCompleted
-        : styles.statusTextCancelled;
+  const statusTone: BadgeTone =
+    item.status === "Active" ? "success" : item.status === "Completed" ? "neutral" : "danger";
 
   return (
     <TouchableOpacity
@@ -78,9 +69,7 @@ export function ScheduledDeductionListItem({ item, onPress }: ScheduledDeduction
             {conceptLabel(item.deductionType)} · {modalityLabel(item.modality)}
           </Text>
         </View>
-        <View style={[styles.statusBadge, statusStyle]}>
-          <Text style={[styles.statusText, statusTextStyle]}>{statusLabel(item.status)}</Text>
-        </View>
+        <StatusBadge label={statusLabel(item.status)} tone={statusTone} />
       </View>
 
       <View style={styles.secondLine}>
@@ -150,34 +139,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: designTokens.color.ink.muted,
     marginTop: 1,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    alignSelf: "flex-start",
-  },
-  statusActive: {
-    backgroundColor: designTokens.color.surface.success,
-  },
-  statusCompleted: {
-    backgroundColor: designTokens.color.surface.tertiary,
-  },
-  statusCancelled: {
-    backgroundColor: designTokens.color.surface.danger,
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  statusTextActive: {
-    color: designTokens.color.status.successText,
-  },
-  statusTextCompleted: {
-    color: designTokens.color.ink.secondary,
-  },
-  statusTextCancelled: {
-    color: designTokens.color.status.dangerText,
   },
   secondLine: {
     flexDirection: "row",
