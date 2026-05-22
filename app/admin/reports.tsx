@@ -343,7 +343,7 @@ function UtilizationVisualizer({ data }: { data: NurseUtilizationReportDto }) {
           </Text>
         </View>
       ))}
-      {data.rows.length > 10 && (
+      {(data.rows?.length ?? 0) > 10 && (
         <Text style={styles.tableNote}>Mostrando top 10 resultados.</Text>
       )}
     </View>
