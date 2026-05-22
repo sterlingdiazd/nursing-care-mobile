@@ -358,6 +358,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    // Deactivate push token for this device BEFORE clearing the JWT — the
+    // DELETE endpoint needs the auth header. Non-fatal on failure (the worker
+    // will eventually flag stale tokens as DeviceNotRegistered).
+    try {
+      const { deactivateTokenOnLogout } = await import("@/src/services/pushNotificationsService");
+      await deactivateTokenOnLogout();
+    } catch {
+      // ignore
+    }
+
     setToken(null);
     setUserId(null);
     setEmail(null);
