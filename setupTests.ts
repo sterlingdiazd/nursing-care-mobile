@@ -137,6 +137,11 @@ vi.mock('expo-file-system', () => ({
   },
 }));
 
+vi.mock('expo-file-system/legacy', () => ({
+  documentDirectory: '/mock-documents/',
+  downloadAsync: vi.fn().mockResolvedValue({ status: 200, uri: '/mock-documents/export.csv' }),
+}));
+
 vi.mock('expo-sharing', () => ({
   isAvailableAsync: vi.fn().mockResolvedValue(true),
   shareAsync: vi.fn().mockResolvedValue(undefined),
@@ -175,18 +180,27 @@ vi.mock('@/src/context/AuthContext', () => ({
 }));
 
 // Mock Payroll Service
+// @expo/vector-icons loads a .ttf via its index that rollup can't parse at import time,
+// which breaks any screen test that imports a FontAwesome-using component (mobile-refactoring rule 10).
+vi.mock('@expo/vector-icons/FontAwesome', () => ({ default: () => null }));
+vi.mock('@expo/vector-icons', () => ({ FontAwesome: () => null }));
+
 vi.mock('@/src/services/payrollService', () => ({
   getPayrollPeriods: vi.fn().mockResolvedValue({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 }),
   getPayrollPeriodById: vi.fn().mockResolvedValue({}),
   createPayrollPeriod: vi.fn().mockResolvedValue({}),
+  updatePayrollPeriod: vi.fn().mockResolvedValue(undefined),
+  deletePayrollPeriod: vi.fn().mockResolvedValue(undefined),
   closePayrollPeriod: vi.fn().mockResolvedValue({}),
   getCompensationRules: vi.fn().mockResolvedValue({ items: [], totalCount: 0 }),
   getCompensationRuleById: vi.fn().mockResolvedValue({}),
   createCompensationRule: vi.fn().mockResolvedValue({}),
   updateCompensationRule: vi.fn().mockResolvedValue({}),
   deactivateCompensationRule: vi.fn().mockResolvedValue({}),
+  reactivateCompensationRule: vi.fn().mockResolvedValue({}),
   getDeductions: vi.fn().mockResolvedValue({ items: [], totalCount: 0 }),
   createDeduction: vi.fn().mockResolvedValue({}),
+  updateDeduction: vi.fn().mockResolvedValue({}),
   deleteDeduction: vi.fn().mockResolvedValue({}),
   getAdjustments: vi.fn().mockResolvedValue({ items: [], totalCount: 0 }),
   createAdjustment: vi.fn().mockResolvedValue({}),
@@ -198,6 +212,34 @@ vi.mock('@/src/services/payrollService', () => ({
     totalNewNet: 0,
     triggeredAtUtc: "2026-04-20T00:00:00Z",
   }),
+  getAdminMobilePayrollSummary: vi.fn().mockResolvedValue({
+    openPeriodsCount: 0,
+    closedPeriodsCount: 0,
+    totalCompensationCurrentPeriod: 0,
+    activeNursesCount: 0,
+    recentPeriods: [],
+  }),
+  getScheduledDeductions: vi.fn().mockResolvedValue({ items: [], totalCount: 0 }),
+  getScheduledDeductionById: vi.fn().mockResolvedValue({ plan: {}, installments: [] }),
+  createScheduledDeduction: vi.fn().mockResolvedValue({ id: "sd-1" }),
+  payoffScheduledDeduction: vi.fn().mockResolvedValue({}),
+  rescheduleScheduledDeduction: vi.fn().mockResolvedValue({}),
+  skipScheduledInstallment: vi.fn().mockResolvedValue({}),
+  cancelScheduledDeduction: vi.fn().mockResolvedValue({}),
+  submitPayrollLineOverride: vi.fn().mockResolvedValue({}),
+  approvePayrollLineOverride: vi.fn().mockResolvedValue({}),
+  getPayrollPeriodExportUrl: vi.fn(() => "https://test.local/export.csv"),
+  getPayrollPeriodReportPdfUrl: vi.fn(() => "https://test.local/report.pdf"),
+  getPayrollPeriodReportXlsxUrl: vi.fn(() => "https://test.local/report.xlsx"),
+  getAdminPayrollVoucherUrl: vi.fn(() => "https://test.local/voucher.pdf"),
+  getAdminPayrollBulkVouchersUrl: vi.fn(() => "https://test.local/vouchers.zip"),
+}));
+
+// Mock Catalog Options Service
+vi.mock('@/src/services/catalogOptionsService', () => ({
+  getCareRequestOptions: vi.fn().mockResolvedValue({}),
+  getNurseProfileOptions: vi.fn().mockResolvedValue({}),
+  getAvailableNurses: vi.fn().mockResolvedValue([]),
 }));
 
 // Mock MobileWorkspaceShell
@@ -209,7 +251,7 @@ const _mockRouter = {
 };
 
 vi.mock('@/components/app/MobileWorkspaceShell', () => ({
-  default: vi.fn(({ children, actions, footer, testID, nativeID, primaryReturnLabel, onPrimaryReturn, primaryReturnPath }) => {
+  default: vi.fn(({ children, actions, footer, testID, nativeID, primaryReturnLabel, onPrimaryReturn, primaryReturnPath, workflowActions, systemActions }) => {
     const returnButton =
       primaryReturnLabel || primaryReturnPath || onPrimaryReturn
         ? React.createElement(
@@ -222,7 +264,32 @@ vi.mock('@/components/app/MobileWorkspaceShell', () => ({
             primaryReturnLabel ?? 'Volver',
           )
         : null;
-    return React.createElement('View', { testID, nativeID }, returnButton, actions, children, footer);
+    // Mirror AppFooter: render structured workflow/system actions as pressables
+    // carrying their testID so footer-action-based tests can find them.
+    const renderActions = (list: any[] | undefined) =>
+      (list ?? []).map((action, idx) =>
+        React.createElement(
+          'Pressable',
+          {
+            key: action.testID ?? idx,
+            testID: action.testID,
+            nativeID: action.testID,
+            disabled: action.disabled,
+            onPress: action.onPress,
+          },
+          action.label,
+        ),
+      );
+    return React.createElement(
+      'View',
+      { testID, nativeID },
+      returnButton,
+      actions,
+      ...renderActions(workflowActions),
+      ...renderActions(systemActions),
+      children,
+      footer,
+    );
   }),
 }));
 
