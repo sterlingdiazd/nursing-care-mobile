@@ -700,7 +700,7 @@ const styles = StyleSheet.create({
   editPanelTitle: { fontSize: 16, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 8 },
   editActions: { flexDirection: "row", gap: 8, marginTop: 8 },
   cardsContainer: { gap: 10 },
-  card: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: designTokens.color.border.subtle, shadowColor: designTokens.color.ink.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 2 },
+  card: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: designTokens.color.border.subtle, boxShadow: "0px 6px 12px rgba(18, 48, 68, 0.06)", elevation: 2 },
   cardContent: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 14 },
   cardTextBlock: { flex: 1 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4, gap: 8 },
