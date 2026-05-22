@@ -1,29 +1,34 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Modal,
   View,
   Text,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
 } from "react-native";
 import { designTokens } from "@/src/design-system/tokens";
+import { DateField } from "@/src/components/form";
+
+interface PeriodScheduleValue {
+  startDate: string;
+  endDate: string;
+  cutoffDate: string;
+  paymentDate: string;
+}
 
 interface CreatePeriodModalProps {
   visible: boolean;
   onClose: () => void;
-  onSubmit: (data: {
-    startDate: string;
-    endDate: string;
-    cutoffDate: string;
-    paymentDate: string;
-  }) => Promise<void>;
+  onSubmit: (data: PeriodScheduleValue) => Promise<void>;
+  /** When provided, the modal edits this period's dates instead of creating a new one. */
+  period?: PeriodScheduleValue | null;
 }
 
-export function CreatePeriodModal({ visible, onClose, onSubmit }: CreatePeriodModalProps) {
+export function CreatePeriodModal({ visible, onClose, onSubmit, period }: CreatePeriodModalProps) {
+  const isEdit = Boolean(period);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [cutoffDate, setCutoffDate] = useState("");
@@ -31,10 +36,26 @@ export function CreatePeriodModal({ visible, onClose, onSubmit }: CreatePeriodMo
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isValid = startDate.length >= 8 &&
+  // Prefill from the period being edited each time the sheet opens (create = blank).
+  useEffect(() => {
+    if (!visible) return;
+    setStartDate(period?.startDate ?? "");
+    setEndDate(period?.endDate ?? "");
+    setCutoffDate(period?.cutoffDate ?? "");
+    setPaymentDate(period?.paymentDate ?? "");
+    setError(null);
+  }, [visible, period]);
+
+  const allFilled = startDate.length >= 8 &&
                  endDate.length >= 8 &&
                  cutoffDate.length >= 8 &&
                  paymentDate.length >= 8;
+  // ISO yyyy-MM-dd compares correctly as strings: start ≤ end, start ≤ corte, corte ≤ pago.
+  const datesInOrder = startDate <= endDate && startDate <= cutoffDate && cutoffDate <= paymentDate;
+  const dateOrderError = allFilled && !datesInOrder
+    ? "Revisa el orden de las fechas: inicio ≤ corte ≤ pago, y fin igual o posterior al inicio."
+    : null;
+  const isValid = allFilled && datesInOrder;
 
   const resetForm = () => {
     setStartDate("");
@@ -64,17 +85,10 @@ export function CreatePeriodModal({ visible, onClose, onSubmit }: CreatePeriodMo
       });
       handleClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error al crear el período");
+      setError(e instanceof Error ? e.message : (isEdit ? "Error al actualizar el período" : "Error al crear el período"));
     } finally {
       setLoading(false);
     }
-  };
-
-  const parseDate = (text: string): string => {
-    const digits = text.replace(/\D/g, "");
-    if (digits.length <= 2) return digits;
-    if (digits.length <= 4) return `${digits.slice(0,2)}/${digits.slice(2)}`;
-    return `${digits.slice(0,2)}/${digits.slice(2,4)}/${digits.slice(4,8)}`;
   };
 
   return (
@@ -96,19 +110,23 @@ export function CreatePeriodModal({ visible, onClose, onSubmit }: CreatePeriodMo
           >
             <Text style={styles.cancelButton}>Cancelar</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Nuevo Período</Text>
+          <Text style={styles.title}>{isEdit ? "Editar Período" : "Nuevo Período"}</Text>
           <TouchableOpacity
             onPress={handleSubmit}
             disabled={!isValid || loading}
             accessibilityRole="button"
-            accessibilityLabel={loading ? "Creando período" : "Crear período de nómina"}
+            accessibilityLabel={
+              loading
+                ? (isEdit ? "Guardando período" : "Creando período")
+                : (isEdit ? "Guardar período de nómina" : "Crear período de nómina")
+            }
             accessibilityState={{ busy: loading, disabled: !isValid || loading }}
           >
             <Text style={[
               styles.submitButton,
               (!isValid || loading) && styles.submitButtonDisabled
             ]}>
-              {loading ? "Creando..." : "Crear"}
+              {loading ? (isEdit ? "Guardando..." : "Creando...") : (isEdit ? "Guardar" : "Crear")}
             </Text>
           </TouchableOpacity>
         </View>
@@ -120,67 +138,44 @@ export function CreatePeriodModal({ visible, onClose, onSubmit }: CreatePeriodMo
             </View>
           )}
 
-          <Text style={styles.hint}>
-            Ingresa las fechas en formato DD/MM/AAAA
-          </Text>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Fecha de Inicio</Text>
-            <TextInput
-              style={styles.input}
-              value={startDate}
-              onChangeText={(text) => setStartDate(parseDate(text))}
-              placeholder="DD/MM/AAAA"
-              keyboardType="numeric"
-              maxLength={10}
-              accessibilityLabel="Fecha de inicio del período"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Fecha de Fin</Text>
-            <TextInput
-              style={styles.input}
-              value={endDate}
-              onChangeText={(text) => setEndDate(parseDate(text))}
-              placeholder="DD/MM/AAAA"
-              keyboardType="numeric"
-              maxLength={10}
-              accessibilityLabel="Fecha de fin del período"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Fecha de Corte</Text>
-            <TextInput
-              style={styles.input}
-              value={cutoffDate}
-              onChangeText={(text) => setCutoffDate(parseDate(text))}
-              placeholder="DD/MM/AAAA"
-              keyboardType="numeric"
-              maxLength={10}
-              accessibilityLabel="Fecha de corte del período"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Fecha de Pago</Text>
-            <TextInput
-              style={styles.input}
-              value={paymentDate}
-              onChangeText={(text) => setPaymentDate(parseDate(text))}
-              placeholder="DD/MM/AAAA"
-              keyboardType="numeric"
-              maxLength={10}
-              accessibilityLabel="Fecha de pago del período"
-            />
-          </View>
-
-          {!isValid && startDate.length > 0 && (
-            <Text style={styles.validationHint}>
-              Completa todas las fechas para crear el período
-            </Text>
+          {!error && dateOrderError && (
+            <View style={styles.errorCard}>
+              <Text style={styles.errorText}>{dateOrderError}</Text>
+            </View>
           )}
+
+          <DateField
+            label="Fecha de Inicio"
+            value={startDate}
+            onChange={setStartDate}
+            testID="period-start-date"
+            accessibilityLabel="Fecha de inicio del período"
+          />
+
+          <DateField
+            label="Fecha de Fin"
+            value={endDate}
+            onChange={setEndDate}
+            testID="period-end-date"
+            accessibilityLabel="Fecha de fin del período"
+          />
+
+          <DateField
+            label="Fecha de Corte"
+            value={cutoffDate}
+            onChange={setCutoffDate}
+            testID="period-cutoff-date"
+            accessibilityLabel="Fecha de corte del período"
+          />
+
+          <DateField
+            label="Fecha de Pago"
+            value={paymentDate}
+            onChange={setPaymentDate}
+            testID="period-payment-date"
+            accessibilityLabel="Fecha de pago del período"
+          />
+
         </ScrollView>
       </KeyboardAvoidingView>
     </Modal>
@@ -196,7 +191,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: designTokens.color.border.subtle,
   },
@@ -206,55 +202,32 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 17,
-    fontWeight: "600",
+    fontWeight: "700",
     color: designTokens.color.ink.primary,
   },
   submitButton: {
     fontSize: 16,
     color: designTokens.color.ink.accentStrong,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   submitButtonDisabled: {
     color: designTokens.color.border.strong,
   },
   form: {
     flex: 1,
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   errorCard: {
     backgroundColor: designTokens.color.surface.danger,
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.danger,
+    padding: designTokens.spacing.md,
+    borderRadius: designTokens.radius.md,
+    marginBottom: designTokens.spacing.lg,
   },
   errorText: {
     color: designTokens.color.status.dangerText,
-  },
-  hint: {
-    fontSize: 13,
-    color: designTokens.color.ink.muted,
-    marginBottom: 16,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
     fontSize: 14,
-    fontWeight: "500",
-    color: designTokens.color.ink.primary,
-    marginBottom: 6,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: designTokens.color.border.subtle,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    color: designTokens.color.ink.primary,
-  },
-  validationHint: {
-    fontSize: 13,
-    color: designTokens.color.ink.muted,
-    marginTop: 8,
   },
 });

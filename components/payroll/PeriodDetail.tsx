@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -14,13 +14,17 @@ import {
   Platform,
 } from "react-native";
 import { useToast } from "@/src/components/shared/ToastProvider";
-import * as FileSystem from "expo-file-system";
+import { Pagination } from "@/src/components/shared/Pagination";
+import type { FooterAction } from "@/src/components/navigation/AppFooter";
+import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { designTokens } from "@/src/design-system/tokens";
 import type { AdminPayrollPeriodDetail, AdminPayrollLineItem } from "@/src/services/payrollService";
 import { adminTestIds } from "@/src/testing/testIds/adminTestIds";
 import {
   getPayrollPeriodExportUrl,
+  getPayrollPeriodReportPdfUrl,
+  getPayrollPeriodReportXlsxUrl,
   submitPayrollLineOverride,
   approvePayrollLineOverride,
   getAdminPayrollVoucherUrl,
@@ -29,21 +33,39 @@ import {
 import { getCachedAuthSession } from "@/src/services/authSession";
 import { formatDateES, formatDateTimeES } from "@/src/utils/spanishTextValidator";
 
+const SERVICE_REQUEST_ID_PATTERN = /\s*·?\s*solicitud\s+[0-9a-fA-F-]{36}\s*$/i;
+
+const formatServiceLabel = (description: string) =>
+  description.replace(SERVICE_REQUEST_ID_PATTERN, "").trim() || "Servicio";
+
 interface PeriodDetailProps {
   period: AdminPayrollPeriodDetail;
   onClose: () => Promise<void>;
   onBack: () => void;
   onPrepareRecalculate?: () => void;
+  /**
+   * Bubble the detail-mode footer actions up to the parent shell so they
+   * land in the global `workflowActions` slot (skill §5: CTAs go in the
+   * footer, content-sized, single 56px row).
+   */
+  onSetActions?: (actions: FooterAction[]) => void;
+  /** Offered only for an Open period with no calculated lines (created by error). */
+  onEdit?: () => void;
+  onDelete?: () => Promise<void>;
 }
 
-async function downloadAndShare(url: string, filename: string): Promise<"shared" | "unavailable"> {
+async function downloadAndShare(
+  url: string,
+  filename: string,
+  downloadFailureMessage = "No fue posible descargar el archivo.",
+): Promise<"shared" | "unavailable"> {
   const session = getCachedAuthSession();
   const token = session?.token;
   if (!token) {
-    throw new Error("No hay sesion activa.");
+    throw new Error("No hay sesión activa.");
   }
-  const fileUri = (FileSystem as any).documentDirectory + filename;
-  const downloadRes = await (FileSystem as any).downloadAsync(url, fileUri, {
+  const fileUri = FileSystem.documentDirectory + filename;
+  const downloadRes = await FileSystem.downloadAsync(url, fileUri, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (downloadRes.status === 200) {
@@ -54,16 +76,16 @@ async function downloadAndShare(url: string, filename: string): Promise<"shared"
       return "unavailable";
     }
   } else {
-    throw new Error("No fue posible descargar el archivo.");
+    throw new Error(downloadFailureMessage);
   }
 }
 
-export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: PeriodDetailProps) {
+export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, onSetActions, onEdit, onDelete }: PeriodDetailProps) {
   const { showToast } = useToast();
   const isOpen = period.status === "Open";
 
   // CSV export state
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState<string | null>(null);
 
   // Override modal state
   const [overrideModalVisible, setOverrideModalVisible] = useState(false);
@@ -80,6 +102,15 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
   const [downloadingVoucherId, setDownloadingVoucherId] = useState<string | null>(null);
   const [downloadingBulk, setDownloadingBulk] = useState(false);
 
+  // Per-list pagination — both the staff summary and the payroll lines can
+  // run long on a busy period. Reset to page 1 when the period changes.
+  const [staffPage, setStaffPage] = useState(1);
+  const [linesPage, setLinesPage] = useState(1);
+  useEffect(() => {
+    setStaffPage(1);
+    setLinesPage(1);
+  }, [period.id]);
+
   // Nurse detail drilldown modal state
   const [nurseDetailModalVisible, setNurseDetailModalVisible] = useState(false);
   const [selectedNurseId, setSelectedNurseId] = useState<string | null>(null);
@@ -88,21 +119,55 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP" }).format(amount);
 
-  // --- CSV Export ---
-  const handleExport = async () => {
+  const describeLineCompensation = (line: AdminPayrollLineItem) => {
+    const parts: string[] = [];
+    if (line.baseCompensation > 0) parts.push(`Base ${formatCurrency(line.baseCompensation)}`);
+    if (line.transportIncentive > 0)
+      parts.push(`Transporte ${formatCurrency(line.transportIncentive)}`);
+    if (line.complexityBonus > 0)
+      parts.push(`Complejidad ${formatCurrency(line.complexityBonus)}`);
+    if (line.medicalSuppliesCompensation > 0)
+      parts.push(`Insumos ${formatCurrency(line.medicalSuppliesCompensation)}`);
+    if (line.adjustmentsTotal > 0) parts.push(`Ajustes ${formatCurrency(line.adjustmentsTotal)}`);
+    // Deductions are period-level (shown in the nurse/period summary), never per service line.
+    return parts.join("  ·  ");
+  };
+
+  // --- Report export/view actions ---
+  const handleExport = async (format: "pdf" | "xlsx" | "csv") => {
     if (exporting) return;
-    setExporting(true);
+    setExporting(format);
     try {
-      const url = getPayrollPeriodExportUrl(period.id);
-      const filename = `nomina-${period.id}-${Date.now()}.csv`;
-      const result = await downloadAndShare(url, filename);
+      const exportConfig = {
+        pdf: {
+          url: getPayrollPeriodReportPdfUrl(period.id),
+          filename: `reporte-nomina-${period.id}.pdf`,
+          failureMessage: "No fue posible descargar el PDF.",
+        },
+        xlsx: {
+          url: getPayrollPeriodReportXlsxUrl(period.id),
+          filename: `reporte-nomina-${period.id}.xlsx`,
+          failureMessage: "No fue posible descargar el Excel.",
+        },
+        csv: {
+          url: getPayrollPeriodExportUrl(period.id),
+          filename: `nomina-${period.id}-${Date.now()}.csv`,
+          failureMessage: "No fue posible descargar el CSV.",
+        },
+      }[format];
+      const { url, filename, failureMessage } = exportConfig;
+      const result = await downloadAndShare(url, filename, failureMessage);
       if (result === "unavailable") {
         showToast({ variant: "info", message: "Archivo descargado pero compartir no está disponible." });
       }
     } catch (e) {
-      showToast({ variant: "error", message: e instanceof Error ? e.message : "No fue posible exportar el período." });
+      const fallbackMessage = `No fue posible descargar el ${format === "xlsx" ? "Excel" : format.toUpperCase()}.`;
+      const message = e instanceof Error && e.message.startsWith("No fue posible")
+        ? e.message
+        : fallbackMessage;
+      showToast({ variant: "error", message });
     } finally {
-      setExporting(false);
+      setExporting(null);
     }
   };
 
@@ -150,7 +215,7 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
   const handleApproveOverride = async (line: AdminPayrollLineItem) => {
     Alert.alert(
       "Aprobar ajuste",
-      "¿Confirmar la aprobacion del ajuste pendiente?",
+      "¿Confirmar la aprobación del ajuste pendiente?",
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -218,7 +283,7 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
   const handleClosePeriod = () => {
     Alert.alert(
       "Cerrar Período",
-      `¿Estas seguro de cerrar el período "${period.startDate} - ${period.endDate}"?`,
+      `¿Estás seguro de cerrar el período "${period.startDate} - ${period.endDate}"?`,
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -227,8 +292,9 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
           onPress: async () => {
             try {
               await onClose();
-            } catch {
-              showToast({ variant: "error", message: "No fue posible cerrar el período." });
+            } catch (e) {
+              const message = e instanceof Error ? e.message : "No fue posible cerrar el período.";
+              showToast({ variant: "error", message });
             }
           },
         },
@@ -236,8 +302,113 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
     );
   };
 
+  // --- Period delete (destructive confirmation, mirrors close) ---
+  const handleDeletePeriodConfirm = () => {
+    Alert.alert(
+      "Eliminar Período",
+      `¿Eliminar el período "${period.startDate} - ${period.endDate}"? Esta acción no se puede deshacer.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: () => { void onDelete?.(); },
+        },
+      ]
+    );
+  };
+
+  // Emit footer actions to the parent shell. A freshly created Open period with no
+  // calculated lines surfaces Editar/Eliminar (the "created by error" case). Once it
+  // has payroll lines, those give way to the export/voucher actions. Closed periods
+  // stay read-only with export only.
+  useEffect(() => {
+    if (!onSetActions) return;
+    const actions: FooterAction[] = [];
+    // Authoritative flag from the API: Open AND no lines AND no deductions/installments.
+    const canManage = period.canModify;
+
+    if (canManage && onEdit) {
+      actions.push({
+        label: "Editar",
+        onPress: onEdit,
+        variant: "secondary",
+        testID: "admin-period-edit-button",
+      });
+    }
+    if (canManage && onDelete) {
+      actions.push({
+        label: "Eliminar",
+        onPress: handleDeletePeriodConfirm,
+        variant: "danger",
+        testID: "admin-period-delete-button",
+      });
+    }
+    if (isOpen && onPrepareRecalculate) {
+      actions.push({
+        label: "Recalcular",
+        onPress: onPrepareRecalculate,
+        variant: "secondary",
+      });
+    }
+    if (!canManage) {
+      actions.push({
+        label: exporting === "pdf" ? "Exportando…" : "PDF",
+        onPress: () => handleExport("pdf"),
+        variant: "secondary",
+        disabled: Boolean(exporting),
+        testID: "admin-period-export-pdf-button",
+      });
+      actions.push({
+        label: exporting === "xlsx" ? "Exportando…" : "Excel",
+        onPress: () => handleExport("xlsx"),
+        variant: "secondary",
+        disabled: Boolean(exporting),
+        testID: "admin-period-export-xlsx-button",
+      });
+      actions.push({
+        label: downloadingBulk ? "Descargando…" : "Comprobantes",
+        onPress: handleDownloadAllVouchers,
+        variant: "secondary",
+        disabled: downloadingBulk,
+        testID: "admin-period-bulk-vouchers-button",
+      });
+    }
+    if (isOpen && !canManage) {
+      actions.push({
+        label: "Cerrar período",
+        onPress: handleClosePeriod,
+        variant: "danger",
+      });
+    }
+    onSetActions(actions);
+    return () => {
+      onSetActions([]);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, exporting, downloadingBulk, period.id, period.canModify, onEdit, onDelete]);
+
   const totalGross = period.staffSummary.reduce((sum, s) => sum + s.grossCompensation, 0);
   const totalNet = period.staffSummary.reduce((sum, s) => sum + s.netCompensation, 0);
+  const statusTitle = isOpen ? "Nómina en revisión" : "Nómina cerrada";
+  const statusDescription = isOpen
+    ? "Puedes revisar líneas, corregir montos y cerrar el período cuando esté listo."
+    : "Período finalizado. Los comprobantes y reportes están disponibles para descarga.";
+  const periodLabel = `${period.startDate} - ${period.endDate}`;
+  const nurseCountLabel = `${period.staffSummary.length} enfermera${period.staffSummary.length === 1 ? "" : "s"}`;
+  const lineCountLabel = `${period.lines.length} línea${period.lines.length === 1 ? "" : "s"}`;
+
+  const PAGE_SIZE = 10;
+  const totalStaffPages = Math.ceil(period.staffSummary.length / PAGE_SIZE);
+  const visibleStaff = period.staffSummary.slice(
+    (staffPage - 1) * PAGE_SIZE,
+    staffPage * PAGE_SIZE,
+  );
+  const totalLinePages = Math.ceil(period.lines.length / PAGE_SIZE);
+  const visibleLines = period.lines.slice(
+    (linesPage - 1) * PAGE_SIZE,
+    linesPage * PAGE_SIZE,
+  );
 
   const nurseLines = selectedNurseId
     ? period.lines.filter((l) => l.nurseUserId === selectedNurseId)
@@ -268,29 +439,13 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
           </View>
         )}
 
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={onBack}
-            style={styles.backButton}
-            accessibilityRole="button"
-            accessibilityLabel="Volver a la lista de períodos"
-          >
-            <Text style={styles.backButtonText}>Volver</Text>
-          </TouchableOpacity>
-
-          <View style={styles.reviewBanner}>
-            <Text style={styles.reviewEyebrow}>Revision operativa</Text>
-            <Text style={styles.reviewTitle}>Periodo listo para decision financiera</Text>
-            <Text style={styles.reviewDescription}>
-              Revisa el estado, los totales y las consecuencias antes de cerrar el periodo o recalcular la nomina.
-            </Text>
-          </View>
-
-          <View style={styles.statusRow}>
-            <Text style={styles.dates}>
-              {period.startDate} - {period.endDate}
-            </Text>
+        <View style={styles.overviewCard}>
+          <View style={styles.overviewHeader}>
+            <View style={styles.overviewTitleGroup}>
+              <Text style={styles.overviewEyebrow}>Nómina</Text>
+              <Text style={styles.overviewTitle}>{statusTitle}</Text>
+              <Text style={styles.overviewPeriod}>{periodLabel}</Text>
+            </View>
             <View
               style={[styles.statusBadge, isOpen ? styles.statusOpen : styles.statusClosed]}
               testID={adminTestIds.payroll.periodStatusBadge}
@@ -306,98 +461,32 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
             </View>
           </View>
 
-          {/* Header action bar: CSV export + bulk vouchers */}
-          <View style={styles.headerActions}>
-            {isOpen && onPrepareRecalculate ? (
-              <Pressable
-                style={[styles.headerActionButton, styles.headerActionButtonWarning]}
-                onPress={onPrepareRecalculate}
-                accessibilityRole="button"
-                accessibilityLabel="Preparar recálculo de nómina"
-              >
-                <Text style={styles.headerActionButtonText}>Preparar recálculo</Text>
-              </Pressable>
-            ) : null}
+          <Text style={styles.overviewDescription}>{statusDescription}</Text>
 
-            <Pressable
-              style={[styles.headerActionButton, exporting && styles.buttonDisabled]}
-              onPress={handleExport}
-              disabled={exporting}
-              testID="admin-period-export-csv-button"
-              nativeID="admin-period-export-csv-button"
-              accessibilityRole="button"
-              accessibilityLabel={exporting ? "Exportando CSV" : "Exportar período como CSV"}
-              accessibilityState={{ busy: exporting }}
-            >
-              {exporting ? (
-                <ActivityIndicator color={designTokens.color.ink.inverse} size="small" accessibilityLabel="Cargando..." />
-              ) : (
-                <Text style={styles.headerActionButtonText}>Exportar CSV</Text>
-              )}
-            </Pressable>
-
-            <Pressable
-              style={[styles.headerActionButton, styles.headerActionButtonSecondary, downloadingBulk && styles.buttonDisabled]}
-              onPress={handleDownloadAllVouchers}
-              disabled={downloadingBulk}
-              testID="admin-period-bulk-vouchers-button"
-              nativeID="admin-period-bulk-vouchers-button"
-              accessibilityRole="button"
-              accessibilityLabel={downloadingBulk ? "Descargando comprobantes" : "Descargar todos los comprobantes"}
-              accessibilityState={{ busy: downloadingBulk }}
-            >
-              {downloadingBulk ? (
-                <ActivityIndicator color={designTokens.color.ink.accentStrong} size="small" accessibilityLabel="Cargando..." />
-              ) : (
-                <Text style={[styles.headerActionButtonText, styles.headerActionButtonTextSecondary]}>
-                  Descargar todos
-                </Text>
-              )}
-            </Pressable>
+          <View style={styles.netPanel}>
+            <Text style={styles.netLabel}>Total neto a pagar</Text>
+            <Text style={styles.netValue} numberOfLines={1} adjustsFontSizeToFit>
+              {formatCurrency(totalNet)}
+            </Text>
+            <Text style={styles.netSupporting}>
+              Bruto {formatCurrency(totalGross)} • {lineCountLabel} • {nurseCountLabel}
+            </Text>
           </View>
-        </View>
 
-        {/* Meta */}
-        <View style={styles.metaSection}>
-          <View style={styles.metaRow}>
-            <View style={styles.metaItem}>
+          <View style={styles.timelineGrid}>
+            <View style={styles.timelineItem}>
               <Text style={styles.metaLabel}>Corte</Text>
               <Text style={styles.metaValue}>{formatDateES(period.cutoffDate)}</Text>
             </View>
-            <View style={styles.metaItem}>
+            <View style={styles.timelineItem}>
               <Text style={styles.metaLabel}>Pago</Text>
               <Text style={styles.metaValue}>{formatDateES(period.paymentDate)}</Text>
             </View>
-          </View>
-          <View style={styles.metaRow}>
-            <View style={styles.metaItem}>
-              <Text style={styles.metaLabel}>Creado</Text>
-              <Text style={styles.metaValue}>{formatDateTimeES(period.createdAtUtc)}</Text>
-            </View>
-            {period.closedAtUtc && (
-              <View style={styles.metaItem}>
-                <Text style={styles.metaLabel}>Cerrado</Text>
-                <Text style={styles.metaValue}>{period.closedAtUtc ? formatDateTimeES(period.closedAtUtc) : ""}</Text>
-              </View>
-            )}
-          </View>
-        </View>
-
-        {/* Summary totals */}
-        <View style={styles.summarySection}>
-          <Text style={styles.sectionTitle}>Resumen Total</Text>
-          <View style={styles.summaryGrid}>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Líneas</Text>
-              <Text style={styles.summaryValue} numberOfLines={1} adjustsFontSizeToFit>{period.lines.length}</Text>
-            </View>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Bruto</Text>
-              <Text style={styles.summaryValue} numberOfLines={1} adjustsFontSizeToFit>{formatCurrency(totalGross)}</Text>
-            </View>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Neto</Text>
-              <Text style={[styles.summaryValue, styles.summaryValueGreen]} numberOfLines={1} adjustsFontSizeToFit>{formatCurrency(totalNet)}</Text>
+            <View style={styles.timelineItem}>
+              <Text style={styles.metaLabel}>{period.closedAtUtc ? "Cerrado" : "Creado"}</Text>
+              <Text style={styles.metaValue}>
+                {period.closedAtUtc ? formatDateTimeES(period.closedAtUtc) : formatDateTimeES(period.createdAtUtc)}
+              </Text>
             </View>
           </View>
         </View>
@@ -408,16 +497,21 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
           testID="payroll-nurse-summary-table"
           nativeID="payroll-nurse-summary-table"
         >
-          <Text style={styles.sectionTitle}>
-            Resumen por Enfermera ({period.staffSummary.length})
-          </Text>
+          <View style={styles.sectionHeader}>
+            <View>
+              <Text style={styles.sectionTitle}>Pagos por enfermera</Text>
+              <Text style={styles.sectionSubtitle}>
+                {nurseCountLabel} • comprobantes individuales
+              </Text>
+            </View>
+          </View>
 
           {period.staffSummary.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No hay nurses en este período</Text>
+              <Text style={styles.emptyText}>No hay enfermeras en este período</Text>
             </View>
           ) : (
-            period.staffSummary.map((staff) => (
+            visibleStaff.map((staff) => (
               <View
                 key={staff.nurseUserId}
                 style={styles.staffItem}
@@ -432,7 +526,7 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
                     accessibilityRole="button"
                     accessibilityLabel={`Ver detalle de ${staff.nurseDisplayName}`}
                   >
-                    <Text style={[styles.staffName, styles.staffNameTappable]}>
+                    <Text style={styles.staffName}>
                       {staff.nurseDisplayName}
                     </Text>
                   </Pressable>
@@ -461,13 +555,19 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
                     {downloadingVoucherId === staff.nurseUserId ? (
                       <ActivityIndicator color={designTokens.color.ink.accentStrong} size="small" accessibilityLabel="Cargando..." />
                     ) : (
-                      <Text style={styles.voucherButtonText}>Comprobante</Text>
+                      <Text style={styles.voucherButtonText}>Descargar comprobante</Text>
                     )}
                   </Pressable>
                 </View>
               </View>
             ))
           )}
+          <Pagination
+            currentPage={staffPage}
+            totalPages={totalStaffPages}
+            onPageChange={setStaffPage}
+            testID="payroll-nurse-summary-pagination"
+          />
         </View>
 
         {/* Per-line override section */}
@@ -477,8 +577,17 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
             testID="payroll-lines-table"
             nativeID="payroll-lines-table"
           >
-            <Text style={styles.sectionTitle}>Líneas de Nómina ({period.lines.length})</Text>
-            {period.lines.map((line) => (
+            <View style={styles.sectionHeader}>
+              <View>
+                <Text style={styles.sectionTitle}>Detalle de servicios</Text>
+                <Text style={styles.sectionSubtitle}>
+                  {lineCountLabel} de nómina{isOpen ? "" : " • solo lectura"}
+                </Text>
+              </View>
+            </View>
+            {visibleLines.map((line) => {
+              const breakdown = describeLineCompensation(line);
+              return (
               <View key={line.id} style={styles.lineItem}>
                 <View style={styles.lineHeader}>
                   <Text style={styles.lineName} numberOfLines={1}>
@@ -486,61 +595,62 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
                   </Text>
                   <Text style={styles.lineNet}>{formatCurrency(line.netCompensation)}</Text>
                 </View>
-                <Text style={styles.lineDescription} numberOfLines={2}>
-                  {line.description}
+                <Text style={styles.lineDescription} numberOfLines={1}>
+                  {formatServiceLabel(line.description)}
                 </Text>
-                <View style={styles.lineActions}>
-                  {line.pendingOverrideId ? (
-                    <Pressable
-                      style={[
-                        styles.approveButton,
-                        approvingLineId === line.id && styles.buttonDisabled,
-                      ]}
-                      onPress={() => handleApproveOverride(line)}
-                      disabled={approvingLineId === line.id}
-                      testID={`admin-line-approve-${line.id}`}
-                      nativeID={`admin-line-approve-${line.id}`}
-                      accessibilityRole="button"
-                      accessibilityLabel="Aprobar ajuste pendiente de esta línea"
-                      accessibilityState={{ busy: approvingLineId === line.id }}
-                    >
-                      {approvingLineId === line.id ? (
-                        <ActivityIndicator color={designTokens.color.ink.inverse} size="small" accessibilityLabel="Cargando..." />
-                      ) : (
-                        <Text style={styles.approveButtonText}>Aprobar</Text>
-                      )}
-                    </Pressable>
-                  ) : (
-                    <Pressable
-                      style={styles.adjustButton}
-                      onPress={() => openOverrideModal(line)}
-                      testID="override-request-button"
-                      nativeID="override-request-button"
-                      accessibilityRole="button"
-                      accessibilityLabel="Ajustar esta línea de nómina"
-                    >
-                      <Text style={styles.adjustButtonText}>Ajustar</Text>
-                    </Pressable>
-                  )}
-                </View>
+                {breakdown ? (
+                  <Text style={styles.lineBreakdown} numberOfLines={2}>
+                    {breakdown}
+                  </Text>
+                ) : null}
+                {isOpen ? (
+                  <View style={styles.lineActions}>
+                    {line.pendingOverrideId ? (
+                      <Pressable
+                        style={[
+                          styles.approveButton,
+                          approvingLineId === line.id && styles.buttonDisabled,
+                        ]}
+                        onPress={() => handleApproveOverride(line)}
+                        disabled={approvingLineId === line.id}
+                        testID={`admin-line-approve-${line.id}`}
+                        nativeID={`admin-line-approve-${line.id}`}
+                        accessibilityRole="button"
+                        accessibilityLabel="Aprobar ajuste pendiente de esta línea"
+                        accessibilityState={{ busy: approvingLineId === line.id }}
+                      >
+                        {approvingLineId === line.id ? (
+                          <ActivityIndicator color={designTokens.color.ink.inverse} size="small" accessibilityLabel="Cargando..." />
+                        ) : (
+                          <Text style={styles.approveButtonText}>Aprobar</Text>
+                        )}
+                      </Pressable>
+                    ) : (
+                      <Pressable
+                        style={styles.adjustButton}
+                        onPress={() => openOverrideModal(line)}
+                        testID="override-request-button"
+                        nativeID="override-request-button"
+                        accessibilityRole="button"
+                        accessibilityLabel="Ajustar esta línea de nómina"
+                      >
+                        <Text style={styles.adjustButtonText}>Ajustar</Text>
+                      </Pressable>
+                    )}
+                  </View>
+                ) : null}
               </View>
-            ))}
+              );
+            })}
+            <Pagination
+              currentPage={linesPage}
+              totalPages={totalLinePages}
+              onPageChange={setLinesPage}
+              testID="payroll-lines-pagination"
+            />
           </View>
         )}
 
-        {/* Bottom actions */}
-        <View style={styles.actions}>
-          {isOpen && (
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={handleClosePeriod}
-              accessibilityRole="button"
-              accessibilityLabel="Cerrar este período de nómina"
-            >
-              <Text style={styles.closeButtonText}>Cerrar Período</Text>
-            </TouchableOpacity>
-          )}
-        </View>
       </ScrollView>
 
       {/* Override modal */}
@@ -677,13 +787,13 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
                       <View style={styles.nurseDetailAmounts}>
                         <Text style={styles.nurseDetailLabel}>Base:</Text>
                         <Text style={styles.nurseDetailValue}>
-                          {new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP" }).format(line.baseCompensation)}
+                          {formatCurrency(line.baseCompensation)}
                         </Text>
                       </View>
                       <View style={styles.nurseDetailAmounts}>
                         <Text style={styles.nurseDetailLabel}>Neto:</Text>
                         <Text style={[styles.nurseDetailValue, styles.summaryValueGreen]}>
-                          {new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP" }).format(line.netCompensation)}
+                          {formatCurrency(line.netCompensation)}
                         </Text>
                       </View>
                     </View>
@@ -708,7 +818,7 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate }: 
                       <View style={styles.nurseDetailAmounts}>
                         <Text style={styles.nurseDetailLabel}>Deducción:</Text>
                         <Text style={[styles.nurseDetailValue, styles.summaryValueNegative]}>
-                          {new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP" }).format(line.deductionsTotal)}
+                          {formatCurrency(line.deductionsTotal)}
                         </Text>
                       </View>
                     </View>
@@ -748,74 +858,106 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
   },
-  header: {
+  overviewCard: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 12,
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: designTokens.color.border.subtle,
-  },
-  backButton: {
-    marginBottom: 12,
-  },
-  backButtonText: {
-    fontSize: 15,
-    color: designTokens.color.ink.accentStrong,
-  },
-  statusRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  dates: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: designTokens.color.ink.primary,
-    flex: 1,
-    marginRight: 8,
-  },
-  reviewBanner: {
-    backgroundColor: designTokens.color.status.infoBg,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: designTokens.color.border.subtle,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
+    backgroundColor: designTokens.color.surface.primary,
   },
-  reviewEyebrow: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: designTokens.color.ink.accentStrong,
+  overviewHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  overviewTitleGroup: {
+    flex: 1,
+  },
+  overviewEyebrow: {
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0,
+    color: designTokens.color.ink.muted,
     textTransform: "uppercase",
-    marginBottom: 6,
+    marginBottom: 3,
   },
-  reviewTitle: {
-    fontSize: 18,
+  overviewTitle: {
+    fontSize: 21,
+    lineHeight: 26,
     fontWeight: "800",
     color: designTokens.color.ink.primary,
   },
-  reviewDescription: {
-    marginTop: 6,
-    color: designTokens.color.ink.secondary,
+  overviewPeriod: {
+    marginTop: 2,
     fontSize: 14,
-    lineHeight: 20,
+    color: designTokens.color.ink.secondary,
+    fontWeight: "600",
+  },
+  overviewDescription: {
+    marginTop: 10,
+    color: designTokens.color.ink.secondary,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  netPanel: {
+    marginTop: 14,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: designTokens.color.surface.success,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.success,
+  },
+  netLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: designTokens.color.ink.secondary,
+    marginBottom: 4,
+  },
+  netValue: {
+    fontSize: 26,
+    lineHeight: 32,
+    fontWeight: "800",
+    color: designTokens.color.status.successText,
+  },
+  netSupporting: {
+    marginTop: 4,
+    fontSize: 12,
+    lineHeight: 17,
+    color: designTokens.color.ink.secondary,
+  },
+  timelineGrid: {
+    marginTop: 12,
+    flexDirection: "row",
+    gap: 8,
+  },
+  timelineItem: {
+    flex: 1,
+    minHeight: 62,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: designTokens.color.surface.secondary,
   },
   statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: designTokens.radius.pill,
   },
   statusOpen: {
-    backgroundColor: designTokens.color.surface.accent,
+    backgroundColor: designTokens.color.surface.success,
   },
   statusClosed: {
     backgroundColor: designTokens.color.surface.secondary,
   },
   statusText: {
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   statusTextOpen: {
-    color: designTokens.color.ink.accentStrong,
+    color: designTokens.color.status.successText,
   },
   statusTextClosed: {
     color: designTokens.color.ink.muted,
@@ -849,24 +991,16 @@ const styles = StyleSheet.create({
   headerActionButtonTextSecondary: {
     color: designTokens.color.ink.accentStrong,
   },
-  metaSection: {
-    padding: 16,
-    backgroundColor: designTokens.color.surface.canvas,
-  },
-  metaRow: {
-    flexDirection: "row",
-    marginBottom: 8,
-  },
-  metaItem: {
-    flex: 1,
-  },
   metaLabel: {
-    fontSize: 12,
+    fontSize: 11,
+    fontWeight: "700",
     color: designTokens.color.ink.muted,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   metaValue: {
-    fontSize: 14,
+    fontSize: 13,
+    lineHeight: 17,
+    fontWeight: "700",
     color: designTokens.color.ink.primary,
   },
   summarySection: {
@@ -875,10 +1009,19 @@ const styles = StyleSheet.create({
     borderBottomColor: designTokens.color.border.subtle,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 18,
+    lineHeight: 23,
+    fontWeight: "800",
     color: designTokens.color.ink.primary,
+  },
+  sectionHeader: {
     marginBottom: 12,
+  },
+  sectionSubtitle: {
+    marginTop: 3,
+    fontSize: 13,
+    lineHeight: 18,
+    color: designTokens.color.ink.muted,
   },
   summaryGrid: {
     flexDirection: "row",
@@ -903,9 +1046,9 @@ const styles = StyleSheet.create({
     color: designTokens.color.status.successText,
   },
   staffSection: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: designTokens.color.border.subtle,
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 16,
   },
   emptyState: {
     padding: 24,
@@ -916,10 +1059,12 @@ const styles = StyleSheet.create({
     color: designTokens.color.ink.muted,
   },
   staffItem: {
-    backgroundColor: designTokens.color.surface.canvas,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
+    backgroundColor: designTokens.color.surface.secondary,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.subtle,
   },
   staffHeader: {
     flexDirection: "row",
@@ -928,8 +1073,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   staffName: {
-    fontSize: 15,
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: "800",
     color: designTokens.color.ink.primary,
   },
   staffNameTappable: {
@@ -937,17 +1082,18 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline",
   },
   staffNet: {
-    fontSize: 15,
-    fontWeight: "bold",
+    fontSize: 17,
+    fontWeight: "800",
     color: designTokens.color.status.successText,
   },
   staffDetails: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 8,
+    gap: 10,
+    marginBottom: 10,
   },
   staffInfo: {
-    fontSize: 12,
+    fontSize: 13,
     color: designTokens.color.ink.muted,
   },
   staffActions: {
@@ -955,13 +1101,13 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   voucherButton: {
-    paddingVertical: 6,
+    paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 6,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: designTokens.color.ink.accentStrong,
-    backgroundColor: designTokens.color.surface.success,
-    minWidth: 90,
+    backgroundColor: designTokens.color.surface.primary,
+    minWidth: 170,
     alignItems: "center",
   },
   voucherButtonText: {
@@ -970,15 +1116,19 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   linesSection: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 24,
     borderTopWidth: 1,
     borderTopColor: designTokens.color.border.subtle,
   },
   lineItem: {
-    backgroundColor: designTokens.color.surface.canvas,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
+    backgroundColor: designTokens.color.surface.secondary,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.subtle,
   },
   lineHeader: {
     flexDirection: "row",
@@ -987,19 +1137,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   lineName: {
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 15,
+    fontWeight: "800",
     color: designTokens.color.ink.primary,
     flex: 1,
     marginRight: 8,
   },
   lineNet: {
-    fontSize: 14,
-    fontWeight: "bold",
+    fontSize: 16,
+    fontWeight: "800",
     color: designTokens.color.status.successText,
   },
   lineDescription: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "600",
+    color: designTokens.color.ink.secondary,
+    marginBottom: 2,
+  },
+  lineBreakdown: {
     fontSize: 12,
+    lineHeight: 17,
     color: designTokens.color.ink.muted,
     marginBottom: 8,
   },
