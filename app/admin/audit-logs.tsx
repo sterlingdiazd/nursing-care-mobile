@@ -17,6 +17,7 @@ import {
   type AuditLogDetailDto,
 } from "@/src/services/adminPortalService";
 import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
+import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 function formatTimestamp(value: string) {
   return formatDateTimeES(value);
@@ -28,6 +29,71 @@ function roleLabel(role: string) {
   if (role === "NURSE") return "Enfermera";
   return role;
 }
+
+// Turn a PascalCase/snake_case backend code into readable words (fallback when not mapped).
+function humanize(code: string): string {
+  return code.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/_/g, " ").trim();
+}
+
+// Backend action codes → Spanish labels (never show the raw code to the owner).
+const ACTION_LABELS: Record<string, string> = {
+  ResumeDeduction: "Cuota reanudada",
+  PauseDeduction: "Cuota pausada",
+  CreateDeduction: "Deducción creada",
+  UpdateDeduction: "Deducción editada",
+  DeleteDeduction: "Deducción eliminada",
+  CreateAdjustment: "Ajuste creado",
+  UpdateAdjustment: "Ajuste editado",
+  DeleteAdjustment: "Ajuste eliminado",
+  CreateScheduledDeduction: "Descuento fijo creado",
+  PayoffScheduledDeduction: "Liquidación anticipada",
+  CancelScheduledDeduction: "Descuento fijo anulado",
+  RescheduleScheduledDeduction: "Descuento fijo reprogramado",
+  SkipScheduledInstallment: "Cuota omitida",
+  CreatePeriod: "Período creado",
+  OpenPeriod: "Período abierto",
+  ClosePeriod: "Período cerrado",
+  GenerateReceipt: "Recibo generado",
+  ReportPayment: "Pago reportado",
+  AdminAccountCreated: "Cuenta admin creada",
+  CareRequestApproved: "Solicitud aprobada",
+  CareRequestRejected: "Solicitud rechazada",
+  NurseProfileApproved: "Perfil aprobado",
+  NurseProfileRejected: "Perfil rechazado",
+};
+function actionLabel(action: string): string {
+  return ACTION_LABELS[action] ?? humanize(action);
+}
+
+const ENTITY_LABELS: Record<string, string> = {
+  DeductionRecord: "Deducción",
+  CompensationAdjustment: "Ajuste",
+  ScheduledDeduction: "Descuento fijo",
+  PayrollPeriod: "Período de nómina",
+  CareRequest: "Solicitud",
+  ServiceExecution: "Servicio",
+  User: "Usuario",
+  NurseProfile: "Perfil de enfermera",
+  Client: "Cliente",
+};
+function entityLabel(entityType: string): string {
+  return ENTITY_LABELS[entityType] ?? humanize(entityType);
+}
+
+type AuditTone = "success" | "warning" | "danger" | "info";
+function actionTone(action: string): AuditTone {
+  const a = action.toLowerCase();
+  if (/(delete|cancel|reject|payoff|close|anular)/.test(a)) return "danger";
+  if (/(pause|skip|omit)/.test(a)) return "warning";
+  if (/(create|approve|resume|open|generate|report)/.test(a)) return "success";
+  return "info";
+}
+const TONE_COLOR: Record<AuditTone, string> = {
+  success: designTokens.color.status.successText,
+  warning: designTokens.color.status.warningText,
+  danger: designTokens.color.status.dangerText,
+  info: designTokens.color.ink.accent,
+};
 
 export default function AdminAuditLogsScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
@@ -109,29 +175,19 @@ export default function AdminAuditLogsScreen() {
       description="Historial de eventos sensibles para seguimiento y cumplimiento."
       testID="admin-audit-logs-screen"
       nativeID="admin-audit-logs-screen"
+      onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.adminHome)}
+      primaryReturnLabel="Volver"
       actions={(
-        <View style={styles.headerActions}>
-          <Pressable
-            style={styles.button}
-            onPress={() => setShowFilters(!showFilters)}
-            testID="admin-audit-logs-filter-toggle"
-            nativeID="admin-audit-logs-filter-toggle"
-            accessibilityRole="button"
-            accessibilityLabel={showFilters ? "Ocultar filtros" : "Mostrar filtros"}
-          >
-            <Text style={styles.buttonText}>{showFilters ? "Ocultar filtros" : "Filtros"}</Text>
-          </Pressable>
-          <Pressable
-            style={styles.button}
-            onPress={() => void load()}
-            testID="admin-audit-logs-refresh-btn"
-            nativeID="admin-audit-logs-refresh-btn"
-            accessibilityRole="button"
-            accessibilityLabel="Actualizar registros de auditoría"
-          >
-            <Text style={styles.buttonText}>Actualizar</Text>
-          </Pressable>
-        </View>
+        <Pressable
+          style={styles.button}
+          onPress={() => setShowFilters(!showFilters)}
+          testID="admin-audit-logs-filter-toggle"
+          nativeID="admin-audit-logs-filter-toggle"
+          accessibilityRole="button"
+          accessibilityLabel={showFilters ? "Ocultar filtros" : "Mostrar filtros"}
+        >
+          <Text style={styles.buttonText}>{showFilters ? "Ocultar filtros" : "Filtros"}</Text>
+        </Pressable>
       )}
     >
       {!!error && (
@@ -204,29 +260,27 @@ export default function AdminAuditLogsScreen() {
       >
         {items.map((item) => (
           <View key={item.id}>
-            <View
-              style={styles.card}
+            <Pressable
+              style={[styles.row, expandedLogId === item.id && styles.rowExpanded]}
+              onPress={() => void handleViewDetail(item.id)}
               testID={`admin-audit-log-card-${item.id}`}
               nativeID={`admin-audit-log-card-${item.id}`}
+              accessibilityRole="button"
+              accessibilityLabel={`${expandedLogId === item.id ? "Ocultar" : "Ver"} detalle de ${actionLabel(item.action)}`}
             >
-              <Text style={styles.timestamp}>{formatTimestamp(item.createdAtUtc)}</Text>
-              <Text style={styles.actor}>{item.actorName || "Sistema"} · {roleLabel(item.actorRole)}</Text>
-              <Text style={styles.action}>{item.action}</Text>
-              <Text style={styles.entity}>{item.entityType} · {item.entityId.substring(0, 20)}...</Text>
-              {item.notes && <Text style={styles.notes}>{item.notes}</Text>}
-              <Pressable
-                style={styles.detailButton}
-                onPress={() => void handleViewDetail(item.id)}
-                testID={`admin-audit-log-detail-btn-${item.id}`}
-                nativeID={`admin-audit-log-detail-btn-${item.id}`}
-                accessibilityRole="button"
-                accessibilityLabel={expandedLogId === item.id ? "Ocultar detalle del registro" : "Ver detalle del registro"}
-              >
-                <Text style={styles.detailButtonText}>
-                  {expandedLogId === item.id ? "Ocultar detalle" : "Ver detalle"}
+              <View style={[styles.rail, { backgroundColor: TONE_COLOR[actionTone(item.action)] }]} />
+              <View style={styles.rowBody}>
+                <View style={styles.rowTop}>
+                  <Text style={styles.action} numberOfLines={1}>{actionLabel(item.action)}</Text>
+                  <Text style={styles.time}>{formatTimestamp(item.createdAtUtc)}</Text>
+                </View>
+                {item.notes ? <Text style={styles.notes} numberOfLines={2}>{item.notes}</Text> : null}
+                <Text style={styles.meta} numberOfLines={1}>
+                  {(item.actorName || "Sistema")} · {roleLabel(item.actorRole)} · {entityLabel(item.entityType)}
                 </Text>
-              </Pressable>
-            </View>
+              </View>
+              <Text style={styles.chevron}>{expandedLogId === item.id ? "⌄" : "›"}</Text>
+            </Pressable>
 
             {expandedLogId === item.id && selectedDetail && (
               <View
@@ -319,7 +373,6 @@ export default function AdminAuditLogsScreen() {
 }
 
 const styles = StyleSheet.create({
-  headerActions: { flexDirection: "row", gap: 8 },
   button: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: designTokens.color.border.strong },
   buttonText: { color: designTokens.color.ink.accent, fontWeight: "700", fontSize: 14 },
   buttonPrimary: { backgroundColor: designTokens.color.ink.accent, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, flex: 1 },
@@ -332,15 +385,29 @@ const styles = StyleSheet.create({
   filterActions: { flexDirection: "row", gap: 8, marginTop: 8 },
   summary: { flexDirection: "row", justifyContent: "space-between", marginBottom: 12, paddingHorizontal: 4 },
   summaryText: { color: designTokens.color.ink.muted, fontSize: 14, fontWeight: "600" },
-  list: { gap: 12 },
-  card: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, boxShadow: "0px 6px 12px rgba(18, 48, 68, 0.06)", elevation: 2 },
-  timestamp: { color: designTokens.color.status.warningText, fontWeight: "800", fontSize: 12, marginBottom: 4 },
-  actor: { color: designTokens.color.ink.muted, fontSize: 14, marginBottom: 4 },
-  action: { color: designTokens.color.ink.primary, fontWeight: "800", fontSize: 16, marginBottom: 4 },
-  entity: { color: designTokens.color.ink.muted, fontSize: 13, fontFamily: "monospace", marginBottom: 4 },
-  notes: { color: designTokens.color.ink.secondary, fontSize: 13, marginBottom: 8 },
-  detailButton: { backgroundColor: designTokens.color.ink.accent, borderRadius: 12, paddingVertical: 8, marginTop: 8 },
-  detailButtonText: { color: designTokens.color.ink.inverse, fontWeight: "700", fontSize: 14, textAlign: "center" },
+  list: { gap: 8 },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: designTokens.color.ink.inverse,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.subtle,
+    borderRadius: 14,
+    paddingVertical: 11,
+    paddingRight: 12,
+    overflow: "hidden",
+    boxShadow: "0px 4px 10px rgba(18, 48, 68, 0.04)",
+    elevation: 1,
+  },
+  rowExpanded: { borderColor: designTokens.color.border.accent },
+  rail: { width: 4, alignSelf: "stretch", borderRadius: 2, marginRight: 12 },
+  rowBody: { flex: 1, gap: 2 },
+  rowTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  action: { color: designTokens.color.ink.primary, fontWeight: "800", fontSize: 15, flex: 1 },
+  time: { color: designTokens.color.ink.muted, fontSize: 11, fontWeight: "600" },
+  notes: { color: designTokens.color.ink.secondary, fontSize: 13 },
+  meta: { color: designTokens.color.ink.muted, fontSize: 12 },
+  chevron: { color: designTokens.color.ink.muted, fontSize: 18, fontWeight: "700", marginLeft: 8 },
   detailPanel: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.accent, borderRadius: 16, padding: 16, marginTop: 4, marginBottom: 8, gap: 12 },
   pagination: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 16, paddingHorizontal: 4 },
   pageInfo: { color: designTokens.color.ink.muted, fontSize: 14, fontWeight: "600" },

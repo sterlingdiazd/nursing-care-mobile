@@ -36,13 +36,12 @@ describe("AdminAuditLogsScreen", () => {
     expect(component!.root.findByProps({ testID: "admin-audit-logs-screen" })).toBeTruthy();
   });
 
-  it("renders filter toggle and refresh buttons", async () => {
+  it("renders the filter toggle", async () => {
     let component: ReturnType<typeof renderer.create>;
     await act(async () => {
       component = renderer.create(<AdminAuditLogsScreen />);
     });
     expect(component!.root.findByProps({ testID: "admin-audit-logs-filter-toggle" })).toBeTruthy();
-    expect(component!.root.findByProps({ testID: "admin-audit-logs-refresh-btn" })).toBeTruthy();
   });
 
   it("renders audit logs list container", async () => {
@@ -149,8 +148,9 @@ describe("AdminAuditLogsScreen", () => {
     });
     await flushEffects();
 
-    const detailBtn = component!.root.findByProps({ testID: "admin-audit-log-detail-btn-log-001" });
-    await act(async () => { await detailBtn.props.onPress(); });
+    // The whole row is the detail trigger now (no separate "Ver detalle" button).
+    const row = component!.root.findByProps({ testID: "admin-audit-log-card-log-001" });
+    await act(async () => { await row.props.onPress(); });
 
     expect(component!.root.findByProps({ testID: "admin-audit-log-detail-panel" })).toBeTruthy();
   });
