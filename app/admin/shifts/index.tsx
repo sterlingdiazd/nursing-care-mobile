@@ -23,7 +23,7 @@ import {
 } from "@/src/services/adminShiftsService";
 import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 function formatDate(value: string) {
   return formatDateTimeES(value);
@@ -157,7 +157,6 @@ export default function AdminShiftsScreen() {
       primaryReturnLabel="Volver"
       eyebrow="Administración"
       title="Turnos"
-      description="Gestiona los turnos de enfermeras asignados."
       testID="admin-shifts-screen"
       nativeID="admin-shifts-screen"
       actions={(
@@ -470,7 +469,7 @@ const styles = StyleSheet.create({
   emptyState: { padding: 40, alignItems: "center" },
   emptyStateText: { color: designTokens.color.ink.secondary, fontSize: 16 },
   list: { gap: 12 },
-  card: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, boxShadow: "0px 6px 12px rgba(18, 48, 68, 0.06)", elevation: 2 },
+  card: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, boxShadow: "0px 4px 10px rgba(18, 48, 68, 0.04)", elevation: 2 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
   cardNurse: { color: designTokens.color.ink.primary, fontWeight: "800", fontSize: 16, flex: 1 },
   cardRef: { color: designTokens.color.ink.muted, fontSize: 13, marginBottom: 6 },

@@ -11,6 +11,7 @@ import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigation
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
+import { StatusBadge } from "@/src/components/shared/StatusBadge";
 import {
   getAdminClients,
   type AdminClientListItemDto,
@@ -86,7 +87,6 @@ export default function AdminClientsScreen() {
       primaryReturnLabel="Volver"
       eyebrow="Clientes"
       title="Gestión de clientes"
-      description="Prioriza seguimiento operativo y deja los filtros como apoyo progresivo."
       testID={adminTestIds.clients.listScreen}
       nativeID={adminTestIds.clients.listScreen}
       actions={(
@@ -112,18 +112,16 @@ export default function AdminClientsScreen() {
         </View>
       )}
     >
-      <View style={styles.summaryCard}>
-        <Text
-          style={styles.summaryChip}
-          testID={adminTestIds.clients.statusChip}
-          nativeID={adminTestIds.clients.statusChip}
-        >
-          {inactiveCount > 0
-            ? `${inactiveCount} clientes inactivos requieren seguimiento`
-            : "Cartera estable sin alertas"}
-        </Text>
-        <Text style={styles.summaryText}>Activos: {activeCount} • Inactivos: {inactiveCount}</Text>
-      </View>
+      {/* Summary chip — counts only, no instructional text */}
+      <Text
+        style={styles.summaryChip}
+        testID={adminTestIds.clients.statusChip}
+        nativeID={adminTestIds.clients.statusChip}
+      >
+        {inactiveCount > 0
+          ? `${inactiveCount} inactivos · ${activeCount} activos`
+          : `${activeCount} clientes activos`}
+      </Text>
 
       {!!error && (
         <Text
@@ -184,52 +182,43 @@ export default function AdminClientsScreen() {
         style={styles.list}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
       >
-        {items.map((item) => (
-          <Pressable
-            key={item.userId}
-            onPress={() => router.push(`/admin/clients/${item.userId}` as never)}
-            style={styles.card}
-            testID={`admin-client-card-${item.userId}`}
-            nativeID={`admin-client-card-${item.userId}`}
-            accessibilityRole="button"
-            accessibilityLabel={`Ver detalle del cliente ${item.displayName}`}
-          >
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>{item.displayName}</Text>
-              <View style={[styles.statusBadge, item.isActive ? styles.statusBadgeActive : styles.statusBadgeInactive]}>
-                <Text style={[styles.statusBadgeText, item.isActive ? styles.statusBadgeTextActive : styles.statusBadgeTextInactive]}>
-                  {item.isActive ? "Activo" : "Inactivo"}
+        {items.map((item) => {
+          const secondLine = [item.email, item.identificationNumber ? `Cédula ${item.identificationNumber}` : null]
+            .filter(Boolean)
+            .join(" · ");
+          return (
+            <Pressable
+              key={item.userId}
+              onPress={() => router.push(`/admin/clients/${item.userId}` as never)}
+              style={styles.card}
+              testID={`admin-client-card-${item.userId}`}
+              nativeID={`admin-client-card-${item.userId}`}
+              accessibilityRole="button"
+              accessibilityLabel={`Ver detalle del cliente ${item.displayName}`}
+            >
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle}>{item.displayName}</Text>
+                <StatusBadge
+                  label={item.isActive ? "Activo" : "Inactivo"}
+                  tone={item.isActive ? "success" : "danger"}
+                />
+              </View>
+
+              {!!secondLine && <Text style={styles.cardMeta}>{secondLine}</Text>}
+
+              <View style={styles.cardStats}>
+                <Text style={styles.cardStat}>
+                  {item.ownedCareRequestsCount} {item.ownedCareRequestsCount === 1 ? "solicitud" : "solicitudes"}
                 </Text>
+                {item.lastCareRequestAtUtc ? (
+                  <Text style={styles.cardStatMuted}>
+                    {formatTimestamp(item.lastCareRequestAtUtc)}
+                  </Text>
+                ) : null}
               </View>
-            </View>
-
-            <Text style={styles.cardMeta}>{item.email}</Text>
-            <Text style={styles.cardHint}>
-              {item.isActive
-                ? "Cuenta disponible para nuevas gestiones administrativas."
-                : "Revisar activación antes de crear nuevas solicitudes."}
-            </Text>
-
-            {item.identificationNumber ? (
-              <View style={styles.cardRow}>
-                <Text style={styles.cardLabel}>Cédula:</Text>
-                <Text style={styles.cardValue}>{item.identificationNumber}</Text>
-              </View>
-            ) : null}
-
-            <View style={styles.cardRow}>
-              <Text style={styles.cardLabel}>Solicitudes:</Text>
-              <Text style={styles.cardValue}>{item.ownedCareRequestsCount}</Text>
-            </View>
-
-            {item.lastCareRequestAtUtc ? (
-              <View style={styles.cardRow}>
-                <Text style={styles.cardLabel}>Última solicitud:</Text>
-                <Text style={styles.cardValue}>{formatTimestamp(item.lastCareRequestAtUtc)}</Text>
-              </View>
-            ) : null}
-          </Pressable>
-        ))}
+            </Pressable>
+          );
+        })}
       </ScrollView>
     </MobileWorkspaceShell>
   );
@@ -253,14 +242,6 @@ const styles = StyleSheet.create({
     paddingVertical: designTokens.spacing.sm,
   },
   buttonPrimaryText: { ...designTokens.typography.label, color: designTokens.color.surface.primary },
-  summaryCard: {
-    backgroundColor: designTokens.color.surface.primary,
-    borderWidth: 1,
-    borderColor: designTokens.color.border.subtle,
-    borderRadius: designTokens.radius.lg,
-    padding: designTokens.spacing.md,
-    marginBottom: designTokens.spacing.sm,
-  },
   summaryChip: {
     ...designTokens.typography.label,
     alignSelf: "flex-start",
@@ -269,9 +250,8 @@ const styles = StyleSheet.create({
     borderRadius: designTokens.radius.pill,
     paddingHorizontal: designTokens.spacing.md,
     paddingVertical: designTokens.spacing.xs,
-    marginBottom: designTokens.spacing.xs,
+    marginBottom: designTokens.spacing.sm,
   },
-  summaryText: { ...designTokens.typography.body, color: designTokens.color.ink.muted },
   error: {
     ...designTokens.typography.body,
     backgroundColor: designTokens.color.surface.danger,
@@ -335,6 +315,8 @@ const styles = StyleSheet.create({
     borderRadius: designTokens.radius.lg,
     padding: designTokens.spacing.md,
     marginBottom: designTokens.spacing.sm,
+    boxShadow: "0px 4px 10px rgba(18, 48, 68, 0.04)",
+    elevation: 2,
   },
   cardHeader: {
     flexDirection: "row",
@@ -343,29 +325,18 @@ const styles = StyleSheet.create({
     marginBottom: designTokens.spacing.xs,
   },
   cardTitle: { ...designTokens.typography.sectionTitle, flex: 1 },
-  statusBadge: {
-    borderRadius: designTokens.radius.pill,
-    paddingHorizontal: designTokens.spacing.sm,
-    paddingVertical: 2,
-    marginLeft: designTokens.spacing.sm,
-  },
-  statusBadgeActive: { backgroundColor: designTokens.color.surface.success },
-  statusBadgeInactive: { backgroundColor: designTokens.color.surface.danger },
-  statusBadgeText: { fontSize: 11, fontWeight: "700" },
-  statusBadgeTextActive: { color: designTokens.color.status.successText },
-  statusBadgeTextInactive: { color: designTokens.color.ink.danger },
   cardMeta: {
     ...designTokens.typography.body,
-    fontSize: 14,
+    fontSize: 13,
+    color: designTokens.color.ink.muted,
     marginBottom: designTokens.spacing.xs,
-    color: designTokens.color.ink.muted,
   },
-  cardHint: {
-    ...designTokens.typography.body,
-    color: designTokens.color.ink.muted,
-    marginBottom: designTokens.spacing.sm,
+  cardStats: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: designTokens.spacing.sm,
+    marginTop: designTokens.spacing.xs,
   },
-  cardRow: { flexDirection: "row", marginBottom: designTokens.spacing.xs },
-  cardLabel: { ...designTokens.typography.label, width: 120, color: designTokens.color.ink.muted },
-  cardValue: { ...designTokens.typography.body, flex: 1 },
+  cardStat: { ...designTokens.typography.label, fontSize: 13, color: designTokens.color.ink.secondary },
+  cardStatMuted: { ...designTokens.typography.label, fontSize: 12, color: designTokens.color.ink.muted },
 });

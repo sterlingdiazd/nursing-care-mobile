@@ -4,11 +4,12 @@
 // @do-not-edit: false
 
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { StatusBadge } from "@/src/components/shared/StatusBadge";
 import { useAuth } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
 import {
@@ -19,9 +20,25 @@ import {
   type ActiveNurseProfileSummaryDto,
   type NurseProfileSummaryDto,
 } from "@/src/services/adminPortalService";
-import { adminTestIds } from "@/src/testing/testIds";
+import { adminTestIds } from "@/src/testing/testIds/adminTestIds";
+
+const PAGE_SIZE = 10;
 
 type TabType = "pending" | "active" | "inactive";
+
+const TAB_CHIPS: { label: string; value: TabType }[] = [
+  { label: "Pendientes", value: "pending" },
+  { label: "Activas", value: "active" },
+  { label: "Inactivas", value: "inactive" },
+];
+
+function nurseStatusLabel(tab: TabType): string {
+  switch (tab) {
+    case "pending": return "Pendiente";
+    case "active": return "Activa";
+    case "inactive": return "Inactiva";
+  }
+}
 
 export default function AdminNurseProfilesScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
@@ -67,15 +84,21 @@ export default function AdminNurseProfilesScreen() {
 
   const currentItems = tab === "pending" ? pendingItems : tab === "active" ? activeItems : inactiveItems;
 
+  function countFor(t: TabType): number {
+    if (t === "pending") return pendingItems.length;
+    if (t === "active") return activeItems.length;
+    return inactiveItems.length;
+  }
+
   return (
     <MobileWorkspaceShell
       onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.adminHome)}
       primaryReturnLabel="Volver"
       eyebrow="Perfiles de Enfermeras"
       title="Gestión de enfermeras"
-      description="Administra perfiles y estado operativo del personal de enfermería."
       testID={adminTestIds.nurses.listScreen}
       nativeID={adminTestIds.nurses.listScreen}
+      disableScroll
       actions={(
         <Pressable
           testID={adminTestIds.nurses.listCreateButton}
@@ -89,15 +112,42 @@ export default function AdminNurseProfilesScreen() {
         </Pressable>
       )}
     >
-      <View style={styles.summaryRow}>
-        <Text
-          testID={adminTestIds.nurses.listReadinessChip}
-          nativeID={adminTestIds.nurses.listReadinessChip}
-          style={styles.summaryChip}
-        >
-          Pendientes: {pendingItems.length} • Activas: {activeItems.length} • Inactivas: {inactiveItems.length}
-        </Text>
-      </View>
+      {/* Status filter chips */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chipRow}
+        testID={adminTestIds.nurses.listReadinessChip}
+        nativeID={adminTestIds.nurses.listReadinessChip}
+      >
+        {TAB_CHIPS.map((chip) => {
+          const isActive = tab === chip.value;
+          const count = countFor(chip.value);
+          return (
+            <Pressable
+              key={chip.value}
+              style={[styles.chip, isActive && styles.chipActive]}
+              onPress={() => setTab(chip.value)}
+              accessibilityRole="tab"
+              accessibilityLabel={`Filtrar por: ${chip.label}`}
+              accessibilityState={{ selected: isActive }}
+              testID={`admin-nurse-status-chip-${chip.value}`}
+              nativeID={`admin-nurse-status-chip-${chip.value}`}
+            >
+              <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                {chip.label}
+              </Text>
+              {count > 0 && (
+                <View style={[styles.chipCount, isActive && styles.chipCountActive]}>
+                  <Text style={[styles.chipCountText, isActive && styles.chipCountTextActive]}>
+                    {count}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          );
+        })}
+      </ScrollView>
 
       {!!error && (
         <Text
@@ -109,184 +159,206 @@ export default function AdminNurseProfilesScreen() {
         </Text>
       )}
 
-      <View style={styles.tabs}>
-        <Pressable
-          style={[styles.tab, tab === "pending" && styles.tabActive]}
-          onPress={() => setTab("pending")}
-          accessibilityRole="tab"
-          accessibilityLabel="Pestaña de enfermeras pendientes"
-          accessibilityState={{ selected: tab === "pending" }}
-        >
-          <Text style={[styles.tabText, tab === "pending" && styles.tabTextActive]}>
-            Pendientes ({pendingItems.length})
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.tab, tab === "active" && styles.tabActive]}
-          onPress={() => setTab("active")}
-          accessibilityRole="tab"
-          accessibilityLabel="Pestaña de enfermeras activas"
-          accessibilityState={{ selected: tab === "active" }}
-        >
-          <Text style={[styles.tabText, tab === "active" && styles.tabTextActive]}>
-            Activas ({activeItems.length})
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.tab, tab === "inactive" && styles.tabActive]}
-          onPress={() => setTab("inactive")}
-          accessibilityRole="tab"
-          accessibilityLabel="Pestaña de enfermeras inactivas"
-          accessibilityState={{ selected: tab === "inactive" }}
-        >
-          <Text style={[styles.tabText, tab === "inactive" && styles.tabTextActive]}>
-            Inactivas ({inactiveItems.length})
-          </Text>
-        </Pressable>
-      </View>
-
       {loading && (
         <ActivityIndicator
           color={designTokens.color.ink.accent}
           accessibilityLabel="Cargando perfiles de enfermeras"
-          style={{ margin: 20 }}
+          style={{ marginVertical: 20 }}
         />
       )}
 
       {!loading && currentItems.length === 0 && (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>No se encontraron enfermeras en esta categoría.</Text>
-        </View>
+        <Text style={styles.emptyText}>No hay enfermeras en este filtro.</Text>
       )}
 
-      <ScrollView
-        style={styles.list}
+      <FlatList
+        data={currentItems as Array<PendingNurseProfileDto | ActiveNurseProfileSummaryDto | NurseProfileSummaryDto>}
+        keyExtractor={(item) => item.userId}
+        showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
-      >
-        {tab === "pending" && pendingItems.map((item) => (
-          <Pressable
-            key={item.userId}
-            onPress={() => router.push(`/admin/nurse-profiles/${item.userId}` as any)}
-            style={[styles.card, styles.cardPending]}
-            testID={`admin-nurse-profile-pending-card-${item.userId}`}
-            nativeID={`admin-nurse-profile-pending-card-${item.userId}`}
-            accessibilityRole="button"
-            accessibilityLabel={`Perfil pendiente de ${item.name} ${item.lastName}`}
-          >
-            <View style={styles.pendingBadge}>
-              <Text style={styles.pendingBadgeText}>Pendiente de revisión</Text>
-            </View>
-            <Text style={styles.cardTitle}>{item.name} {item.lastName}</Text>
-            <Text style={styles.cardMeta}>{item.email}</Text>
-            {item.identificationNumber && (
-              <Text style={styles.cardDetail}>Cédula: {item.identificationNumber}</Text>
-            )}
-            {item.phone && (
-              <Text style={styles.cardDetail}>Teléfono: {item.phone}</Text>
-            )}
-            {item.specialty && (
-              <Text style={styles.cardDetail}>Especialidad: {item.specialty}</Text>
-            )}
-            <Pressable
-              style={styles.reviewButton}
-              onPress={() => router.push(`/admin/nurse-profiles/${item.userId}/review` as any)}
-              accessibilityRole="button"
-              accessibilityLabel={`Revisar perfil de ${item.name} ${item.lastName}`}
-            >
-              <Text style={styles.reviewButtonText}>Revisar Perfil</Text>
-            </Pressable>
-          </Pressable>
-        ))}
-
-        {(tab === "active" || tab === "inactive") && (tab === "active" ? activeItems : inactiveItems).map((item) => (
-          <Pressable
-            key={item.userId}
-            onPress={() => router.push(`/admin/nurse-profiles/${item.userId}` as any)}
-            style={styles.card}
-            testID={`admin-nurse-profile-${tab}-card-${item.userId}`}
-            nativeID={`admin-nurse-profile-${tab}-card-${item.userId}`}
-            accessibilityRole="button"
-            accessibilityLabel={`Perfil de ${item.name} ${item.lastName}`}
-          >
-            <Text style={styles.cardTitle}>{item.name} {item.lastName}</Text>
-            <Text style={styles.cardMeta}>{item.email}</Text>
-            
-            {item.specialty && (
-              <View style={styles.cardRow}>
-                <Text style={styles.cardLabel}>Especialidad:</Text>
-                <Text style={styles.cardValue}>{item.specialty}</Text>
-              </View>
-            )}
-            
-            {item.category && (
-              <View style={styles.cardRow}>
-                <Text style={styles.cardLabel}>Categoría:</Text>
-                <Text style={styles.cardValue}>{item.category}</Text>
-              </View>
-            )}
-
-            {item.workload && (
-              <View style={styles.workloadSection}>
-                <Text style={styles.workloadTitle}>Carga de trabajo</Text>
-                <Text style={styles.workloadText}>
-                  Total: {item.workload.totalAssignedCareRequests || 0} | 
-                  Pendientes: {item.workload.pendingAssignedCareRequests || 0} | 
-                  Aprobadas: {item.workload.approvedAssignedCareRequests || 0}
+        renderItem={({ item }) => {
+          if (tab === "pending") {
+            const p = item as PendingNurseProfileDto;
+            return (
+              <Pressable
+                onPress={() => router.push(`/admin/nurse-profiles/${p.userId}` as any)}
+                style={[styles.card, styles.cardPending]}
+                testID={`admin-nurse-profile-pending-card-${p.userId}`}
+                nativeID={`admin-nurse-profile-pending-card-${p.userId}`}
+                accessibilityRole="button"
+                accessibilityLabel={`Perfil pendiente de ${p.name} ${p.lastName}`}
+              >
+                <View style={styles.cardHeader}>
+                  <Text style={styles.cardTitle} numberOfLines={1}>{p.name} {p.lastName}</Text>
+                  <StatusBadge
+                    label="Pendiente"
+                    tone="warning"
+                    testID={`admin-nurse-profile-status-badge-${p.userId}`}
+                  />
+                </View>
+                <Text style={styles.cardMeta} numberOfLines={1}>
+                  {[p.identificationNumber, p.specialty].filter(Boolean).join(" · ")}
                 </Text>
-              </View>
-            )}
+                <Pressable
+                  style={styles.reviewButton}
+                  onPress={() => router.push(`/admin/nurse-profiles/${p.userId}/review` as any)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Revisar perfil de ${p.name} ${p.lastName}`}
+                >
+                  <Text style={styles.reviewButtonText}>Revisar perfil</Text>
+                </Pressable>
+              </Pressable>
+            );
+          }
 
-            <View style={styles.statusRow}>
-              {item.isProfileComplete && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>✓ Perfil completo</Text>
-                </View>
-              )}
-              {item.isAssignmentReady && (
-                <View style={styles.badgeSuccess}>
-                  <Text style={styles.badgeTextSuccess}>✓ Lista para asignación</Text>
-                </View>
-              )}
-            </View>
-          </Pressable>
-        ))}
-      </ScrollView>
+          const a = item as ActiveNurseProfileSummaryDto | NurseProfileSummaryDto;
+          return (
+            <Pressable
+              onPress={() => router.push(`/admin/nurse-profiles/${a.userId}` as any)}
+              style={styles.card}
+              testID={`admin-nurse-profile-${tab}-card-${a.userId}`}
+              nativeID={`admin-nurse-profile-${tab}-card-${a.userId}`}
+              accessibilityRole="button"
+              accessibilityLabel={`Perfil de ${a.name} ${a.lastName}`}
+            >
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle} numberOfLines={1}>{a.name} {a.lastName}</Text>
+                <StatusBadge
+                  label={nurseStatusLabel(tab)}
+                  tone={tab === "active" ? "success" : "neutral"}
+                  testID={`admin-nurse-profile-status-badge-${a.userId}`}
+                />
+              </View>
+              <Text style={styles.cardMeta} numberOfLines={1}>
+                {[a.specialty, (a as ActiveNurseProfileSummaryDto).category].filter(Boolean).join(" · ")}
+              </Text>
+            </Pressable>
+          );
+        }}
+        contentContainerStyle={styles.listContent}
+      />
     </MobileWorkspaceShell>
   );
 }
 
 const styles = StyleSheet.create({
-  buttonPrimary: { backgroundColor: designTokens.color.ink.accent, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10 },
-  buttonPrimaryText: { color: designTokens.color.ink.inverse, fontWeight: "700", fontSize: 14 },
-  error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: 12, borderRadius: 12, marginBottom: 12 },
-  summaryRow: { marginBottom: 10 },
-  summaryChip: { alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 12, fontWeight: "800", backgroundColor: designTokens.color.surface.secondary, borderWidth: 1, borderColor: designTokens.color.border.subtle, color: designTokens.color.ink.primary },
-  tabs: { flexDirection: "row", gap: 8, marginBottom: 12 },
-  tab: { flex: 1, backgroundColor: designTokens.color.ink.inverse, borderRadius: 14, paddingVertical: 12, alignItems: "center", borderWidth: 1, borderColor: designTokens.color.border.subtle },
-  tabActive: { backgroundColor: designTokens.color.ink.primary, borderColor: designTokens.color.ink.primary },
-  tabText: { color: designTokens.color.ink.primary, fontSize: 14, fontWeight: "700" },
-  tabTextActive: { color: designTokens.color.ink.inverse },
-  emptyState: { padding: 40, alignItems: "center" },
-  emptyStateText: { color: designTokens.color.ink.secondary, fontSize: 16, textAlign: "center" },
-  list: { gap: 12 },
-  card: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, marginBottom: 12, boxShadow: "0px 6px 12px rgba(18, 48, 68, 0.06)", elevation: 2 },
-  cardPending: { borderColor: designTokens.color.ink.warning, borderWidth: 1.5 },
-  pendingBadge: { backgroundColor: designTokens.color.surface.warning, borderRadius: 10, padding: 8, marginBottom: 8, alignSelf: "flex-start" },
-  pendingBadgeText: { color: designTokens.color.status.warningText, fontSize: 12, fontWeight: "700", textAlign: "center" },
-  cardTitle: { color: designTokens.color.ink.primary, fontWeight: "800", fontSize: 18, marginBottom: 4 },
-  cardMeta: { color: designTokens.color.ink.muted, fontSize: 14, marginBottom: 8 },
-  cardDetail: { color: designTokens.color.ink.muted, fontSize: 13, marginBottom: 4 },
-  cardRow: { flexDirection: "row", marginBottom: 4 },
-  cardLabel: { color: designTokens.color.ink.muted, fontSize: 13, fontWeight: "700", width: 100 },
-  cardValue: { color: designTokens.color.ink.primary, fontSize: 13, flex: 1 },
-  workloadSection: { backgroundColor: designTokens.color.surface.secondary, borderRadius: 10, padding: 10, marginTop: 8, borderWidth: 1, borderColor: designTokens.color.border.subtle },
-  workloadTitle: { color: designTokens.color.ink.muted, fontSize: 12, fontWeight: "800", marginBottom: 4, textTransform: "uppercase" },
-  workloadText: { color: designTokens.color.ink.primary, fontSize: 12 },
-  statusRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 8 },
-  badge: { backgroundColor: designTokens.color.surface.accent, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  badgeText: { color: designTokens.color.ink.accentStrong, fontSize: 11, fontWeight: "700" },
-  badgeSuccess: { backgroundColor: designTokens.color.surface.success, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  badgeTextSuccess: { color: designTokens.color.status.successText, fontSize: 11, fontWeight: "700" },
-  reviewButton: { backgroundColor: designTokens.color.ink.accent, borderRadius: 14, paddingVertical: 10, marginTop: 12 },
-  reviewButtonText: { color: designTokens.color.ink.inverse, fontWeight: "700", fontSize: 14, textAlign: "center" },
+  buttonPrimary: {
+    backgroundColor: designTokens.color.ink.accent,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  buttonPrimaryText: {
+    color: designTokens.color.ink.inverse,
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  error: {
+    backgroundColor: designTokens.color.surface.danger,
+    color: designTokens.color.ink.danger,
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  chipRow: {
+    flexDirection: "row",
+    gap: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+    marginBottom: 12,
+  },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: designTokens.color.ink.inverse,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.subtle,
+  },
+  chipActive: {
+    backgroundColor: designTokens.color.ink.primary,
+    borderColor: designTokens.color.ink.primary,
+  },
+  chipText: {
+    color: designTokens.color.ink.primary,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  chipTextActive: {
+    color: designTokens.color.ink.inverse,
+  },
+  chipCount: {
+    backgroundColor: designTokens.color.surface.secondary,
+    borderRadius: 999,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  chipCountActive: {
+    backgroundColor: "rgba(255,255,255,0.2)",
+  },
+  chipCountText: {
+    color: designTokens.color.ink.muted,
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  chipCountTextActive: {
+    color: designTokens.color.ink.inverse,
+  },
+  emptyText: {
+    color: designTokens.color.ink.muted,
+    fontSize: 14,
+    textAlign: "center",
+    marginVertical: 24,
+  },
+  listContent: {
+    gap: 10,
+    paddingBottom: 24,
+  },
+  card: {
+    backgroundColor: designTokens.color.ink.inverse,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.subtle,
+    borderRadius: 16,
+    padding: 14,
+    boxShadow: "0px 4px 10px rgba(18, 48, 68, 0.04)",
+    elevation: 2,
+  },
+  cardPending: {
+    borderColor: designTokens.color.ink.warning,
+    borderLeftWidth: 4,
+    borderLeftColor: designTokens.color.ink.warning,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+    gap: 8,
+  },
+  cardTitle: {
+    color: designTokens.color.ink.primary,
+    fontWeight: "800",
+    fontSize: 16,
+    flex: 1,
+  },
+  cardMeta: {
+    color: designTokens.color.ink.muted,
+    fontSize: 13,
+    marginTop: 2,
+  },
+  reviewButton: {
+    backgroundColor: designTokens.color.ink.accent,
+    borderRadius: 12,
+    paddingVertical: 8,
+    marginTop: 12,
+    alignItems: "center",
+  },
+  reviewButtonText: {
+    color: designTokens.color.ink.inverse,
+    fontWeight: "700",
+    fontSize: 13,
+  },
 });

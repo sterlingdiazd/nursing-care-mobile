@@ -56,8 +56,13 @@ function statusBadgeStyle(status: AdminUserAccountStatus) {
   }
 }
 
-function getAttentionCount(items: AdminUserListItemDto[]) {
-  return items.filter((item) => item.accountStatus !== "Active").length;
+/** Build a compact role/profile descriptor, deduplicating when role and profileType are the same label. */
+function buildRoleLabel(item: AdminUserListItemDto): string {
+  const roles = item.roleNames.map(translateRole);
+  const profile = translateProfileType(item.profileType);
+  // If profile matches one of the role labels exactly, omit the redundant profile
+  const unique = roles.includes(profile) ? roles : [...roles, profile];
+  return unique.join(", ") || "Sin roles";
 }
 
 export default function AdminUsersScreen() {
@@ -119,7 +124,6 @@ export default function AdminUsersScreen() {
       primaryReturnLabel="Volver"
       eyebrow="Usuarios"
       title="Gestion de usuarios"
-      description="Prioriza cuentas con riesgo operativo y deja los filtros como apoyo progresivo."
       testID={adminTestIds.users.listScreen}
       nativeID={adminTestIds.users.listScreen}
       actions={(
@@ -137,20 +141,16 @@ export default function AdminUsersScreen() {
         </View>
       )}
     >
-      <View style={styles.summaryCard}>
-        <Text
-          style={styles.summaryChip}
-          testID={adminTestIds.users.statusChip}
-          nativeID={adminTestIds.users.statusChip}
-        >
-          {getAttentionCount(items) > 0
-            ? `${getAttentionCount(items)} cuentas requieren atención`
-            : "Sin alertas operativas"}
-        </Text>
-        <Text style={styles.summaryText}>
-          Usa los filtros solo cuando necesites acotar la revisión; la lista debe dejar visibles primero los estados sensibles.
-        </Text>
-      </View>
+      {/* Attention count chip — data only, no instructional text */}
+      <Text
+        style={styles.attentionChip}
+        testID={adminTestIds.users.statusChip}
+        nativeID={adminTestIds.users.statusChip}
+      >
+        {items.filter((i) => i.accountStatus !== "Active").length > 0
+          ? `${items.filter((i) => i.accountStatus !== "Active").length} cuentas requieren atención`
+          : `${items.length} usuarios`}
+      </Text>
 
       {!!error && (
         <Text
@@ -255,6 +255,10 @@ export default function AdminUsersScreen() {
       >
         {items.map((item) => {
           const badgeColors = statusBadgeStyle(item.accountStatus);
+          const roleLabel = buildRoleLabel(item);
+          const secondLine = [item.email, item.identificationNumber ? `Cédula ${item.identificationNumber}` : null]
+            .filter(Boolean)
+            .join(" · ");
           return (
             <Pressable
               key={item.id}
@@ -272,37 +276,8 @@ export default function AdminUsersScreen() {
                   colors={{ bg: badgeColors.bg, fg: badgeColors.text }}
                 />
               </View>
-
-              <Text style={styles.cardMeta}>{item.email}</Text>
-              <Text style={styles.cardHint}>
-                {item.accountStatus === "Active"
-                  ? "Cuenta lista para gestión normal."
-                  : "Revisar estado, roles o activación antes de continuar."}
-              </Text>
-
-              <View style={styles.cardRow}>
-                <Text style={styles.cardLabel}>Roles:</Text>
-                <Text style={styles.cardValue}>
-                  {item.roleNames.map(translateRole).join(", ") || "Sin roles"}
-                </Text>
-              </View>
-
-              <View style={styles.cardRow}>
-                <Text style={styles.cardLabel}>Perfil:</Text>
-                <Text style={styles.cardValue}>{translateProfileType(item.profileType)}</Text>
-              </View>
-
-              <View style={styles.cardRow}>
-                <Text style={styles.cardLabel}>Activo:</Text>
-                <Text style={styles.cardValue}>{item.isActive ? "Sí" : "No"}</Text>
-              </View>
-
-              {item.identificationNumber && (
-                <View style={styles.cardRow}>
-                  <Text style={styles.cardLabel}>Cédula:</Text>
-                  <Text style={styles.cardValue}>{item.identificationNumber}</Text>
-                </View>
-              )}
+              <Text style={styles.cardRole}>{roleLabel}</Text>
+              {!!secondLine && <Text style={styles.cardMeta}>{secondLine}</Text>}
             </Pressable>
           );
         })}
@@ -315,9 +290,7 @@ const styles = StyleSheet.create({
   headerActions: { flexDirection: "row", gap: 8 },
   button: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: designTokens.color.border.strong },
   buttonText: { color: designTokens.color.ink.accent, fontWeight: "700", fontSize: 14 },
-  summaryCard: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, marginBottom: 12 },
-  summaryChip: { alignSelf: "flex-start", backgroundColor: designTokens.color.ink.primary, color: designTokens.color.ink.inverse, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 13, fontWeight: "800", marginBottom: 8 },
-  summaryText: { color: designTokens.color.ink.secondary, fontSize: 13, lineHeight: 18 },
+  attentionChip: { alignSelf: "flex-start", backgroundColor: designTokens.color.ink.primary, color: designTokens.color.ink.inverse, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, fontSize: 12, fontWeight: "700", marginBottom: 12 },
   error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: 12, borderRadius: 12, marginBottom: 12 },
   loading: { color: designTokens.color.ink.secondary, fontSize: 14, textAlign: "center", padding: 20 },
   filtersCard: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, marginBottom: 12 },
@@ -332,12 +305,9 @@ const styles = StyleSheet.create({
   emptyState: { padding: 40, alignItems: "center" },
   emptyStateText: { color: designTokens.color.ink.secondary, fontSize: 16, textAlign: "center" },
   list: { gap: 12 },
-  card: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, marginBottom: 12, boxShadow: "0px 6px 12px rgba(18, 48, 68, 0.06)", elevation: 2 },
+  card: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, marginBottom: 12, boxShadow: "0px 4px 10px rgba(18, 48, 68, 0.04)", elevation: 2 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
   cardTitle: { color: designTokens.color.ink.primary, fontWeight: "800", fontSize: 18, flex: 1 },
-  cardMeta: { color: designTokens.color.ink.muted, fontSize: 14, marginBottom: 8 },
-  cardHint: { color: designTokens.color.ink.secondary, fontSize: 13, marginBottom: 10 },
-  cardRow: { flexDirection: "row", marginBottom: 4 },
-  cardLabel: { color: designTokens.color.ink.muted, fontSize: 13, fontWeight: "700", width: 120 },
-  cardValue: { color: designTokens.color.ink.primary, fontSize: 13, flex: 1 },
+  cardRole: { color: designTokens.color.ink.secondary, fontSize: 13, fontWeight: "600", marginBottom: 2 },
+  cardMeta: { color: designTokens.color.ink.muted, fontSize: 13 },
 });

@@ -32,13 +32,13 @@ describe("AdminSettingsScreen", () => {
     expect(component!.root.findByProps({ testID: "admin-settings-screen" })).toBeTruthy();
   });
 
-  it("renders refresh button", async () => {
+  it("renders the settings list", async () => {
     let component: ReturnType<typeof renderer.create>;
     await act(async () => {
       component = renderer.create(<AdminSettingsScreen />);
     });
     await flushEffects();
-    expect(component!.root.findByProps({ testID: "admin-settings-refresh-btn" })).toBeTruthy();
+    expect(component!.root.findByProps({ testID: "admin-settings-list" })).toBeTruthy();
   });
 
   it("renders settings list container", async () => {

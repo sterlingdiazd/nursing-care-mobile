@@ -53,6 +53,7 @@ import {
 } from "@/src/services/adminPortalService";
 import { useAuth } from "@/src/context/AuthContext";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { StatusBadge } from "@/src/components/shared/StatusBadge";
 import { designTokens } from "@/src/design-system/tokens";
 
 type TabKey =
@@ -440,7 +441,6 @@ export default function AdminCatalogScreen() {
       primaryReturnLabel="Volver"
       eyebrow="Administración"
       title="Catálogo de precios"
-      description="Gestiona opciones y factores desde una sola vista."
       testID="admin-catalog-screen"
       nativeID="admin-catalog-screen"
       actions={(
@@ -593,9 +593,11 @@ export default function AdminCatalogScreen() {
                         <View style={styles.cardHeader}>
                           <Text style={styles.cardTitle}>{itemTitle}</Text>
                           {!isItemActive(item) && (
-                            <View style={styles.inactiveBadge}>
-                              <Text style={styles.inactiveBadgeText}>Inactivo</Text>
-                            </View>
+                            <StatusBadge
+                              label="Inactivo"
+                              tone="neutral"
+                              testID={`admin-catalog-inactive-badge-${itemId}`}
+                            />
                           )}
                         </View>
                         <Text style={styles.cardSubtitle}>{getSubtitle(item)}</Text>
@@ -703,13 +705,11 @@ const styles = StyleSheet.create({
   editPanelTitle: { fontSize: 16, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 8 },
   editActions: { flexDirection: "row", gap: 8, marginTop: 8 },
   cardsContainer: { gap: 10 },
-  card: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: designTokens.color.border.subtle, boxShadow: "0px 6px 12px rgba(18, 48, 68, 0.06)", elevation: 2 },
+  card: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: designTokens.color.border.subtle, boxShadow: "0px 4px 10px rgba(18, 48, 68, 0.04)", elevation: 2 },
   cardContent: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 14 },
   cardTextBlock: { flex: 1 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4, gap: 8 },
   cardTitle: { fontSize: 15, fontWeight: "700", color: designTokens.color.ink.primary, flex: 1 },
-  inactiveBadge: { backgroundColor: designTokens.color.surface.danger, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
-  inactiveBadgeText: { fontSize: 11, color: designTokens.color.ink.accentStrong, fontWeight: "600" },
   cardSubtitle: { fontSize: 13, color: designTokens.color.ink.muted, marginBottom: 4 },
   cardCode: { fontSize: 12, color: designTokens.color.ink.muted },
   cardChevron: { color: designTokens.color.ink.muted, fontSize: 18, lineHeight: 24 },

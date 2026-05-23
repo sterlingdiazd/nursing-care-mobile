@@ -117,21 +117,8 @@ export default function AdminSettingsScreen() {
       primaryReturnLabel="Volver"
       eyebrow="Administración"
       title="Configuración del sistema"
-      description="Administra los parámetros del sistema."
       testID="admin-settings-screen"
       nativeID="admin-settings-screen"
-      actions={(
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Actualizar configuracion"
-          style={styles.button}
-          onPress={() => void load()}
-          testID="admin-settings-refresh-btn"
-          nativeID="admin-settings-refresh-btn"
-        >
-          <Text style={styles.buttonText}>Actualizar</Text>
-        </Pressable>
-      )}
     >
       {!!error && (
         <Text
@@ -311,7 +298,7 @@ const styles = StyleSheet.create({
   emptyStateText: { color: designTokens.color.ink.secondary, fontSize: 16 },
   categorySection: { marginBottom: 20 },
   categoryTitle: { fontSize: 13, fontWeight: "800", color: designTokens.color.ink.muted, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10, paddingHorizontal: 4 },
-  settingCard: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, marginBottom: 4, boxShadow: "0px 6px 12px rgba(18, 48, 68, 0.06)", elevation: 2 },
+  settingCard: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, marginBottom: 4, boxShadow: "0px 4px 10px rgba(18, 48, 68, 0.04)", elevation: 2 },
   settingCardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
   settingKey: { color: designTokens.color.ink.primary, fontWeight: "800", fontSize: 15, flex: 1 },
   settingEditHint: { color: designTokens.color.ink.accent, fontSize: 13, fontWeight: "700" },
