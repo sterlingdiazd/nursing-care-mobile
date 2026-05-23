@@ -30,6 +30,7 @@ import {
   type NotificationVolumeReportDto,
 } from "@/src/services/adminPortalService";
 import { getCachedAuthSession } from "@/src/services/authSession";
+import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { MetricCard } from "@/src/components/shared/MetricCard";
 import { SelectRow, PickerSheet, PickerOption } from "@/components/payroll/FormModalScaffold";
 
@@ -69,6 +70,10 @@ const REPORTS: ReportMetadata[] = [
     description: "Distribucion por tipo y complejidad.",
   },
 ];
+
+// CSV export only earns its place where the data is row-level / accounting-grade. The aggregate
+// snapshot reports are read on screen; a 6-number CSV adds a button to maintain with no analysis value.
+const EXPORTABLE_REPORTS = new Set<string>(["nurse-utilization", "price-usage-summary"]);
 
 export default function AdminReportsScreen() {
   const { isReady, isAuthenticated, roles } = useAuth();
@@ -160,7 +165,10 @@ export default function AdminReportsScreen() {
       eyebrow="Reportes"
       title="Inteligencia operativa"
       description="Visualiza indicadores clave con una presentacion mas clara y consistente."
+      onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.adminHome)}
+      primaryReturnLabel="Volver"
       actions={
+        EXPORTABLE_REPORTS.has(selectedReportKey) ? (
         <Pressable
           style={[styles.exportButton, isExporting && styles.disabledButton]}
           onPress={handleExport}
@@ -174,6 +182,7 @@ export default function AdminReportsScreen() {
             <Text style={styles.exportButtonText}>Exportar CSV</Text>
           )}
         </Pressable>
+        ) : undefined
       }
     >
       <View style={styles.container}>
