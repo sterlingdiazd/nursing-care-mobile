@@ -39,7 +39,7 @@ const SECTION_CARDS: SectionCard[] = [
   {
     key: "deductions",
     label: "Deducciones únicas",
-    helper: "Deducciones puntuales por período",
+    helper: "Una vez en un período (ej. multa, anticipo)",
     icon: "minus-circle",
     path: "/admin/payroll/deductions",
     testID: "payroll-hub-card-deductions",
@@ -47,7 +47,7 @@ const SECTION_CARDS: SectionCard[] = [
   {
     key: "scheduled",
     label: "Descuentos fijos",
-    helper: "Planes de pago recurrentes",
+    helper: "Préstamo recurrente en cuotas",
     icon: "repeat",
     path: "/admin/payroll/scheduled",
     testID: "payroll-hub-card-scheduled",
@@ -55,7 +55,7 @@ const SECTION_CARDS: SectionCard[] = [
   {
     key: "adjustments",
     label: "Ajustes",
-    helper: "Bonificaciones y ajustes manuales",
+    helper: "Por servicio: bono (+) o corrección (−)",
     icon: "pencil-square-o",
     path: "/admin/payroll/adjustments",
     testID: "payroll-hub-card-adjustments",

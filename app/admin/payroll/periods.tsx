@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
@@ -149,16 +149,29 @@ export default function PeriodsScreen() {
     void loadPeriods();
   }, [editingPeriod, loadPeriods, showToast]);
 
-  const handleCreateStandardPeriod = useCallback(async () => {
-    try {
-      const data = nextQuincenaAfter(periodList?.items ?? []);
-      await createPayrollPeriod(data);
-      showToast({ message: "Período estándar creado correctamente", variant: "success" });
-      void loadPeriods();
-    } catch (e) {
-      const message = e instanceof Error ? e.message : "No fue posible crear el período estándar.";
-      showToast({ message, variant: "error" });
-    }
+  const handleCreateStandardPeriod = useCallback(() => {
+    // Preview the computed quincena dates before creating — the owner confirms what will be made.
+    const data = nextQuincenaAfter(periodList?.items ?? []);
+    Alert.alert(
+      "Crear quincena estándar",
+      `Se creará la quincena:\n\nInicio: ${formatDateES(data.startDate)}\nFin: ${formatDateES(data.endDate)}\nCorte: ${formatDateES(data.cutoffDate)}\nPago: ${formatDateES(data.paymentDate)}`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Crear",
+          onPress: async () => {
+            try {
+              await createPayrollPeriod(data);
+              showToast({ message: "Período estándar creado correctamente", variant: "success" });
+              void loadPeriods();
+            } catch (e) {
+              const message = e instanceof Error ? e.message : "No fue posible crear el período estándar.";
+              showToast({ message, variant: "error" });
+            }
+          },
+        },
+      ]
+    );
   }, [periodList, loadPeriods, showToast]);
 
   const handleStartEditPeriod = useCallback(() => {

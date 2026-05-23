@@ -286,7 +286,7 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
         : "";
     Alert.alert(
       "Cerrar Período",
-      `¿Estás seguro de cerrar el período "${period.startDate} - ${period.endDate}"?${warning}`,
+      `Antes de cerrar (es irreversible), confirma que revisaste:\n• Deducciones y descuentos\n• Ajustes por servicio\n• Comprobantes descargados${warning}\n\n¿Cerrar el período "${period.startDate} - ${period.endDate}"?`,
       [
         { text: "Cancelar", style: "cancel" },
         {
