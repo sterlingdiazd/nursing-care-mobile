@@ -4,7 +4,7 @@
 // @do-not-edit: false
 
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
@@ -19,6 +19,9 @@ import {
 } from "@/src/services/adminPortalService";
 import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+import { FilterChips, type FilterChipOption } from "@/src/components/shared/FilterChips";
+import { Pagination } from "@/src/components/shared/Pagination";
+import { FormPanel } from "@/src/components/shared/FormPanel";
 
 function formatTimestamp(value: string) {
   return formatDateTimeES(value);
@@ -98,6 +101,31 @@ const TONE_COLOR: Record<AuditTone, string> = {
 
 const PAGE_SIZE = 10;
 
+// Chip filter options derived from known backend codes.
+// Counts are not fetched (would require separate aggregate endpoints) — omitted intentionally.
+const ALL_KEY = "" as const;
+
+type ActionFilterKey = "" | "CreateDeduction" | "UpdateDeduction" | "DeleteDeduction" | "CreateAdjustment" | "DeleteAdjustment" | "CreatePeriod" | "ClosePeriod" | "CareRequestApproved" | "CareRequestRejected" | "NurseProfileApproved";
+type EntityFilterKey = "" | "DeductionRecord" | "CompensationAdjustment" | "ScheduledDeduction" | "PayrollPeriod" | "CareRequest" | "NurseProfile" | "User";
+
+const ACTION_FILTER_OPTIONS: ReadonlyArray<FilterChipOption<ActionFilterKey>> = [
+  { key: ALL_KEY, label: "Todas" },
+  { key: "CreateDeduction", label: "Deducciones" },
+  { key: "CreateAdjustment", label: "Ajustes" },
+  { key: "CreatePeriod", label: "Nómina" },
+  { key: "CareRequestApproved", label: "Solicitudes" },
+  { key: "NurseProfileApproved", label: "Perfiles" },
+];
+
+const ENTITY_FILTER_OPTIONS: ReadonlyArray<FilterChipOption<EntityFilterKey>> = [
+  { key: ALL_KEY, label: "Todas" },
+  { key: "DeductionRecord", label: "Deducción" },
+  { key: "CompensationAdjustment", label: "Ajuste" },
+  { key: "PayrollPeriod", label: "Nómina" },
+  { key: "CareRequest", label: "Solicitud" },
+  { key: "NurseProfile", label: "Perfil" },
+];
+
 export default function AdminAuditLogsScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
   const isAdmin = roles.includes("ADMIN");
@@ -106,19 +134,20 @@ export default function AdminAuditLogsScreen() {
   const [pageNumber, setPageNumber] = useState(1);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters
-  const [actionFilter, setActionFilter] = useState("");
-  const [entityTypeFilter, setEntityTypeFilter] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
+  // Chip filters
+  const [actionFilter, setActionFilter] = useState<ActionFilterKey>(ALL_KEY);
+  const [entityTypeFilter, setEntityTypeFilter] = useState<EntityFilterKey>(ALL_KEY);
 
-  // Inline detail panel (replaces Modal)
+  // Inline detail panel
   const [selectedDetail, setSelectedDetail] = useState<AuditLogDetailDto | null>(null);
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
 
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
   const load = async (
     page = pageNumber,
-    nextActionFilter = actionFilter,
-    nextEntityTypeFilter = entityTypeFilter,
+    nextActionFilter: ActionFilterKey = actionFilter,
+    nextEntityTypeFilter: EntityFilterKey = entityTypeFilter,
   ) => {
     try {
       setError(null);
@@ -131,7 +160,7 @@ export default function AdminAuditLogsScreen() {
       setItems(response.items);
       setTotalCount(response.totalCount);
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "No fue posible cargar registros de auditoria.");
+      setError(nextError instanceof Error ? nextError.message : "No fue posible cargar registros de auditoría.");
     }
   };
 
@@ -143,17 +172,20 @@ export default function AdminAuditLogsScreen() {
     void load();
   }, [isReady, isAuthenticated, requiresProfileCompletion, isAdmin, pageNumber]);
 
-  const handleSearch = () => {
+  const handleActionFilter = (key: ActionFilterKey) => {
+    setActionFilter(key);
     setPageNumber(1);
-    void load(1);
+    void load(1, key, entityTypeFilter);
   };
 
-  const handleClearFilters = () => {
-    const nextPageNumber = 1;
-    setActionFilter("");
-    setEntityTypeFilter("");
-    setPageNumber(nextPageNumber);
-    void load(nextPageNumber, "", "");
+  const handleEntityFilter = (key: EntityFilterKey) => {
+    setEntityTypeFilter(key);
+    setPageNumber(1);
+    void load(1, actionFilter, key);
+  };
+
+  const handlePageChange = (page: number) => {
+    setPageNumber(page);
   };
 
   const handleViewDetail = async (id: string) => {
@@ -175,23 +207,11 @@ export default function AdminAuditLogsScreen() {
     <MobileWorkspaceShell
       eyebrow="Auditoría"
       title="Registro de auditoría"
-      description="Historial de eventos sensibles para seguimiento y cumplimiento."
+      description="Historial de eventos sensibles."
       testID="admin-audit-logs-screen"
       nativeID="admin-audit-logs-screen"
       onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.adminHome)}
       primaryReturnLabel="Volver"
-      actions={(
-        <Pressable
-          style={styles.button}
-          onPress={() => setShowFilters(!showFilters)}
-          testID="admin-audit-logs-filter-toggle"
-          nativeID="admin-audit-logs-filter-toggle"
-          accessibilityRole="button"
-          accessibilityLabel={showFilters ? "Ocultar filtros" : "Mostrar filtros"}
-        >
-          <Text style={styles.buttonText}>{showFilters ? "Ocultar filtros" : "Filtros"}</Text>
-        </Pressable>
-      )}
     >
       {!!error && (
         <Text
@@ -203,57 +223,24 @@ export default function AdminAuditLogsScreen() {
         </Text>
       )}
 
-      {showFilters && (
-        <View style={styles.filtersCard}>
-          <Text style={styles.filtersTitle}>Filtros de búsqueda</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Acción (ej: AdminAccountCreated)"
-            placeholderTextColor={designTokens.color.ink.muted}
-            value={actionFilter}
-            onChangeText={setActionFilter}
-            testID="admin-audit-logs-action-input"
-            nativeID="admin-audit-logs-action-input"
-            accessibilityLabel="Filtrar por tipo de acción"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Tipo de entidad (ej: User)"
-            placeholderTextColor={designTokens.color.ink.muted}
-            value={entityTypeFilter}
-            onChangeText={setEntityTypeFilter}
-            testID="admin-audit-logs-entity-type-input"
-            nativeID="admin-audit-logs-entity-type-input"
-            accessibilityLabel="Filtrar por tipo de entidad"
-          />
-          <View style={styles.filterActions}>
-            <Pressable
-              style={styles.buttonPrimary}
-              onPress={handleSearch}
-              testID="admin-audit-logs-search-btn"
-              nativeID="admin-audit-logs-search-btn"
-              accessibilityRole="button"
-              accessibilityLabel="Buscar registros de auditoría"
-            >
-              <Text style={styles.buttonPrimaryText}>Buscar</Text>
-            </Pressable>
-            <Pressable
-              style={styles.button}
-              onPress={handleClearFilters}
-              testID="admin-audit-logs-clear-btn"
-              nativeID="admin-audit-logs-clear-btn"
-              accessibilityRole="button"
-              accessibilityLabel="Limpiar filtros de búsqueda"
-            >
-              <Text style={styles.buttonText}>Limpiar</Text>
-            </Pressable>
-          </View>
-        </View>
-      )}
+      <Text style={styles.filterLabel}>Acción</Text>
+      <FilterChips
+        options={ACTION_FILTER_OPTIONS}
+        value={actionFilter}
+        onChange={handleActionFilter}
+        testIDPrefix="admin-audit-logs-action-filter"
+      />
+
+      <Text style={[styles.filterLabel, { marginTop: 10 }]}>Entidad</Text>
+      <FilterChips
+        options={ENTITY_FILTER_OPTIONS}
+        value={entityTypeFilter}
+        onChange={handleEntityFilter}
+        testIDPrefix="admin-audit-logs-entity-filter"
+      />
 
       <View style={styles.summary}>
-        <Text style={styles.summaryText}>Total: {totalCount} registros</Text>
-        <Text style={styles.summaryText}>Página: {pageNumber}</Text>
+        <Text style={styles.summaryText}>{totalCount} registros</Text>
       </View>
 
       <View
@@ -261,133 +248,95 @@ export default function AdminAuditLogsScreen() {
         testID="admin-audit-logs-list"
         nativeID="admin-audit-logs-list"
       >
-        {items.map((item) => (
-          <View key={item.id}>
-            <Pressable
-              style={[styles.row, expandedLogId === item.id && styles.rowExpanded]}
-              onPress={() => void handleViewDetail(item.id)}
-              testID={`admin-audit-log-card-${item.id}`}
-              nativeID={`admin-audit-log-card-${item.id}`}
-              accessibilityRole="button"
-              accessibilityLabel={`${expandedLogId === item.id ? "Ocultar" : "Ver"} detalle de ${actionLabel(item.action)}`}
-            >
-              <View style={[styles.rail, { backgroundColor: TONE_COLOR[actionTone(item.action)] }]} />
-              <View style={styles.rowBody}>
-                <View style={styles.rowTop}>
-                  <Text style={styles.action} numberOfLines={1}>{actionLabel(item.action)}</Text>
-                  <Text style={styles.time}>{formatTimestamp(item.createdAtUtc)}</Text>
-                </View>
-                {item.notes ? <Text style={styles.notes} numberOfLines={2}>{item.notes}</Text> : null}
-                <Text style={styles.meta} numberOfLines={1}>
-                  {(item.actorName || "Sistema")} · {roleLabel(item.actorRole)} · {entityLabel(item.entityType)}
-                </Text>
-              </View>
-              <Text style={styles.chevron}>{expandedLogId === item.id ? "⌄" : "›"}</Text>
-            </Pressable>
-
-            {expandedLogId === item.id && selectedDetail && (
-              <View
-                style={styles.detailPanel}
-                testID="admin-audit-log-detail-panel"
-                nativeID="admin-audit-log-detail-panel"
+        {items.length === 0 ? (
+          <Text style={styles.emptyText}>Sin registros para los filtros seleccionados.</Text>
+        ) : (
+          items.map((item) => (
+            <View key={item.id}>
+              <Pressable
+                style={[styles.row, expandedLogId === item.id && styles.rowExpanded]}
+                onPress={() => void handleViewDetail(item.id)}
+                testID={`admin-audit-log-card-${item.id}`}
+                nativeID={`admin-audit-log-card-${item.id}`}
+                accessibilityRole="button"
+                accessibilityLabel={`${expandedLogId === item.id ? "Ocultar" : "Ver"} detalle de ${actionLabel(item.action)}`}
               >
-                <View style={styles.detailField}>
-                  <Text style={styles.detailLabel}>ID</Text>
-                  <Text style={styles.detailValue}>{selectedDetail.id}</Text>
-                </View>
-                <View style={styles.detailField}>
-                  <Text style={styles.detailLabel}>Fecha y hora</Text>
-                  <Text style={styles.detailValue}>{formatTimestamp(selectedDetail.createdAtUtc)}</Text>
-                </View>
-                <View style={styles.detailField}>
-                  <Text style={styles.detailLabel}>Actor</Text>
-                  <Text style={styles.detailValue}>{selectedDetail.actorName || "Sistema"}</Text>
-                  {selectedDetail.actorEmail && (
-                    <Text style={styles.detailValueSecondary}>{selectedDetail.actorEmail}</Text>
-                  )}
-                </View>
-                <View style={styles.detailField}>
-                  <Text style={styles.detailLabel}>Rol del actor</Text>
-                  <Text style={styles.detailValue}>{roleLabel(selectedDetail.actorRole)}</Text>
-                </View>
-                <View style={styles.detailField}>
-                  <Text style={styles.detailLabel}>Acción</Text>
-                  <Text style={styles.detailValue}>{selectedDetail.action}</Text>
-                </View>
-                <View style={styles.detailField}>
-                  <Text style={styles.detailLabel}>Tipo de entidad</Text>
-                  <Text style={styles.detailValue}>{selectedDetail.entityType}</Text>
-                </View>
-                <View style={styles.detailField}>
-                  <Text style={styles.detailLabel}>ID de entidad</Text>
-                  <Text style={styles.detailValueMono}>{selectedDetail.entityId}</Text>
-                </View>
-                {selectedDetail.notes && (
-                  <View style={styles.detailField}>
-                    <Text style={styles.detailLabel}>Notas</Text>
-                    <Text style={styles.detailValue}>{selectedDetail.notes}</Text>
+                <View style={[styles.rail, { backgroundColor: TONE_COLOR[actionTone(item.action)] }]} />
+                <View style={styles.rowBody}>
+                  <View style={styles.rowTop}>
+                    <Text style={styles.action} numberOfLines={1}>{actionLabel(item.action)}</Text>
+                    <Text style={styles.time}>{formatTimestamp(item.createdAtUtc)}</Text>
                   </View>
-                )}
-                {selectedDetail.metadataJson && (
-                  <View style={styles.detailField}>
-                    <Text style={styles.detailLabel}>Metadata (JSON)</Text>
-                    <View style={styles.jsonContainer}>
-                      <Text style={styles.jsonText}>
-                        {JSON.stringify(JSON.parse(selectedDetail.metadataJson), null, 2)}
-                      </Text>
+                  {item.notes ? <Text style={styles.notes} numberOfLines={2}>{item.notes}</Text> : null}
+                  <Text style={styles.meta} numberOfLines={1}>
+                    {(item.actorName || "Sistema")} · {roleLabel(item.actorRole)} · {entityLabel(item.entityType)}
+                  </Text>
+                </View>
+                <Text style={styles.chevron}>{expandedLogId === item.id ? "⌄" : "›"}</Text>
+              </Pressable>
+
+              {expandedLogId === item.id && selectedDetail && (
+                <FormPanel
+                  tone="accent"
+                  testID="admin-audit-log-detail-panel"
+                >
+                  <DetailField label="ID" value={selectedDetail.id} mono />
+                  <DetailField label="Fecha y hora" value={formatTimestamp(selectedDetail.createdAtUtc)} />
+                  <DetailField
+                    label="Actor"
+                    value={selectedDetail.actorName || "Sistema"}
+                    secondary={selectedDetail.actorEmail}
+                  />
+                  <DetailField label="Rol del actor" value={roleLabel(selectedDetail.actorRole)} />
+                  <DetailField label="Acción" value={selectedDetail.action} />
+                  <DetailField label="Tipo de entidad" value={selectedDetail.entityType} />
+                  <DetailField label="ID de entidad" value={selectedDetail.entityId} mono />
+                  {selectedDetail.notes ? (
+                    <DetailField label="Notas" value={selectedDetail.notes} />
+                  ) : null}
+                  {selectedDetail.metadataJson ? (
+                    <View style={styles.detailField}>
+                      <Text style={styles.detailLabel}>Metadata (JSON)</Text>
+                      <View style={styles.jsonContainer}>
+                        <Text style={styles.jsonText}>
+                          {JSON.stringify(JSON.parse(selectedDetail.metadataJson), null, 2)}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                )}
-              </View>
-            )}
-          </View>
-        ))}
+                  ) : null}
+                </FormPanel>
+              )}
+            </View>
+          ))
+        )}
       </View>
 
-      {totalCount > PAGE_SIZE && (
-        <View style={styles.pagination}>
-          <Pressable
-            style={[styles.button, pageNumber === 1 && styles.buttonDisabled]}
-            onPress={() => setPageNumber((p) => Math.max(1, p - 1))}
-            disabled={pageNumber === 1}
-            testID="admin-audit-logs-prev-btn"
-            nativeID="admin-audit-logs-prev-btn"
-            accessibilityRole="button"
-            accessibilityLabel="Página anterior"
-          >
-            <Text style={styles.buttonText}>Anterior</Text>
-          </Pressable>
-          <Text style={styles.pageInfo}>Pagina {pageNumber}</Text>
-          <Pressable
-            style={[styles.button, pageNumber * PAGE_SIZE >= totalCount && styles.buttonDisabled]}
-            onPress={() => setPageNumber((p) => p + 1)}
-            disabled={pageNumber * PAGE_SIZE >= totalCount}
-            testID="admin-audit-logs-next-btn"
-            nativeID="admin-audit-logs-next-btn"
-            accessibilityRole="button"
-            accessibilityLabel="Página siguiente"
-          >
-            <Text style={styles.buttonText}>Siguiente</Text>
-          </Pressable>
-        </View>
-      )}
+      <Pagination
+        currentPage={pageNumber}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+        testID="admin-audit-logs-pagination"
+      />
     </MobileWorkspaceShell>
   );
 }
 
+function DetailField({ label, value, secondary, mono }: { label: string; value: string; secondary?: string | null; mono?: boolean }) {
+  return (
+    <View style={styles.detailField}>
+      <Text style={styles.detailLabel}>{label}</Text>
+      <Text style={mono ? styles.detailValueMono : styles.detailValue}>{value}</Text>
+      {secondary ? <Text style={styles.detailValueSecondary}>{secondary}</Text> : null}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  button: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: designTokens.color.border.strong },
-  buttonText: { color: designTokens.color.ink.accent, fontWeight: "700", fontSize: 14 },
-  buttonPrimary: { backgroundColor: designTokens.color.ink.accent, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, flex: 1 },
-  buttonPrimaryText: { color: designTokens.color.ink.inverse, fontWeight: "700", fontSize: 14, textAlign: "center" },
-  buttonDisabled: { opacity: 0.5 },
   error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: 12, borderRadius: 12, marginBottom: 12 },
-  filtersCard: { ...mobileSurfaceCard, padding: 16, marginBottom: 12 },
-  filtersTitle: { fontSize: 16, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 12 },
-  input: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.strong, borderRadius: 14, padding: 14, marginBottom: 8, color: designTokens.color.ink.primary },
-  filterActions: { flexDirection: "row", gap: 8, marginTop: 8 },
-  summary: { flexDirection: "row", justifyContent: "space-between", marginBottom: 12, paddingHorizontal: 4 },
-  summaryText: { color: designTokens.color.ink.muted, fontSize: 14, fontWeight: "600" },
+  filterLabel: { fontSize: 11, fontWeight: "800", color: designTokens.color.ink.muted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 },
+  summary: { flexDirection: "row", justifyContent: "flex-end", marginTop: 12, marginBottom: 8, paddingHorizontal: 2 },
+  summaryText: { color: designTokens.color.ink.muted, fontSize: 13, fontWeight: "600" },
+  emptyText: { color: designTokens.color.ink.muted, fontSize: 14, textAlign: "center", paddingVertical: 32 },
   list: { gap: 8 },
   row: {
     ...mobileSurfaceCard,
@@ -406,9 +355,6 @@ const styles = StyleSheet.create({
   notes: { color: designTokens.color.ink.secondary, fontSize: 13 },
   meta: { color: designTokens.color.ink.muted, fontSize: 12 },
   chevron: { color: designTokens.color.ink.muted, fontSize: 18, fontWeight: "700", marginLeft: 8 },
-  detailPanel: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.accent, borderRadius: 16, padding: 16, marginTop: 4, marginBottom: 8, gap: 12 },
-  pagination: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 16, paddingHorizontal: 4 },
-  pageInfo: { color: designTokens.color.ink.muted, fontSize: 14, fontWeight: "600" },
   detailField: { gap: 4 },
   detailLabel: { color: designTokens.color.ink.muted, fontSize: 12, fontWeight: "800", textTransform: "uppercase" },
   detailValue: { color: designTokens.color.ink.primary, fontSize: 15 },

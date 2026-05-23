@@ -1,13 +1,12 @@
 // @generated-by: implementation-agent
-// @pipeline-run: 2026-04-24-mobile-ux-audit
-// @diffs: DIFF-ADMIN-CAT-002
+// @pipeline-run: 2026-05-23-design-system-wave4
+// @diffs: DIFF-ADMIN-CAT-003
 // @do-not-edit: false
 
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -53,7 +52,13 @@ import {
 } from "@/src/services/adminPortalService";
 import { useAuth } from "@/src/context/AuthContext";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { Banner } from "@/src/components/shared/Banner";
+import { FilterChips } from "@/src/components/shared/FilterChips";
+import { FormPanel } from "@/src/components/shared/FormPanel";
+import { ListRow } from "@/src/components/shared/ListRow";
+import { Pagination } from "@/src/components/shared/Pagination";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
+import { useClientPaging } from "@/src/hooks/usePagedList";
 import { designTokens } from "@/src/design-system/tokens";
 import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 
@@ -82,6 +87,9 @@ const TABS: TabConfig[] = [
   { key: "specialties", label: "Especialidades" },
   { key: "nurseCategories", label: "Cat. Enfermería" },
 ];
+
+// Map TABS to FilterChip options (no counts — would require N extra requests).
+const TAB_FILTER_OPTIONS = TABS.map((t) => ({ key: t.key, label: t.label }));
 
 type CatalogItem = CareRequestCategoryListItemDto | CareRequestTypeListItemDto | UnitTypeListItemDto | DistanceFactorListItemDto | ComplexityLevelListItemDto | VolumeDiscountRuleListItemDto | NurseSpecialtyListItemDto | NurseCategoryListItemDto;
 
@@ -436,6 +444,19 @@ export default function AdminCatalogScreen() {
     return labels[key] ?? key;
   };
 
+  // Client-side paging for the active tab — resets to page 1 on tab switch.
+  const allItems = getCurrentData();
+  const { page, pageCount, pageItems, setPage } = useClientPaging(allItems, 10, activeTab);
+
+  const handleTabChange = (key: TabKey) => {
+    setActiveTab(key);
+    // Close any open edit panel when switching tabs.
+    setEditingItem(null);
+    setEditingTabKey(null);
+    setFormData({});
+    setSaveError(null);
+  };
+
   return (
     <MobileWorkspaceShell
       onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.adminHome)}
@@ -481,15 +502,11 @@ export default function AdminCatalogScreen() {
         </View>
       )}
     >
-      {!!error && (
-        <Text
-          style={styles.error}
-          testID="admin-catalog-error"
-          nativeID="admin-catalog-error"
-        >
-          {error}
-        </Text>
-      )}
+      <Banner
+        tone="error"
+        message={error}
+        testID="admin-catalog-error"
+      />
 
       {loading && (
         <View style={styles.loadingContainer}>
@@ -500,73 +517,54 @@ export default function AdminCatalogScreen() {
 
       {!loading && (
         <>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.tabsContainer}
+          {/* Tab switcher — shared FilterChips; counts omitted (one fetch covers all tabs). */}
+          <View
             testID="admin-catalog-tab-bar"
             nativeID="admin-catalog-tab-bar"
           >
-            {TABS.map((tab) => {
-              const isActive = activeTab === tab.key;
-              return (
-                <Pressable
-                  key={tab.key}
-                  style={[styles.tab, isActive && styles.tabActive]}
-                  onPress={() => setActiveTab(tab.key)}
-                  testID={`admin-catalog-tab-${tab.key}`}
-                  nativeID={`admin-catalog-tab-${tab.key}`}
-                  accessibilityRole="tab"
-                  accessibilityLabel={tab.label}
-                  accessibilityState={{ selected: isActive }}
-                >
-                  <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
-                    {tab.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
+            <FilterChips<TabKey>
+              options={TAB_FILTER_OPTIONS}
+              value={activeTab}
+              onChange={handleTabChange}
+              testIDPrefix="admin-catalog-tab"
+            />
+          </View>
 
           {/* Inline edit/create panel */}
           {editingTabKey === activeTab && (
-            <View
-              style={styles.editPanel}
+            <FormPanel
+              tone="accent"
+              title={`${editingItem ? "Editar" : "Crear"} ${TABS.find((t) => t.key === activeTab)?.label ?? ""}`}
               testID="admin-catalog-edit-panel"
-              nativeID="admin-catalog-edit-panel"
+              footer={(
+                <View style={styles.editActions}>
+                  <Pressable
+                    style={[styles.buttonPrimary, saving && styles.buttonDisabled]}
+                    onPress={() => void handleSave()}
+                    disabled={saving}
+                    testID="admin-catalog-save-btn"
+                    nativeID="admin-catalog-save-btn"
+                    accessibilityRole="button"
+                    accessibilityLabel={saving ? "Guardando elemento" : "Guardar elemento"}
+                  >
+                    <Text style={styles.buttonPrimaryText}>{saving ? "Guardando..." : "Guardar"}</Text>
+                  </Pressable>
+                  <Pressable
+                    style={styles.button}
+                    onPress={handleCancelEdit}
+                    testID="admin-catalog-cancel-btn"
+                    nativeID="admin-catalog-cancel-btn"
+                    accessibilityRole="button"
+                    accessibilityLabel="Cancelar edición"
+                  >
+                    <Text style={styles.buttonText}>Cancelar</Text>
+                  </Pressable>
+                </View>
+              )}
             >
-              <Text style={styles.editPanelTitle}>
-                {editingItem ? "Editar" : "Crear"} {TABS.find((t) => t.key === activeTab)?.label}
-              </Text>
-
-              {saveError && <Text style={styles.error}>{saveError}</Text>}
-
+              <Banner tone="error" message={saveError} />
               {Object.entries(formData).map(([key, value]) => renderFormField(key, value))}
-
-              <View style={styles.editActions}>
-                <Pressable
-                  style={[styles.buttonPrimary, saving && styles.buttonDisabled]}
-                  onPress={() => void handleSave()}
-                  disabled={saving}
-                  testID="admin-catalog-save-btn"
-                  nativeID="admin-catalog-save-btn"
-                  accessibilityRole="button"
-                  accessibilityLabel={saving ? "Guardando elemento" : "Guardar elemento"}
-                >
-                  <Text style={styles.buttonPrimaryText}>{saving ? "Guardando..." : "Guardar"}</Text>
-                </Pressable>
-                <Pressable
-                  style={styles.button}
-                  onPress={handleCancelEdit}
-                  testID="admin-catalog-cancel-btn"
-                  nativeID="admin-catalog-cancel-btn"
-                  accessibilityRole="button"
-                  accessibilityLabel="Cancelar edición"
-                >
-                  <Text style={styles.buttonText}>Cancelar</Text>
-                </Pressable>
-              </View>
-            </View>
+            </FormPanel>
           )}
 
           <View
@@ -574,38 +572,27 @@ export default function AdminCatalogScreen() {
             testID="admin-catalog-cards-list"
             nativeID="admin-catalog-cards-list"
           >
-            {getCurrentData().map((item, index) => {
+            {pageItems.map((item, index) => {
               const isEditingThis = editingItem === item;
               const itemId = getItemId(item) ?? String(index);
               const itemCode = getItemCode(item);
               const itemTitle = getItemTitle(item);
               return (
                 <View key={itemId}>
-                  <Pressable
-                    style={styles.card}
-                    onPress={() => handleEdit(activeTab, item)}
-                    testID={`admin-catalog-card-${itemId}`}
-                    nativeID={`admin-catalog-card-${itemId}`}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Editar ${itemTitle}`}
-                  >
-                    <View style={styles.cardContent}>
-                      <View style={styles.cardTextBlock}>
-                        <View style={styles.cardHeader}>
-                          <Text style={styles.cardTitle}>{itemTitle}</Text>
-                          {!isItemActive(item) && (
-                            <StatusBadge
-                              label="Inactivo"
-                              tone="neutral"
-                              testID={`admin-catalog-inactive-badge-${itemId}`}
-                            />
-                          )}
-                        </View>
-                        <Text style={styles.cardSubtitle}>{getSubtitle(item)}</Text>
-                        {itemCode && <Text style={styles.cardCode}>Código {itemCode}</Text>}
-                      </View>
-                      <View style={styles.cardActions}>
-                        {activeTab === "types" && itemCode && (
+                  <ListRow
+                    title={itemTitle}
+                    subtitle={getSubtitle(item)}
+                    metaLines={[itemCode ? `Código ${itemCode}` : null]}
+                    badge={!isItemActive(item) ? (
+                      <StatusBadge
+                        label="Inactivo"
+                        tone="neutral"
+                        testID={`admin-catalog-inactive-badge-${itemId}`}
+                      />
+                    ) : undefined}
+                    rightAccessory={
+                      activeTab === "types" && itemCode ? (
+                        <View style={styles.cardActions}>
                           <Pressable
                             testID={`admin-catalog-pricing-preview-${itemCode}`}
                             nativeID={`admin-catalog-pricing-preview-${itemCode}`}
@@ -619,29 +606,41 @@ export default function AdminCatalogScreen() {
                           >
                             <Text style={styles.previewButtonText}>Previsualizar precio</Text>
                           </Pressable>
-                        )}
+                          <Text style={styles.cardChevron}>{isEditingThis ? "v" : ">"}</Text>
+                        </View>
+                      ) : (
                         <Text style={styles.cardChevron}>{isEditingThis ? "v" : ">"}</Text>
-                      </View>
-                    </View>
-                  </Pressable>
+                      )
+                    }
+                    onPress={() => handleEdit(activeTab, item)}
+                    testID={`admin-catalog-card-${itemId}`}
+                    accessibilityLabel={`Editar ${itemTitle}`}
+                  />
 
                   {/* Pricing preview inline panel */}
                   {activeTab === "types" && pricingPreviewItemCode === itemCode && (
-                    <View
-                      style={styles.pricingPreviewPanel}
+                    <FormPanel
+                      tone="accent"
+                      title="Vista previa de precio"
                       testID="admin-catalog-pricing-preview-panel"
-                      nativeID="admin-catalog-pricing-preview-panel"
+                      footer={(
+                        <Pressable
+                          style={styles.button}
+                          onPress={() => { setPricingPreviewItemCode(null); setPricingPreviewResult(null); }}
+                          accessibilityRole="button"
+                          accessibilityLabel="Cerrar vista previa de precio"
+                        >
+                          <Text style={styles.buttonText}>Cerrar vista previa</Text>
+                        </Pressable>
+                      )}
                     >
-                      <Text style={styles.previewPanelTitle}>Vista previa de precio</Text>
                       {pricingPreviewLoading && (
                         <View style={styles.previewLoadingRow}>
                           <ActivityIndicator color={designTokens.color.ink.accent} accessibilityLabel="Cargando..." />
                           <Text style={styles.previewLoadingText}>Calculando precio...</Text>
                         </View>
                       )}
-                      {pricingPreviewError && (
-                        <Text style={styles.error}>{pricingPreviewError}</Text>
-                      )}
+                      <Banner tone="error" message={pricingPreviewError} />
                       {pricingPreviewResult && (
                         <View style={styles.previewResultCard}>
                           <Text style={styles.previewTypeLabel}>Codigo: {pricingPreviewItemCode}</Text>
@@ -659,26 +658,25 @@ export default function AdminCatalogScreen() {
                           </View>
                         </View>
                       )}
-                      <Pressable
-                        style={styles.button}
-                        onPress={() => { setPricingPreviewItemCode(null); setPricingPreviewResult(null); }}
-                        accessibilityRole="button"
-                        accessibilityLabel="Cerrar vista previa de precio"
-                      >
-                        <Text style={styles.buttonText}>Cerrar vista previa</Text>
-                      </Pressable>
-                    </View>
+                    </FormPanel>
                   )}
                 </View>
               );
             })}
 
-            {getCurrentData().length === 0 && (
+            {allItems.length === 0 && (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyStateText}>No hay elementos para mostrar</Text>
               </View>
             )}
           </View>
+
+          <Pagination
+            currentPage={page}
+            totalPages={pageCount}
+            onPageChange={setPage}
+            testID="admin-catalog-pagination"
+          />
         </>
       )}
     </MobileWorkspaceShell>
@@ -694,31 +692,14 @@ const styles = StyleSheet.create({
   buttonPrimary: { backgroundColor: designTokens.color.ink.accent, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10 },
   buttonPrimaryText: { color: designTokens.color.ink.inverse, fontWeight: "700", fontSize: 14, textAlign: "center" },
   buttonDisabled: { opacity: 0.5 },
-  error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: 12, borderRadius: 12, marginBottom: 12 },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: 40 },
   loadingText: { marginTop: 12, fontSize: 16, color: designTokens.color.ink.secondary },
-  tabsContainer: { marginBottom: 8 },
-  tab: { paddingHorizontal: 15, paddingVertical: 10, marginRight: 8, borderRadius: 999, backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.strong },
-  tabActive: { backgroundColor: designTokens.color.ink.primary, borderColor: designTokens.color.ink.primary },
-  tabText: { fontSize: 14, color: designTokens.color.ink.primary, fontWeight: "600" },
-  tabTextActive: { color: designTokens.color.ink.inverse },
-  editPanel: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.accent, borderRadius: 16, padding: 16, marginBottom: 12, gap: 8 },
-  editPanelTitle: { fontSize: 16, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 8 },
-  editActions: { flexDirection: "row", gap: 8, marginTop: 8 },
+  editActions: { flexDirection: "row", gap: 8 },
   cardsContainer: { gap: 10 },
-  card: { ...mobileSurfaceCard, paddingHorizontal: 16, paddingVertical: 12 },
-  cardContent: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 14 },
-  cardTextBlock: { flex: 1 },
-  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4, gap: 8 },
-  cardTitle: { fontSize: 15, fontWeight: "700", color: designTokens.color.ink.primary, flex: 1 },
-  cardSubtitle: { fontSize: 13, color: designTokens.color.ink.muted, marginBottom: 4 },
-  cardCode: { fontSize: 12, color: designTokens.color.ink.muted },
-  cardChevron: { color: designTokens.color.ink.muted, fontSize: 18, lineHeight: 24 },
   cardActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+  cardChevron: { color: designTokens.color.ink.muted, fontSize: 18, lineHeight: 24 },
   previewButton: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, backgroundColor: designTokens.color.surface.accent, borderWidth: 1, borderColor: designTokens.color.border.accent },
   previewButtonText: { fontSize: 12, color: designTokens.color.ink.accentStrong, fontWeight: "600" },
-  pricingPreviewPanel: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.accent, borderRadius: 16, padding: 16, marginTop: 4, marginBottom: 8, gap: 12 },
-  previewPanelTitle: { fontSize: 16, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 8 },
   previewLoadingRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 },
   previewLoadingText: { fontSize: 15, color: designTokens.color.ink.secondary },
   previewResultCard: { ...mobileSurfaceCard, padding: 16 },

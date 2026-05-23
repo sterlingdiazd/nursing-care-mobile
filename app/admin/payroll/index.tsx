@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { router } from "expo-router";
 
@@ -7,7 +7,7 @@ import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
 import { designTokens } from "@/src/design-system/tokens";
-import { StatStrip } from "@/src/components/shared/MetricCard";
+import { MetricCard } from "@/src/components/shared/MetricCard";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import {
   getAdminMobilePayrollSummary,
@@ -85,26 +85,41 @@ export default function PayrollHubScreen() {
       .finally(() => setSummaryLoading(false));
   }, [isReady, isAuthenticated]);
 
+  const dash = summaryLoading ? "—" : null;
+
   return (
     <MobileWorkspaceShell
       title="Gestión de Nómina"
-      description="Períodos de pago, deducciones, descuentos y ajustes de las enfermeras."
+      eyebrow="Nómina"
       onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.adminHome)}
       primaryReturnLabel="Volver"
+      disableScroll
     >
       <View
         testID="payroll-hub-screen"
         nativeID="payroll-hub-screen"
         style={styles.screen}
       >
-        {/* Compact summary strip */}
-        <StatStrip items={[
-          { label: "Períodos abiertos", value: summaryLoading ? "—" : String(summary?.openPeriodsCount ?? "—") },
-          { label: "Compensación período", value: summaryLoading ? "—" : summary ? formatCurrency(summary.totalCompensationCurrentPeriod) : "—" },
-          { label: "Enfermeras activas", value: summaryLoading ? "—" : String(summary?.activeNursesCount ?? "—") },
-        ]} />
+        {/* KPI metrics row — viewport-fit, metrics-forward */}
+        <View style={styles.metricsRow}>
+          <MetricCard
+            label="Compensación"
+            value={dash ?? (summary ? formatCurrency(summary.totalCompensationCurrentPeriod) : "—")}
+            testID="payroll-hub-metric-compensation"
+          />
+          <MetricCard
+            label="Períodos abiertos"
+            value={dash ?? String(summary?.openPeriodsCount ?? "—")}
+            testID="payroll-hub-metric-open-periods"
+          />
+          <MetricCard
+            label="Enfermeras activas"
+            value={dash ?? String(summary?.activeNursesCount ?? "—")}
+            testID="payroll-hub-metric-nurses"
+          />
+        </View>
 
-        {/* Section cards */}
+        {/* Section cards — taxonomy helper copy clarifies each module */}
         <View style={styles.grid}>
           {SECTION_CARDS.map((card) => (
             <Pressable
@@ -134,7 +149,12 @@ export default function PayrollHubScreen() {
 
 const styles = StyleSheet.create({
   screen: {
+    flex: 1,
     gap: 16,
+  },
+  metricsRow: {
+    flexDirection: "row",
+    gap: 10,
   },
   grid: {
     gap: 10,

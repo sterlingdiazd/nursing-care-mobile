@@ -11,6 +11,7 @@ import {
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { FilterChips } from "@/src/components/shared/FilterChips";
 import { Pagination } from "@/src/components/shared/Pagination";
 import {
   mobileSecondaryButton,
@@ -40,7 +41,9 @@ import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigation
 
 const PAGE_SIZE = 10;
 
-const STATUS_FILTERS: ReadonlyArray<{ key: AdminNotificationStatus; label: string }> = [
+// Per-filter counts would require one request per status value — we only fetch
+// the active filter's page, so counts are omitted here.
+const STATUS_FILTER_OPTIONS: ReadonlyArray<{ key: AdminNotificationStatus; label: string }> = [
   { key: "Active", label: "Activas" },
   { key: "Unread", label: "No Leídas" },
   { key: "ActionRequired", label: "Acción" },
@@ -149,31 +152,15 @@ export default function AdminNotificationsScreen() {
           />
         }
       >
-        {/* Status filter chips — always visible, render-first */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filtersRow}
-        >
-          {STATUS_FILTERS.map((f) => {
-            const active = f.key === status;
-            return (
-              <Pressable
-                key={f.key}
-                onPress={() => handleStatusChange(f.key)}
-                accessibilityRole="button"
-                accessibilityLabel={`Filtro ${f.label}`}
-                testID={`admin-notifications-filter-${f.key.toLowerCase()}`}
-                nativeID={`admin-notifications-filter-${f.key.toLowerCase()}`}
-                style={[styles.filterChip, active && styles.filterChipActive]}
-              >
-                <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
-                  {f.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+        {/* Status filter chips — shared FilterChips; counts omitted because the
+            endpoint only returns totalCount for the active filter, and fetching
+            per-filter counts would require N parallel requests on every render. */}
+        <FilterChips<AdminNotificationStatus>
+          options={STATUS_FILTER_OPTIONS}
+          value={status}
+          onChange={handleStatusChange}
+          testIDPrefix="admin-notifications-filter"
+        />
 
         {error ? (
           <View style={styles.errorBanner}>
@@ -318,33 +305,6 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingBottom: 24,
   },
-  filtersRow: {
-    flexDirection: "row",
-    gap: 8,
-    paddingVertical: 4,
-  },
-  filterChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: mobileTheme.colors.surface.secondary,
-    borderWidth: 1,
-    borderColor: mobileTheme.colors.border.subtle,
-  },
-  filterChipActive: {
-    backgroundColor: mobileTheme.colors.ink.accent,
-    borderColor: mobileTheme.colors.ink.accentStrong,
-  },
-  filterChipText: {
-    color: mobileTheme.colors.ink.secondary,
-    fontSize: 12,
-    fontWeight: "800",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-  },
-  filterChipTextActive: {
-    color: mobileTheme.colors.ink.inverse,
-  },
   summaryRow: {
     paddingHorizontal: 4,
   },
@@ -469,54 +429,5 @@ const styles = StyleSheet.create({
     color: mobileTheme.colors.status.dangerText,
     fontSize: 13,
     fontWeight: "700",
-  },
-  paginationRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 6,
-    paddingTop: 12,
-  },
-  pageChip: {
-    minWidth: 32,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: mobileTheme.colors.surface.secondary,
-    alignItems: "center",
-  },
-  pageChipActive: {
-    backgroundColor: mobileTheme.colors.ink.accent,
-  },
-  pageChipText: {
-    color: mobileTheme.colors.ink.secondary,
-    fontSize: 13,
-    fontWeight: "800",
-  },
-  pageChipTextActive: {
-    color: mobileTheme.colors.ink.inverse,
-  },
-  pageEllipsis: {
-    color: mobileTheme.colors.ink.muted,
-    fontSize: 13,
-    fontWeight: "800",
-    paddingHorizontal: 4,
-  },
-  pageNav: {
-    minWidth: 32,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: mobileTheme.colors.surface.secondary,
-    alignItems: "center",
-  },
-  pageNavDisabled: {
-    opacity: 0.4,
-  },
-  pageNavText: {
-    color: mobileTheme.colors.ink.primary,
-    fontSize: 18,
-    fontWeight: "900",
-    lineHeight: 18,
   },
 });

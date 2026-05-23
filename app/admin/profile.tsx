@@ -3,7 +3,9 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { Banner } from "@/src/components/shared/Banner";
 import { FormInput } from "@/src/components/form";
+import { FormPanel } from "@/src/components/shared/FormPanel";
 import { useAuth } from "@/src/context/AuthContext";
 import { mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
 import {
@@ -209,23 +211,17 @@ export default function AdminProfileScreen() {
         </View>
       ) : (
         <View style={styles.container}>
-          {serverError ? (
-            <View
-              {...automationProps(adminTestIds.profile.errorBanner)}
-              style={[styles.banner, styles.errorBanner]}
-            >
-              <Text style={styles.errorText}>{serverError}</Text>
-            </View>
-          ) : null}
+          <Banner
+            tone="error"
+            message={serverError}
+            testID={adminTestIds.profile.errorBanner}
+          />
 
-          {successMessage ? (
-            <View
-              {...automationProps(adminTestIds.profile.successBanner)}
-              style={[styles.banner, styles.successBanner]}
-            >
-              <Text style={styles.successText}>{successMessage}</Text>
-            </View>
-          ) : null}
+          <Banner
+            tone="success"
+            message={successMessage}
+            testID={adminTestIds.profile.successBanner}
+          />
 
           {detail ? (
             <View style={styles.metaCard}>
@@ -244,7 +240,10 @@ export default function AdminProfileScreen() {
             </View>
           ) : null}
 
-          <View style={styles.formGroup}>
+          <FormPanel
+            eyebrow="Datos personales"
+            testID="profile-personal-panel"
+          >
             <FormInput
               testID={adminTestIds.profile.nameInput}
               label="Nombre"
@@ -292,7 +291,7 @@ export default function AdminProfileScreen() {
               error={errors.email}
               editable={!isSaving}
             />
-          </View>
+          </FormPanel>
         </View>
       )}
     </MobileWorkspaceShell>
@@ -309,30 +308,6 @@ const styles = StyleSheet.create({
     gap: 14,
     paddingBottom: 24,
   },
-  banner: {
-    borderRadius: mobileTheme.radius.lg,
-    padding: 12,
-  },
-  errorBanner: {
-    backgroundColor: mobileTheme.colors.surface.danger,
-    borderWidth: 1,
-    borderColor: mobileTheme.colors.border.danger,
-  },
-  successBanner: {
-    backgroundColor: mobileTheme.colors.surface.success,
-    borderWidth: 1,
-    borderColor: mobileTheme.colors.border.success,
-  },
-  errorText: {
-    color: mobileTheme.colors.ink.danger,
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  successText: {
-    color: mobileTheme.colors.status.successText,
-    fontSize: 13,
-    fontWeight: "700",
-  },
   metaCard: {
     ...mobileSurfaceCard,
     padding: 12,
@@ -345,8 +320,5 @@ const styles = StyleSheet.create({
   metaValue: {
     color: mobileTheme.colors.ink.primary,
     fontWeight: "800",
-  },
-  formGroup: {
-    gap: 12,
   },
 });

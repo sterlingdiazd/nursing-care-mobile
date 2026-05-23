@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
-import { FontAwesome } from "@expo/vector-icons";
 import { getFinanceOverview, type FinanceOverview, type HealthIndicator } from "@/src/services/financeService";
 import { financeTheme as t, fmtMoney, fmtMoneyCompact, statusColor } from "@/components/finance/financeTheme";
 import { SegmentedTabs } from "@/components/finance/SegmentedTabs";
 import { GananciaHero, HealthRow, FocusCard } from "@/components/finance/SummaryWidgets";
 import { RevenueDonut, SectionCard, TopClientsBars, TrendArea } from "@/components/finance/FinanceCharts";
 import { DashboardSkeleton } from "@/components/finance/DashboardSkeleton";
+import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { router } from "expo-router";
+import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 const TABS = [
   { key: "resumen", label: "Resumen" },
@@ -45,42 +45,49 @@ export default function AdminFinanceDashboard() {
     void load();
   }, [load]);
 
-  return (
-    <SafeAreaView style={styles.safe} edges={["top"]}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel="Volver">
-          <FontAwesome name="chevron-left" size={16} color={t.text} />
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.eyebrow}>Finanzas</Text>
-          <Text style={styles.title}>Panel del negocio</Text>
-        </View>
-        <Pressable onPress={() => void load()} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel="Actualizar">
-          <FontAwesome name="refresh" size={15} color={t.text} />
-        </Pressable>
-      </View>
+  const refreshAccessory = (
+    <Pressable
+      onPress={() => void load()}
+      style={styles.iconBtn}
+      accessibilityRole="button"
+      accessibilityLabel="Actualizar"
+      testID="finance-dashboard-refresh-btn"
+      nativeID="finance-dashboard-refresh-btn"
+    >
+      <Text style={styles.refreshGlyph}>↻</Text>
+    </Pressable>
+  );
 
-      <View style={styles.body}>
-        {loading ? (
-          <DashboardSkeleton />
-        ) : error ? (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{error}</Text>
-            <Pressable onPress={() => void load()} style={styles.retry}><Text style={styles.retryText}>Reintentar</Text></Pressable>
+  return (
+    <MobileWorkspaceShell
+      eyebrow="Finanzas"
+      title="Panel del negocio"
+      headerAccessory={refreshAccessory}
+      onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.adminHome)}
+      primaryReturnLabel="Volver"
+      testID="finance-dashboard-screen"
+      nativeID="finance-dashboard-screen"
+      disableScroll={false}
+    >
+      {loading ? (
+        <DashboardSkeleton />
+      ) : error ? (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>{error}</Text>
+          <Pressable onPress={() => void load()} style={styles.retry}><Text style={styles.retryText}>Reintentar</Text></Pressable>
+        </View>
+      ) : data ? (
+        <>
+          <SegmentedTabs tabs={TABS} active={tab} onChange={setTab} />
+          <View style={styles.segment}>
+            {tab === "resumen" ? <Resumen data={data} /> : null}
+            {tab === "ingresos" ? <Ingresos data={data} /> : null}
+            {tab === "equipo" ? <Equipo data={data} /> : null}
+            {tab === "tendencia" ? <Tendencia data={data} /> : null}
           </View>
-        ) : data ? (
-          <>
-            <SegmentedTabs tabs={TABS} active={tab} onChange={setTab} />
-            <View style={styles.segment}>
-              {tab === "resumen" ? <Resumen data={data} /> : null}
-              {tab === "ingresos" ? <Ingresos data={data} /> : null}
-              {tab === "equipo" ? <Equipo data={data} /> : null}
-              {tab === "tendencia" ? <Tendencia data={data} /> : null}
-            </View>
-          </>
-        ) : null}
-      </View>
-    </SafeAreaView>
+        </>
+      ) : null}
+    </MobileWorkspaceShell>
   );
 }
 
@@ -231,12 +238,8 @@ function DeltaChip({ label, value, color }: { label: string; value: string; colo
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: t.bg },
-  header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 18, paddingVertical: 12 },
   iconBtn: { width: 38, height: 38, borderRadius: 999, backgroundColor: t.card, borderWidth: 1, borderColor: t.cardBorder, alignItems: "center", justifyContent: "center" },
-  eyebrow: { color: t.accent, fontSize: 11, fontWeight: "800", letterSpacing: 1, textTransform: "uppercase" },
-  title: { color: t.text, fontSize: 22, fontWeight: "800" },
-  body: { flex: 1, paddingHorizontal: 18, paddingTop: 4, gap: 14 },
+  refreshGlyph: { color: t.text, fontSize: 18, fontWeight: "800" },
   segment: { flex: 1 },
   barHeader: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
   barName: { color: t.text, fontSize: 13, fontWeight: "700", flex: 1 },

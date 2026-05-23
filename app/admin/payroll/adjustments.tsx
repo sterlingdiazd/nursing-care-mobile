@@ -7,6 +7,11 @@ import { type FooterAction } from "@/src/components/navigation/AppFooter";
 import { useAuth } from "@/src/context/AuthContext";
 import { useToast } from "@/src/components/shared/ToastProvider";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+import { FilterChips, type FilterChipOption } from "@/src/components/shared/FilterChips";
+import { ListRow } from "@/src/components/shared/ListRow";
+import { Pagination } from "@/src/components/shared/Pagination";
+import { useClientPaging } from "@/src/hooks/usePagedList";
+import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
 import { designTokens } from "@/src/design-system/tokens";
 import {
   getAdjustments,
@@ -17,13 +22,18 @@ import {
   type AdminCompensationAdjustmentListItem,
   type CreateCompensationAdjustmentRequest,
 } from "@/src/services/payrollService";
-import SearchFilterBar from "@/src/components/shared/SearchFilterBar";
 import {
-  AdjustmentListItem,
   CreateAdjustmentModal,
   ErrorView,
   LoadingView,
 } from "@/components/payroll";
+
+type AdjustmentTypeFilter = "" | "positive" | "negative";
+
+function formatCurrencyWithSign(amount: number) {
+  const prefix = amount >= 0 ? "+" : "";
+  return prefix + new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP" }).format(amount);
+}
 
 export default function AdjustmentsScreen() {
   const { roles, isReady, isAuthenticated, requiresProfileCompletion } = useAuth();
@@ -43,9 +53,7 @@ export default function AdjustmentsScreen() {
   const [editingAdjustment, setEditingAdjustment] = useState<AdminCompensationAdjustmentListItem | null>(null);
   const [adjustmentsRefreshing, setAdjustmentsRefreshing] = useState(false);
 
-  // Search state — client-side filter by nurse name
-  const [searchValue, setSearchValue] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState<AdjustmentTypeFilter>("");
 
   const fetchedRef = useRef(false);
 
@@ -112,14 +120,26 @@ export default function AdjustmentsScreen() {
     setEditingAdjustment(null);
   }, []);
 
+  const allItems = adjustments?.items ?? [];
+
   const filteredItems = useMemo(() => {
-    if (!adjustments) return [];
-    if (!searchQuery) return adjustments.items;
-    const q = searchQuery.toLowerCase();
-    return adjustments.items.filter(
-      (a) => a.nurseDisplayName.toLowerCase().includes(q) || a.label.toLowerCase().includes(q),
-    );
-  }, [adjustments, searchQuery]);
+    return allItems.filter((a) => {
+      if (typeFilter === "positive") return a.amount >= 0;
+      if (typeFilter === "negative") return a.amount < 0;
+      return true;
+    });
+  }, [allItems, typeFilter]);
+
+  const positiveCount = useMemo(() => allItems.filter((a) => a.amount >= 0).length, [allItems]);
+  const negativeCount = useMemo(() => allItems.filter((a) => a.amount < 0).length, [allItems]);
+
+  const TYPE_FILTER_OPTIONS: ReadonlyArray<FilterChipOption<AdjustmentTypeFilter>> = [
+    { key: "", label: "Todos", count: allItems.length },
+    { key: "positive", label: "Bonos (+)", count: positiveCount },
+    { key: "negative", label: "Correcciones (−)", count: negativeCount },
+  ];
+
+  const { page, pageCount, pageItems, setPage } = useClientPaging(filteredItems, 10, typeFilter);
 
   const workflowActions: FooterAction[] = [
     {
@@ -142,12 +162,11 @@ export default function AdjustmentsScreen() {
           contentContainerStyle={styles.scrollPad}
           refreshControl={<RefreshControl refreshing={adjustmentsRefreshing} onRefresh={handleRefresh} />}
         >
-          <SearchFilterBar
-            searchPlaceholder="Buscar por enfermera"
-            searchValue={searchValue}
-            onSearchChange={setSearchValue}
-            onSearch={() => setSearchQuery(searchValue)}
-            onClear={() => { setSearchValue(""); setSearchQuery(""); }}
+          <FilterChips
+            options={TYPE_FILTER_OPTIONS}
+            value={typeFilter}
+            onChange={(key) => setTypeFilter(key)}
+            testIDPrefix="adjustments-filter"
           />
 
           {adjustmentsError && !adjustmentsLoading ? (
@@ -156,20 +175,34 @@ export default function AdjustmentsScreen() {
             <LoadingView message="Cargando ajustes..." />
           ) : filteredItems.length === 0 ? (
             <Text style={styles.emptyHint}>
-              {searchQuery
-                ? "No hay ajustes que coincidan con la búsqueda."
+              {typeFilter
+                ? "No hay ajustes de este tipo."
                 : "Sin ajustes. Toca + Ajuste para añadir."}
             </Text>
           ) : (
-            <View style={styles.list}>
-              {filteredItems.map((adjustment) => (
-                <AdjustmentListItem
+            <View
+              testID="admin-payroll-adjustments-list"
+              nativeID="admin-payroll-adjustments-list"
+              style={styles.list}
+            >
+              {pageItems.map((adjustment) => (
+                <ListRow
                   key={adjustment.id}
-                  adjustment={adjustment}
-                  onDelete={handleDeleteAdjustment}
-                  onEdit={setEditingAdjustment}
+                  title={adjustment.label}
+                  subtitle={adjustment.nurseDisplayName}
+                  metaLines={[formatDateTimeES(adjustment.createdAtUtc)]}
+                  rightText={formatCurrencyWithSign(adjustment.amount)}
+                  onPress={() => setEditingAdjustment(adjustment)}
+                  testID={`adjustment-item-${adjustment.id}`}
+                  accessibilityLabel={`Editar ajuste ${adjustment.label}`}
                 />
               ))}
+              <Pagination
+                currentPage={page}
+                totalPages={pageCount}
+                onPageChange={setPage}
+                testID="adjustments-pagination"
+              />
             </View>
           )}
         </ScrollView>
@@ -192,9 +225,11 @@ const styles = StyleSheet.create({
   },
   scrollPad: {
     paddingBottom: 16,
+    gap: 8,
   },
   list: {
     paddingTop: 4,
+    gap: 8,
   },
   emptyHint: {
     color: designTokens.color.ink.secondary,

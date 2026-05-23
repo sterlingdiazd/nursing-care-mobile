@@ -13,6 +13,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import { useAuth } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
 import { useToast } from "@/src/components/shared/ToastProvider";
@@ -196,7 +197,7 @@ export default function AdminReportsScreen() {
     <MobileWorkspaceShell
       eyebrow="Reportes"
       title="Inteligencia operativa"
-      description="Visualiza indicadores clave con una presentacion mas clara y consistente."
+      description="Indicadores operativos y de nómina del período."
       onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.adminHome)}
       primaryReturnLabel="Volver"
       actions={
@@ -635,7 +636,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   selectorContainer: { marginBottom: 20 },
   sectionTitle: { fontSize: 13, fontWeight: "700", color: designTokens.color.ink.muted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 },
-  dataContainer: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 22, padding: 20, minHeight: 400, boxShadow: "0px 6px 14px rgba(18, 48, 68, 0.06)", elevation: 2, borderWidth: 1, borderColor: designTokens.color.border.subtle },
+  dataContainer: { ...mobileSurfaceCard, padding: 20, minHeight: 400 },
   reportTitle: { fontSize: 20, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 4 },
   reportDescription: { fontSize: 13, color: designTokens.color.ink.muted, marginBottom: 24, lineHeight: 18 },
   loaderContainer: { flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: 60 },

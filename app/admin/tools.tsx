@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { designTokens } from "@/src/design-system/tokens";
+import { StyleSheet } from "react-native";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { FormButton } from "@/src/components/form/FormButton";
+import { FormInput } from "@/src/components/form/FormInput";
+import { FormPanel } from "@/src/components/shared/FormPanel";
 import { useAuth } from "@/src/context/AuthContext";
 import { logClientEvent } from "@/src/logging/clientLogger";
-import { mobilePrimaryButton, mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
 import { useToast } from "@/src/components/shared/ToastProvider";
 
 export default function ToolsScreen() {
@@ -23,7 +24,7 @@ export default function ToolsScreen() {
     setTokenManually(manualToken);
     setManualToken("");
     logClientEvent("mobile.ui", "Manual token saved from tools screen");
-    showToast({ variant: "success", message: "La app mobile usara este Bearer token en adelante." });
+    showToast({ variant: "success", message: "La app mobile usará este Bearer token en adelante." });
   };
 
   return (
@@ -32,87 +33,39 @@ export default function ToolsScreen() {
       title="Utilidades avanzadas"
       description="Opciones de soporte y desarrollo fuera del flujo principal."
     >
-      <View style={styles.card}>
-        <Text style={styles.sectionEyebrow}>Token manual</Text>
-        <Text style={styles.sectionTitle}>Sobrescribe la sesion desde Swagger</Text>
-        <Text style={styles.copy}>
-          Si ya autorizaste Swagger, pega aqui el JWT sin la palabra Bearer. Esto es util para depuracion local y pruebas manuales.
-        </Text>
-
-        <TextInput
+      <FormPanel
+        eyebrow="Token manual"
+        title="Sobrescribe la sesión desde Swagger"
+        testID="tools-token-panel"
+      >
+        <FormInput
+          label="JWT sin el prefijo Bearer"
+          placeholder="eyJhbGciOi..."
           value={manualToken}
           onChangeText={setManualToken}
-          placeholder="eyJhbGciOi..."
           autoCapitalize="none"
           autoCorrect={false}
           multiline
-          textAlignVertical="top"
-          style={[styles.input, styles.tokenInput]}
+          style={styles.tokenInput}
+          testID="tools-token-input"
+          accessibilityLabel="Campo de token JWT manual"
         />
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Guardar token manual"
+        <FormButton
+          variant="primary"
           onPress={onSaveToken}
-          style={({ pressed }) => [
-            styles.primaryButton,
-            pressed && styles.buttonPressed,
-          ]}
+          testID="tools-save-token-btn"
+          accessibilityLabel="Guardar token manual"
         >
-          <Text style={styles.primaryButtonText}>Guardar token manual</Text>
-        </Pressable>
-      </View>
+          Guardar token
+        </FormButton>
+      </FormPanel>
     </MobileWorkspaceShell>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    ...mobileSurfaceCard,
-    borderRadius: mobileTheme.radius.xl,
-    padding: 20,
-  },
-  sectionEyebrow: {
-    ...mobileTheme.typography.eyebrow,
-    color: mobileTheme.colors.ink.muted,
-    marginBottom: 8,
-  },
-  sectionTitle: {
-    ...mobileTheme.typography.title,
-    color: mobileTheme.colors.ink.primary,
-    marginBottom: 10,
-  },
-  copy: {
-    ...mobileTheme.typography.body,
-    color: mobileTheme.colors.ink.secondary,
-    marginBottom: 14,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: designTokens.color.border.strong,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: designTokens.color.ink.primary,
-    backgroundColor: designTokens.color.ink.inverse,
-  },
   tokenInput: {
     minHeight: 180,
-    marginBottom: 16,
-  },
-  primaryButton: {
-    ...mobilePrimaryButton,
-    borderRadius: mobileTheme.radius.md,
-    paddingVertical: 15,
-    paddingHorizontal: 18,
-  },
-  primaryButtonText: {
-    color: designTokens.color.ink.inverse,
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  buttonPressed: {
-    opacity: 0.88,
+    textAlignVertical: "top",
   },
 });

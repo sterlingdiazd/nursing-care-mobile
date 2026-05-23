@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
@@ -7,6 +7,9 @@ import { type FooterAction } from "@/src/components/navigation/AppFooter";
 import { useAuth } from "@/src/context/AuthContext";
 import { useToast } from "@/src/components/shared/ToastProvider";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+import { FilterChips, type FilterChipOption } from "@/src/components/shared/FilterChips";
+import { Pagination } from "@/src/components/shared/Pagination";
+import { usePagedList } from "@/src/hooks/usePagedList";
 import { designTokens } from "@/src/design-system/tokens";
 import { formatDateES, formatDateTimeES } from "@/src/utils/spanishTextValidator";
 import { nextQuincenaAfter } from "@/src/utils/payrollPeriods";
@@ -18,12 +21,10 @@ import {
   deletePayrollPeriod,
   closePayrollPeriod,
   recalculatePayroll,
-  type AdminPayrollPeriodListResult,
   type AdminPayrollPeriodDetail,
   type CreatePayrollPeriodRequest,
   type RecalculatePayrollResult,
 } from "@/src/services/payrollService";
-import SearchFilterBar from "@/src/components/shared/SearchFilterBar";
 import {
   PeriodListItem,
   CreatePeriodModal,
@@ -41,12 +42,15 @@ function formatTriggeredAt(value: string) {
 }
 
 type Mode = "list" | "detail" | "recalc-review";
+type StatusFilter = "" | "Open" | "Closed";
 
-const STATUS_FILTERS = [
-  { value: "", label: "Todos" },
-  { value: "Open", label: "Abiertos" },
-  { value: "Closed", label: "Cerrados" },
+const STATUS_FILTER_OPTIONS: ReadonlyArray<FilterChipOption<StatusFilter>> = [
+  { key: "", label: "Todos" },
+  { key: "Open", label: "Abiertos" },
+  { key: "Closed", label: "Cerrados" },
 ];
+
+const PAGE_SIZE = 10;
 
 export default function PeriodsScreen() {
   const { roles, isReady, isAuthenticated, requiresProfileCompletion } = useAuth();
@@ -60,61 +64,43 @@ export default function PeriodsScreen() {
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles]);
 
   const [mode, setMode] = useState<Mode>("list");
-  const [periodList, setPeriodList] = useState<AdminPayrollPeriodListResult | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<AdminPayrollPeriodDetail | null>(null);
   const [detailActions, setDetailActions] = useState<FooterAction[]>([]);
   const [selectedPeriodLoading, setSelectedPeriodLoading] = useState(false);
-  const [periodsLoading, setPeriodsLoading] = useState(true);
-  const [periodsError, setPeriodsError] = useState<string | null>(null);
   const [showCreatePeriodModal, setShowCreatePeriodModal] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<AdminPayrollPeriodDetail | null>(null);
-  const [periodsRefreshing, setPeriodsRefreshing] = useState(false);
   const [recalculateLoading, setRecalculateLoading] = useState(false);
   const [recalculateResult, setRecalculateResult] = useState<RecalculatePayrollResult | null>(null);
 
-  // Search + filter state
-  const [searchValue, setSearchValue] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("");
 
-  const fetchedRef = useRef(false);
+  const isReady$ = isReady && isAuthenticated;
 
-  const loadPeriods = useCallback(async (status?: string) => {
-    try {
-      setPeriodsError(null);
-      setPeriodsLoading(true);
-      const data = await getPayrollPeriods({ pageNumber: 1, pageSize: 50, status: status ?? statusFilter ?? null });
-      setPeriodList(data);
-    } catch (e) {
-      setPeriodsError(e instanceof Error ? e.message : "Error al cargar períodos");
-    } finally {
-      setPeriodsLoading(false);
-    }
-  }, [statusFilter]);
+  const {
+    items: periodItems,
+    totalCount,
+    page,
+    pageCount,
+    isLoading: periodsLoading,
+    isRefreshing: periodsRefreshing,
+    error: periodsError,
+    setPage,
+    refresh: handleRefresh,
+    reload: reloadPeriods,
+  } = usePagedList({
+    fetcher: useCallback(
+      (p: number, ps: number) =>
+        getPayrollPeriods({ pageNumber: p, pageSize: ps, status: statusFilter || null }),
+      [statusFilter],
+    ),
+    pageSize: PAGE_SIZE,
+    enabled: isReady$,
+    resetKey: statusFilter,
+  });
 
-  useEffect(() => {
-    if (!isReady || !isAuthenticated) return;
-    if (fetchedRef.current) return;
-    fetchedRef.current = true;
-    void loadPeriods();
-  }, [isReady, isAuthenticated, loadPeriods]);
-
-  // Status filter changes reload explicitly from the chip press (see onPress below),
-  // so there is no filter effect that would double-fire on mount.
-  const applyStatusFilter = useCallback((status: string) => {
-    setStatusFilter(status);
-    setPeriodList(null);
-    void loadPeriods(status);
-  }, [loadPeriods]);
-
-  const handleRefresh = useCallback(async () => {
-    setPeriodsRefreshing(true);
-    try {
-      await loadPeriods();
-    } finally {
-      setPeriodsRefreshing(false);
-    }
-  }, [loadPeriods]);
+  // Keep a ref to the current period items for the quincena preview
+  const periodItemsRef = useRef(periodItems);
+  periodItemsRef.current = periodItems;
 
   const handlePeriodPress = useCallback(async (id: string) => {
     try {
@@ -133,8 +119,8 @@ export default function PeriodsScreen() {
   const handleBackToList = useCallback(() => {
     setSelectedPeriod(null);
     setMode("list");
-    void loadPeriods();
-  }, [loadPeriods]);
+    reloadPeriods();
+  }, [reloadPeriods]);
 
   const handleSubmitPeriod = useCallback(async (data: CreatePayrollPeriodRequest) => {
     if (editingPeriod) {
@@ -146,12 +132,11 @@ export default function PeriodsScreen() {
       await createPayrollPeriod(data);
       showToast({ message: "Período de nómina creado correctamente", variant: "success" });
     }
-    void loadPeriods();
-  }, [editingPeriod, loadPeriods, showToast]);
+    reloadPeriods();
+  }, [editingPeriod, reloadPeriods, showToast]);
 
   const handleCreateStandardPeriod = useCallback(() => {
-    // Preview the computed quincena dates before creating — the owner confirms what will be made.
-    const data = nextQuincenaAfter(periodList?.items ?? []);
+    const data = nextQuincenaAfter(periodItemsRef.current);
     Alert.alert(
       "Crear quincena estándar",
       `Se creará la quincena:\n\nInicio: ${formatDateES(data.startDate)}\nFin: ${formatDateES(data.endDate)}\nCorte: ${formatDateES(data.cutoffDate)}\nPago: ${formatDateES(data.paymentDate)}`,
@@ -163,7 +148,7 @@ export default function PeriodsScreen() {
             try {
               await createPayrollPeriod(data);
               showToast({ message: "Período estándar creado correctamente", variant: "success" });
-              void loadPeriods();
+              reloadPeriods();
             } catch (e) {
               const message = e instanceof Error ? e.message : "No fue posible crear el período estándar.";
               showToast({ message, variant: "error" });
@@ -172,7 +157,7 @@ export default function PeriodsScreen() {
         },
       ]
     );
-  }, [periodList, loadPeriods, showToast]);
+  }, [reloadPeriods, showToast]);
 
   const handleStartEditPeriod = useCallback(() => {
     if (!selectedPeriod) return;
@@ -198,8 +183,8 @@ export default function PeriodsScreen() {
     const detail = await getPayrollPeriodById(selectedPeriod.id);
     setSelectedPeriod(detail);
     showToast({ message: "Período de nómina cerrado correctamente", variant: "success" });
-    void loadPeriods();
-  }, [selectedPeriod, loadPeriods, showToast]);
+    reloadPeriods();
+  }, [selectedPeriod, reloadPeriods, showToast]);
 
   const handleRecalculate = useCallback(async () => {
     setRecalculateLoading(true);
@@ -207,36 +192,27 @@ export default function PeriodsScreen() {
       const result = await recalculatePayroll({});
       setRecalculateResult(result);
       setMode("list");
-      void loadPeriods();
+      reloadPeriods();
     } catch (e) {
       const message = e instanceof Error ? e.message : "No fue posible recalcular la nómina.";
       showToast({ message, variant: "error" });
     } finally {
       setRecalculateLoading(false);
     }
-  }, [loadPeriods, showToast]);
+  }, [reloadPeriods, showToast]);
 
-  const filteredItems = periodList?.items.filter((p) => {
-    if (!searchQuery) return true;
-    // Periods don't have nurse names; filter by date range text for UX consistency
-    const text = `${p.startDate} ${p.endDate} ${p.status}`.toLowerCase();
-    return text.includes(searchQuery.toLowerCase());
-  }) ?? [];
-
-  const openPeriodsCount = periodList?.items.filter((p) => p.status === "Open").length ?? 0;
+  const openPeriodsCount = periodItems.filter((p) => p.status === "Open").length;
   const selectedPeriodLabel = selectedPeriod
     ? `${formatDateES(selectedPeriod.startDate)} – ${formatDateES(selectedPeriod.endDate)}`
     : openPeriodsCount > 0
       ? `${openPeriodsCount} período(s) abierto(s)`
       : "No hay períodos abiertos";
 
-  // Shell title is context-sensitive
   const shellTitle =
     mode === "detail" ? "Detalle de nómina" :
     mode === "recalc-review" ? "Recálculo" :
     "Períodos";
 
-  // onPrimaryReturn pops the inner state first, then goes to hub
   const handlePrimaryReturn = () => {
     if (mode === "recalc-review") {
       setMode("list");
@@ -249,7 +225,6 @@ export default function PeriodsScreen() {
     goBackOrReplace(router, mobileNavigationEscapes.adminPayroll);
   };
 
-  // Footer actions per mode
   const workflowActions: FooterAction[] = (() => {
     if (mode === "recalc-review") {
       return [
@@ -271,9 +246,8 @@ export default function PeriodsScreen() {
     if (mode === "detail") {
       return detailActions;
     }
-    // list mode
     const actions: FooterAction[] = [];
-    if ((periodList?.totalCount ?? 0) > 0) {
+    if (totalCount > 0) {
       actions.push({
         label: recalculateLoading ? "Recalculando…" : "Recalcular",
         onPress: () => setMode("recalc-review"),
@@ -344,45 +318,23 @@ export default function PeriodsScreen() {
           </Text>
         )}
 
-        <SearchFilterBar
-          searchPlaceholder="Buscar por fecha o estado"
-          searchValue={searchValue}
-          onSearchChange={setSearchValue}
-          onSearch={() => setSearchQuery(searchValue)}
-          onClear={() => { setSearchValue(""); setSearchQuery(""); }}
-          filters={
-            <View style={styles.chipRow}>
-              {STATUS_FILTERS.map((f) => {
-                const active = statusFilter === f.value;
-                return (
-                  <Pressable
-                    key={f.value}
-                    style={[styles.chip, active && styles.chipActive]}
-                    onPress={() => applyStatusFilter(f.value)}
-                    accessibilityRole="button"
-                    accessibilityLabel={f.label}
-                    accessibilityState={{ selected: active }}
-                    testID={`periods-filter-${f.value || "all"}`}
-                    nativeID={`periods-filter-${f.value || "all"}`}
-                  >
-                    <Text style={[styles.chipText, active && styles.chipTextActive]}>{f.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          }
+        <FilterChips
+          options={STATUS_FILTER_OPTIONS}
+          value={statusFilter}
+          onChange={(key) => setStatusFilter(key)}
+          testIDPrefix="periods-filter"
         />
 
         {/* Stats strip */}
         <View style={styles.statsStrip}>
           <View style={styles.statCell}>
-            <Text style={styles.statLabel}>Abiertos</Text>
-            <Text style={styles.statValue}>{openPeriodsCount}</Text>
+            <Text style={styles.statLabel}>Total</Text>
+            <Text style={styles.statValue}>{totalCount}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statCell}>
-            <Text style={styles.statLabel}>Total</Text>
-            <Text style={styles.statValue}>{periodList?.totalCount ?? 0}</Text>
+            <Text style={styles.statLabel}>Página</Text>
+            <Text style={styles.statValue}>{page} / {pageCount}</Text>
           </View>
         </View>
 
@@ -405,24 +357,30 @@ export default function PeriodsScreen() {
         )}
 
         {periodsError && !periodsLoading ? (
-          <ErrorView message={periodsError} onRetry={loadPeriods} />
+          <ErrorView message={periodsError} onRetry={reloadPeriods} />
         ) : periodsLoading ? (
           <LoadingView message="Cargando períodos..." />
-        ) : filteredItems.length === 0 ? (
+        ) : periodItems.length === 0 ? (
           <Text style={styles.emptyHint}>
-            {searchQuery || statusFilter
-              ? "No hay períodos que coincidan con los filtros."
+            {statusFilter
+              ? "No hay períodos que coincidan con el filtro."
               : "No hay períodos. Toca + Período para crear el primero."}
           </Text>
         ) : (
           <View style={styles.list} testID="admin-payroll-periods-list" nativeID="admin-payroll-periods-list">
-            {filteredItems.map((period) => (
+            {periodItems.map((period) => (
               <PeriodListItem
                 key={period.id}
                 period={period}
                 onPress={handlePeriodPress}
               />
             ))}
+            <Pagination
+              currentPage={page}
+              totalPages={pageCount}
+              onPageChange={setPage}
+              testID="periods-pagination"
+            />
           </View>
         )}
       </ScrollView>
@@ -445,7 +403,7 @@ export default function PeriodsScreen() {
         visible={showCreatePeriodModal}
         onClose={() => { setShowCreatePeriodModal(false); setEditingPeriod(null); }}
         onSubmit={handleSubmitPeriod}
-        existingPeriods={periodList?.items ?? []}
+        existingPeriods={periodItems}
         period={editingPeriod ? {
           startDate: editingPeriod.startDate,
           endDate: editingPeriod.endDate,
@@ -463,6 +421,7 @@ const styles = StyleSheet.create({
   },
   scrollPad: {
     paddingBottom: 16,
+    gap: 8,
   },
   readyMarker: {
     position: "absolute",
@@ -472,35 +431,9 @@ const styles = StyleSheet.create({
     width: 1,
     opacity: 0,
   },
-  chipRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: designTokens.radius.pill,
-    backgroundColor: designTokens.color.surface.tertiary,
-    borderWidth: 1,
-    borderColor: designTokens.color.border.subtle,
-  },
-  chipActive: {
-    backgroundColor: designTokens.color.ink.accent,
-    borderColor: designTokens.color.ink.accent,
-  },
-  chipText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: designTokens.color.ink.secondary,
-  },
-  chipTextActive: {
-    color: designTokens.color.ink.inverse,
-  },
   statsStrip: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: designTokens.radius.xl,
@@ -558,7 +491,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   summaryCard: {
-    marginBottom: 12,
     padding: 12,
     borderRadius: designTokens.radius.xl,
     backgroundColor: designTokens.color.surface.success,
@@ -587,5 +519,6 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingTop: 4,
+    gap: 8,
   },
 });

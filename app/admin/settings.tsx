@@ -1,14 +1,16 @@
 // @generated-by: implementation-agent
-// @pipeline-run: 2026-04-23-mobile-ux-route-first-refactor
-// @diffs: DIFF-ADMIN-SET-002
+// @pipeline-run: 2026-05-23-design-system-wave4
+// @diffs: DIFF-ADMIN-SET-003
 // @do-not-edit: false
 
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { Banner } from "@/src/components/shared/Banner";
+import { FormPanel } from "@/src/components/shared/FormPanel";
 import { useAuth } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
 import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
@@ -46,6 +48,7 @@ function parseAllowedValues(json: string | null): string[] | null {
 
 // Short Spanish labels for each setting key (the backend descriptions are long/English; never show
 // the raw key to the owner). Fallback order: label → description → key.
+// COMPANY_* keys use Spanish labels so the owner always sees familiar names.
 const SETTING_LABELS: Record<string, string> = {
   PORTAL_DEFAULT_LANGUAGE: "Idioma del portal",
   DASHBOARD_HIGH_SEVERITY_THRESHOLD: "Umbral de severidad alta (panel)",
@@ -148,15 +151,11 @@ export default function AdminSettingsScreen() {
       testID="admin-settings-screen"
       nativeID="admin-settings-screen"
     >
-      {!!error && (
-        <Text
-          style={styles.error}
-          testID="admin-settings-error"
-          nativeID="admin-settings-error"
-        >
-          {error}
-        </Text>
-      )}
+      <Banner
+        tone="error"
+        message={error}
+        testID="admin-settings-error"
+      />
 
       {loading && <Text style={styles.loadingText}>Cargando...</Text>}
 
@@ -189,6 +188,7 @@ export default function AdminSettingsScreen() {
                     </Text>
                   </View>
 
+                  {/* Hide the human description when the value is absent — show "Sin definir" placeholder instead */}
                   <Text style={[styles.settingValue, !hasValue && styles.settingValueEmpty]}>
                     {hasValue ? setting.value : "Sin definir"}
                   </Text>
@@ -202,10 +202,37 @@ export default function AdminSettingsScreen() {
                 </Pressable>
 
                 {editTarget?.key === setting.key && (
-                  <View
-                    style={styles.editPanel}
+                  <FormPanel
+                    tone="accent"
                     testID="admin-setting-edit-panel"
-                    nativeID="admin-setting-edit-panel"
+                    footer={(
+                      <View style={styles.editActions}>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel="Guardar parametro"
+                          style={[styles.buttonPrimary, saveLoading && styles.buttonDisabled]}
+                          onPress={() => void handleSave()}
+                          disabled={saveLoading}
+                          testID="admin-setting-save-btn"
+                          nativeID="admin-setting-save-btn"
+                        >
+                          <Text style={styles.buttonPrimaryText}>
+                            {saveLoading ? "Guardando..." : "Guardar"}
+                          </Text>
+                        </Pressable>
+
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel="Cancelar edicion"
+                          style={styles.button}
+                          onPress={handleCloseEdit}
+                          testID="admin-setting-cancel-btn"
+                          nativeID="admin-setting-cancel-btn"
+                        >
+                          <Text style={styles.buttonText}>Cancelar</Text>
+                        </Pressable>
+                      </View>
+                    )}
                   >
                     <View style={styles.detailField}>
                       <Text style={styles.detailLabel}>Parámetro</Text>
@@ -260,43 +287,9 @@ export default function AdminSettingsScreen() {
                       })()}
                     </View>
 
-                    {saveSuccess && (
-                      <View style={styles.successBanner}>
-                        <Text style={styles.successBannerText}>Parámetro actualizado correctamente.</Text>
-                      </View>
-                    )}
-
-                    {!!saveError && (
-                      <Text style={styles.error}>{saveError}</Text>
-                    )}
-
-                    <View style={styles.editActions}>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel="Guardar parametro"
-                        style={[styles.buttonPrimary, saveLoading && styles.buttonDisabled]}
-                        onPress={() => void handleSave()}
-                        disabled={saveLoading}
-                        testID="admin-setting-save-btn"
-                        nativeID="admin-setting-save-btn"
-                      >
-                        <Text style={styles.buttonPrimaryText}>
-                          {saveLoading ? "Guardando..." : "Guardar"}
-                        </Text>
-                      </Pressable>
-
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel="Cancelar edicion"
-                        style={styles.button}
-                        onPress={handleCloseEdit}
-                        testID="admin-setting-cancel-btn"
-                        nativeID="admin-setting-cancel-btn"
-                      >
-                        <Text style={styles.buttonText}>Cancelar</Text>
-                      </Pressable>
-                    </View>
-                  </View>
+                    <Banner tone="success" message={saveSuccess ? "Parámetro actualizado correctamente." : null} />
+                    <Banner tone="error" message={saveError} />
+                  </FormPanel>
                 )}
               </View>
               );
@@ -314,7 +307,6 @@ const styles = StyleSheet.create({
   buttonPrimary: { backgroundColor: designTokens.color.ink.accent, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, flex: 1 },
   buttonPrimaryText: { color: designTokens.color.ink.inverse, fontWeight: "700", fontSize: 15, textAlign: "center" },
   buttonDisabled: { opacity: 0.5 },
-  error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: 12, borderRadius: 12, marginBottom: 12 },
   loadingText: { color: designTokens.color.ink.secondary, fontSize: 14, textAlign: "center", padding: 20 },
   emptyState: { padding: 40, alignItems: "center" },
   emptyStateText: { color: designTokens.color.ink.secondary, fontSize: 16 },
@@ -328,8 +320,7 @@ const styles = StyleSheet.create({
   settingValueEmpty: { color: designTokens.color.ink.muted, fontWeight: "600", fontStyle: "italic" },
   settingDescription: { color: designTokens.color.ink.muted, fontSize: 13, marginBottom: 4 },
   settingModified: { color: designTokens.color.ink.muted, fontSize: 11, marginTop: 2 },
-  editPanel: { backgroundColor: designTokens.color.surface.canvas, borderWidth: 1, borderColor: designTokens.color.status.infoBg, borderRadius: 16, padding: 16, marginBottom: 10, gap: 12 },
-  editActions: { flexDirection: "row", gap: 8, marginTop: 4 },
+  editActions: { flexDirection: "row", gap: 8 },
   detailField: { gap: 4 },
   detailLabel: { color: designTokens.color.ink.muted, fontSize: 12, fontWeight: "800", textTransform: "uppercase" },
   detailValue: { color: designTokens.color.ink.primary, fontSize: 15 },
@@ -340,6 +331,4 @@ const styles = StyleSheet.create({
   chipText: { color: designTokens.color.ink.primary, fontSize: 12, fontWeight: "600" },
   chipTextActive: { color: designTokens.color.ink.inverse },
   input: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.strong, borderRadius: 14, padding: 14, color: designTokens.color.ink.primary, fontSize: 14 },
-  successBanner: { backgroundColor: designTokens.color.surface.success, borderRadius: 12, padding: 12 },
-  successBannerText: { color: designTokens.color.status.successText, fontWeight: "700", fontSize: 14, textAlign: "center" },
 });

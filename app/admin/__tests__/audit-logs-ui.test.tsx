@@ -36,12 +36,13 @@ describe("AdminAuditLogsScreen", () => {
     expect(component!.root.findByProps({ testID: "admin-audit-logs-screen" })).toBeTruthy();
   });
 
-  it("renders the filter toggle", async () => {
+  it("renders action filter chips", async () => {
     let component: ReturnType<typeof renderer.create>;
     await act(async () => {
       component = renderer.create(<AdminAuditLogsScreen />);
     });
-    expect(component!.root.findByProps({ testID: "admin-audit-logs-filter-toggle" })).toBeTruthy();
+    // "Todas" chip is always the first action filter chip
+    expect(component!.root.findByProps({ testID: "admin-audit-logs-action-filter-" })).toBeTruthy();
   });
 
   it("renders audit logs list container", async () => {
@@ -52,19 +53,13 @@ describe("AdminAuditLogsScreen", () => {
     expect(component!.root.findByProps({ testID: "admin-audit-logs-list" })).toBeTruthy();
   });
 
-  it("shows filter inputs when filter toggle pressed", async () => {
+  it("renders entity filter chips always visible", async () => {
     let component: ReturnType<typeof renderer.create>;
     await act(async () => {
       component = renderer.create(<AdminAuditLogsScreen />);
     });
-
-    const toggle = component!.root.findByProps({ testID: "admin-audit-logs-filter-toggle" });
-    act(() => { toggle.props.onPress(); });
-
-    expect(component!.root.findByProps({ testID: "admin-audit-logs-action-input" })).toBeTruthy();
-    expect(component!.root.findByProps({ testID: "admin-audit-logs-entity-type-input" })).toBeTruthy();
-    expect(component!.root.findByProps({ testID: "admin-audit-logs-search-btn" })).toBeTruthy();
-    expect(component!.root.findByProps({ testID: "admin-audit-logs-clear-btn" })).toBeTruthy();
+    // "Todas" chip is the first entity filter chip
+    expect(component!.root.findByProps({ testID: "admin-audit-logs-entity-filter-" })).toBeTruthy();
   });
 
   it("renders error banner when API fails", async () => {

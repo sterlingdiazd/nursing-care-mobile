@@ -5,7 +5,9 @@ import { router } from "expo-router";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { validateEmail } from "@/src/api/auth";
 import { useAuth } from "@/src/context/AuthContext";
+import { Banner } from "@/src/components/shared/Banner";
 import { FormButton, FormInput } from "@/src/components/form";
+import { FormPanel } from "@/src/components/shared/FormPanel";
 import { designTokens } from "@/src/design-system/tokens";
 import { adminTestIds } from "@/src/testing/testIds";
 import {
@@ -137,24 +139,19 @@ export default function AdminCreateAdminAccountScreen() {
       primaryReturnPath={mobileNavigationEscapes.adminUsers}
       primaryReturnLabel="Volver a usuarios"
     >
-      {!!error && (
-        <View
-          style={styles.error}
-          testID={adminTestIds.adminAccounts.create.errorBanner}
-          nativeID={adminTestIds.adminAccounts.create.errorBanner}
-        >
-          <Text style={styles.errorTitle}>La cuenta administrativa requiere revisión</Text>
-          <Text style={styles.errorText}>{error}</Text>
-        </View>
-      )}
+      <Banner
+        tone="error"
+        message={error}
+        testID={adminTestIds.adminAccounts.create.errorBanner}
+      />
 
-      <View style={styles.reviewCard}>
+      <View
+        style={styles.reviewCard}
+        testID={adminTestIds.adminAccounts.create.reviewChip}
+        nativeID={adminTestIds.adminAccounts.create.reviewChip}
+      >
         <Text style={styles.reviewEyebrow}>Revisión</Text>
-        <Text
-          style={styles.reviewChip}
-          testID={adminTestIds.adminAccounts.create.reviewChip}
-          nativeID={adminTestIds.adminAccounts.create.reviewChip}
-        >
+        <Text style={styles.reviewChip}>
           {reviewLabel}
         </Text>
         <Text style={styles.reviewText}>
@@ -163,10 +160,11 @@ export default function AdminCreateAdminAccountScreen() {
       </View>
 
       <ScrollView>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Paso 1. Identidad</Text>
-          <Text style={styles.cardDescription}>Registra primero la persona que recibirá el acceso administrativo.</Text>
-
+        <FormPanel
+          eyebrow="Paso 1"
+          title="Identidad"
+          testID="admin-create-identity-panel"
+        >
           <FormInput
             testID={adminTestIds.adminAccounts.create.nameInput}
             label="Nombre"
@@ -210,12 +208,21 @@ export default function AdminCreateAdminAccountScreen() {
             maxLength={10}
             errorMessage={errors.phone}
           />
-        </View>
+        </FormPanel>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Paso 2. Acceso y revisión final</Text>
-          <Text style={styles.cardDescription}>Estas credenciales abren un perfil con permisos altos dentro del portal.</Text>
-
+        <FormPanel
+          eyebrow="Paso 2"
+          title="Acceso y revisión final"
+          testID="admin-create-access-panel"
+          footer={
+            <View style={styles.warningCard}>
+              <Text style={styles.warningTitle}>Acción privilegiada</Text>
+              <Text style={styles.warningText}>
+                Esta cuenta podrá administrar usuarios, revisar operaciones y afectar datos sensibles del sistema.
+              </Text>
+            </View>
+          }
+        >
           <FormInput
             testID={adminTestIds.adminAccounts.create.emailInput}
             label="Correo electrónico"
@@ -249,14 +256,7 @@ export default function AdminCreateAdminAccountScreen() {
             secureTextEntry
             errorMessage={errors.confirmPassword}
           />
-
-          <View style={styles.warningCard}>
-            <Text style={styles.warningTitle}>Acción privilegiada</Text>
-            <Text style={styles.warningText}>
-              Esta cuenta podrá administrar usuarios, revisar operaciones y afectar datos sensibles del sistema.
-            </Text>
-          </View>
-        </View>
+        </FormPanel>
       </ScrollView>
 
       <View style={styles.actions}>
@@ -276,18 +276,56 @@ export default function AdminCreateAdminAccountScreen() {
 }
 
 const styles = StyleSheet.create({
-  error: { backgroundColor: designTokens.color.surface.danger, borderWidth: 1, borderColor: designTokens.color.border.strong, padding: 14, borderRadius: 16, marginBottom: 12 },
-  errorTitle: { color: designTokens.color.status.dangerText, fontSize: 13, fontWeight: "800", marginBottom: 4 },
-  errorText: { color: designTokens.color.status.dangerText, fontSize: 13, lineHeight: 18 },
-  card: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 14, marginBottom: 12 },
-  cardTitle: { fontSize: 18, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 8 },
-  cardDescription: { color: designTokens.color.ink.secondary, fontSize: 13, lineHeight: 18, marginBottom: 4 },
-  reviewCard: { backgroundColor: designTokens.color.surface.canvas, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 14, marginBottom: 12 },
-  reviewEyebrow: { color: designTokens.color.ink.muted, fontSize: 12, fontWeight: "800", textTransform: "uppercase", marginBottom: 6 },
-  reviewChip: { alignSelf: "flex-start", backgroundColor: designTokens.color.ink.primary, color: designTokens.color.ink.inverse, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 13, fontWeight: "800", marginBottom: 8 },
-  reviewText: { color: designTokens.color.ink.secondary, fontSize: 13, lineHeight: 18 },
-  warningCard: { backgroundColor: designTokens.color.surface.warning, borderWidth: 1, borderColor: designTokens.color.border.strong, borderRadius: 14, padding: 12, marginTop: 14 },
-  warningTitle: { color: designTokens.color.status.dangerText, fontSize: 13, fontWeight: "800", marginBottom: 4 },
-  warningText: { color: designTokens.color.status.dangerText, fontSize: 13, lineHeight: 18 },
-  actions: { marginTop: 16 },
+  reviewCard: {
+    backgroundColor: designTokens.color.surface.canvas,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.subtle,
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 12,
+  },
+  reviewEyebrow: {
+    color: designTokens.color.ink.muted,
+    fontSize: 12,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    marginBottom: 6,
+  },
+  reviewChip: {
+    alignSelf: "flex-start",
+    backgroundColor: designTokens.color.ink.primary,
+    color: designTokens.color.ink.inverse,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    fontSize: 13,
+    fontWeight: "800",
+    marginBottom: 8,
+  },
+  reviewText: {
+    color: designTokens.color.ink.secondary,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  warningCard: {
+    backgroundColor: designTokens.color.surface.warning,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.strong,
+    borderRadius: 14,
+    padding: 12,
+  },
+  warningTitle: {
+    color: designTokens.color.status.dangerText,
+    fontSize: 13,
+    fontWeight: "800",
+    marginBottom: 4,
+  },
+  warningText: {
+    color: designTokens.color.status.dangerText,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  actions: {
+    marginTop: 16,
+  },
 });

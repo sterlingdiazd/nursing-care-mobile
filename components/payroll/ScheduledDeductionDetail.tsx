@@ -13,6 +13,8 @@ import {
 } from "react-native";
 import { designTokens } from "@/src/design-system/tokens";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
+import { FormPanel } from "@/src/components/shared/FormPanel";
+import WorkflowActionBar from "@/src/components/shared/WorkflowActionBar";
 import type { ScheduledDeductionDetail as ScheduledDeductionDetailType, ScheduledDeductionInstallmentRow } from "@/src/services/payrollTypes";
 import {
   payoffScheduledDeduction,
@@ -292,7 +294,6 @@ export function ScheduledDeductionDetail({ detail, onBack, onRefresh }: Schedule
       Alert.alert("Sin cuotas pendientes", "No hay cuotas pendientes con período asignado para omitir.");
       return;
     }
-    // Use the first pending installment with a period assigned.
     const next = pendingInstallments[0];
     const periodLabel = formatPeriodRange(next.periodStart, next.periodEnd, next.label);
     Alert.alert(
@@ -354,13 +355,44 @@ export function ScheduledDeductionDetail({ detail, onBack, onRefresh }: Schedule
         ? "neutral" as const
         : "danger" as const;
 
-  // Visual hierarchy: one hero figure (outstanding balance) + a cuotas progress bar; the rest are
-  // smaller supporting facts.
+  // Hero: saldo pendiente (amortizing) or monto recurrente (recurring)
   const paidCount = isAmortizing ? plan.installmentsPaid : plan.installmentsGenerated;
   const totalCount = isAmortizing ? plan.totalInstallments : (plan.maxOccurrences ?? 0);
   const progress = totalCount > 0 ? Math.min(1, paidCount / totalCount) : 0;
   const heroLabel = isAmortizing ? "Saldo pendiente" : "Monto recurrente";
   const heroValue = isAmortizing ? formatCurrency(plan.remainingBalance) : formatCurrency(plan.recurringAmount);
+
+  // WorkflowActionBar: routine actions first (secondary), destructive last (danger)
+  const workflowActions = isActive ? [
+    {
+      label: "Reprogramar",
+      variant: "secondary" as const,
+      onPress: () => setShowReschedule(true),
+      disabled: actionLoading,
+      testID: adminTestIds.payroll.scheduledRescheduleButton,
+    },
+    {
+      label: "Omitir cuota",
+      variant: "secondary" as const,
+      onPress: handleSkip,
+      disabled: actionLoading || pendingInstallments.length === 0,
+      testID: adminTestIds.payroll.scheduledSkipButton,
+    },
+    ...(isAmortizing ? [{
+      label: "Liquidar",
+      variant: "danger" as const,
+      onPress: handlePayoff,
+      disabled: actionLoading,
+      testID: adminTestIds.payroll.scheduledPayoffButton,
+    }] : []),
+    {
+      label: "Anular",
+      variant: "danger" as const,
+      onPress: handleCancel,
+      disabled: actionLoading,
+      testID: adminTestIds.payroll.scheduledCancelButton,
+    },
+  ] : [];
 
   return (
     <ScrollView
@@ -378,8 +410,8 @@ export function ScheduledDeductionDetail({ detail, onBack, onRefresh }: Schedule
         {" "}
       </Text>
 
-      {/* Header / hero card */}
-      <View style={styles.card}>
+      {/* Hero card: identity + ONE emphasized number + progress */}
+      <View style={styles.heroCard}>
         <View style={styles.headerTop}>
           <View style={styles.headerTitleWrap}>
             <Text style={styles.planLabel}>{plan.label}</Text>
@@ -409,61 +441,29 @@ export function ScheduledDeductionDetail({ detail, onBack, onRefresh }: Schedule
             </View>
           </View>
         ) : null}
-
-        <View style={styles.facts}>
-          {isAmortizing ? (
-            <>
-              <Fact label="Capital" value={formatCurrency(plan.principalAmount)} />
-              <Fact label="Tasa de interés" value={`${plan.interestRatePercent}%`} />
-              <Fact label="Cuota" value={formatCurrency(plan.installmentAmount)} />
-              <Fact label="Total a pagar" value={formatCurrency(plan.totalRepayable)} last />
-            </>
-          ) : (
-            <>
-              <Fact label="Cuota" value={formatCurrency(plan.recurringAmount)} />
-              {plan.endDate ? <Fact label="Fecha de fin" value={formatDateES(plan.endDate)} last /> : null}
-            </>
-          )}
-        </View>
       </View>
 
-      {/* Actions — gated by status === "Active". Routine ops first, destructive grouped below. */}
-      {isActive && (
-        <View style={styles.actionsCard}>
-          <View style={styles.actionRow}>
-            <ActionBtn
-              label="Reprogramar"
-              variant="secondary"
-              onPress={() => setShowReschedule(true)}
-              disabled={actionLoading}
-              testID={adminTestIds.payroll.scheduledRescheduleButton}
-            />
-            <ActionBtn
-              label="Omitir cuota"
-              variant="secondary"
-              onPress={handleSkip}
-              disabled={actionLoading || pendingInstallments.length === 0}
-              testID={adminTestIds.payroll.scheduledSkipButton}
-            />
-          </View>
-          <View style={styles.actionRow}>
-            {isAmortizing ? (
-              <ActionBtn
-                label="Liquidación anticipada"
-                variant="danger"
-                onPress={handlePayoff}
-                disabled={actionLoading}
-                testID={adminTestIds.payroll.scheduledPayoffButton}
-              />
-            ) : null}
-            <ActionBtn
-              label="Anular"
-              variant="danger"
-              onPress={handleCancel}
-              disabled={actionLoading}
-              testID={adminTestIds.payroll.scheduledCancelButton}
-            />
-          </View>
+      {/* Supporting facts in a FormPanel */}
+      <FormPanel eyebrow="Detalles del plan" testID="scheduled-detail-facts-panel">
+        {isAmortizing ? (
+          <>
+            <Fact label="Capital" value={formatCurrency(plan.principalAmount)} />
+            <Fact label="Tasa de interés" value={`${plan.interestRatePercent}%`} />
+            <Fact label="Cuota" value={formatCurrency(plan.installmentAmount)} />
+            <Fact label="Total a pagar" value={formatCurrency(plan.totalRepayable)} last />
+          </>
+        ) : (
+          <>
+            <Fact label="Cuota" value={formatCurrency(plan.recurringAmount)} />
+            {plan.endDate ? <Fact label="Fecha de fin" value={formatDateES(plan.endDate)} last /> : null}
+          </>
+        )}
+      </FormPanel>
+
+      {/* Actions via WorkflowActionBar — gated by status === "Active" */}
+      {isActive && workflowActions.length > 0 && (
+        <View style={styles.actionsWrap}>
+          <WorkflowActionBar actions={workflowActions} />
         </View>
       )}
 
@@ -502,22 +502,6 @@ function Fact({ label, value, last }: { label: string; value: string; last?: boo
   );
 }
 
-function ActionBtn({ label, variant, onPress, disabled, testID }: { label: string; variant: "secondary" | "danger"; onPress: () => void; disabled?: boolean; testID: string }) {
-  const danger = variant === "danger";
-  return (
-    <TouchableOpacity
-      style={[styles.actionBtn, danger ? styles.actionBtnDanger : styles.actionBtnSecondary, disabled ? styles.actionBtnDisabled : null]}
-      onPress={onPress}
-      disabled={disabled}
-      testID={testID}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-    >
-      <Text style={[styles.actionBtnText, danger ? styles.actionBtnTextDanger : styles.actionBtnTextSecondary]} numberOfLines={1}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-
 function InstallmentRow({ inst }: { inst: ScheduledDeductionInstallmentRow }) {
   const periodText = formatPeriodRange(inst.periodStart, inst.periodEnd, inst.label);
   return (
@@ -540,6 +524,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 24,
+    gap: 12,
   },
   loadedMarker: {
     position: "absolute",
@@ -549,10 +534,9 @@ const styles = StyleSheet.create({
     width: 1,
     opacity: 0,
   },
-  card: {
+  heroCard: {
     marginHorizontal: 16,
     marginTop: 8,
-    marginBottom: 12,
     backgroundColor: designTokens.color.surface.primary,
     borderRadius: 16,
     padding: 16,
@@ -560,6 +544,7 @@ const styles = StyleSheet.create({
     borderColor: designTokens.color.border.subtle,
     boxShadow: "0px 4px 10px rgba(18, 48, 68, 0.04)",
     elevation: 2,
+    gap: 12,
   },
   headerTop: {
     flexDirection: "row",
@@ -572,23 +557,22 @@ const styles = StyleSheet.create({
   planMeta: { fontSize: 12, color: designTokens.color.ink.muted, marginTop: 2 },
   nurseName: { fontSize: 13, color: designTokens.color.ink.secondary, marginTop: 4, fontWeight: "600" },
 
-  hero: { marginTop: 16 },
+  hero: { gap: 2 },
   heroLabel: { fontSize: 11, fontWeight: "700", color: designTokens.color.ink.muted, textTransform: "uppercase", letterSpacing: 0.5 },
-  heroValue: { fontSize: 30, fontWeight: "900", color: designTokens.color.ink.accentStrong, marginTop: 2 },
+  heroValue: { fontSize: 30, fontWeight: "900", color: designTokens.color.ink.accentStrong },
 
-  progressWrap: { marginTop: 14, gap: 6 },
+  progressWrap: { gap: 6 },
   progressHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   progressText: { fontSize: 12, color: designTokens.color.ink.secondary, fontWeight: "600" },
   progressPct: { fontSize: 12, color: designTokens.color.ink.accentStrong, fontWeight: "800" },
   progressTrack: { height: 8, borderRadius: 999, backgroundColor: designTokens.color.surface.tertiary, overflow: "hidden" },
   progressFill: { height: 8, borderRadius: 999, backgroundColor: designTokens.color.ink.accent },
 
-  facts: { marginTop: 16, borderTopWidth: 1, borderTopColor: designTokens.color.border.subtle },
   fact: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 9,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: designTokens.color.border.subtle,
     gap: 12,
@@ -597,23 +581,9 @@ const styles = StyleSheet.create({
   factLabel: { fontSize: 13, color: designTokens.color.ink.muted },
   factValue: { fontSize: 14, fontWeight: "700", color: designTokens.color.ink.primary },
 
-  actionsCard: { marginHorizontal: 16, marginBottom: 16, gap: 8 },
-  actionRow: { flexDirection: "row", gap: 8 },
-  actionBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1.5,
+  actionsWrap: {
+    marginHorizontal: 16,
   },
-  actionBtnSecondary: { backgroundColor: designTokens.color.surface.primary, borderColor: designTokens.color.border.accent },
-  actionBtnDanger: { backgroundColor: designTokens.color.surface.danger, borderColor: designTokens.color.border.danger },
-  actionBtnDisabled: { opacity: 0.5 },
-  actionBtnText: { fontSize: 14, fontWeight: "700" },
-  actionBtnTextSecondary: { color: designTokens.color.ink.accentStrong },
-  actionBtnTextDanger: { color: designTokens.color.status.dangerText },
 
   sectionTitle: {
     fontSize: 13,
@@ -622,7 +592,6 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.4,
     marginHorizontal: 16,
-    marginBottom: 8,
   },
   installmentsList: { marginHorizontal: 16, gap: 8 },
   installmentRow: {

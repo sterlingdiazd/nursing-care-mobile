@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
-import { FontAwesome } from "@expo/vector-icons";
 import { getFinanceDetail, type FinanceDetail, type FinanceDetailRow, type FinanceField } from "@/src/services/financeService";
 import { financeTheme as t } from "@/components/finance/financeTheme";
 import { DashboardSkeleton } from "@/components/finance/DashboardSkeleton";
+import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { Pagination } from "@/src/components/shared/Pagination";
+import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 const PAGE_SIZE = 10;
 
@@ -15,14 +16,14 @@ export default function FinanceDetailScreen() {
   const [data, setData] = useState<FinanceDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(1);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       setData(await getFinanceDetail(metric, { from: params.from, to: params.to }));
-      setPage(0);
+      setPage(1);
     } catch (e: any) {
       setError(e?.message ?? "No se pudo cargar el detalle.");
     } finally {
@@ -35,33 +36,32 @@ export default function FinanceDetailScreen() {
   }, [load]);
 
   const totalPages = data ? Math.max(1, Math.ceil(data.rows.length / PAGE_SIZE)) : 1;
+  // Pagination uses 1-based page numbers
   const pageRows = useMemo(
-    () => (data ? data.rows.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE) : []),
+    () => (data ? data.rows.slice((page - 1) * PAGE_SIZE, (page - 1) * PAGE_SIZE + PAGE_SIZE) : []),
     [data, page],
   );
 
-  return (
-    <SafeAreaView style={styles.safe} edges={["top"]}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel="Volver">
-          <FontAwesome name="chevron-left" size={16} color={t.text} />
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.eyebrow}>Detalle</Text>
-          <Text style={styles.title} numberOfLines={1}>{data?.title ?? params.title ?? "Detalle"}</Text>
-        </View>
-      </View>
+  const screenTitle = data?.title ?? params.title ?? "Detalle";
 
+  return (
+    <MobileWorkspaceShell
+      eyebrow="Detalle"
+      title={screenTitle}
+      onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.adminHome)}
+      primaryReturnLabel="Volver"
+      testID="finance-detail-screen"
+      nativeID="finance-detail-screen"
+      disableScroll
+    >
       {loading ? (
-        <View style={styles.scrollPad}><DashboardSkeleton /></View>
+        <DashboardSkeleton />
       ) : error ? (
-        <View style={styles.scrollPad}>
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{error}</Text>
-            <Pressable onPress={() => void load()} style={styles.retry}>
-              <Text style={styles.retryText}>Reintentar</Text>
-            </Pressable>
-          </View>
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>{error}</Text>
+          <Pressable onPress={() => void load()} style={styles.retry}>
+            <Text style={styles.retryText}>Reintentar</Text>
+          </Pressable>
         </View>
       ) : data ? (
         <FlatList
@@ -70,17 +70,22 @@ export default function FinanceDetailScreen() {
           renderItem={({ item }) => <RecordCard row={item} />}
           ListHeaderComponent={<Headline data={data} />}
           ListFooterComponent={
-            <Pager page={page} totalPages={totalPages} total={data.rows.length} onPrev={() => setPage((p) => Math.max(0, p - 1))} onNext={() => setPage((p) => Math.min(totalPages - 1, p + 1))} />
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              testID="finance-detail-pagination"
+            />
           }
           ListEmptyComponent={
             <View style={styles.empty}><Text style={styles.emptyText}>Sin registros en el período.</Text></View>
           }
           contentContainerStyle={styles.scrollPad}
           showsVerticalScrollIndicator={false}
-          testID="finance-detail"
+          testID="finance-detail-list"
         />
       ) : null}
-    </SafeAreaView>
+    </MobileWorkspaceShell>
   );
 }
 
@@ -129,29 +134,7 @@ function RecordCard({ row }: { row: FinanceDetailRow }) {
   );
 }
 
-function Pager({ page, totalPages, total, onPrev, onNext }: { page: number; totalPages: number; total: number; onPrev: () => void; onNext: () => void }) {
-  if (totalPages <= 1) return <View style={{ height: 12 }} />;
-  return (
-    <View style={styles.pager}>
-      <Pressable onPress={onPrev} disabled={page === 0} style={[styles.pagerBtn, page === 0 ? styles.pagerDisabled : null]}>
-        <FontAwesome name="chevron-left" size={12} color={page === 0 ? t.textMuted : t.text} />
-        <Text style={[styles.pagerText, page === 0 ? { color: t.textMuted } : null]}>Anterior</Text>
-      </Pressable>
-      <Text style={styles.pagerInfo}>Página {page + 1} de {totalPages} · {total} registros</Text>
-      <Pressable onPress={onNext} disabled={page >= totalPages - 1} style={[styles.pagerBtn, page >= totalPages - 1 ? styles.pagerDisabled : null]}>
-        <Text style={[styles.pagerText, page >= totalPages - 1 ? { color: t.textMuted } : null]}>Siguiente</Text>
-        <FontAwesome name="chevron-right" size={12} color={page >= totalPages - 1 ? t.textMuted : t.text} />
-      </Pressable>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: t.bg },
-  header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 18, paddingVertical: 12 },
-  iconBtn: { width: 38, height: 38, borderRadius: 999, backgroundColor: t.card, borderWidth: 1, borderColor: t.cardBorder, alignItems: "center", justifyContent: "center" },
-  eyebrow: { color: t.accent, fontSize: 11, fontWeight: "800", letterSpacing: 1, textTransform: "uppercase" },
-  title: { color: t.text, fontSize: 22, fontWeight: "800" },
   scrollPad: { paddingHorizontal: 18, paddingBottom: 28, gap: 12 },
   headlineCard: { backgroundColor: t.card, borderRadius: t.radius, borderWidth: 1, borderColor: t.cardBorder, padding: 18, gap: 4, marginBottom: 4 },
   headlineValue: { color: t.text, fontSize: 30, fontWeight: "800" },
@@ -172,11 +155,6 @@ const styles = StyleSheet.create({
   factRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   factLabel: { color: t.textMuted, fontSize: 13, flex: 1 },
   factValue: { color: t.text, fontSize: 13, fontWeight: "700" },
-  pager: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 10, gap: 8 },
-  pagerBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 999, backgroundColor: t.card, borderWidth: 1, borderColor: t.cardBorder },
-  pagerDisabled: { opacity: 0.5 },
-  pagerText: { color: t.text, fontSize: 13, fontWeight: "700" },
-  pagerInfo: { color: t.textMuted, fontSize: 11, flex: 1, textAlign: "center" },
   empty: { backgroundColor: t.card, borderRadius: t.radiusSm, borderWidth: 1, borderColor: t.cardBorder, padding: 24, alignItems: "center" },
   emptyText: { color: t.textMuted, fontSize: 14 },
   errorBox: { backgroundColor: t.card, borderRadius: t.radius, padding: 20, gap: 14, alignItems: "center" },
