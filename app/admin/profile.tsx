@@ -16,6 +16,7 @@ import {
 import { adminTestIds } from "@/src/testing/testIds";
 import { automationProps } from "@/src/utils/adminOperationalUx";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+import { formatRoleLabels } from "@/src/utils/roleLabels";
 import { formatDateES } from "@/src/utils/spanishTextValidator";
 
 type FormState = {
@@ -227,7 +228,7 @@ export default function AdminProfileScreen() {
             <View style={styles.metaCard}>
               {detail.roleNames.length > 0 ? (
                 <Text style={styles.metaLine}>
-                  Rol: <Text style={styles.metaValue}>{detail.roleNames.join(", ")}</Text>
+                  Rol: <Text style={styles.metaValue}>{formatRoleLabels(detail.roleNames)}</Text>
                 </Text>
               ) : null}
               <Text style={styles.metaLine}>

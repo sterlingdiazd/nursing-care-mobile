@@ -1,7 +1,7 @@
 const roleLabelMap: Record<string, string> = {
-  ADMIN: "Administracion",
+  ADMIN: "Administrador",
   CLIENT: "Cliente",
-  NURSE: "Enfermeria",
+  NURSE: "Enfermería",
 };
 
 export function formatRoleLabels(roles: string[], emptyLabel = "Sin roles cargados") {

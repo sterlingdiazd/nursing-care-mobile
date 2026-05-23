@@ -20,6 +20,14 @@ export default function FinanceDetailScreen() {
   const [page, setPage] = useState(1);
 
   const load = useCallback(async () => {
+    // Opened directly without a metric (no deep-link param): show a Spanish hint
+    // instead of calling the API and surfacing its English validation error.
+    if (!metric) {
+      setData(null);
+      setError("Abre un detalle desde el panel de Finanzas.");
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {

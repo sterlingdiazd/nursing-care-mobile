@@ -12,7 +12,6 @@ import { ListRow } from "@/src/components/shared/ListRow";
 import { Pagination } from "@/src/components/shared/Pagination";
 import { useClientPaging } from "@/src/hooks/usePagedList";
 import { SwipePager } from "@/src/components/shared/SwipePager";
-import { formatDateES } from "@/src/utils/spanishTextValidator";
 import { designTokens } from "@/src/design-system/tokens";
 import {
   getDeductions,
@@ -244,10 +243,7 @@ export default function DeductionsScreen() {
                   key={deduction.id}
                   title={deduction.label}
                   subtitle={deduction.nurseDisplayName}
-                  metaLines={[
-                    deductionTypeLabel(deduction.deductionType),
-                    deduction.payrollPeriodId ? `Período: ${formatDateES(deduction.payrollPeriodId)}` : null,
-                  ]}
+                  metaLines={[deductionTypeLabel(deduction.deductionType)]}
                   rightText={formatCurrency(deduction.amount)}
                   onPress={() => handleDeductionPress(deduction)}
                   testID={`deduction-item-${deduction.id}`}
