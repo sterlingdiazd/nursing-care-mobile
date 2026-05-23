@@ -14,6 +14,7 @@ import { StatusBadge } from "@/src/components/shared/StatusBadge";
 import { Banner } from "@/src/components/shared/Banner";
 import { useAuth } from "@/src/context/AuthContext";
 import { usePagedList } from "@/src/hooks/usePagedList";
+import { SwipePager } from "@/src/components/shared/SwipePager";
 import { adminTestIds } from "@/src/testing/testIds/adminTestIds";
 import { designTokens } from "@/src/design-system/tokens";
 import {
@@ -132,10 +133,11 @@ export default function AdminNurseProfilesScreen() {
           </Text>
         )}
 
-        <ScrollView
-          style={styles.list}
-          refreshControl={<RefreshControl refreshing={current.isRefreshing} onRefresh={handleRefresh} />}
-        >
+        <SwipePager page={current.page} pageCount={current.pageCount} onPageChange={current.setPage} style={styles.list}>
+          <ScrollView
+            style={{ flex: 1 }}
+            refreshControl={<RefreshControl refreshing={current.isRefreshing} onRefresh={handleRefresh} />}
+          >
           {tab === "pending" && pending.items.map((p) => (
             <View key={p.userId}>
               <ListRow
@@ -182,7 +184,8 @@ export default function AdminNurseProfilesScreen() {
               accessibilityLabel={`Perfil de ${n.name} ${n.lastName}`}
             />
           ))}
-        </ScrollView>
+          </ScrollView>
+        </SwipePager>
 
         <Pagination
           currentPage={current.page}

@@ -13,6 +13,7 @@ import { router } from "expo-router";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { FilterChips } from "@/src/components/shared/FilterChips";
 import { Pagination } from "@/src/components/shared/Pagination";
+import { SwipePager } from "@/src/components/shared/SwipePager";
 import {
   mobileSecondaryButton,
   mobileSurfaceCard,
@@ -140,18 +141,20 @@ export default function AdminNotificationsScreen() {
       onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.adminHome)}
       primaryReturnLabel="Volver"
     >
-      <ScrollView
-        ref={scrollRef}
-        {...automationProps(adminTestIds.notifications.screen)}
-        contentContainerStyle={styles.scroll}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={() => void load(status, page, "refresh")}
-            tintColor={mobileTheme.colors.ink.accent}
-          />
-        }
-      >
+      <SwipePager page={page} pageCount={pageCount} onPageChange={handlePageChange} style={{ flex: 1 }}>
+        <ScrollView
+          ref={scrollRef}
+          style={{ flex: 1 }}
+          {...automationProps(adminTestIds.notifications.screen)}
+          contentContainerStyle={styles.scroll}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={() => void load(status, page, "refresh")}
+              tintColor={mobileTheme.colors.ink.accent}
+            />
+          }
+        >
         {/* Status filter chips — shared FilterChips; counts omitted because the
             endpoint only returns totalCount for the active filter, and fetching
             per-filter counts would require N parallel requests on every render. */}
@@ -295,7 +298,8 @@ export default function AdminNotificationsScreen() {
         )}
 
         <Pagination currentPage={page} totalPages={pageCount} onPageChange={handlePageChange} />
-      </ScrollView>
+        </ScrollView>
+      </SwipePager>
     </MobileWorkspaceShell>
   );
 }

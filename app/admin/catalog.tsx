@@ -59,6 +59,7 @@ import { ListRow } from "@/src/components/shared/ListRow";
 import { Pagination } from "@/src/components/shared/Pagination";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
 import { useClientPaging } from "@/src/hooks/usePagedList";
+import { SwipePager } from "@/src/components/shared/SwipePager";
 import { designTokens } from "@/src/design-system/tokens";
 import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 
@@ -567,6 +568,7 @@ export default function AdminCatalogScreen() {
             </FormPanel>
           )}
 
+          <SwipePager page={page} pageCount={pageCount} onPageChange={setPage}>
           <View
             style={styles.cardsContainer}
             testID="admin-catalog-cards-list"
@@ -677,6 +679,7 @@ export default function AdminCatalogScreen() {
             onPageChange={setPage}
             testID="admin-catalog-pagination"
           />
+          </SwipePager>
         </>
       )}
     </MobileWorkspaceShell>

@@ -10,6 +10,7 @@ import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigation
 import { FilterChips, type FilterChipOption } from "@/src/components/shared/FilterChips";
 import { Pagination } from "@/src/components/shared/Pagination";
 import { usePagedList } from "@/src/hooks/usePagedList";
+import { SwipePager } from "@/src/components/shared/SwipePager";
 import { designTokens } from "@/src/design-system/tokens";
 import { formatDateES, formatDateTimeES } from "@/src/utils/spanishTextValidator";
 import { nextQuincenaAfter } from "@/src/utils/payrollPeriods";
@@ -306,12 +307,14 @@ export default function PeriodsScreen() {
     }
 
     return (
-      <ScrollView
-        contentContainerStyle={styles.scrollPad}
-        refreshControl={
-          <RefreshControl refreshing={periodsRefreshing} onRefresh={handleRefresh} />
-        }
-      >
+      <SwipePager page={page} pageCount={pageCount} onPageChange={setPage} style={{ flex: 1 }}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.scrollPad}
+          refreshControl={
+            <RefreshControl refreshing={periodsRefreshing} onRefresh={handleRefresh} />
+          }
+        >
         {!periodsLoading && (
           <Text testID="admin-payroll-loaded" nativeID="admin-payroll-loaded" style={styles.readyMarker}>
             {" "}
@@ -383,7 +386,8 @@ export default function PeriodsScreen() {
             />
           </View>
         )}
-      </ScrollView>
+        </ScrollView>
+      </SwipePager>
     );
   };
 

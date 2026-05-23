@@ -11,6 +11,7 @@ import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { FilterChips } from "@/src/components/shared/FilterChips";
 import { ListRow } from "@/src/components/shared/ListRow";
 import { Pagination } from "@/src/components/shared/Pagination";
+import { SwipePager } from "@/src/components/shared/SwipePager";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
 import { Banner } from "@/src/components/shared/Banner";
 import { useAuth } from "@/src/context/AuthContext";
@@ -136,10 +137,11 @@ export default function AdminUsersScreen() {
           </Text>
         )}
 
-        <ScrollView
-          style={styles.list}
-          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} />}
-        >
+        <SwipePager page={page} pageCount={pageCount} onPageChange={setPage} style={styles.list}>
+          <ScrollView
+            style={{ flex: 1 }}
+            refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} />}
+          >
           {items.map((item) => {
             const meta = [item.email, item.identificationNumber ? `Cédula ${item.identificationNumber}` : null];
             return (
@@ -159,7 +161,8 @@ export default function AdminUsersScreen() {
               />
             );
           })}
-        </ScrollView>
+          </ScrollView>
+        </SwipePager>
 
         <Pagination
           currentPage={page}

@@ -65,6 +65,9 @@ vi.mock('react-native', () => ({
     Image: createMockComponent('Animated.Image'),
     createAnimatedComponent: (comp: any) => comp,
   },
+  PanResponder: {
+    create: (_config: any) => ({ panHandlers: {} }),
+  },
 }));
 
 // Mock Expo Router

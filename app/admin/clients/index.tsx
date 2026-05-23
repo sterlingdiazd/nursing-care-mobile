@@ -15,6 +15,7 @@ import { StatusBadge } from "@/src/components/shared/StatusBadge";
 import { Banner } from "@/src/components/shared/Banner";
 import { useAuth } from "@/src/context/AuthContext";
 import { usePagedList } from "@/src/hooks/usePagedList";
+import { SwipePager } from "@/src/components/shared/SwipePager";
 import { adminTestIds } from "@/src/testing/testIds";
 import { designTokens } from "@/src/design-system/tokens";
 import {
@@ -119,11 +120,12 @@ export default function AdminClientsScreen() {
           <Text style={styles.empty}>No se encontraron clientes.</Text>
         )}
 
-        <ScrollView
-          style={styles.list}
-          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} />}
-        >
-          {items.map((item) => {
+        <SwipePager page={page} pageCount={pageCount} onPageChange={setPage} style={styles.list}>
+          <ScrollView
+            style={{ flex: 1 }}
+            refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} />}
+          >
+            {items.map((item) => {
             const meta = [
               item.email,
               item.identificationNumber ? `Cédula ${item.identificationNumber}` : null,
@@ -147,7 +149,8 @@ export default function AdminClientsScreen() {
               />
             );
           })}
-        </ScrollView>
+          </ScrollView>
+        </SwipePager>
 
         <Pagination
           currentPage={page}

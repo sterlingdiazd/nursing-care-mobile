@@ -30,6 +30,27 @@ export const Alert = {
   alert: () => undefined,
 };
 
+export const Animated = {
+  Value: class {
+    constructor(_val: number) {}
+    addListener() { return ""; }
+    removeAllListeners() {}
+  },
+  ValueXY: class {
+    x = { addListener() { return ""; }, removeAllListeners() {} };
+    y = { addListener() { return ""; }, removeAllListeners() {} };
+    constructor() {}
+  },
+  event: () => () => undefined,
+  View: createMockComponent("Animated.View"),
+};
+
+export const PanResponder = {
+  create: (_config: Record<string, unknown>) => ({
+    panHandlers: {},
+  }),
+};
+
 export const Platform = {
   OS: "ios",
   select: <T,>(options: { ios?: T; default?: T }) => options.ios ?? options.default,
@@ -54,4 +75,6 @@ export default {
   SafeAreaView,
   Alert,
   Platform,
+  Animated,
+  PanResponder,
 };

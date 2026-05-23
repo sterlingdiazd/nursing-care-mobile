@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
+import { StyleSheet, Text, View, Pressable } from "react-native";
 import { designTokens } from "@/src/design-system/tokens";
 
 export interface FilterChipOption<K extends string = string> {
@@ -17,17 +17,14 @@ interface FilterChipsProps<K extends string> {
 }
 
 /**
- * Canonical horizontal filter-chip row with optional count badges. Replaces the
- * inline chip clusters that every admin list used to re-implement. Active chip
- * uses the accent fill; counts read from the paginated response, never client length.
+ * Canonical filter-chip cluster with optional count badges. Wraps onto multiple
+ * rows so every filter is visible at once — no horizontal scroll, no off-screen
+ * options. Active chip uses the accent fill; counts come from the paginated
+ * response, never client length.
  */
 export function FilterChips<K extends string>({ options, value, onChange, testIDPrefix }: FilterChipsProps<K>) {
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.row}
-    >
+    <View style={styles.row}>
       {options.map((opt) => {
         const active = opt.key === value;
         const id = testIDPrefix ? `${testIDPrefix}-${String(opt.key).toLowerCase()}` : undefined;
@@ -51,19 +48,20 @@ export function FilterChips<K extends string>({ options, value, onChange, testID
           </Pressable>
         );
       })}
-    </ScrollView>
+    </View>
   );
 }
 
 const T = designTokens;
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", gap: 8, paddingVertical: 4 },
+  // Wrapping cluster: all chips visible across as many rows as needed (no scroll).
+  row: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8, paddingVertical: 4 },
   chip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: T.radius.pill,
     backgroundColor: T.color.surface.secondary,
     borderWidth: 1,
@@ -78,7 +76,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "800",
     textTransform: "uppercase",
-    letterSpacing: 0.4,
+    letterSpacing: 0.3,
   },
   labelActive: { color: T.color.ink.inverse },
   count: {

@@ -20,6 +20,7 @@ import { mobileTheme } from "@/src/design-system/mobileStyles";
 import { designTokens } from "@/src/design-system/tokens";
 import { useAuth } from "@/src/context/AuthContext";
 import { usePagedList } from "@/src/hooks/usePagedList";
+import { SwipePager } from "@/src/components/shared/SwipePager";
 import {
   getAdminCareRequests,
   type AdminCareRequestListItemDto,
@@ -178,11 +179,12 @@ export default function AdminCareRequestsScreen() {
             <Text style={styles.emptyText}>No hay solicitudes en este filtro.</Text>
           </View>
         ) : (
-          <ScrollView
-            style={styles.list}
-            refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} />}
-          >
-            {items.map((item) => {
+          <SwipePager page={page} pageCount={pageCount} onPageChange={setPage} style={styles.list}>
+            <ScrollView
+              style={{ flex: 1 }}
+              refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} />}
+            >
+              {items.map((item) => {
               const overdue = item.isOverdueOrStale;
               const unassigned = !item.assignedNurseUserId;
               const railColor = overdue
@@ -216,7 +218,8 @@ export default function AdminCareRequestsScreen() {
                 />
               );
             })}
-          </ScrollView>
+            </ScrollView>
+          </SwipePager>
         )}
 
         <Pagination

@@ -21,6 +21,7 @@ import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { FilterChips, type FilterChipOption } from "@/src/components/shared/FilterChips";
 import { Pagination } from "@/src/components/shared/Pagination";
+import { SwipePager } from "@/src/components/shared/SwipePager";
 import { FormPanel } from "@/src/components/shared/FormPanel";
 
 function formatTimestamp(value: string) {
@@ -243,6 +244,7 @@ export default function AdminAuditLogsScreen() {
         <Text style={styles.summaryText}>{totalCount} registros</Text>
       </View>
 
+      <SwipePager page={pageNumber} pageCount={totalPages} onPageChange={handlePageChange}>
       <View
         style={styles.list}
         testID="admin-audit-logs-list"
@@ -317,6 +319,7 @@ export default function AdminAuditLogsScreen() {
         onPageChange={handlePageChange}
         testID="admin-audit-logs-pagination"
       />
+      </SwipePager>
     </MobileWorkspaceShell>
   );
 }

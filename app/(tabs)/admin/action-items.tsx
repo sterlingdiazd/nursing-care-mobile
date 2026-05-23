@@ -20,6 +20,7 @@ import { designTokens } from "@/src/design-system/tokens";
 import { toneStyles, type WorkCardTone } from "@/src/design-system/tones";
 import { useAuth } from "@/src/context/AuthContext";
 import { usePagedList } from "@/src/hooks/usePagedList";
+import { SwipePager } from "@/src/components/shared/SwipePager";
 import { getAdminActionItems, type AdminActionItemDto } from "@/src/services/adminPortalService";
 import { adminTestIds } from "@/src/testing/testIds";
 import {
@@ -163,16 +164,18 @@ export default function AdminActionItemsScreen() {
             <Text style={styles.emptyText}>No hay acciones en este filtro.</Text>
           </View>
         ) : (
-          <ScrollView
-            style={styles.list}
-            refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} />}
-          >
-            {items.map((item) => (
-              <View key={item.id} style={styles.itemWrap}>
-                <ActionItemCard item={item} />
-              </View>
-            ))}
-          </ScrollView>
+          <SwipePager page={page} pageCount={pageCount} onPageChange={setPage} style={styles.list}>
+            <ScrollView
+              style={{ flex: 1 }}
+              refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} />}
+            >
+              {items.map((item) => (
+                <View key={item.id} style={styles.itemWrap}>
+                  <ActionItemCard item={item} />
+                </View>
+              ))}
+            </ScrollView>
+          </SwipePager>
         )}
 
         <Pagination

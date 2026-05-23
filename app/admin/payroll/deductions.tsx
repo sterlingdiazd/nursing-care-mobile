@@ -11,6 +11,7 @@ import { FilterChips, type FilterChipOption } from "@/src/components/shared/Filt
 import { ListRow } from "@/src/components/shared/ListRow";
 import { Pagination } from "@/src/components/shared/Pagination";
 import { useClientPaging } from "@/src/hooks/usePagedList";
+import { SwipePager } from "@/src/components/shared/SwipePager";
 import { formatDateES } from "@/src/utils/spanishTextValidator";
 import { designTokens } from "@/src/design-system/tokens";
 import {
@@ -209,10 +210,12 @@ export default function DeductionsScreen() {
       workflowActions={workflowActions}
     >
       <View style={styles.screen}>
-        <ScrollView
-          contentContainerStyle={styles.scrollPad}
-          refreshControl={<RefreshControl refreshing={deductionsRefreshing} onRefresh={handleRefresh} />}
-        >
+        <SwipePager page={page} pageCount={pageCount} onPageChange={setPage} style={{ flex: 1 }}>
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={styles.scrollPad}
+            refreshControl={<RefreshControl refreshing={deductionsRefreshing} onRefresh={handleRefresh} />}
+          >
           <FilterChips
             options={TYPE_FILTER_OPTIONS}
             value={typeFilter}
@@ -271,7 +274,8 @@ export default function DeductionsScreen() {
               />
             </View>
           )}
-        </ScrollView>
+          </ScrollView>
+        </SwipePager>
       </View>
 
       <CreateDeductionModal
