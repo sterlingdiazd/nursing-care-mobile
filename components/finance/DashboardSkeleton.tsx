@@ -26,5 +26,6 @@ export function DashboardSkeleton() {
 const styles = StyleSheet.create({
   wrap: { gap: 14 },
   row: { flexDirection: "row", gap: 10, justifyContent: "space-between" },
-  block: { backgroundColor: t.card, opacity: 0.6 },
+  // Light shimmer: surface.tertiary (#e6f2f4) at reduced opacity
+  block: { backgroundColor: t.cardSoft, opacity: 0.7 },
 });

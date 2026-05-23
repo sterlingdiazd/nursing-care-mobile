@@ -4,10 +4,20 @@ import { FontAwesome } from "@expo/vector-icons";
 import { LineChart, PieChart } from "react-native-gifted-charts";
 import type { CategoryMargin, ClientRevenueRow, TrendPoint } from "@/src/services/financeService";
 import { financeTheme as t, fmtMoneyCompact } from "./financeTheme";
+import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
+import { designTokens } from "@/src/design-system/tokens";
 
 const W = Dimensions.get("window").width;
 const CHART_W = W - 68; // screen padding (18*2) + card padding (16*2)
-const SLICE_COLORS = [t.accent, "#7C5CFC", t.green, t.amber, t.red, "#9FB7C2"];
+// Slice colours: teal accent + status palette + muted — all legible on white
+const SLICE_COLORS = [
+  t.accent,
+  "#7C5CFC",
+  t.green,
+  t.amber,
+  t.red,
+  t.textMuted,
+];
 
 export function SectionCard({
   title,
@@ -47,6 +57,7 @@ export function RevenueDonut({ data }: { data: CategoryMargin[] }) {
         radius={66}
         innerRadius={44}
         data={pie}
+        // White donut background
         backgroundColor={t.card}
         innerCircleColor={t.card}
         centerLabelComponent={() => (
@@ -72,6 +83,8 @@ export function RevenueDonut({ data }: { data: CategoryMargin[] }) {
 export function TrendArea({ data }: { data: TrendPoint[] }) {
   const revenue = data.map((p) => ({ value: p.revenue, label: p.label.slice(0, 2) }));
   const margin = data.map((p) => ({ value: p.margin }));
+  // Canvas colour for the area fill fade-to (#eef6f7)
+  const canvasFade = designTokens.color.surface.canvas;
   return (
     <View>
       <View style={styles.trendLegend}>
@@ -90,7 +103,8 @@ export function TrendArea({ data }: { data: TrendPoint[] }) {
         color1={t.accent}
         color2={t.green}
         startFillColor1={t.accent}
-        endFillColor1={t.navy}
+        // Area fill fades to canvas, not dark navy
+        endFillColor1={canvasFade}
         startOpacity={0.35}
         endOpacity={0.02}
         yAxisThickness={0}
@@ -135,11 +149,9 @@ function Legend({ color, text }: { color: string; text: string }) {
 }
 
 const styles = StyleSheet.create({
+  // White card with soft shadow
   section: {
-    backgroundColor: t.card,
-    borderRadius: t.radius,
-    borderWidth: 1,
-    borderColor: t.cardBorder,
+    ...mobileSurfaceCard,
     padding: 16,
     gap: 4,
   },
@@ -162,6 +174,7 @@ const styles = StyleSheet.create({
   barHeader: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
   barLabel: { color: t.text, fontSize: 13, flex: 1 },
   barValue: { color: t.textMuted, fontSize: 12, fontWeight: "700" },
+  // Bar track: light neutral (#e6f2f4)
   barTrack: { height: 8, borderRadius: 999, backgroundColor: t.cardSoft, overflow: "hidden" },
   barFill: { height: 8, borderRadius: 999, backgroundColor: t.accent },
 });

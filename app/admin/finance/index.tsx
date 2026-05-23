@@ -238,22 +238,26 @@ function DeltaChip({ label, value, color }: { label: string; value: string; colo
 }
 
 const styles = StyleSheet.create({
-  iconBtn: { width: 38, height: 38, borderRadius: 999, backgroundColor: t.card, borderWidth: 1, borderColor: t.cardBorder, alignItems: "center", justifyContent: "center" },
+  // Refresh button: light secondary surface, subtle border
+  iconBtn: { width: 38, height: 38, borderRadius: 999, backgroundColor: t.bgElevated, borderWidth: 1, borderColor: t.cardBorder, alignItems: "center", justifyContent: "center" },
   refreshGlyph: { color: t.text, fontSize: 18, fontWeight: "800" },
   segment: { flex: 1 },
   barHeader: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
   barName: { color: t.text, fontSize: 13, fontWeight: "700", flex: 1 },
   barValue: { color: t.textMuted, fontSize: 12.5, fontWeight: "700" },
   barSub: { color: t.textMuted, fontSize: 11 },
+  // Bar track: light neutral surface
   barTrack: { height: 8, borderRadius: 999, backgroundColor: t.cardSoft, overflow: "hidden" },
   barFill: { height: 8, borderRadius: 999, backgroundColor: t.accent },
   deltaRow: { flexDirection: "row", gap: 10 },
+  // Delta chips: white card with subtle border
   deltaChip: { flex: 1, backgroundColor: t.card, borderRadius: t.radiusSm, borderWidth: 1, borderColor: t.cardBorder, padding: 12, gap: 3 },
   deltaLabel: { color: t.textMuted, fontSize: 10.5, fontWeight: "700", textTransform: "uppercase" },
   deltaValue: { fontSize: 17, fontWeight: "800" },
   deltaSub: { color: t.textMuted, fontSize: 9.5 },
-  errorBox: { backgroundColor: t.card, borderRadius: t.radius, padding: 20, gap: 14, alignItems: "center" },
+  // Error box: white card
+  errorBox: { backgroundColor: t.card, borderRadius: t.radius, borderWidth: 1, borderColor: t.cardBorder, padding: 20, gap: 14, alignItems: "center" },
   errorText: { color: t.textMuted, fontSize: 14, textAlign: "center" },
   retry: { backgroundColor: t.accent, borderRadius: 999, paddingHorizontal: 22, paddingVertical: 10 },
-  retryText: { color: t.navy, fontWeight: "800" },
+  retryText: { color: "#ffffff", fontWeight: "800" },
 });

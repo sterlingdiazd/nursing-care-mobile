@@ -31,9 +31,10 @@ export function SegmentedTabs({
 }
 
 const styles = StyleSheet.create({
+  // Bar: light secondary surface (surface.secondary / tertiary) with subtle border
   bar: {
     flexDirection: "row",
-    backgroundColor: t.card,
+    backgroundColor: t.bgElevated,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: t.cardBorder,
@@ -41,7 +42,10 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   tab: { flex: 1, paddingVertical: 9, borderRadius: 999, alignItems: "center", justifyContent: "center" },
+  // Active pill: teal accent fill
   tabActive: { backgroundColor: t.accent },
+  // Inactive: muted label on light bg
   label: { color: t.textMuted, fontSize: 12.5, fontWeight: "700" },
-  labelActive: { color: t.navy, fontWeight: "800" },
+  // Active: white label on teal pill
+  labelActive: { color: "#ffffff", fontWeight: "800" },
 });

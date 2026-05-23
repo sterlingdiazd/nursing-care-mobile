@@ -6,6 +6,7 @@ import { financeTheme as t } from "@/components/finance/financeTheme";
 import { DashboardSkeleton } from "@/components/finance/DashboardSkeleton";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { Pagination } from "@/src/components/shared/Pagination";
+import { SwipePager } from "@/src/components/shared/SwipePager";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 const PAGE_SIZE = 10;
@@ -64,26 +65,29 @@ export default function FinanceDetailScreen() {
           </Pressable>
         </View>
       ) : data ? (
-        <FlatList
-          data={pageRows}
-          keyExtractor={(_, i) => `${page}-${i}`}
-          renderItem={({ item }) => <RecordCard row={item} />}
-          ListHeaderComponent={<Headline data={data} />}
-          ListFooterComponent={
-            <Pagination
-              currentPage={page}
-              totalPages={totalPages}
-              onPageChange={setPage}
-              testID="finance-detail-pagination"
-            />
-          }
-          ListEmptyComponent={
-            <View style={styles.empty}><Text style={styles.emptyText}>Sin registros en el período.</Text></View>
-          }
-          contentContainerStyle={styles.scrollPad}
-          showsVerticalScrollIndicator={false}
-          testID="finance-detail-list"
-        />
+        // SwipePager adds horizontal swipe-to-paginate on top of the existing Pagination bar
+        <SwipePager page={page} pageCount={totalPages} onPageChange={setPage} style={{ flex: 1 }}>
+          <FlatList
+            data={pageRows}
+            keyExtractor={(_, i) => `${page}-${i}`}
+            renderItem={({ item }) => <RecordCard row={item} />}
+            ListHeaderComponent={<Headline data={data} />}
+            ListFooterComponent={
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+                testID="finance-detail-pagination"
+              />
+            }
+            ListEmptyComponent={
+              <View style={styles.empty}><Text style={styles.emptyText}>Sin registros en el período.</Text></View>
+            }
+            contentContainerStyle={styles.scrollPad}
+            showsVerticalScrollIndicator={false}
+            testID="finance-detail-list"
+          />
+        </SwipePager>
       ) : null}
     </MobileWorkspaceShell>
   );
@@ -136,6 +140,7 @@ function RecordCard({ row }: { row: FinanceDetailRow }) {
 
 const styles = StyleSheet.create({
   scrollPad: { paddingHorizontal: 18, paddingBottom: 28, gap: 12 },
+  // Headline: white card with subtle border
   headlineCard: { backgroundColor: t.card, borderRadius: t.radius, borderWidth: 1, borderColor: t.cardBorder, padding: 18, gap: 4, marginBottom: 4 },
   headlineValue: { color: t.text, fontSize: 30, fontWeight: "800" },
   headlineCaption: { color: t.textMuted, fontSize: 13, fontWeight: "600" },
@@ -144,10 +149,12 @@ const styles = StyleSheet.create({
   summaryItem: { gap: 2 },
   summaryLabel: { color: t.textMuted, fontSize: 10.5, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.3 },
   summaryValue: { color: t.text, fontSize: 15, fontWeight: "800" },
+  // Record card: white card with subtle border
   card: { backgroundColor: t.card, borderRadius: t.radiusSm, borderWidth: 1, borderColor: t.cardBorder, padding: 14, gap: 8, marginBottom: 10 },
   cardTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
   cardPrimary: { color: t.text, fontSize: 15, fontWeight: "800", flex: 1 },
   cardAmount: { color: t.accent, fontSize: 15, fontWeight: "800" },
+  // Bar track: light neutral surface
   bar: { height: 5, borderRadius: 999, backgroundColor: t.cardSoft, overflow: "hidden" },
   barFill: { height: 5, borderRadius: 999, backgroundColor: t.accent },
   cardMeta: { color: t.textMuted, fontSize: 12.5 },
@@ -157,8 +164,9 @@ const styles = StyleSheet.create({
   factValue: { color: t.text, fontSize: 13, fontWeight: "700" },
   empty: { backgroundColor: t.card, borderRadius: t.radiusSm, borderWidth: 1, borderColor: t.cardBorder, padding: 24, alignItems: "center" },
   emptyText: { color: t.textMuted, fontSize: 14 },
-  errorBox: { backgroundColor: t.card, borderRadius: t.radius, padding: 20, gap: 14, alignItems: "center" },
+  // Error box: white card
+  errorBox: { backgroundColor: t.card, borderRadius: t.radius, borderWidth: 1, borderColor: t.cardBorder, padding: 20, gap: 14, alignItems: "center" },
   errorText: { color: t.textMuted, fontSize: 14, textAlign: "center" },
   retry: { backgroundColor: t.accent, borderRadius: 999, paddingHorizontal: 22, paddingVertical: 10 },
-  retryText: { color: t.navy, fontWeight: "800" },
+  retryText: { color: "#ffffff", fontWeight: "800" },
 });
