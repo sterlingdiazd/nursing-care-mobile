@@ -2,113 +2,43 @@ import { describe, expect, it, vi } from "vitest";
 import React from "react";
 import renderer, { act } from "react-test-renderer";
 
-vi.mock("@/src/services/adminShiftsService", () => ({
-  listAdminShifts: vi.fn().mockResolvedValue({ items: [], totalCount: 0 }),
-  getAdminShiftDetail: vi.fn().mockResolvedValue({}),
-  getAdminShiftChanges: vi.fn().mockResolvedValue([]),
-  listAdminSettings: vi.fn().mockResolvedValue([]),
-  updateAdminSetting: vi.fn().mockResolvedValue({}),
+// The Shifts route now hosts the Calendario de Servicios, which pulls assignments
+// from care-requests + the active-nurse roster. Mock just those two service calls.
+vi.mock("@/src/services/adminPortalService", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/src/services/adminPortalService")>()),
+  getCareRequestsInRange: vi.fn().mockResolvedValue([]),
+  getActiveNurseProfilesPaged: vi.fn().mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 100 }),
 }));
 
-import AdminShiftsScreen from "../shifts/index";
+import AdminServiceCalendarScreen from "../shifts/index";
 
-describe("AdminShiftsScreen", () => {
-  const flushEffects = async () => {
-    await act(async () => {
-      await Promise.resolve();
-    });
-  };
+const flush = async () => {
+  await act(async () => {
+    await new Promise((r) => setTimeout(r, 0));
+  });
+};
 
-  it("renders without crashing initially", async () => {
+describe("AdminServiceCalendarScreen", () => {
+  it("renders the calendar screen without crashing", async () => {
     let component: ReturnType<typeof renderer.create>;
     await act(async () => {
-      component = renderer.create(<AdminShiftsScreen />);
+      component = renderer.create(<AdminServiceCalendarScreen />);
     });
-    await flushEffects();
-    expect(component!.root).toBeTruthy();
+    await flush();
+    expect(component!.root.findByProps({ testID: "admin-calendar-screen" })).toBeTruthy();
   }, 15000);
 
-  it("renders screen testID", async () => {
+  it("renders the month grid (day cells) and the view toggle", async () => {
     let component: ReturnType<typeof renderer.create>;
     await act(async () => {
-      component = renderer.create(<AdminShiftsScreen />);
+      component = renderer.create(<AdminServiceCalendarScreen />);
     });
-    await flushEffects();
-    expect(component!.root.findByProps({ testID: "admin-shifts-screen" })).toBeTruthy();
-  }, 15000);
-
-  it("renders filter toggle and refresh buttons", async () => {
-    let component: ReturnType<typeof renderer.create>;
-    await act(async () => {
-      component = renderer.create(<AdminShiftsScreen />);
-    });
-    await flushEffects();
-    expect(component!.root.findByProps({ testID: "admin-shifts-filter-toggle" })).toBeTruthy();
-    expect(component!.root.findByProps({ testID: "admin-shifts-refresh-btn" })).toBeTruthy();
-  }, 15000);
-
-  it("renders shifts list container", async () => {
-    let component: ReturnType<typeof renderer.create>;
-    await act(async () => {
-      component = renderer.create(<AdminShiftsScreen />);
-    });
-    await flushEffects();
-    expect(component!.root.findByProps({ testID: "admin-shifts-list" })).toBeTruthy();
-  }, 15000);
-
-  it("shows filter inputs when filter toggle pressed", async () => {
-    let component: ReturnType<typeof renderer.create>;
-    await act(async () => {
-      component = renderer.create(<AdminShiftsScreen />);
-    });
-    await flushEffects();
-
-    const toggle = component!.root.findByProps({ testID: "admin-shifts-filter-toggle" });
-    act(() => { toggle.props.onPress(); });
-
-    expect(component!.root.findByProps({ testID: "admin-shifts-start-date-input" })).toBeTruthy();
-    expect(component!.root.findByProps({ testID: "admin-shifts-end-date-input" })).toBeTruthy();
-    expect(component!.root.findByProps({ testID: "admin-shifts-search-btn" })).toBeTruthy();
-  }, 15000);
-
-  it("renders error banner when API fails", async () => {
-    const { listAdminShifts } = await import("@/src/services/adminShiftsService");
-    vi.mocked(listAdminShifts).mockRejectedValueOnce(new Error("Error de red"));
-
-    let component: ReturnType<typeof renderer.create>;
-    await act(async () => {
-      component = renderer.create(<AdminShiftsScreen />);
-    });
-    await flushEffects();
-    expect(component!.root.findByProps({ testID: "admin-shifts-error" })).toBeTruthy();
-  }, 15000);
-
-  it("renders shift cards when data is loaded", async () => {
-    const { listAdminShifts } = await import("@/src/services/adminShiftsService");
-    vi.mocked(listAdminShifts).mockResolvedValueOnce({
-      items: [
-        {
-          id: "shift-001",
-          nurseUserId: "nurse-001",
-          nurseDisplayName: "Ana Garcia",
-          careRequestId: "care-001",
-          careRequestReference: "CR-001",
-          scheduledStartUtc: "2026-04-20T08:00:00Z",
-          scheduledEndUtc: "2026-04-20T16:00:00Z",
-          status: "Planned" as const,
-          createdAtUtc: "2026-04-19T12:00:00Z",
-        },
-      ],
-      totalCount: 1,
-      pageNumber: 1,
-      pageSize: 20,
-    });
-
-    let component: ReturnType<typeof renderer.create>;
-    await act(async () => {
-      component = renderer.create(<AdminShiftsScreen />);
-    });
-    await flushEffects();
-    expect(component!.root.findByProps({ testID: "admin-shift-card-shift-001" })).toBeTruthy();
+    await flush();
+    const dayCells = component!.root.findAll(
+      (n) => typeof n.props?.testID === "string" && n.props.testID.startsWith("calendar-day-"),
+    );
+    expect(dayCells.length).toBeGreaterThan(0); // 42-cell month grid
+    expect(component!.root.findByProps({ testID: "admin-calendar-view-month" })).toBeTruthy();
+    expect(component!.root.findByProps({ testID: "admin-calendar-today" })).toBeTruthy();
   }, 15000);
 });

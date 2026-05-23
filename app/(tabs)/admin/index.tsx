@@ -30,7 +30,7 @@ const menuGroups: Array<{ title: string; items: MenuItem[] }> = [
     title: "Servicios",
     items: [
       { key: "requests", label: "Solicitudes", path: "/admin/care-requests", icon: "list" },
-      { key: "shifts", label: "Turnos", path: "/admin/shifts", icon: "calendar" },
+      { key: "shifts", label: "Calendario", path: "/admin/shifts", icon: "calendar" },
       { key: "actions", label: "Acciones", path: "/admin/action-items", icon: "check-square-o" },
     ],
   },

@@ -388,10 +388,15 @@ export async function getAdminCareRequests(params?: {
   search?: string;
   page?: number;
   pageSize?: number;
+  /** Inclusive scheduled-date range filters (YYYY-MM-DD), applied to careRequestDate. */
+  scheduledFrom?: string;
+  scheduledTo?: string;
 }) {
   const searchParams = new URLSearchParams();
   if (params?.view && params.view !== "all") searchParams.append("view", params.view);
   if (params?.search) searchParams.append("search", params.search);
+  if (params?.scheduledFrom) searchParams.append("scheduledFrom", params.scheduledFrom);
+  if (params?.scheduledTo) searchParams.append("scheduledTo", params.scheduledTo);
   searchParams.set("page", String(params?.page ?? 1));
   searchParams.set("pageSize", String(params?.pageSize ?? 10));
 
@@ -400,6 +405,31 @@ export async function getAdminCareRequests(params?: {
     method: "GET",
     auth: true,
   });
+}
+
+/**
+ * Fetch ALL care requests scheduled within an inclusive [from, to] date range,
+ * looping pages (pageSize 100) until the full set is collected. Used by the
+ * service calendar, which needs every assignment in the visible range, not a page.
+ */
+export async function getCareRequestsInRange(range: { from: string; to: string }): Promise<AdminCareRequestListItemDto[]> {
+  const pageSize = 100;
+  const all: AdminCareRequestListItemDto[] = [];
+  let page = 1;
+  // Hard cap of 20 pages (2000 items) guards against an unbounded loop.
+  for (let i = 0; i < 20; i++) {
+    const res = await getAdminCareRequests({
+      view: "all",
+      scheduledFrom: range.from,
+      scheduledTo: range.to,
+      page,
+      pageSize,
+    });
+    all.push(...res.items);
+    if (all.length >= res.totalCount || res.items.length === 0) break;
+    page += 1;
+  }
+  return all;
 }
 
 export async function getAdminCareRequestDetail(id: string) {

@@ -1,496 +1,141 @@
-// @generated-by: implementation-agent
-// @pipeline-run: 2026-04-24-mobile-ux-audit
-// @diffs: DIFF-ADMIN-SHF-003
-// @do-not-edit: false
-
-import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useEffect } from "react";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { FilterChips } from "@/src/components/shared/FilterChips";
+import { Banner } from "@/src/components/shared/Banner";
 import { useAuth } from "@/src/context/AuthContext";
+import { useServiceCalendar, type CalendarView } from "@/src/hooks/useServiceCalendar";
+import { MonthGrid } from "@/src/components/calendar/MonthGrid";
+import { WeekStrip } from "@/src/components/calendar/WeekStrip";
+import { DayDetail } from "@/src/components/calendar/DayDetail";
+import { CategoryLegend } from "@/src/components/calendar/CategoryLegend";
 import { designTokens } from "@/src/design-system/tokens";
-import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
-import { StatusBadge } from "@/src/components/shared/StatusBadge";
-import {
-  listAdminShifts,
-  getAdminShiftDetail,
-  getAdminShiftChanges,
-  type ShiftListItemDto,
-  type ShiftDetailDto,
-  type ShiftChangeHistoryItemDto,
-  type ShiftRecordStatus,
-} from "@/src/services/adminShiftsService";
-import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
 
-const PAGE_SIZE = 10;
-
-function formatDate(value: string) {
-  return formatDateTimeES(value);
-}
-
-function statusLabel(status: ShiftRecordStatus): string {
-  switch (status) {
-    case "Planned": return "Planificado";
-    case "Completed": return "Completado";
-    case "Changed": return "Cambiado";
-    case "Cancelled": return "Cancelado";
-  }
-}
-
-function statusBadgeColors(status: ShiftRecordStatus): { bg: string; text: string } {
-  switch (status) {
-    case "Planned": return { bg: designTokens.color.status.infoBg, text: designTokens.color.ink.accentStrong };
-    case "Completed": return { bg: designTokens.color.surface.success, text: designTokens.color.status.successText };
-    case "Changed": return { bg: designTokens.color.surface.warning, text: designTokens.color.status.warningText };
-    case "Cancelled": return { bg: designTokens.color.surface.danger, text: designTokens.color.status.dangerText };
-  }
-}
-
-type StatusFilter = "all" | ShiftRecordStatus;
-
-const STATUS_CHIPS: { label: string; value: StatusFilter }[] = [
-  { label: "Todos", value: "all" },
-  { label: "Planificados", value: "Planned" },
-  { label: "Completados", value: "Completed" },
-  { label: "Cambiados", value: "Changed" },
-  { label: "Cancelados", value: "Cancelled" },
+const VIEW_OPTIONS: ReadonlyArray<{ key: CalendarView; label: string }> = [
+  { key: "month", label: "Mes" },
+  { key: "week", label: "Semana" },
 ];
 
-export default function AdminShiftsScreen() {
+export default function AdminServiceCalendarScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
-  const isAdmin = roles.includes("ADMIN");
+  const isEnabled = isReady && isAuthenticated && !requiresProfileCompletion && roles.includes("ADMIN");
 
-  const [items, setItems] = useState<ShiftListItemDto[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [pageNumber, setPageNumber] = useState(1);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  // Filters
-  const [startDateFilter, setStartDateFilter] = useState("");
-  const [endDateFilter, setEndDateFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [showFilters, setShowFilters] = useState(false);
-
-  // Inline detail panel (replaces Modal)
-  const [selectedShift, setSelectedShift] = useState<ShiftDetailDto | null>(null);
-  const [shiftChanges, setShiftChanges] = useState<ShiftChangeHistoryItemDto[]>([]);
-  const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
-  const [expandedShiftId, setExpandedShiftId] = useState<string | null>(null);
-
-  const load = async (
-    page = pageNumber,
-    nextStartDateFilter = startDateFilter,
-    nextEndDateFilter = endDateFilter,
-    nextStatusFilter = statusFilter,
-  ) => {
-    try {
-      setError(null);
-      setLoading(true);
-      const result = await listAdminShifts({
-        pageNumber: page,
-        pageSize: PAGE_SIZE,
-        startDate: nextStartDateFilter || undefined,
-        endDate: nextEndDateFilter || undefined,
-        status: nextStatusFilter !== "all" ? nextStatusFilter : undefined,
-      });
-      setItems(result.items);
-      setTotalCount(result.totalCount);
-    } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "No fue posible cargar los turnos.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const cal = useServiceCalendar(isEnabled);
 
   useEffect(() => {
     if (!isReady) return;
-    if (!isAuthenticated) return void router.replace("/login");
-    if (requiresProfileCompletion) return void router.replace("/register");
-    if (!isAdmin) return void router.replace("/");
-    void load();
-  }, [isReady, isAuthenticated, requiresProfileCompletion, isAdmin, pageNumber, statusFilter]);
+    if (!isAuthenticated) router.replace("/login");
+    else if (requiresProfileCompletion) router.replace("/register");
+    else if (!roles.includes("ADMIN")) router.replace("/");
+  }, [isReady, isAuthenticated, requiresProfileCompletion, roles]);
 
-  const handleSearch = () => {
-    setPageNumber(1);
-    void load(1);
-  };
+  if (!isEnabled) return null;
 
-  const handleClearFilters = () => {
-    const nextPageNumber = 1;
-    const nextStatusFilter: StatusFilter = "all";
-    setStartDateFilter("");
-    setEndDateFilter("");
-    setStatusFilter(nextStatusFilter);
-    setPageNumber(nextPageNumber);
-    void load(nextPageNumber, "", "", nextStatusFilter);
-  };
-
-  const handleViewDetail = async (id: string) => {
-    if (expandedShiftId === id) {
-      setExpandedShiftId(null);
-      setSelectedShift(null);
-      setShiftChanges([]);
-      return;
-    }
-    try {
-      setDetailLoadingId(id);
-      setExpandedShiftId(id);
-      const [detail, changes] = await Promise.all([
-        getAdminShiftDetail(id),
-        getAdminShiftChanges(id),
-      ]);
-      setSelectedShift(detail);
-      setShiftChanges(changes);
-    } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "No fue posible cargar el detalle del turno.");
-      setExpandedShiftId(null);
-    } finally {
-      setDetailLoadingId(null);
-    }
-  };
+  const dayAssignments = cal.assignmentsByDate[cal.selectedDay] ?? [];
 
   return (
     <MobileWorkspaceShell
+      eyebrow="Servicios"
+      title="Calendario de Servicios"
       onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.adminHome)}
       primaryReturnLabel="Volver"
-      eyebrow="Administración"
-      title="Turnos"
-      testID="admin-shifts-screen"
-      nativeID="admin-shifts-screen"
-      actions={(
-        <View style={styles.headerActions}>
-          <Pressable
-            style={styles.button}
-            onPress={() => setShowFilters(!showFilters)}
-            testID="admin-shifts-filter-toggle"
-            nativeID="admin-shifts-filter-toggle"
-            accessibilityRole="button"
-            accessibilityLabel={showFilters ? "Ocultar filtros" : "Mostrar filtros"}
-          >
-            <Text style={styles.buttonText}>{showFilters ? "Ocultar filtros" : "Filtros"}</Text>
-          </Pressable>
-          <Pressable
-            style={styles.button}
-            onPress={() => void load()}
-            testID="admin-shifts-refresh-btn"
-            nativeID="admin-shifts-refresh-btn"
-            accessibilityRole="button"
-            accessibilityLabel="Actualizar turnos"
-          >
-            <Text style={styles.buttonText}>Actualizar</Text>
-          </Pressable>
-        </View>
-      )}
+      testID="admin-calendar-screen"
+      nativeID="admin-calendar-screen"
     >
-      {!!error && (
-        <Text
-          style={styles.error}
-          testID="admin-shifts-error"
-          nativeID="admin-shifts-error"
-        >
-          {error}
-        </Text>
-      )}
-
-      {showFilters && (
-        <View style={styles.filtersCard}>
-          <Text style={styles.filtersTitle}>Filtros de búsqueda</Text>
-
-          <Text style={styles.filterLabel}>Estado</Text>
-          <View style={styles.filterChips}>
-            {STATUS_CHIPS.map((chip) => {
-              const isActive = statusFilter === chip.value;
-              return (
-                <Pressable
-                  key={chip.value}
-                  style={[styles.chip, isActive && styles.chipActive]}
-                  onPress={() => setStatusFilter(chip.value)}
-                  testID={`admin-shifts-status-chip-${chip.value}`}
-                  nativeID={`admin-shifts-status-chip-${chip.value}`}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Filtrar por estado: ${chip.label}`}
-                  accessibilityState={{ selected: isActive }}
-                >
-                  <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
-                    {chip.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          <TextInput
-            style={styles.input}
-            placeholder="Fecha inicio (AAAA-MM-DD)"
-            value={startDateFilter}
-            onChangeText={setStartDateFilter}
-            testID="admin-shifts-start-date-input"
-            nativeID="admin-shifts-start-date-input"
-            accessibilityLabel="Fecha de inicio del filtro"
-          />
-          <TextInput
-            style={[styles.input, { marginTop: 8 }]}
-            placeholder="Fecha fin (AAAA-MM-DD)"
-            value={endDateFilter}
-            onChangeText={setEndDateFilter}
-            testID="admin-shifts-end-date-input"
-            nativeID="admin-shifts-end-date-input"
-            accessibilityLabel="Fecha de fin del filtro"
-          />
-
-          <View style={styles.filterActions}>
-            <Pressable
-              style={styles.buttonPrimary}
-              onPress={handleSearch}
-              testID="admin-shifts-search-btn"
-              nativeID="admin-shifts-search-btn"
-              accessibilityRole="button"
-              accessibilityLabel="Buscar turnos"
-            >
-              <Text style={styles.buttonPrimaryText}>Buscar</Text>
-            </Pressable>
-            <Pressable
-              style={styles.button}
-              onPress={handleClearFilters}
-              accessibilityRole="button"
-              accessibilityLabel="Limpiar filtros"
-            >
-              <Text style={styles.buttonText}>Limpiar</Text>
-            </Pressable>
-          </View>
-        </View>
-      )}
-
-      <View style={styles.summary}>
-        <Text style={styles.summaryText}>Total: {totalCount} turnos</Text>
-        <Text style={styles.summaryText}>Página: {pageNumber}</Text>
-      </View>
-
-      {loading && <Text style={styles.loadingText}>Cargando...</Text>}
-
-      {!loading && items.length === 0 && (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>Sin resultados</Text>
-        </View>
-      )}
-
-      <View style={styles.list} testID="admin-shifts-list" nativeID="admin-shifts-list">
-        {items.map((item) => {
-          const badgeColors = statusBadgeColors(item.status);
-          const isExpanded = expandedShiftId === item.id;
-          return (
-            <View key={item.id}>
-              <View
-                style={styles.card}
-                testID={`admin-shift-card-${item.id}`}
-                nativeID={`admin-shift-card-${item.id}`}
-              >
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardNurse}>{item.nurseDisplayName ?? "Enfermera sin nombre"}</Text>
-                  <StatusBadge
-                    label={statusLabel(item.status)}
-                    colors={{ bg: badgeColors.bg, fg: badgeColors.text }}
-                    testID={`admin-shifts-status-chip-card-${item.id}`}
-                  />
-                </View>
-
-                {item.careRequestReference && (
-                  <Text style={styles.cardRef}>Solicitud: {item.careRequestReference}</Text>
-                )}
-
-                <View style={styles.cardDateRow}>
-                  <Text style={styles.cardDateLabel}>Inicio:</Text>
-                  <Text style={styles.cardDateValue}>{formatDate(item.scheduledStartUtc)}</Text>
-                </View>
-                <View style={styles.cardDateRow}>
-                  <Text style={styles.cardDateLabel}>Fin:</Text>
-                  <Text style={styles.cardDateValue}>{formatDate(item.scheduledEndUtc)}</Text>
-                </View>
-
-                <Pressable
-                  style={styles.detailButton}
-                  onPress={() => void handleViewDetail(item.id)}
-                  testID={`admin-shift-detail-btn-${item.id}`}
-                  nativeID={`admin-shift-detail-btn-${item.id}`}
-                  accessibilityRole="button"
-                  accessibilityLabel={isExpanded ? "Ocultar detalle del turno" : "Ver detalle del turno"}
-                >
-                  <Text style={styles.detailButtonText}>
-                    {detailLoadingId === item.id ? "Cargando..." : isExpanded ? "Ocultar detalle" : "Ver detalle"}
-                  </Text>
-                </Pressable>
-              </View>
-
-              {isExpanded && selectedShift && selectedShift.id === item.id && (
-                <View
-                  style={styles.detailPanel}
-                  testID="admin-shift-detail-panel"
-                  nativeID="admin-shift-detail-panel"
-                >
-                  <View style={styles.detailField}>
-                    <Text style={styles.detailLabel}>Enfermera</Text>
-                    <Text style={styles.detailValue}>{selectedShift.nurseDisplayName ?? "Sin nombre"}</Text>
-                    {selectedShift.nurseEmail && (
-                      <Text style={styles.detailValueSecondary}>{selectedShift.nurseEmail}</Text>
-                    )}
-                  </View>
-
-                  <View style={styles.detailField}>
-                    <Text style={styles.detailLabel}>Solicitud de cuidado</Text>
-                    <Text style={styles.detailValue}>{selectedShift.careRequestReference ?? selectedShift.careRequestId}</Text>
-                  </View>
-
-                  <View style={styles.detailField}>
-                    <Text style={styles.detailLabel}>Inicio programado</Text>
-                    <Text style={styles.detailValue}>{formatDate(selectedShift.scheduledStartUtc)}</Text>
-                  </View>
-
-                  <View style={styles.detailField}>
-                    <Text style={styles.detailLabel}>Fin programado</Text>
-                    <Text style={styles.detailValue}>{formatDate(selectedShift.scheduledEndUtc)}</Text>
-                  </View>
-
-                  <View style={styles.detailField}>
-                    <Text style={styles.detailLabel}>Estado</Text>
-                    <View style={{ flexDirection: "row" }}>
-                      <StatusBadge
-                        label={statusLabel(selectedShift.status)}
-                        colors={{ bg: statusBadgeColors(selectedShift.status).bg, fg: statusBadgeColors(selectedShift.status).text }}
-                      />
-                    </View>
-                  </View>
-
-                  {selectedShift.notes && (
-                    <View style={styles.detailField}>
-                      <Text style={styles.detailLabel}>Notas</Text>
-                      <Text style={styles.detailValue}>{selectedShift.notes}</Text>
-                    </View>
-                  )}
-
-                  <View style={styles.detailField}>
-                    <Text style={styles.detailLabel}>Creado</Text>
-                    <Text style={styles.detailValue}>{formatDate(selectedShift.createdAtUtc)}</Text>
-                  </View>
-
-                  <View style={styles.detailField}>
-                    <Text style={styles.detailLabel}>Última actualización</Text>
-                    <Text style={styles.detailValue}>{formatDate(selectedShift.updatedAtUtc)}</Text>
-                  </View>
-
-                  {shiftChanges.length > 0 && (
-                    <View style={styles.changesSection}>
-                      <Text style={styles.changesSectionTitle}>Historial de cambios</Text>
-                      {shiftChanges.map((change) => (
-                        <View key={change.id} style={styles.changeItem}>
-                          <Text style={styles.changeDate}>{formatDate(change.changedAtUtc)}</Text>
-                          {change.changedByActorName && (
-                            <Text style={styles.changeActor}>{change.changedByActorName}</Text>
-                          )}
-                          {change.previousStatus && change.newStatus && (
-                            <Text style={styles.changeStatus}>
-                              {statusLabel(change.previousStatus)} → {statusLabel(change.newStatus)}
-                            </Text>
-                          )}
-                          {change.notes && (
-                            <Text style={styles.changeNotes}>{change.notes}</Text>
-                          )}
-                        </View>
-                      ))}
-                    </View>
-                  )}
-
-                  {shiftChanges.length === 0 && (
-                    <View style={styles.detailField}>
-                      <Text style={styles.detailLabel}>Historial de cambios</Text>
-                      <Text style={styles.detailValueSecondary}>Sin cambios registrados.</Text>
-                    </View>
-                  )}
-                </View>
-              )}
-            </View>
-          );
-        })}
-      </View>
-
-      {totalCount > PAGE_SIZE && (
-        <View style={styles.pagination}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+        <View style={styles.navRow}>
           <Pressable
-            style={[styles.button, pageNumber === 1 && styles.buttonDisabled]}
-            onPress={() => setPageNumber((p) => Math.max(1, p - 1))}
-            disabled={pageNumber === 1}
-            testID="admin-shifts-prev-btn"
-            nativeID="admin-shifts-prev-btn"
+            onPress={cal.goPrev}
             accessibilityRole="button"
-            accessibilityLabel="Página anterior"
+            accessibilityLabel="Anterior"
+            testID="admin-calendar-prev"
+            style={({ pressed }) => [styles.navBtn, pressed && styles.pressed]}
           >
-            <Text style={styles.buttonText}>Anterior</Text>
+            <Text style={styles.navGlyph}>‹</Text>
           </Pressable>
-          <Text style={styles.pageInfo}>Pagina {pageNumber}</Text>
+
+          <Text style={styles.monthLabel}>{cal.label}</Text>
+
           <Pressable
-            style={[styles.button, pageNumber * PAGE_SIZE >= totalCount && styles.buttonDisabled]}
-            onPress={() => setPageNumber((p) => p + 1)}
-            disabled={pageNumber * PAGE_SIZE >= totalCount}
-            testID="admin-shifts-next-btn"
-            nativeID="admin-shifts-next-btn"
+            onPress={cal.goNext}
             accessibilityRole="button"
-            accessibilityLabel="Página siguiente"
+            accessibilityLabel="Siguiente"
+            testID="admin-calendar-next"
+            style={({ pressed }) => [styles.navBtn, pressed && styles.pressed]}
           >
-            <Text style={styles.buttonText}>Siguiente</Text>
+            <Text style={styles.navGlyph}>›</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={cal.goToday}
+            accessibilityRole="button"
+            accessibilityLabel="Ir a hoy"
+            testID="admin-calendar-today"
+            style={({ pressed }) => [styles.todayBtn, pressed && styles.pressed]}
+          >
+            <Text style={styles.todayText}>Hoy</Text>
           </Pressable>
         </View>
-      )}
+
+        <FilterChips options={VIEW_OPTIONS} value={cal.view} onChange={cal.setView} testIDPrefix="admin-calendar-view" />
+
+        <Banner tone="error" message={cal.error} />
+
+        {cal.isLoading && Object.keys(cal.assignmentsByDate).length === 0 ? (
+          <View style={styles.loading}>
+            <ActivityIndicator color={designTokens.color.ink.accent} accessibilityLabel="Cargando..." />
+          </View>
+        ) : null}
+
+        {cal.view === "month" ? (
+          <MonthGrid days={cal.gridDays} selectedDay={cal.selectedDay} onSelectDay={cal.setSelectedDay} />
+        ) : (
+          <WeekStrip days={cal.weekDays} selectedDay={cal.selectedDay} onSelectDay={cal.setSelectedDay} />
+        )}
+
+        <CategoryLegend />
+
+        <DayDetail
+          dateIso={cal.selectedDay}
+          assignments={dayAssignments}
+          roster={cal.roster}
+          onOpenRequest={(id) => router.push(`/admin/care-requests/${id}` as never)}
+        />
+      </ScrollView>
     </MobileWorkspaceShell>
   );
 }
 
+const T = designTokens;
 const styles = StyleSheet.create({
-  headerActions: { flexDirection: "row", gap: 8 },
-  button: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: designTokens.color.border.subtle },
-  buttonText: { color: designTokens.color.ink.accent, fontWeight: "700", fontSize: 14 },
-  buttonPrimary: { backgroundColor: designTokens.color.ink.accent, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, flex: 1 },
-  buttonPrimaryText: { color: designTokens.color.ink.inverse, fontWeight: "700", fontSize: 14, textAlign: "center" },
-  buttonDisabled: { opacity: 0.5 },
-  error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: 12, borderRadius: 12, marginBottom: 12 },
-  filtersCard: { ...mobileSurfaceCard, padding: 16, marginBottom: 12 },
-  filtersTitle: { fontSize: 16, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 12 },
-  filterLabel: { fontSize: 14, fontWeight: "700", color: designTokens.color.ink.muted, marginTop: 8, marginBottom: 6 },
-  filterChips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 },
-  chip: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: designTokens.color.border.subtle },
-  chipActive: { backgroundColor: designTokens.color.ink.primary, borderColor: designTokens.color.ink.primary },
-  chipText: { color: designTokens.color.ink.primary, fontSize: 12, fontWeight: "600" },
-  chipTextActive: { color: designTokens.color.ink.inverse },
-  input: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 14, padding: 14, color: designTokens.color.ink.primary },
-  filterActions: { flexDirection: "row", gap: 8, marginTop: 8 },
-  summary: { flexDirection: "row", justifyContent: "space-between", marginBottom: 12, paddingHorizontal: 4 },
-  summaryText: { color: designTokens.color.ink.muted, fontSize: 14, fontWeight: "600" },
-  loadingText: { color: designTokens.color.ink.secondary, fontSize: 14, textAlign: "center", padding: 20 },
-  emptyState: { padding: 40, alignItems: "center" },
-  emptyStateText: { color: designTokens.color.ink.secondary, fontSize: 16 },
-  list: { gap: 12 },
-  card: { ...mobileSurfaceCard, padding: 16 },
-  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
-  cardNurse: { color: designTokens.color.ink.primary, fontWeight: "800", fontSize: 16, flex: 1 },
-  cardRef: { color: designTokens.color.ink.muted, fontSize: 13, marginBottom: 6 },
-  cardDateRow: { flexDirection: "row", marginBottom: 4 },
-  cardDateLabel: { color: designTokens.color.ink.muted, fontSize: 13, fontWeight: "700", width: 50 },
-  cardDateValue: { color: designTokens.color.ink.primary, fontSize: 13, flex: 1 },
-  detailButton: { backgroundColor: designTokens.color.ink.accent, borderRadius: 12, paddingVertical: 8, marginTop: 10 },
-  detailButtonText: { color: designTokens.color.ink.inverse, fontWeight: "700", fontSize: 14, textAlign: "center" },
-  detailPanel: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.strong, borderRadius: 16, padding: 16, marginTop: 4, marginBottom: 8, gap: 12 },
-  pagination: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 16, paddingHorizontal: 4 },
-  pageInfo: { color: designTokens.color.ink.muted, fontSize: 14, fontWeight: "600" },
-  detailField: { gap: 4 },
-  detailLabel: { color: designTokens.color.ink.muted, fontSize: 12, fontWeight: "800", textTransform: "uppercase" },
-  detailValue: { color: designTokens.color.ink.primary, fontSize: 15 },
-  detailValueSecondary: { color: designTokens.color.ink.secondary, fontSize: 14 },
-  changesSection: { gap: 8 },
-  changesSectionTitle: { fontSize: 14, fontWeight: "800", color: designTokens.color.ink.primary, textTransform: "uppercase", letterSpacing: 0.5 },
-  changeItem: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: designTokens.color.border.subtle, gap: 2 },
-  changeDate: { color: designTokens.color.status.warningText, fontWeight: "700", fontSize: 12 },
-  changeActor: { color: designTokens.color.ink.muted, fontSize: 13 },
-  changeStatus: { color: designTokens.color.ink.primary, fontWeight: "700", fontSize: 14 },
-  changeNotes: { color: designTokens.color.ink.secondary, fontSize: 13, marginTop: 2 },
+  content: { gap: 12, paddingBottom: 28 },
+  navRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  navBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: T.color.surface.secondary,
+    borderWidth: 1,
+    borderColor: T.color.border.subtle,
+  },
+  navGlyph: { color: T.color.ink.primary, fontSize: 22, lineHeight: 22, fontWeight: "800" },
+  monthLabel: { flex: 1, textAlign: "center", color: T.color.ink.primary, fontSize: 18, fontWeight: "800" },
+  todayBtn: {
+    paddingHorizontal: 14,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: T.color.surface.accent,
+    borderWidth: 1,
+    borderColor: T.color.border.accent,
+  },
+  todayText: { color: T.color.ink.accentStrong, fontSize: 13, fontWeight: "800" },
+  pressed: { opacity: 0.8 },
+  loading: { paddingVertical: 32, alignItems: "center" },
 });
