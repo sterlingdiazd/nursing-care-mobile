@@ -1,5 +1,6 @@
 import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { StyleSheet, Text, View, ScrollView, Platform } from "react-native";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
@@ -7,6 +8,7 @@ import { useAuth } from "@/src/context/AuthContext";
 import { logClientEvent } from "@/src/logging/clientLogger";
 import { useToast } from "@/src/components/shared/ToastProvider";
 import {
+  getGoogleOAuthAvailability,
   getGoogleOAuthStartUrl,
   getLocalHttpsCertificateWarning,
   getMobileApiBaseUrl,
@@ -24,6 +26,19 @@ export default function AccountScreen() {
   const { email, isAuthenticated, logout, roles, token } = useAuth();
   const { showToast } = useToast();
   const apiBaseUrl = getMobileApiBaseUrl();
+  // Only offer the Google button when the provider is configured server-side — otherwise
+  // tapping it would navigate to a 400 ("Google OAuth no está configurado").
+  const [googleAvailable, setGoogleAvailable] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void getGoogleOAuthAvailability().then((available) => {
+      if (active) setGoogleAvailable(available);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const onGoogleLogin = async () => {
     const certificateWarning = getLocalHttpsCertificateWarning();
@@ -91,14 +106,16 @@ export default function AccountScreen() {
             Gestiona tu acceso utilizando los servicios vinculados o cambia de cuenta.
           </Text>
 
-          <FormButton
-            testID={authTestIds.account.googleButton}
-            onPress={onGoogleLogin}
-            variant="secondary"
-            style={styles.actionButton}
-          >
-            {isAuthenticated ? "Cambiar cuenta con Google" : "Continuar con Google"}
-          </FormButton>
+          {googleAvailable && (
+            <FormButton
+              testID={authTestIds.account.googleButton}
+              onPress={onGoogleLogin}
+              variant="secondary"
+              style={styles.actionButton}
+            >
+              {isAuthenticated ? "Cambiar cuenta con Google" : "Continuar con Google"}
+            </FormButton>
+          )}
 
           {!isAuthenticated && (
             <>

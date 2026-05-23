@@ -198,6 +198,22 @@ export function getGoogleOAuthStartUrl(
   return `${API_BASE_URL.replace(/\/$/, "")}/api/auth/google/start?${params.toString()}`;
 }
 
+/**
+ * Whether Google OAuth is configured server-side. Lets the UI hide the Google button
+ * instead of navigating to a 400 when the provider is not configured (e.g. local dev).
+ * Returns false on any failure rather than throwing.
+ */
+export async function getGoogleOAuthAvailability(): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE_URL.replace(/\/$/, "")}/api/auth/google/available`);
+    if (!res.ok) return false;
+    const body = await res.json();
+    return Boolean(body?.available);
+  } catch {
+    return false;
+  }
+}
+
 export async function checkBackendHealth(): Promise<HealthResponse> {
   return requestJson<HealthResponse>({
     path: "/api/health",
