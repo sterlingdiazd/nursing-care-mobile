@@ -76,13 +76,12 @@ export function GananciaHero({
     // White mobileSurfaceCard — no hero gradient
     <View style={styles.hero}>
       <Text style={styles.heroEyebrow}>Ganancia del período</Text>
-      <View style={styles.heroValueRow}>
-        <Text style={styles.heroValue} numberOfLines={1} adjustsFontSizeToFit>{ganancia}</Text>
-        {/* Status pill: tinted success/warning/danger surface */}
-        <View style={[styles.heroBadge, { backgroundColor: badgeBg }]}>
-          <FontAwesome name={statusIcon as any} size={12} color={statusColor} />
-          <Text style={[styles.heroBadgeText, { color: statusColor }]}>Margen {marginPercent.toFixed(1)}%</Text>
-        </View>
+      {/* Hero number on its own full-width line so it never truncates */}
+      <Text style={styles.heroValue} numberOfLines={1} adjustsFontSizeToFit>{ganancia}</Text>
+      {/* Status pill below the number: tinted success/warning/danger surface */}
+      <View style={[styles.heroBadge, styles.heroBadgeStandalone, { backgroundColor: badgeBg }]}>
+        <FontAwesome name={statusIcon as any} size={12} color={statusColor} />
+        <Text style={[styles.heroBadgeText, { color: statusColor }]}>Margen {marginPercent.toFixed(1)}%</Text>
       </View>
       {/* Sparkline: teal accent stroke on white background */}
       <Sparkline values={marginTrend} width={240} height={40} color={t.accent} />
@@ -172,11 +171,11 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   heroEyebrow: { color: t.textMuted, fontSize: 12, fontWeight: "700", letterSpacing: 0.6, textTransform: "uppercase" },
-  heroValueRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  // Large navy hero number
-  heroValue: { color: t.text, fontSize: 34, fontWeight: "800", flexShrink: 1 },
+  // Large navy hero number — full width, one emphasized number per card
+  heroValue: { color: t.text, fontSize: 34, fontWeight: "800" },
   // Tinted status pill (successBg / warningBg / dangerBg)
   heroBadge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999 },
+  heroBadgeStandalone: { alignSelf: "flex-start" },
   heroBadgeText: { fontSize: 12.5, fontWeight: "800" },
   heroChips: { flexDirection: "row", gap: 10 },
   // Sub-tiles: light secondary surface (#f3f9fa) with navy text
