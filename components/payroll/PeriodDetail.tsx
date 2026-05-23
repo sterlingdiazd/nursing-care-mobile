@@ -286,7 +286,7 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
         : "";
     Alert.alert(
       "Cerrar Período",
-      `Antes de cerrar (es irreversible), confirma que revisaste:\n• Deducciones y descuentos\n• Ajustes por servicio\n• Comprobantes descargados${warning}\n\n¿Cerrar el período "${period.startDate} - ${period.endDate}"?`,
+      `Antes de cerrar (es irreversible), confirma que revisaste:\n• Deducciones y descuentos\n• Ajustes por servicio\n• Comprobantes descargados${warning}\n\n¿Cerrar el período "${formatDateES(period.startDate)} - ${formatDateES(period.endDate)}"?`,
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -309,7 +309,7 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
   const handleDeletePeriodConfirm = () => {
     Alert.alert(
       "Eliminar Período",
-      `¿Eliminar el período "${period.startDate} - ${period.endDate}"? Esta acción no se puede deshacer.`,
+      `¿Eliminar el período "${formatDateES(period.startDate)} - ${formatDateES(period.endDate)}"? Esta acción no se puede deshacer.`,
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -397,7 +397,7 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
   const statusDescription = isOpen
     ? "Puedes revisar líneas, corregir montos y cerrar el período cuando esté listo."
     : "Período finalizado. Los comprobantes y reportes están disponibles para descarga.";
-  const periodLabel = `${period.startDate} - ${period.endDate}`;
+  const periodLabel = `${formatDateES(period.startDate)} - ${formatDateES(period.endDate)}`;
   const nurseCountLabel = `${period.staffSummary.length} enfermera${period.staffSummary.length === 1 ? "" : "s"}`;
   const lineCountLabel = `${period.lines.length} línea${period.lines.length === 1 ? "" : "s"}`;
 

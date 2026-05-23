@@ -2,6 +2,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type { AdminPayrollPeriodListItem } from "@/src/services/payrollService";
 import { designTokens } from "@/src/design-system/tokens";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
+import { formatDateES } from "@/src/utils/spanishTextValidator";
 
 interface PeriodListItemProps {
   period: AdminPayrollPeriodListItem;
@@ -16,11 +17,11 @@ export function PeriodListItem({ period, onPress }: PeriodListItemProps) {
       style={styles.container}
       onPress={() => onPress(period.id)}
       accessibilityRole="button"
-      accessibilityLabel={`Período ${period.startDate} - ${period.endDate}, estado: ${isOpen ? "Abierto" : "Cerrado"}`}
+      accessibilityLabel={`Período ${formatDateES(period.startDate)} - ${formatDateES(period.endDate)}, estado: ${isOpen ? "Abierto" : "Cerrado"}`}
     >
       <View style={styles.header}>
         <Text style={styles.dates}>
-          {period.startDate} - {period.endDate}
+          {formatDateES(period.startDate)} - {formatDateES(period.endDate)}
         </Text>
         <StatusBadge
           label={isOpen ? "Abierto" : "Cerrado"}
@@ -32,11 +33,11 @@ export function PeriodListItem({ period, onPress }: PeriodListItemProps) {
       <View style={styles.details}>
         <View style={styles.detailItem}>
           <Text style={styles.detailLabel}>Pago</Text>
-          <Text style={styles.detailValue}>{period.paymentDate}</Text>
+          <Text style={styles.detailValue}>{formatDateES(period.paymentDate)}</Text>
         </View>
         <View style={styles.detailItem}>
           <Text style={styles.detailLabel}>Cierre</Text>
-          <Text style={styles.detailValue}>{period.cutoffDate}</Text>
+          <Text style={styles.detailValue}>{formatDateES(period.cutoffDate)}</Text>
         </View>
         <View style={styles.detailItem}>
           <Text style={styles.detailLabel}>Líneas</Text>
