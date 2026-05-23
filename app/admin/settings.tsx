@@ -154,7 +154,9 @@ export default function AdminSettingsScreen() {
                   nativeID={`admin-setting-card-${setting.key}`}
                 >
                   <View style={styles.settingCardHeader}>
-                    <Text style={styles.settingKey}>{setting.description || setting.key}</Text>
+                    <Text style={styles.settingKey}>
+                      {setting.value && setting.value.trim() ? setting.description || setting.key : setting.key}
+                    </Text>
                     <Text style={styles.settingEditHint}>
                       {editTarget?.key === setting.key ? "Cerrar" : "Editar"}
                     </Text>
