@@ -12,6 +12,7 @@ import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
 import { useAuth } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
+import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import {
   getPendingNurseProfiles,
   getActiveNurseProfiles,
@@ -317,15 +318,7 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingBottom: 24,
   },
-  card: {
-    backgroundColor: designTokens.color.ink.inverse,
-    borderWidth: 1,
-    borderColor: designTokens.color.border.subtle,
-    borderRadius: 16,
-    padding: 14,
-    boxShadow: "0px 4px 10px rgba(18, 48, 68, 0.04)",
-    elevation: 2,
-  },
+  card: { ...mobileSurfaceCard, padding: 14 },
   cardPending: {
     borderColor: designTokens.color.ink.warning,
     borderLeftWidth: 4,

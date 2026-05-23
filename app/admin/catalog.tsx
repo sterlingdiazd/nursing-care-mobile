@@ -55,6 +55,7 @@ import { useAuth } from "@/src/context/AuthContext";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
 import { designTokens } from "@/src/design-system/tokens";
+import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 
 type TabKey =
   | "categories"
@@ -705,7 +706,7 @@ const styles = StyleSheet.create({
   editPanelTitle: { fontSize: 16, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 8 },
   editActions: { flexDirection: "row", gap: 8, marginTop: 8 },
   cardsContainer: { gap: 10 },
-  card: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: designTokens.color.border.subtle, boxShadow: "0px 4px 10px rgba(18, 48, 68, 0.04)", elevation: 2 },
+  card: { ...mobileSurfaceCard, paddingHorizontal: 16, paddingVertical: 12 },
   cardContent: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 14 },
   cardTextBlock: { flex: 1 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4, gap: 8 },
@@ -720,7 +721,7 @@ const styles = StyleSheet.create({
   previewPanelTitle: { fontSize: 16, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 8 },
   previewLoadingRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 },
   previewLoadingText: { fontSize: 15, color: designTokens.color.ink.secondary },
-  previewResultCard: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: designTokens.color.border.subtle },
+  previewResultCard: { ...mobileSurfaceCard, padding: 16 },
   previewTypeLabel: { fontSize: 13, color: designTokens.color.ink.muted, marginBottom: 12 },
   previewRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: designTokens.color.surface.canvas },
   previewRowLabel: { fontSize: 15, color: designTokens.color.ink.secondary },

@@ -11,6 +11,7 @@ import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigation
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
+import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import {
   listAdminSettings,
   updateAdminSetting,
@@ -298,7 +299,7 @@ const styles = StyleSheet.create({
   emptyStateText: { color: designTokens.color.ink.secondary, fontSize: 16 },
   categorySection: { marginBottom: 20 },
   categoryTitle: { fontSize: 13, fontWeight: "800", color: designTokens.color.ink.muted, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10, paddingHorizontal: 4 },
-  settingCard: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, marginBottom: 4, boxShadow: "0px 4px 10px rgba(18, 48, 68, 0.04)", elevation: 2 },
+  settingCard: { ...mobileSurfaceCard, padding: 16, marginBottom: 4 },
   settingCardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
   settingKey: { color: designTokens.color.ink.primary, fontWeight: "800", fontSize: 15, flex: 1 },
   settingEditHint: { color: designTokens.color.ink.accent, fontSize: 13, fontWeight: "700" },

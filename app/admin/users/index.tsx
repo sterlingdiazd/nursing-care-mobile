@@ -12,6 +12,7 @@ import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { adminTestIds } from "@/src/testing/testIds";
 import { designTokens } from "@/src/design-system/tokens";
+import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
 import {
   getAdminUsers,
@@ -293,7 +294,7 @@ const styles = StyleSheet.create({
   attentionChip: { alignSelf: "flex-start", backgroundColor: designTokens.color.ink.primary, color: designTokens.color.ink.inverse, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, fontSize: 12, fontWeight: "700", marginBottom: 12 },
   error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: 12, borderRadius: 12, marginBottom: 12 },
   loading: { color: designTokens.color.ink.secondary, fontSize: 14, textAlign: "center", padding: 20 },
-  filtersCard: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, marginBottom: 12 },
+  filtersCard: { ...mobileSurfaceCard, padding: 16, marginBottom: 12 },
   filtersTitle: { fontSize: 16, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 12 },
   filterLabel: { fontSize: 14, fontWeight: "700", color: designTokens.color.ink.muted, marginTop: 8, marginBottom: 6 },
   filterChips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 },
@@ -305,7 +306,7 @@ const styles = StyleSheet.create({
   emptyState: { padding: 40, alignItems: "center" },
   emptyStateText: { color: designTokens.color.ink.secondary, fontSize: 16, textAlign: "center" },
   list: { gap: 12 },
-  card: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, marginBottom: 12, boxShadow: "0px 4px 10px rgba(18, 48, 68, 0.04)", elevation: 2 },
+  card: { ...mobileSurfaceCard, padding: 16, marginBottom: 12 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
   cardTitle: { color: designTokens.color.ink.primary, fontWeight: "800", fontSize: 18, flex: 1 },
   cardRole: { color: designTokens.color.ink.secondary, fontSize: 13, fontWeight: "600", marginBottom: 2 },

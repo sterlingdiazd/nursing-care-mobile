@@ -11,6 +11,7 @@ import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigation
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
+import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
 import {
   getAdminClients,
@@ -266,14 +267,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     padding: designTokens.spacing.lg,
   },
-  filtersCard: {
-    backgroundColor: designTokens.color.surface.primary,
-    borderWidth: 1,
-    borderColor: designTokens.color.border.subtle,
-    borderRadius: designTokens.radius.lg,
-    padding: designTokens.spacing.md,
-    marginBottom: designTokens.spacing.sm,
-  },
+  filtersCard: { ...mobileSurfaceCard, padding: designTokens.spacing.md, marginBottom: designTokens.spacing.sm },
   filtersTitle: { ...designTokens.typography.sectionTitle, fontSize: 16, marginBottom: designTokens.spacing.sm },
   filterLabel: {
     ...designTokens.typography.label,
@@ -308,16 +302,7 @@ const styles = StyleSheet.create({
   emptyState: { padding: designTokens.spacing.xl, alignItems: "center" },
   emptyStateText: { ...designTokens.typography.body, color: designTokens.color.ink.muted, textAlign: "center" },
   list: { gap: designTokens.spacing.sm },
-  card: {
-    backgroundColor: designTokens.color.surface.primary,
-    borderWidth: 1,
-    borderColor: designTokens.color.border.subtle,
-    borderRadius: designTokens.radius.lg,
-    padding: designTokens.spacing.md,
-    marginBottom: designTokens.spacing.sm,
-    boxShadow: "0px 4px 10px rgba(18, 48, 68, 0.04)",
-    elevation: 2,
-  },
+  card: { ...mobileSurfaceCard, padding: designTokens.spacing.md, marginBottom: designTokens.spacing.sm },
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",

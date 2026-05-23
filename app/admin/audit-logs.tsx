@@ -10,6 +10,7 @@ import { router } from "expo-router";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
+import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import {
   searchAuditLogs,
   getAuditLogDetail,
@@ -381,7 +382,7 @@ const styles = StyleSheet.create({
   buttonPrimaryText: { color: designTokens.color.ink.inverse, fontWeight: "700", fontSize: 14, textAlign: "center" },
   buttonDisabled: { opacity: 0.5 },
   error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: 12, borderRadius: 12, marginBottom: 12 },
-  filtersCard: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 16, marginBottom: 12 },
+  filtersCard: { ...mobileSurfaceCard, padding: 16, marginBottom: 12 },
   filtersTitle: { fontSize: 16, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 12 },
   input: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.strong, borderRadius: 14, padding: 14, marginBottom: 8, color: designTokens.color.ink.primary },
   filterActions: { flexDirection: "row", gap: 8, marginTop: 8 },
@@ -389,17 +390,12 @@ const styles = StyleSheet.create({
   summaryText: { color: designTokens.color.ink.muted, fontSize: 14, fontWeight: "600" },
   list: { gap: 8 },
   row: {
+    ...mobileSurfaceCard,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: designTokens.color.ink.inverse,
-    borderWidth: 1,
-    borderColor: designTokens.color.border.subtle,
-    borderRadius: 14,
     paddingVertical: 11,
     paddingRight: 12,
     overflow: "hidden",
-    boxShadow: "0px 4px 10px rgba(18, 48, 68, 0.04)",
-    elevation: 1,
   },
   rowExpanded: { borderColor: designTokens.color.border.accent },
   rail: { width: 4, alignSelf: "stretch", borderRadius: 2, marginRight: 12 },
