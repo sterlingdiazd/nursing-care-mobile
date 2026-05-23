@@ -44,6 +44,33 @@ function parseAllowedValues(json: string | null): string[] | null {
   return null;
 }
 
+// Short Spanish labels for each setting key (the backend descriptions are long/English; never show
+// the raw key to the owner). Fallback order: label → description → key.
+const SETTING_LABELS: Record<string, string> = {
+  PORTAL_DEFAULT_LANGUAGE: "Idioma del portal",
+  DASHBOARD_HIGH_SEVERITY_THRESHOLD: "Umbral de severidad alta (panel)",
+  CARE_REQUEST_AGING_THRESHOLD_HOURS: "Horas para marcar solicitud atrasada",
+  FEATURE_TOGGLE_REPORTS_V2: "Reportes v2 (activar)",
+  NOTIFICATIONS_POLLING_INTERVAL_MS: "Actualización de notificaciones (ms)",
+  COMPANY_NAME: "Nombre de la empresa",
+  COMPANY_RNC: "RNC de la empresa",
+  COMPANY_PHONE: "Teléfono de la empresa",
+  COMPANY_ADDRESS: "Dirección de la empresa",
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  Empresa: "Empresa",
+  Dashboard: "Panel",
+  Localization: "Idioma",
+  Operations: "Operación",
+  General: "General",
+};
+
+const settingLabel = (s: { key: string; description?: string | null }): string =>
+  SETTING_LABELS[s.key] ?? (s.description?.trim() || s.key);
+
+const categoryLabel = (c: string): string => CATEGORY_LABELS[c] ?? c;
+
 export default function AdminSettingsScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
   const isAdmin = roles.includes("ADMIN");
@@ -142,27 +169,29 @@ export default function AdminSettingsScreen() {
       <View testID="admin-settings-list" nativeID="admin-settings-list">
         {Array.from(grouped.entries()).map(([category, items]) => (
           <View key={category} style={styles.categorySection}>
-            <Text style={styles.categoryTitle}>{category}</Text>
-            {items.map((setting) => (
+            <Text style={styles.categoryTitle}>{categoryLabel(category)}</Text>
+            {items.map((setting) => {
+              const hasValue = !!(setting.value && setting.value.trim());
+              return (
               <View key={setting.key}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Editar parametro ${setting.key}`}
+                  accessibilityLabel={`Editar ${settingLabel(setting)}`}
                   style={styles.settingCard}
                   onPress={() => editTarget?.key === setting.key ? handleCloseEdit() : handleOpenEdit(setting)}
                   testID={`admin-setting-card-${setting.key}`}
                   nativeID={`admin-setting-card-${setting.key}`}
                 >
                   <View style={styles.settingCardHeader}>
-                    <Text style={styles.settingKey}>
-                      {setting.value && setting.value.trim() ? setting.description || setting.key : setting.key}
-                    </Text>
+                    <Text style={styles.settingKey} numberOfLines={2}>{settingLabel(setting)}</Text>
                     <Text style={styles.settingEditHint}>
                       {editTarget?.key === setting.key ? "Cerrar" : "Editar"}
                     </Text>
                   </View>
 
-                  <Text style={styles.settingValue}>{setting.value || "—"}</Text>
+                  <Text style={[styles.settingValue, !hasValue && styles.settingValueEmpty]}>
+                    {hasValue ? setting.value : "Sin definir"}
+                  </Text>
 
                   {setting.modifiedAtUtc && (
                     <Text style={styles.settingModified}>
@@ -180,15 +209,8 @@ export default function AdminSettingsScreen() {
                   >
                     <View style={styles.detailField}>
                       <Text style={styles.detailLabel}>Parámetro</Text>
-                      <Text style={styles.detailValue}>{editTarget.key}</Text>
+                      <Text style={styles.detailValue}>{settingLabel(editTarget)}</Text>
                     </View>
-
-                    {editTarget.description && (
-                      <View style={styles.detailField}>
-                        <Text style={styles.detailLabel}>Descripción</Text>
-                        <Text style={styles.detailValueSecondary}>{editTarget.description}</Text>
-                      </View>
-                    )}
 
                     <View style={styles.detailField}>
                       <Text style={styles.detailLabel}>Categoría</Text>
@@ -277,7 +299,8 @@ export default function AdminSettingsScreen() {
                   </View>
                 )}
               </View>
-            ))}
+              );
+            })}
           </View>
         ))}
       </View>
@@ -301,7 +324,8 @@ const styles = StyleSheet.create({
   settingCardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
   settingKey: { color: designTokens.color.ink.primary, fontWeight: "800", fontSize: 15, flex: 1 },
   settingEditHint: { color: designTokens.color.ink.accent, fontSize: 13, fontWeight: "700" },
-  settingValue: { color: designTokens.color.ink.secondary, fontSize: 14, fontFamily: "monospace", marginBottom: 4 },
+  settingValue: { color: designTokens.color.ink.primary, fontSize: 15, fontWeight: "700", marginBottom: 4 },
+  settingValueEmpty: { color: designTokens.color.ink.muted, fontWeight: "600", fontStyle: "italic" },
   settingDescription: { color: designTokens.color.ink.muted, fontSize: 13, marginBottom: 4 },
   settingModified: { color: designTokens.color.ink.muted, fontSize: 11, marginTop: 2 },
   editPanel: { backgroundColor: designTokens.color.surface.canvas, borderWidth: 1, borderColor: designTokens.color.status.infoBg, borderRadius: 16, padding: 16, marginBottom: 10, gap: 12 },
