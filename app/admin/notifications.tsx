@@ -11,6 +11,7 @@ import {
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { Pagination } from "@/src/components/shared/Pagination";
 import {
   mobileSecondaryButton,
   mobileSurfaceCard,
@@ -129,66 +130,6 @@ export default function AdminNotificationsScreen() {
 
   const showingFrom = items.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const showingTo = (page - 1) * PAGE_SIZE + items.length;
-
-  const renderPageChips = () => {
-    if (pageCount <= 1) return null;
-    const around = new Set<number>([1, pageCount, page - 1, page, page + 1]);
-    const visible = Array.from(around).filter((n) => n >= 1 && n <= pageCount).sort((a, b) => a - b);
-    const chips: Array<{ kind: "page" | "ellipsis"; value: number; key: string }> = [];
-    let prev = 0;
-    for (const n of visible) {
-      if (n - prev > 1) chips.push({ kind: "ellipsis", value: 0, key: `e-${prev}` });
-      chips.push({ kind: "page", value: n, key: `p-${n}` });
-      prev = n;
-    }
-    return (
-      <View style={styles.paginationRow}>
-        <Pressable
-          disabled={page <= 1}
-          onPress={() => handlePageChange(page - 1)}
-          accessibilityRole="button"
-          accessibilityLabel="Página anterior"
-          style={({ pressed }) => [
-            styles.pageNav,
-            (page <= 1 || pressed) && styles.pageNavDisabled,
-          ]}
-        >
-          <Text style={styles.pageNavText}>‹</Text>
-        </Pressable>
-        {chips.map((c) =>
-          c.kind === "ellipsis" ? (
-            <Text key={c.key} style={styles.pageEllipsis}>
-              …
-            </Text>
-          ) : (
-            <Pressable
-              key={c.key}
-              onPress={() => handlePageChange(c.value)}
-              accessibilityRole="button"
-              accessibilityLabel={`Página ${c.value}`}
-              style={[styles.pageChip, c.value === page && styles.pageChipActive]}
-            >
-              <Text style={[styles.pageChipText, c.value === page && styles.pageChipTextActive]}>
-                {c.value}
-              </Text>
-            </Pressable>
-          ),
-        )}
-        <Pressable
-          disabled={page >= pageCount}
-          onPress={() => handlePageChange(page + 1)}
-          accessibilityRole="button"
-          accessibilityLabel="Página siguiente"
-          style={({ pressed }) => [
-            styles.pageNav,
-            (page >= pageCount || pressed) && styles.pageNavDisabled,
-          ]}
-        >
-          <Text style={styles.pageNavText}>›</Text>
-        </Pressable>
-      </View>
-    );
-  };
 
   return (
     <MobileWorkspaceShell
@@ -366,7 +307,7 @@ export default function AdminNotificationsScreen() {
           </View>
         )}
 
-        {renderPageChips()}
+        <Pagination currentPage={page} totalPages={pageCount} onPageChange={handlePageChange} />
       </ScrollView>
     </MobileWorkspaceShell>
   );
