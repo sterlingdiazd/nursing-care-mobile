@@ -4,7 +4,7 @@
 // @do-not-edit: false
 
 import { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
@@ -43,27 +43,28 @@ function nurseStatusLabel(tab: TabType): string {
 
 export default function AdminNurseProfilesScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
-  const [tab, setTab] = useState<TabType>("pending");
+  // Default to the active roster (the day-to-day management view); the "Pendientes" chip shows a
+  // count badge when there are profiles awaiting review.
+  const [tab, setTab] = useState<TabType>("active");
   const [pendingItems, setPendingItems] = useState<PendingNurseProfileDto[]>([]);
   const [activeItems, setActiveItems] = useState<ActiveNurseProfileSummaryDto[]>([]);
   const [inactiveItems, setInactiveItems] = useState<NurseProfileSummaryDto[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Load all three buckets once so the chip count badges are accurate and switching tabs is instant.
   const load = async () => {
     try {
       setError(null);
       setLoading(true);
-      if (tab === "pending") {
-        const result = await getPendingNurseProfiles();
-        setPendingItems(result);
-      } else if (tab === "active") {
-        const result = await getActiveNurseProfiles();
-        setActiveItems(result);
-      } else {
-        const result = await getInactiveNurseProfiles();
-        setInactiveItems(result);
-      }
+      const [pending, active, inactive] = await Promise.all([
+        getPendingNurseProfiles(),
+        getActiveNurseProfiles(),
+        getInactiveNurseProfiles(),
+      ]);
+      setPendingItems(pending);
+      setActiveItems(active);
+      setInactiveItems(inactive);
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : "No fue posible cargar perfiles de enfermeras.");
     } finally {
@@ -77,7 +78,7 @@ export default function AdminNurseProfilesScreen() {
     if (requiresProfileCompletion) return void router.replace("/register" as any);
     if (!roles.includes("ADMIN")) return void router.replace("/" as any);
     void load();
-  }, [isReady, isAuthenticated, requiresProfileCompletion, roles, tab]);
+  }, [isReady, isAuthenticated, requiresProfileCompletion, roles]);
 
   if (!isReady || !isAuthenticated || !roles.includes("ADMIN")) {
     return null;
@@ -114,10 +115,8 @@ export default function AdminNurseProfilesScreen() {
       )}
     >
       {/* Status filter chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.chipRow}
+      <View
+        style={styles.chipRow}
         testID={adminTestIds.nurses.listReadinessChip}
         nativeID={adminTestIds.nurses.listReadinessChip}
       >
@@ -148,7 +147,7 @@ export default function AdminNurseProfilesScreen() {
             </Pressable>
           );
         })}
-      </ScrollView>
+      </View>
 
       {!!error && (
         <Text
@@ -175,6 +174,7 @@ export default function AdminNurseProfilesScreen() {
       <FlatList
         data={currentItems as Array<PendingNurseProfileDto | ActiveNurseProfileSummaryDto | NurseProfileSummaryDto>}
         keyExtractor={(item) => item.userId}
+        style={styles.list}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
         renderItem={({ item }) => {
@@ -263,11 +263,14 @@ const styles = StyleSheet.create({
   },
   chipRow: {
     flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
     gap: 8,
     paddingVertical: 4,
     paddingHorizontal: 2,
     marginBottom: 12,
   },
+  list: { flex: 1 },
   chip: {
     flexDirection: "row",
     alignItems: "center",
