@@ -1,4 +1,5 @@
 import { requestJson } from "@/src/services/httpClient";
+import { API_BASE_URL } from "@/src/config/api";
 
 export interface AdminDashboardAlertDto {
   id: string;
@@ -1467,7 +1468,6 @@ export function getAdminReportExportUrl(key: string, params?: { from?: string; t
   if (params?.from) searchParams.append("from", params.from);
   if (params?.to) searchParams.append("to", params.to);
   
-  const baseUrl = process.env.EXPO_PUBLIC_API_URL || "";
   const suffix = searchParams.toString();
-  return `${baseUrl}/api/admin/reports/${key}/export${suffix ? `?${suffix}` : ""}`;
+  return `${API_BASE_URL}/api/admin/reports/${key}/export${suffix ? `?${suffix}` : ""}`;
 }
