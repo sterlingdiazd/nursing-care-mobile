@@ -17,6 +17,10 @@ import { mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 const CATEGORIES = ["Auxiliar", "Técnico", "Profesional", "Especialista"];
 
+// Legal working days per month under the DR 44-hour week (Código de Trabajo):
+// 8h Mon–Fri + 4h Sat = 5.5 days/week × 52 ÷ 12 = 23.83 — the standard divisor for daily/hourly pay.
+const DR_WORKING_DAYS_PER_MONTH = 23.83;
+
 export default function AdminCreateNurseProfileScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +43,7 @@ export default function AdminCreateNurseProfileScreen() {
     isOperationallyActive: true,
     visitDailyRate: 0,
     homeCareMonthlyRate: 0,
-    homeCareMonthlyExpectedDays: 30,
+    homeCareMonthlyExpectedDays: DR_WORKING_DAYS_PER_MONTH,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -370,10 +374,10 @@ export default function AdminCreateNurseProfileScreen() {
               label="Días esperados/mes"
               containerStyle={{ flex: 1 }}
               accessibilityLabel="Días esperados de trabajo en el mes"
-              placeholder="30"
+              placeholder="23.83"
               keyboardType="numeric"
               value={form.homeCareMonthlyExpectedDays ? String(form.homeCareMonthlyExpectedDays) : ""}
-              onChangeText={(text) => setForm({ ...form, homeCareMonthlyExpectedDays: Number(text.replace(/[^0-9]/g, "")) || 30 })}
+              onChangeText={(text) => setForm({ ...form, homeCareMonthlyExpectedDays: Number(text.replace(/[^0-9.]/g, "")) || DR_WORKING_DAYS_PER_MONTH })}
             />
           </View>
         </View>

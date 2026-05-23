@@ -33,7 +33,7 @@ const EMPTY_FORM: UpdateNurseProfileRequest = {
   category: "",
   visitDailyRate: 0,
   homeCareMonthlyRate: 0,
-  homeCareMonthlyExpectedDays: 30,
+  homeCareMonthlyExpectedDays: 23.83,
 };
 
 function dtoToForm(d: NurseProfileAdminRecordDto): UpdateNurseProfileRequest {
@@ -51,7 +51,7 @@ function dtoToForm(d: NurseProfileAdminRecordDto): UpdateNurseProfileRequest {
     category: d.category || "",
     visitDailyRate: d.visitDailyRate ?? 0,
     homeCareMonthlyRate: d.homeCareMonthlyRate ?? 0,
-    homeCareMonthlyExpectedDays: d.homeCareMonthlyExpectedDays ?? 30,
+    homeCareMonthlyExpectedDays: d.homeCareMonthlyExpectedDays ?? 23.83,
   };
 }
 
@@ -384,7 +384,7 @@ export default function AdminEditNurseProfileScreen() {
                 testID="admin-edit-nurse-home-days-input"
                 label="Días esperados/mes (casa hogar)"
                 value={form.homeCareMonthlyExpectedDays ? String(form.homeCareMonthlyExpectedDays) : ""}
-                onChangeText={(v) => setForm((prev) => ({ ...prev, homeCareMonthlyExpectedDays: Number(v.replace(/[^0-9]/g, "")) || 30 }))}
+                onChangeText={(v) => setForm((prev) => ({ ...prev, homeCareMonthlyExpectedDays: Number(v.replace(/[^0-9.]/g, "")) || 23.83 }))}
                 keyboardType="numeric"
                 accessibilityLabel="Días esperados de trabajo en el mes"
               />
