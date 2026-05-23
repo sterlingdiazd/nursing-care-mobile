@@ -13,6 +13,8 @@ import { testProps } from "@/src/testing/testIds";
 interface FormInputProps extends Omit<TextInputProps, "testID"> {
   testID: string;
   label?: string;
+  /** Appends a teal `*` after the label (the canonical required-field marker). */
+  required?: boolean;
   error?: string;
   errorMessage?: string;
   containerStyle?: any;
@@ -22,6 +24,7 @@ interface FormInputProps extends Omit<TextInputProps, "testID"> {
 export function FormInput({
   testID,
   label,
+  required,
   error,
   errorMessage,
   containerStyle,
@@ -35,7 +38,12 @@ export function FormInput({
 
   return (
     <View style={[styles.container, containerStyle]}>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {label && (
+        <Text style={styles.label}>
+          {label}
+          {required ? <Text style={styles.req}> *</Text> : null}
+        </Text>
+      )}
       <TextInput
         {...testProps(testID)}
         style={[
@@ -71,6 +79,10 @@ const styles = StyleSheet.create({
     ...designTokens.typography.label,
     color: designTokens.color.ink.primary,
     marginBottom: designTokens.spacing.xs,
+  },
+  req: {
+    color: designTokens.color.ink.accent,
+    fontWeight: "800",
   },
   input: {
     ...designTokens.typography.body,

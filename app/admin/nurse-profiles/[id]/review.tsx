@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
+import { FormInput } from "@/src/components/form";
 import { designTokens } from "@/src/design-system/tokens";
 import {
   getNurseProfileForAdmin,
@@ -197,53 +198,53 @@ export default function AdminReviewNurseProfileScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Completar Información Operativa</Text>
 
-          <Text style={styles.label}>Especialidad *</Text>
-          <TextInput
+          <FormInput
             testID={adminTestIds.nurses.review.specialtyInput}
             nativeID={adminTestIds.nurses.review.specialtyInput}
+            label="Especialidad"
+            required
             accessibilityLabel="Especialidad de la enfermera"
-            style={[styles.input, errors.specialty ? styles.inputError : undefined]}
             placeholder="Especialidad de la enfermera"
             value={form.specialty}
             onChangeText={(text) => setForm({ ...form, specialty: text })}
+            errorMessage={errors.specialty}
           />
-          {errors.specialty && <Text style={styles.errorText}>{errors.specialty}</Text>}
 
-          <Text style={styles.label}>Licencia *</Text>
-          <TextInput
+          <FormInput
             testID={adminTestIds.nurses.review.licenseInput}
             nativeID={adminTestIds.nurses.review.licenseInput}
+            label="Licencia"
+            required
             accessibilityLabel="Número de licencia profesional"
-            style={[styles.input, errors.licenseId ? styles.inputError : undefined]}
             placeholder="Número de licencia profesional"
             value={form.licenseId ?? ""}
             onChangeText={(text) => setForm({ ...form, licenseId: text })}
+            errorMessage={errors.licenseId}
           />
-          {errors.licenseId && <Text style={styles.errorText}>{errors.licenseId}</Text>}
 
-          <Text style={styles.label}>Banco *</Text>
-          <TextInput
+          <FormInput
             testID={adminTestIds.nurses.review.bankNameInput}
             nativeID={adminTestIds.nurses.review.bankNameInput}
+            label="Banco"
+            required
             accessibilityLabel="Nombre del banco"
-            style={[styles.input, errors.bankName ? styles.inputError : undefined]}
             placeholder="Nombre del banco"
             value={form.bankName}
             onChangeText={(text) => setForm({ ...form, bankName: text })}
+            errorMessage={errors.bankName}
           />
-          {errors.bankName && <Text style={styles.errorText}>{errors.bankName}</Text>}
 
-          <Text style={styles.label}>Número de cuenta *</Text>
-          <TextInput
+          <FormInput
             testID={adminTestIds.nurses.review.accountNumberInput}
             nativeID={adminTestIds.nurses.review.accountNumberInput}
+            label="Número de cuenta"
+            required
             accessibilityLabel="Número de cuenta bancaria"
-            style={[styles.input, errors.accountNumber ? styles.inputError : undefined]}
             placeholder="Número de cuenta bancaria"
             value={form.accountNumber ?? ""}
             onChangeText={(text) => setForm({ ...form, accountNumber: text })}
+            errorMessage={errors.accountNumber}
           />
-          {errors.accountNumber && <Text style={styles.errorText}>{errors.accountNumber}</Text>}
 
           <Text style={styles.label}>Categoría *</Text>
           <View style={styles.chipsContainer}>
@@ -322,9 +323,9 @@ const styles = StyleSheet.create({
   missingItem: { color: designTokens.color.ink.primary, fontSize: 14 },
   readyItem: { color: designTokens.color.status.successText, fontSize: 14, fontWeight: "700" },
   field: { marginBottom: 8 },
-  fieldLabel: { color: designTokens.color.status.dangerText, fontSize: 12, fontWeight: "800", textTransform: "uppercase", marginBottom: 2 },
+  fieldLabel: { color: designTokens.color.ink.muted, fontSize: 12, fontWeight: "800", textTransform: "uppercase", marginBottom: 2 },
   fieldValue: { color: designTokens.color.ink.primary, fontSize: 15 },
-  label: { fontSize: 14, fontWeight: "700", color: designTokens.color.status.dangerText, marginTop: 12, marginBottom: 6 },
+  label: { fontSize: 14, fontWeight: "700", color: designTokens.color.ink.muted, marginTop: 12, marginBottom: 6 },
   input: { borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 12, padding: 12, fontSize: 15, color: designTokens.color.ink.primary, backgroundColor: designTokens.color.surface.primary },
   inputError: { borderColor: designTokens.color.ink.danger },
   errorText: { color: designTokens.color.ink.danger, fontSize: 12, marginTop: 4 },

@@ -592,7 +592,7 @@ export default function CreateCareRequestScreen() {
                 onFocus={() => setShowClientOptions(true)}
                 placeholder="Buscar por nombre, correo, cédula o teléfono"
                 editable={!isLoading}
-                style={[styles.input, isLoading && styles.inputDisabled]}
+                style={isLoading ? styles.inputDisabled : undefined}
               />
 
               {selectedClient ? (
@@ -891,16 +891,16 @@ export default function CreateCareRequestScreen() {
               <Pressable accessibilityRole="button" accessibilityLabel="Aumentar cantidad" onPress={incrementUnit} style={styles.stepperBtn}><Text style={styles.stepperBtnText}>+</Text></Pressable>
             </View>
 
-            <Text style={styles.label}>Descripcion de la solicitud</Text>
             <FormInput
               testID={careRequestTestIds.create.descriptionInput}
+              label="Descripcion de la solicitud"
               value={form.careRequestDescription}
               onChangeText={(text) => setForm((prev) => ({ ...prev, careRequestDescription: text }))}
               placeholder="Describe el cuidado requerido, urgencia, detalles clinicos y notas operativas."
               multiline
               textAlignVertical="top"
               editable={!isLoading}
-              style={[styles.input, styles.textArea, isLoading && styles.inputDisabled]}
+              style={[styles.textArea, isLoading ? styles.inputDisabled : undefined]}
             />
           </View>
 
@@ -923,7 +923,7 @@ export default function CreateCareRequestScreen() {
               placeholder="Nombre de la enfermera preferida"
               editable={!isLoading}
               onFocus={() => setShowSuggestedNurseOptions(true)}
-              style={[styles.input, isLoading && styles.inputDisabled]}
+              style={isLoading ? styles.inputDisabled : undefined}
             />
             {showSuggestedNurseOptions && !isLoading && (
                 <View
@@ -1216,8 +1216,6 @@ const styles = StyleSheet.create({
   stepperBtnText: { fontSize: 20, fontWeight: "700", color: designTokens.color.ink.primary },
   stepperValue: { fontSize: 16, fontWeight: "800", color: designTokens.color.ink.primary, minWidth: 40, textAlign: "center" },
 
-  buttonPrimary: { backgroundColor: designTokens.color.ink.accentStrong, borderRadius: 12, paddingVertical: 16, alignItems: "center" },
-  buttonPrimaryText: { color: designTokens.color.ink.inverse, fontWeight: "800", fontSize: 16 },
   card: {
     backgroundColor: designTokens.color.surface.primary,
     borderRadius: 12,

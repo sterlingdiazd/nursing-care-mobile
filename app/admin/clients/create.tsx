@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { validateEmail } from "@/src/api/auth";
-import { FormInput } from "@/src/components/form";
+import { FormButton, FormInput } from "@/src/components/form";
 import { useToast } from "@/src/components/shared/ToastProvider";
 import { useAuth } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
@@ -151,111 +151,105 @@ export default function AdminCreateClientScreen() {
       <View style={styles.card}>
         <Text style={styles.sectionHeading}>Información personal</Text>
 
-        <View style={styles.row}>
-          <View style={styles.col}>
-            <Text style={styles.label}>Nombre *</Text>
-            <FormInput
-              testID={adminTestIds.clients.create.nameInput}
-              style={[styles.input, errors.name ? styles.inputError : undefined]}
-              placeholder="Nombre"
-              value={form.name}
-              onChangeText={(text) => setForm({ ...form, name: sanitizeTextOnlyInput(text) })}
-            />
-            {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
-          </View>
-
-          <View style={styles.col}>
-            <Text style={styles.label}>Apellido *</Text>
-            <FormInput
-              testID={adminTestIds.clients.create.lastNameInput}
-              style={[styles.input, errors.lastName ? styles.inputError : undefined]}
-              placeholder="Apellido"
-              value={form.lastName}
-              onChangeText={(text) => setForm({ ...form, lastName: sanitizeTextOnlyInput(text) })}
-            />
-            {errors.lastName ? <Text style={styles.errorText}>{errors.lastName}</Text> : null}
-          </View>
+        <View style={{ flexDirection: "row", gap: 12 }}>
+          <FormInput
+            testID={adminTestIds.clients.create.nameInput}
+            label="Nombre"
+            required
+            placeholder="Nombre"
+            value={form.name}
+            onChangeText={(text) => setForm({ ...form, name: sanitizeTextOnlyInput(text) })}
+            errorMessage={errors.name}
+            containerStyle={{ flex: 1 }}
+          />
+          <FormInput
+            testID={adminTestIds.clients.create.lastNameInput}
+            label="Apellido"
+            required
+            placeholder="Apellido"
+            value={form.lastName}
+            onChangeText={(text) => setForm({ ...form, lastName: sanitizeTextOnlyInput(text) })}
+            errorMessage={errors.lastName}
+            containerStyle={{ flex: 1 }}
+          />
         </View>
 
-        <Text style={styles.label}>Cédula *</Text>
         <FormInput
           testID={adminTestIds.clients.create.identificationInput}
-          style={[styles.input, errors.identificationNumber ? styles.inputError : undefined]}
+          label="Cédula"
+          required
           placeholder="00112345678"
           value={form.identificationNumber}
           onChangeText={(text) => setForm({ ...form, identificationNumber: sanitizeDigitsOnlyInput(text, 11) })}
           keyboardType="number-pad"
           maxLength={11}
+          errorMessage={errors.identificationNumber}
         />
-        {errors.identificationNumber ? <Text style={styles.errorText}>{errors.identificationNumber}</Text> : null}
 
-        <Text style={styles.label}>Teléfono *</Text>
         <FormInput
           testID={adminTestIds.clients.create.phoneInput}
-          style={[styles.input, errors.phone ? styles.inputError : undefined]}
+          label="Teléfono"
+          required
           placeholder="8091234567"
           value={form.phone}
           onChangeText={(text) => setForm({ ...form, phone: sanitizeDigitsOnlyInput(text, 10) })}
           keyboardType="phone-pad"
           maxLength={10}
+          errorMessage={errors.phone}
         />
-        {errors.phone ? <Text style={styles.errorText}>{errors.phone}</Text> : null}
       </View>
 
       <View style={styles.card}>
         <Text style={styles.sectionHeading}>Credenciales de acceso</Text>
 
-        <Text style={styles.label}>Correo electrónico *</Text>
         <FormInput
           testID={adminTestIds.clients.create.emailInput}
-          style={[styles.input, errors.email ? styles.inputError : undefined]}
+          label="Correo electrónico"
+          required
           placeholder="correo@ejemplo.com"
           value={form.email}
           onChangeText={(text) => setForm({ ...form, email: text })}
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
+          errorMessage={errors.email}
         />
-        {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
 
-        <View style={styles.row}>
-          <View style={styles.col}>
-            <Text style={styles.label}>Contraseña *</Text>
-            <FormInput
-              testID={adminTestIds.clients.create.passwordInput}
-              style={[styles.input, errors.password ? styles.inputError : undefined]}
-              placeholder="Mínimo 8 caracteres"
-              value={form.password}
-              onChangeText={(text) => setForm({ ...form, password: text })}
-              secureTextEntry
-            />
-            {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
-          </View>
-
-          <View style={styles.col}>
-            <Text style={styles.label}>Confirmar *</Text>
-            <FormInput
-              testID={adminTestIds.clients.create.confirmPasswordInput}
-              style={[styles.input, errors.confirmPassword ? styles.inputError : undefined]}
-              placeholder="Confirmar contraseña"
-              value={form.confirmPassword}
-              onChangeText={(text) => setForm({ ...form, confirmPassword: text })}
-              secureTextEntry
-            />
-            {errors.confirmPassword ? <Text style={styles.errorText}>{errors.confirmPassword}</Text> : null}
-          </View>
+        <View style={{ flexDirection: "row", gap: 12 }}>
+          <FormInput
+            testID={adminTestIds.clients.create.passwordInput}
+            label="Contraseña"
+            required
+            placeholder="Mínimo 8 caracteres"
+            value={form.password}
+            onChangeText={(text) => setForm({ ...form, password: text })}
+            secureTextEntry
+            errorMessage={errors.password}
+            containerStyle={{ flex: 1 }}
+          />
+          <FormInput
+            testID={adminTestIds.clients.create.confirmPasswordInput}
+            label="Confirmar"
+            required
+            placeholder="Confirmar contraseña"
+            value={form.confirmPassword}
+            onChangeText={(text) => setForm({ ...form, confirmPassword: text })}
+            secureTextEntry
+            errorMessage={errors.confirmPassword}
+            containerStyle={{ flex: 1 }}
+          />
         </View>
       </View>
 
-      <Pressable
-        style={[styles.submitButton, submitting ? styles.submitButtonDisabled : undefined]}
+      <FormButton
+        testID={adminTestIds.clients.create.submitButton}
+        variant="primary"
         onPress={handleSubmit}
         disabled={submitting}
-        testID={adminTestIds.clients.create.submitButton}
-        nativeID={adminTestIds.clients.create.submitButton}
+        isLoading={submitting}
       >
-        <Text style={styles.submitButtonText}>{submitting ? "Procesando..." : "Registrar cliente"}</Text>
-      </Pressable>
+        {submitting ? "Procesando..." : "Registrar cliente"}
+      </FormButton>
     </MobileWorkspaceShell>
   );
 }
@@ -264,8 +258,8 @@ const styles = StyleSheet.create({
   progressChip: {
     ...designTokens.typography.label,
     alignSelf: "flex-start",
-    backgroundColor: designTokens.color.status.infoBg,
-    color: designTokens.color.status.infoText,
+    backgroundColor: designTokens.color.status.warningBg,
+    color: designTokens.color.status.warningText,
     borderRadius: designTokens.radius.pill,
     paddingHorizontal: designTokens.spacing.md,
     paddingVertical: designTokens.spacing.xs,
@@ -291,42 +285,5 @@ const styles = StyleSheet.create({
     ...designTokens.typography.sectionTitle,
     fontSize: 16,
     marginBottom: designTokens.spacing.sm,
-  },
-  label: {
-    ...designTokens.typography.label,
-    marginTop: designTokens.spacing.sm,
-    marginBottom: designTokens.spacing.xs,
-  },
-  input: {
-    ...designTokens.typography.body,
-    backgroundColor: designTokens.color.surface.primary,
-    borderWidth: 1,
-    borderColor: designTokens.color.border.strong,
-    borderRadius: designTokens.radius.md,
-    padding: designTokens.spacing.md,
-  },
-  inputError: { borderColor: designTokens.color.border.danger },
-  errorText: {
-    ...designTokens.typography.body,
-    fontSize: 12,
-    color: designTokens.color.ink.danger,
-    marginTop: designTokens.spacing.xs,
-  },
-  row: {
-    flexDirection: "row",
-    gap: designTokens.spacing.sm,
-  },
-  col: { flex: 1 },
-  submitButton: {
-    backgroundColor: designTokens.color.ink.accentStrong,
-    borderRadius: designTokens.radius.md,
-    paddingVertical: designTokens.spacing.md,
-    alignItems: "center",
-  },
-  submitButtonDisabled: { opacity: 0.7 },
-  submitButtonText: {
-    ...designTokens.typography.label,
-    color: designTokens.color.surface.primary,
-    fontSize: 16,
   },
 });

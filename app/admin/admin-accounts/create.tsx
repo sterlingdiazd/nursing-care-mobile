@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { validateEmail } from "@/src/api/auth";
 import { useAuth } from "@/src/context/AuthContext";
-import { FormInput } from "@/src/components/form";
+import { FormButton, FormInput } from "@/src/components/form";
 import { designTokens } from "@/src/design-system/tokens";
 import { adminTestIds } from "@/src/testing/testIds";
 import {
@@ -167,88 +167,88 @@ export default function AdminCreateAdminAccountScreen() {
           <Text style={styles.cardTitle}>Paso 1. Identidad</Text>
           <Text style={styles.cardDescription}>Registra primero la persona que recibirá el acceso administrativo.</Text>
 
-          <Text style={styles.label}>Nombre *</Text>
           <FormInput
             testID={adminTestIds.adminAccounts.create.nameInput}
-            style={[styles.input, errors.name ? styles.inputError : undefined]}
+            label="Nombre"
+            required
             placeholder="Nombre del administrador"
             value={form.name}
             onChangeText={(text) => setForm({ ...form, name: sanitizeTextOnlyInput(text) })}
+            errorMessage={errors.name}
           />
-          {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
 
-          <Text style={styles.label}>Apellido *</Text>
           <FormInput
             testID={adminTestIds.adminAccounts.create.lastNameInput}
-            style={[styles.input, errors.lastName ? styles.inputError : undefined]}
+            label="Apellido"
+            required
             placeholder="Apellido del administrador"
             value={form.lastName}
             onChangeText={(text) => setForm({ ...form, lastName: sanitizeTextOnlyInput(text) })}
+            errorMessage={errors.lastName}
           />
-          {errors.lastName && <Text style={styles.errorText}>{errors.lastName}</Text>}
 
-          <Text style={styles.label}>Número de identificación *</Text>
           <FormInput
             testID={adminTestIds.adminAccounts.create.identificationInput}
-            style={[styles.input, errors.identificationNumber ? styles.inputError : undefined]}
+            label="Número de identificación"
+            required
             placeholder="Número de identificación"
             value={form.identificationNumber}
             onChangeText={(text) => setForm({ ...form, identificationNumber: sanitizeDigitsOnlyInput(text, 11) })}
             keyboardType="number-pad"
             maxLength={11}
+            errorMessage={errors.identificationNumber}
           />
-          {errors.identificationNumber && <Text style={styles.errorText}>{errors.identificationNumber}</Text>}
 
-          <Text style={styles.label}>Teléfono *</Text>
           <FormInput
             testID={adminTestIds.adminAccounts.create.phoneInput}
-            style={[styles.input, errors.phone ? styles.inputError : undefined]}
+            label="Teléfono"
+            required
             placeholder="Número de teléfono"
             value={form.phone}
             onChangeText={(text) => setForm({ ...form, phone: sanitizeDigitsOnlyInput(text, 10) })}
             keyboardType="phone-pad"
             maxLength={10}
+            errorMessage={errors.phone}
           />
-          {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
         </View>
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Paso 2. Acceso y revisión final</Text>
           <Text style={styles.cardDescription}>Estas credenciales abren un perfil con permisos altos dentro del portal.</Text>
 
-          <Text style={styles.label}>Correo electrónico *</Text>
           <FormInput
             testID={adminTestIds.adminAccounts.create.emailInput}
-            style={[styles.input, errors.email ? styles.inputError : undefined]}
+            label="Correo electrónico"
+            required
             placeholder="correo@ejemplo.com"
             value={form.email}
             onChangeText={(text) => setForm({ ...form, email: text })}
             keyboardType="email-address"
             autoCapitalize="none"
+            errorMessage={errors.email}
           />
-          {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
 
-          <Text style={styles.label}>Contraseña *</Text>
           <FormInput
-            style={[styles.input, errors.password ? styles.inputError : undefined]}
+            testID={adminTestIds.adminAccounts.create.passwordInput}
+            label="Contraseña"
+            required
             placeholder="Mínimo 8 caracteres"
             value={form.password}
             onChangeText={(text) => setForm({ ...form, password: text })}
             secureTextEntry
-            testID={adminTestIds.adminAccounts.create.passwordInput}
+            errorMessage={errors.password}
           />
-          {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
 
-          <Text style={styles.label}>Confirmar contraseña *</Text>
           <FormInput
             testID={adminTestIds.adminAccounts.create.confirmPasswordInput}
-            style={[styles.input, errors.confirmPassword ? styles.inputError : undefined]}
+            label="Confirmar contraseña"
+            required
             placeholder="Repetir contraseña"
             value={form.confirmPassword}
             onChangeText={(text) => setForm({ ...form, confirmPassword: text })}
             secureTextEntry
+            errorMessage={errors.confirmPassword}
           />
-          {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
 
           <View style={styles.warningCard}>
             <Text style={styles.warningTitle}>Acción privilegiada</Text>
@@ -260,17 +260,16 @@ export default function AdminCreateAdminAccountScreen() {
       </ScrollView>
 
       <View style={styles.actions}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Crear administrador"
-          style={styles.buttonPrimary}
-          onPress={handleSubmit}
-          disabled={submitting}
+        <FormButton
           testID={adminTestIds.adminAccounts.create.submitButton}
-          nativeID={adminTestIds.adminAccounts.create.submitButton}
+          variant="primary"
+          onPress={handleSubmit}
+          isLoading={submitting}
+          disabled={submitting}
+          accessibilityLabel="Crear administrador"
         >
-          <Text style={styles.buttonPrimaryText}>{submitting ? "Creando..." : "Crear administrador"}</Text>
-        </Pressable>
+          Crear administrador
+        </FormButton>
       </View>
     </MobileWorkspaceShell>
   );
@@ -279,21 +278,16 @@ export default function AdminCreateAdminAccountScreen() {
 const styles = StyleSheet.create({
   error: { backgroundColor: designTokens.color.surface.danger, borderWidth: 1, borderColor: designTokens.color.border.strong, padding: 14, borderRadius: 16, marginBottom: 12 },
   errorTitle: { color: designTokens.color.status.dangerText, fontSize: 13, fontWeight: "800", marginBottom: 4 },
+  errorText: { color: designTokens.color.status.dangerText, fontSize: 13, lineHeight: 18 },
   card: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 14, marginBottom: 12 },
   cardTitle: { fontSize: 18, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 8 },
   cardDescription: { color: designTokens.color.ink.secondary, fontSize: 13, lineHeight: 18, marginBottom: 4 },
-  label: { fontSize: 14, fontWeight: "700", color: designTokens.color.status.dangerText, marginTop: 12, marginBottom: 6 },
-  input: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.strong, borderRadius: 12, padding: 12, fontSize: 15 },
-  inputError: { borderColor: designTokens.color.ink.danger },
-  errorText: { color: designTokens.color.ink.danger, fontSize: 12, marginTop: 4 },
   reviewCard: { backgroundColor: designTokens.color.surface.canvas, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 14, marginBottom: 12 },
-  reviewEyebrow: { color: designTokens.color.status.dangerText, fontSize: 12, fontWeight: "800", textTransform: "uppercase", marginBottom: 6 },
+  reviewEyebrow: { color: designTokens.color.ink.muted, fontSize: 12, fontWeight: "800", textTransform: "uppercase", marginBottom: 6 },
   reviewChip: { alignSelf: "flex-start", backgroundColor: designTokens.color.ink.primary, color: designTokens.color.ink.inverse, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 13, fontWeight: "800", marginBottom: 8 },
   reviewText: { color: designTokens.color.ink.secondary, fontSize: 13, lineHeight: 18 },
   warningCard: { backgroundColor: designTokens.color.surface.warning, borderWidth: 1, borderColor: designTokens.color.border.strong, borderRadius: 14, padding: 12, marginTop: 14 },
   warningTitle: { color: designTokens.color.status.dangerText, fontSize: 13, fontWeight: "800", marginBottom: 4 },
   warningText: { color: designTokens.color.status.dangerText, fontSize: 13, lineHeight: 18 },
   actions: { marginTop: 16 },
-  buttonPrimary: { backgroundColor: designTokens.color.ink.accent, borderRadius: 12, paddingVertical: 14, alignItems: "center" },
-  buttonPrimaryText: { color: designTokens.color.ink.inverse, fontWeight: "700", fontSize: 16 },
 });

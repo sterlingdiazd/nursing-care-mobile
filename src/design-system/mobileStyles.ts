@@ -10,10 +10,12 @@ export const mobileTheme = {
 
 export const mobileSurfaceCard = {
   backgroundColor: mobileTheme.colors.surface.primary,
-  borderRadius: mobileTheme.radius.xl,
+  borderRadius: mobileTheme.radius.lg,
   borderWidth: 1,
   borderColor: mobileTheme.colors.border.subtle,
-  ...mobileTheme.shadows.raised,
+  // Canonical soft shadow — `shadows.raised` reads as a clipped gray smear on dense screens.
+  boxShadow: "0px 4px 10px rgba(18, 48, 68, 0.04)",
+  elevation: 2,
 } as const;
 
 export const mobileSecondarySurface = {

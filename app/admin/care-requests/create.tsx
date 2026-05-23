@@ -388,7 +388,7 @@ export default function CreateAdminCareRequestScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Información del Servicio</Text>
 
-          <Text style={styles.label}>Cliente *</Text>
+          <Text style={styles.cardLabel}>Cliente *</Text>
           {selectedClient ? (
             <View style={styles.selectedClient}>
               <View>
@@ -408,11 +408,11 @@ export default function CreateAdminCareRequestScreen() {
               <FormInput
                 testID={adminTestIds.careRequests.create.clientSearchInput}
                 accessibilityLabel="Buscar cliente por nombre o correo"
-                style={[styles.input, errors.clientUserId ? styles.inputError : undefined]}
                 placeholder="Buscar cliente por nombre o correo"
                 value={clientSearch}
                 onChangeText={setClientSearch}
                 onFocus={() => setShowClientPicker(true)}
+                errorMessage={errors.clientUserId}
               />
               {showClientPicker && clients.length > 0 && (
                 <View style={styles.clientPicker}>
@@ -432,9 +432,7 @@ export default function CreateAdminCareRequestScreen() {
               )}
             </View>
           )}
-          {errors.clientUserId && <Text style={styles.errorText}>{errors.clientUserId}</Text>}
-
-          <Text style={styles.label}>Fecha programada *</Text>
+          <Text style={styles.cardLabel}>Fecha programada *</Text>
           {Platform.OS === "web" ? (
             <View>
               {createElement("input", {
@@ -499,7 +497,7 @@ export default function CreateAdminCareRequestScreen() {
           )}
           {errors.careRequestDate && <Text style={styles.errorText}>{errors.careRequestDate}</Text>}
 
-          <Text style={styles.label}>Tipo de servicio *</Text>
+          <Text style={styles.cardLabel}>Tipo de servicio *</Text>
           {catalogLoading ? (
             <View style={styles.catalogLoading}>
               <ActivityIndicator color={designTokens.color.ink.accent} />
@@ -570,7 +568,7 @@ export default function CreateAdminCareRequestScreen() {
           )}
           {errors.careRequestType && <Text style={styles.errorText}>{errors.careRequestType}</Text>}
 
-          <Text style={styles.label}>Unidades *</Text>
+          <Text style={styles.cardLabel}>Unidades *</Text>
           <View style={styles.stepperContainer}>
             <Pressable
               onPress={decrementUnit}
@@ -592,18 +590,19 @@ export default function CreateAdminCareRequestScreen() {
           </View>
           {errors.unit && <Text style={styles.errorText}>{errors.unit}</Text>}
 
-          <Text style={styles.label}>Descripción de la solicitud *</Text>
           <FormInput
             testID={adminTestIds.careRequests.create.descriptionInput}
+            label="Descripción de la solicitud"
+            required
             accessibilityLabel="Descripción de la solicitud de cuidado"
-            style={[styles.input, styles.textArea, errors.careRequestDescription ? styles.inputError : undefined]}
+            style={styles.textArea}
             placeholder="Detalles sobre lo requerido..."
             value={form.careRequestDescription}
             onChangeText={(text) => setForm({ ...form, careRequestDescription: text })}
             multiline
             numberOfLines={3}
+            errorMessage={errors.careRequestDescription}
           />
-          {errors.careRequestDescription && <Text style={styles.errorText}>{errors.careRequestDescription}</Text>}
         </View>
 
         {/* === SECTION: NURSE (Optional) === */}
@@ -612,7 +611,6 @@ export default function CreateAdminCareRequestScreen() {
           <FormInput
             testID={adminTestIds.careRequests.create.nurseInput}
             accessibilityLabel="Nombre de la enfermera sugerida"
-            style={styles.input}
             placeholder="Nombre de la enfermera"
             value={form.suggestedNurse ?? ""}
             onChangeText={(text) => {
@@ -700,17 +698,40 @@ export default function CreateAdminCareRequestScreen() {
             <View style={styles.accordionContent}>
               <Text style={styles.subtitle}>Estos valores sobreescriben la tarifa base calculada.</Text>
 
-              <Text style={styles.label}>Precio base fijo (override)</Text>
-              <FormInput testID={adminTestIds.careRequests.create.priceOverrideInput} accessibilityLabel="Precio base fijo override" style={styles.input} placeholder="Ej: 1500" value={form.clientBasePriceOverride?.toString() || ""} onChangeText={(text) => setForm({ ...form, clientBasePriceOverride: parseFloat(text) || undefined })} keyboardType="numeric" />
-
-              <Text style={styles.label}>Costo de insumos médicos</Text>
-              <FormInput testID={adminTestIds.careRequests.create.medicalSuppliesInput} accessibilityLabel="Costo de insumos médicos" style={styles.input} placeholder="Costo extra" value={form.medicalSuppliesCost?.toString() || ""} onChangeText={(text) => setForm({ ...form, medicalSuppliesCost: parseFloat(text) || undefined })} keyboardType="numeric" />
-
-              <Text style={styles.label}>Factor de distancia (Multiplicador)</Text>
-              <FormInput testID={adminTestIds.careRequests.create.distanceFactorInput} accessibilityLabel="Factor de distancia multiplicador" style={styles.input} placeholder="Ej: Cerca, Lejos..." value={form.distanceFactor} onChangeText={(text) => setForm({ ...form, distanceFactor: text })} />
-
-              <Text style={styles.label}>Nivel de complejidad</Text>
-              <FormInput testID={adminTestIds.careRequests.create.complexityInput} accessibilityLabel="Nivel de complejidad del servicio" style={styles.input} placeholder="Ej: Avanzado" value={form.complexityLevel} onChangeText={(text) => setForm({ ...form, complexityLevel: text })} />
+              <FormInput
+                testID={adminTestIds.careRequests.create.priceOverrideInput}
+                label="Precio base fijo (override)"
+                accessibilityLabel="Precio base fijo override"
+                placeholder="Ej: 1500"
+                value={form.clientBasePriceOverride?.toString() || ""}
+                onChangeText={(text) => setForm({ ...form, clientBasePriceOverride: parseFloat(text) || undefined })}
+                keyboardType="numeric"
+              />
+              <FormInput
+                testID={adminTestIds.careRequests.create.medicalSuppliesInput}
+                label="Costo de insumos médicos"
+                accessibilityLabel="Costo de insumos médicos"
+                placeholder="Costo extra"
+                value={form.medicalSuppliesCost?.toString() || ""}
+                onChangeText={(text) => setForm({ ...form, medicalSuppliesCost: parseFloat(text) || undefined })}
+                keyboardType="numeric"
+              />
+              <FormInput
+                testID={adminTestIds.careRequests.create.distanceFactorInput}
+                label="Factor de distancia (Multiplicador)"
+                accessibilityLabel="Factor de distancia multiplicador"
+                placeholder="Ej: Cerca, Lejos..."
+                value={form.distanceFactor}
+                onChangeText={(text) => setForm({ ...form, distanceFactor: text })}
+              />
+              <FormInput
+                testID={adminTestIds.careRequests.create.complexityInput}
+                label="Nivel de complejidad"
+                accessibilityLabel="Nivel de complejidad del servicio"
+                placeholder="Ej: Avanzado"
+                value={form.complexityLevel}
+                onChangeText={(text) => setForm({ ...form, complexityLevel: text })}
+              />
             </View>
           )}
         </View>
@@ -802,10 +823,10 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: 24 },
   card: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 14, marginBottom: 12 },
   cardTitle: { fontSize: 18, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 12 },
+  cardLabel: { fontSize: 13, fontWeight: "700", color: designTokens.color.ink.primary, marginBottom: 7, marginTop: 4 },
   subtitle: { fontSize: 13, color: designTokens.color.ink.secondary, marginBottom: 12 },
-  label: { fontSize: 14, fontWeight: "700", color: designTokens.color.status.dangerText, marginTop: 12, marginBottom: 6 },
+  // Retained for the native date-picker Pressable trigger (not a FormInput).
   input: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.strong, borderRadius: 12, padding: 12, fontSize: 15 },
-  inputActive: { borderColor: designTokens.color.ink.accent, borderWidth: 2 },
   inputError: { borderColor: designTokens.color.ink.danger },
   errorText: { color: designTokens.color.ink.danger, fontSize: 12, marginTop: 4 },
   textArea: { minHeight: 80, textAlignVertical: "top" },
@@ -885,7 +906,5 @@ const styles = StyleSheet.create({
   dateModalConfirmButton: { flex: 1, borderRadius: 10, backgroundColor: designTokens.color.ink.accent, alignItems: "center", paddingVertical: 12 },
   dateModalConfirmText: { color: designTokens.color.ink.inverse, fontWeight: "700" },
 
-  buttonPrimary: { backgroundColor: designTokens.color.ink.accent, borderRadius: 12, paddingVertical: 16, alignItems: "center" },
-  buttonPrimaryText: { color: designTokens.color.ink.inverse, fontWeight: "800", fontSize: 16 },
   buttonPressed: { opacity: 0.8 },
 });

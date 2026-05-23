@@ -10,6 +10,7 @@ import {
   type CreateNurseProfileRequest,
 } from "@/src/services/adminPortalService";
 import { FormInput } from "@/src/components/form";
+import { FormButton } from "@/src/components/form/FormButton";
 import { adminTestIds } from "@/src/testing/testIds";
 import { getAdminNurseCreateProgress } from "@/src/utils/adminCreationUx";
 import { mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
@@ -116,18 +117,15 @@ export default function AdminCreateNurseProfileScreen() {
       primaryReturnPath={mobileNavigationEscapes.adminNurseProfiles}
       primaryReturnLabel="Volver a enfermeras"
       actions={
-        <Pressable
+        <FormButton
           testID={adminTestIds.nurses.create.submitButton}
-          nativeID={adminTestIds.nurses.create.submitButton}
-          style={styles.buttonPrimary}
+          variant="primary"
           onPress={handleSubmit}
+          isLoading={submitting}
           disabled={submitting}
-          accessibilityRole="button"
-          accessibilityLabel={submitting ? "Procesando registro" : "Registrar enfermera"}
-          accessibilityState={{ busy: submitting }}
         >
-          <Text style={styles.buttonPrimaryText}>{submitting ? "Procesando..." : "Registrar Enfermera"}</Text>
-        </Pressable>
+          Registrar Enfermera
+        </FormButton>
       }
       disableScroll
     >
@@ -149,44 +147,101 @@ export default function AdminCreateNurseProfileScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Datos Básicos</Text>
 
-          <View style={styles.row}>
-            <View style={styles.col}>
-              <Text style={styles.label}>Nombre *</Text>
-              <FormInput testID={adminTestIds.nurses.create.nameInput} accessibilityLabel="Nombre de la enfermera" style={[styles.input, errors.name ? styles.inputError : undefined]} placeholder="Nombre" value={form.name} onChangeText={(text) => setForm({ ...form, name: text })} />
-            </View>
-            <View style={styles.col}>
-              <Text style={styles.label}>Apellido *</Text>
-              <FormInput testID={adminTestIds.nurses.create.lastNameInput} accessibilityLabel="Apellido de la enfermera" style={[styles.input, errors.lastName ? styles.inputError : undefined]} placeholder="Apellido" value={form.lastName} onChangeText={(text) => setForm({ ...form, lastName: text })} />
-            </View>
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            <FormInput
+              testID={adminTestIds.nurses.create.nameInput}
+              label="Nombre"
+              required
+              containerStyle={{ flex: 1 }}
+              accessibilityLabel="Nombre de la enfermera"
+              placeholder="Nombre"
+              value={form.name}
+              onChangeText={(text) => setForm({ ...form, name: text })}
+              errorMessage={errors.name}
+            />
+            <FormInput
+              testID={adminTestIds.nurses.create.lastNameInput}
+              label="Apellido"
+              required
+              containerStyle={{ flex: 1 }}
+              accessibilityLabel="Apellido de la enfermera"
+              placeholder="Apellido"
+              value={form.lastName}
+              onChangeText={(text) => setForm({ ...form, lastName: text })}
+              errorMessage={errors.lastName}
+            />
           </View>
 
-          <Text style={styles.label}>Cédula *</Text>
-          <FormInput testID={adminTestIds.nurses.create.identificationInput} accessibilityLabel="Número de cédula de identidad" style={[styles.input, errors.identificationNumber ? styles.inputError : undefined]} placeholder="Número de identificación" value={form.identificationNumber} onChangeText={(text) => setForm({ ...form, identificationNumber: text })} keyboardType="numeric" />
+          <FormInput
+            testID={adminTestIds.nurses.create.identificationInput}
+            label="Cédula"
+            required
+            accessibilityLabel="Número de cédula de identidad"
+            placeholder="Número de identificación"
+            value={form.identificationNumber}
+            onChangeText={(text) => setForm({ ...form, identificationNumber: text })}
+            keyboardType="numeric"
+            errorMessage={errors.identificationNumber}
+          />
 
-          <Text style={styles.label}>Teléfono *</Text>
-          <FormInput testID={adminTestIds.nurses.create.phoneInput} accessibilityLabel="Número de teléfono" style={[styles.input, errors.phone ? styles.inputError : undefined]} placeholder="Ej: 8091234567" value={form.phone} onChangeText={(text) => setForm({ ...form, phone: text })} keyboardType="phone-pad" />
+          <FormInput
+            testID={adminTestIds.nurses.create.phoneInput}
+            label="Teléfono"
+            required
+            accessibilityLabel="Número de teléfono"
+            placeholder="Ej: 8091234567"
+            value={form.phone}
+            onChangeText={(text) => setForm({ ...form, phone: text })}
+            keyboardType="phone-pad"
+            errorMessage={errors.phone}
+          />
 
-          <Text style={styles.label}>Correo electrónico *</Text>
-          <FormInput testID={adminTestIds.nurses.create.emailInput} accessibilityLabel="Correo electrónico de la enfermera" style={[styles.input, errors.email ? styles.inputError : undefined]} placeholder="Enfermera@correo.com" value={form.email} onChangeText={(text) => setForm({ ...form, email: text })} keyboardType="email-address" autoCapitalize="none" />
+          <FormInput
+            testID={adminTestIds.nurses.create.emailInput}
+            label="Correo electrónico"
+            required
+            accessibilityLabel="Correo electrónico de la enfermera"
+            placeholder="Enfermera@correo.com"
+            value={form.email}
+            onChangeText={(text) => setForm({ ...form, email: text })}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            errorMessage={errors.email}
+          />
 
-          <View style={styles.row}>
-            <View style={styles.col}>
-              <Text style={styles.label}>Contraseña *</Text>
-              <FormInput testID={adminTestIds.nurses.create.passwordInput} accessibilityLabel="Contraseña de acceso" style={[styles.input, errors.password ? styles.inputError : undefined]} placeholder="****" value={form.password} onChangeText={(text) => setForm({ ...form, password: text })} secureTextEntry />
-            </View>
-            <View style={styles.col}>
-              <Text style={styles.label}>Confirmar *</Text>
-              <FormInput testID={adminTestIds.nurses.create.confirmPasswordInput} accessibilityLabel="Confirmar contraseña" style={[styles.input, errors.confirmPassword ? styles.inputError : undefined]} placeholder="****" value={form.confirmPassword} onChangeText={(text) => setForm({ ...form, confirmPassword: text })} secureTextEntry />
-            </View>
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            <FormInput
+              testID={adminTestIds.nurses.create.passwordInput}
+              label="Contraseña"
+              required
+              containerStyle={{ flex: 1 }}
+              accessibilityLabel="Contraseña de acceso"
+              placeholder="****"
+              value={form.password}
+              onChangeText={(text) => setForm({ ...form, password: text })}
+              secureTextEntry
+              errorMessage={errors.password}
+            />
+            <FormInput
+              testID={adminTestIds.nurses.create.confirmPasswordInput}
+              label="Confirmar"
+              required
+              containerStyle={{ flex: 1 }}
+              accessibilityLabel="Confirmar contraseña"
+              placeholder="****"
+              value={form.confirmPassword}
+              onChangeText={(text) => setForm({ ...form, confirmPassword: text })}
+              secureTextEntry
+              errorMessage={errors.confirmPassword}
+            />
           </View>
-          {(errors.password || errors.confirmPassword) && <Text style={styles.errorText}>Revise que las contraseñas coincidan y tengan mínimo 8 caracteres.</Text>}
         </View>
 
         {/* === SECTION: PROFESSIONAL === */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Perfil Profesional</Text>
 
-          <Text style={styles.label}>Estado operacional</Text>
+          <Text style={styles.cardLabel}>Estado operacional</Text>
           <View style={styles.chipsContainer}>
             <Pressable
               style={[styles.chip, form.isOperationallyActive && styles.chipSuccess]}
@@ -208,7 +263,7 @@ export default function AdminCreateNurseProfileScreen() {
             </Pressable>
           </View>
 
-          <Text style={styles.label}>Categoría *</Text>
+          <Text style={styles.cardLabel}>Categoría *</Text>
           <View style={styles.chipsContainer}>
             {CATEGORIES.map((cat) => (
               <Pressable
@@ -226,7 +281,6 @@ export default function AdminCreateNurseProfileScreen() {
           <FormInput
             testID={adminTestIds.nurses.create.categoryInput}
             accessibilityLabel="Especificar otra categoría profesional"
-            style={[styles.input, activeCategoryIsCustom ? styles.inputActive : undefined, errors.category ? styles.inputError : undefined]}
             placeholder="Otra categoría"
             value={activeCategoryIsCustom ? form.category : customCategory}
             onChangeText={(text) => {
@@ -234,24 +288,54 @@ export default function AdminCreateNurseProfileScreen() {
               setForm({ ...form, category: text || CATEGORIES[0] });
             }}
             onFocus={() => { if (!activeCategoryIsCustom) setForm({ ...form, category: "" }); }}
+            errorMessage={errors.category}
           />
 
-          <View style={styles.row}>
-            <View style={styles.col}>
-              <Text style={styles.label}>Especialidad *</Text>
-              <FormInput testID={adminTestIds.nurses.create.specialtyInput} accessibilityLabel="Especialidad profesional" style={[styles.input, errors.specialty ? styles.inputError : undefined]} placeholder="Ej: Pediatría" value={form.specialty} onChangeText={(text) => setForm({ ...form, specialty: text })} />
-            </View>
-            <View style={styles.col}>
-              <Text style={styles.label}>Licencia / Exequátur</Text>
-              <FormInput testID={adminTestIds.nurses.create.licenseInput} accessibilityLabel="Número de licencia o exequátur" style={styles.input} placeholder="(Opcional)" value={form.licenseId ?? ""} onChangeText={(text) => setForm({ ...form, licenseId: text })} />
-            </View>
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            <FormInput
+              testID={adminTestIds.nurses.create.specialtyInput}
+              label="Especialidad"
+              required
+              containerStyle={{ flex: 1 }}
+              accessibilityLabel="Especialidad profesional"
+              placeholder="Ej: Pediatría"
+              value={form.specialty}
+              onChangeText={(text) => setForm({ ...form, specialty: text })}
+              errorMessage={errors.specialty}
+            />
+            <FormInput
+              testID={adminTestIds.nurses.create.licenseInput}
+              label="Licencia / Exequátur"
+              containerStyle={{ flex: 1 }}
+              accessibilityLabel="Número de licencia o exequátur"
+              placeholder="(Opcional)"
+              value={form.licenseId ?? ""}
+              onChangeText={(text) => setForm({ ...form, licenseId: text })}
+            />
           </View>
 
-          <Text style={styles.label}>Fecha de contratación *</Text>
           {Platform.OS === "web" ? (
-            <FormInput testID={adminTestIds.nurses.create.hireDateInput} accessibilityLabel="Fecha de contratación" style={[styles.input, errors.hireDate ? styles.inputError : undefined]} value={form.hireDate} onChangeText={(text) => setForm({ ...form, hireDate: text })} {...({ type: "date" } as any)} />
+            <FormInput
+              testID={adminTestIds.nurses.create.hireDateInput}
+              label="Fecha de contratación"
+              required
+              accessibilityLabel="Fecha de contratación"
+              value={form.hireDate}
+              onChangeText={(text) => setForm({ ...form, hireDate: text })}
+              errorMessage={errors.hireDate}
+              {...({ type: "date" } as any)}
+            />
           ) : (
-            <FormInput testID={adminTestIds.nurses.create.hireDateInput} accessibilityLabel="Fecha de contratación en formato AAAA-MM-DD" style={[styles.input, errors.hireDate ? styles.inputError : undefined]} placeholder="YYYY-MM-DD" value={form.hireDate} onChangeText={(text) => setForm({ ...form, hireDate: text })} />
+            <FormInput
+              testID={adminTestIds.nurses.create.hireDateInput}
+              label="Fecha de contratación"
+              required
+              accessibilityLabel="Fecha de contratación en formato AAAA-MM-DD"
+              placeholder="YYYY-MM-DD"
+              value={form.hireDate}
+              onChangeText={(text) => setForm({ ...form, hireDate: text })}
+              errorMessage={errors.hireDate}
+            />
           )}
         </View>
 
@@ -260,42 +344,37 @@ export default function AdminCreateNurseProfileScreen() {
           <Text style={styles.cardTitle}>Pago a la enfermera</Text>
           <Text style={styles.helperText}>Independiente del precio al cliente. Se paga por días trabajados.</Text>
 
-          <Text style={styles.label}>Tarifa por día (domicilio) RD$</Text>
           <FormInput
             testID="admin-create-nurse-visit-rate-input"
+            label="Tarifa por día (domicilio) RD$"
             accessibilityLabel="Tarifa de pago por día para domicilio"
-            style={styles.input}
             placeholder="Ej: 1700"
             keyboardType="numeric"
             value={form.visitDailyRate ? String(form.visitDailyRate) : ""}
             onChangeText={(text) => setForm({ ...form, visitDailyRate: Number(text.replace(/[^0-9.]/g, "")) || 0 })}
           />
 
-          <View style={styles.row}>
-            <View style={styles.col}>
-              <Text style={styles.label}>Monto mensual (casa hogar) RD$</Text>
-              <FormInput
-                testID="admin-create-nurse-home-monthly-input"
-                accessibilityLabel="Monto mensual de casa hogar"
-                style={styles.input}
-                placeholder="Ej: 30000"
-                keyboardType="numeric"
-                value={form.homeCareMonthlyRate ? String(form.homeCareMonthlyRate) : ""}
-                onChangeText={(text) => setForm({ ...form, homeCareMonthlyRate: Number(text.replace(/[^0-9.]/g, "")) || 0 })}
-              />
-            </View>
-            <View style={styles.col}>
-              <Text style={styles.label}>Días esperados/mes</Text>
-              <FormInput
-                testID="admin-create-nurse-home-days-input"
-                accessibilityLabel="Días esperados de trabajo en el mes"
-                style={styles.input}
-                placeholder="30"
-                keyboardType="numeric"
-                value={form.homeCareMonthlyExpectedDays ? String(form.homeCareMonthlyExpectedDays) : ""}
-                onChangeText={(text) => setForm({ ...form, homeCareMonthlyExpectedDays: Number(text.replace(/[^0-9]/g, "")) || 30 })}
-              />
-            </View>
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            <FormInput
+              testID="admin-create-nurse-home-monthly-input"
+              label="Monto mensual (casa hogar) RD$"
+              containerStyle={{ flex: 1 }}
+              accessibilityLabel="Monto mensual de casa hogar"
+              placeholder="Ej: 30000"
+              keyboardType="numeric"
+              value={form.homeCareMonthlyRate ? String(form.homeCareMonthlyRate) : ""}
+              onChangeText={(text) => setForm({ ...form, homeCareMonthlyRate: Number(text.replace(/[^0-9.]/g, "")) || 0 })}
+            />
+            <FormInput
+              testID="admin-create-nurse-home-days-input"
+              label="Días esperados/mes"
+              containerStyle={{ flex: 1 }}
+              accessibilityLabel="Días esperados de trabajo en el mes"
+              placeholder="30"
+              keyboardType="numeric"
+              value={form.homeCareMonthlyExpectedDays ? String(form.homeCareMonthlyExpectedDays) : ""}
+              onChangeText={(text) => setForm({ ...form, homeCareMonthlyExpectedDays: Number(text.replace(/[^0-9]/g, "")) || 30 })}
+            />
           </View>
         </View>
 
@@ -313,12 +392,24 @@ export default function AdminCreateNurseProfileScreen() {
           </Pressable>
           {showBankingInfo && (
             <View style={styles.accordionContent}>
-              <Text style={styles.label}>Nombre del Banco</Text>
-              <FormInput testID={adminTestIds.nurses.create.bankNameInput} accessibilityLabel="Nombre del banco" style={[styles.input, errors.bankName ? styles.inputError : undefined]} placeholder="Ej: Banreservas" value={form.bankName} onChangeText={(text) => setForm({ ...form, bankName: text })} />
-              {errors.bankName && <Text style={styles.errorText}>{errors.bankName}</Text>}
-
-              <Text style={styles.label}>Número de Cuenta</Text>
-              <FormInput testID={adminTestIds.nurses.create.accountNumberInput} accessibilityLabel="Número de cuenta bancaria" style={styles.input} placeholder="Número de cuenta bancaria" value={form.accountNumber ?? ""} onChangeText={(text) => setForm({ ...form, accountNumber: text })} keyboardType="numeric" />
+              <FormInput
+                testID={adminTestIds.nurses.create.bankNameInput}
+                label="Nombre del Banco"
+                accessibilityLabel="Nombre del banco"
+                placeholder="Ej: Banreservas"
+                value={form.bankName}
+                onChangeText={(text) => setForm({ ...form, bankName: text })}
+                errorMessage={errors.bankName}
+              />
+              <FormInput
+                testID={adminTestIds.nurses.create.accountNumberInput}
+                label="Número de Cuenta"
+                accessibilityLabel="Número de cuenta bancaria"
+                placeholder="Número de cuenta bancaria"
+                value={form.accountNumber ?? ""}
+                onChangeText={(text) => setForm({ ...form, accountNumber: text })}
+                keyboardType="numeric"
+              />
             </View>
           )}
         </View>
@@ -339,15 +430,9 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: 24 },
   card: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 14, marginBottom: 12 },
   cardTitle: { fontSize: 18, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 6 },
-  label: { fontSize: 14, fontWeight: "700", color: designTokens.color.status.dangerText, marginTop: 12, marginBottom: 6 },
-  input: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.strong, borderRadius: 12, padding: 12, fontSize: 15 },
-  inputActive: { borderColor: designTokens.color.ink.accent, borderWidth: 2 },
-  inputError: { borderColor: designTokens.color.ink.danger },
+  cardLabel: { fontSize: 13, fontWeight: "700", color: designTokens.color.ink.primary, marginBottom: 7, marginTop: 4 },
   errorText: { color: designTokens.color.ink.danger, fontSize: 12, marginTop: 4 },
   helperText: { color: designTokens.color.ink.secondary, fontSize: 12, marginTop: 2, marginBottom: 4 },
-
-  row: { flexDirection: "row", gap: 8 },
-  col: { flex: 1 },
 
   chipsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 },
   chip: { backgroundColor: designTokens.color.surface.secondary, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: designTokens.color.border.subtle },
@@ -364,7 +449,4 @@ const styles = StyleSheet.create({
   accordionTitle: { fontSize: 15, fontWeight: "700", color: designTokens.color.ink.secondary },
   accordionIcon: { fontSize: 14, color: designTokens.color.ink.secondary, fontWeight: "700" },
   accordionContent: { padding: 16, borderTopWidth: 1, borderTopColor: designTokens.color.border.subtle },
-
-  buttonPrimary: { backgroundColor: designTokens.color.ink.accent, borderRadius: 12, paddingVertical: 16, alignItems: "center" },
-  buttonPrimaryText: { color: designTokens.color.ink.inverse, fontWeight: "800", fontSize: 16 },
 });
