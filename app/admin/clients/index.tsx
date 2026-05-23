@@ -1,86 +1,70 @@
 // @generated-by: implementation-agent
-// @pipeline-run: 2026-04-24-mobile-ux-audit
-// @diffs: DIFF-ADMIN-CLIENTS-002
+// @pipeline-run: 2026-05-23-pagination-refactor
 // @do-not-edit: false
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
-import { useAuth } from "@/src/context/AuthContext";
-import { designTokens } from "@/src/design-system/tokens";
-import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
+import { FilterChips } from "@/src/components/shared/FilterChips";
+import { ListRow } from "@/src/components/shared/ListRow";
+import { Pagination } from "@/src/components/shared/Pagination";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
+import { Banner } from "@/src/components/shared/Banner";
+import { useAuth } from "@/src/context/AuthContext";
+import { usePagedList } from "@/src/hooks/usePagedList";
+import { adminTestIds } from "@/src/testing/testIds";
+import { designTokens } from "@/src/design-system/tokens";
 import {
   getAdminClients,
   type AdminClientListItemDto,
   type AdminClientListStatus,
 } from "@/src/services/adminPortalService";
-import { adminTestIds } from "@/src/testing/testIds";
 import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
 
-function formatTimestamp(value: string) {
-  return formatDateTimeES(value);
-}
+type StatusFilter = AdminClientListStatus | "all";
 
-function getInactiveCount(items: AdminClientListItemDto[]) {
-  return items.filter((item) => !item.isActive).length;
-}
+const STATUS_OPTIONS: ReadonlyArray<{ key: StatusFilter; label: string }> = [
+  { key: "all", label: "Todos" },
+  { key: "active", label: "Activos" },
+  { key: "inactive", label: "Inactivos" },
+];
+
+const PAGE_SIZE = 10;
 
 export default function AdminClientsScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
-  const [items, setItems] = useState<AdminClientListItemDto[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<AdminClientListStatus | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
-  const canLoadClients = isReady && isAuthenticated && !requiresProfileCompletion && roles.includes("ADMIN");
 
-  const load = async () => {
-    if (!canLoadClients) return;
+  const isEnabled = isReady && isAuthenticated && !requiresProfileCompletion && roles.includes("ADMIN");
+  const resetKey = `${statusFilter}|${searchQuery}`;
 
-    try {
-      setError(null);
-      setLoading(true);
-      const response = await getAdminClients({
-        status: statusFilter !== "all" ? statusFilter : undefined,
-        search: searchQuery || undefined,
-      });
-      setItems(response);
-    } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "No fue posible cargar los clientes.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { items, totalCount, page, pageCount, isLoading, isRefreshing, error, setPage, refresh } =
+    usePagedList<AdminClientListItemDto>({
+      fetcher: (p, ps) =>
+        getAdminClients({
+          status: statusFilter !== "all" ? statusFilter as AdminClientListStatus : undefined,
+          search: searchQuery || undefined,
+          page: p,
+          pageSize: ps,
+        }),
+      pageSize: PAGE_SIZE,
+      enabled: isEnabled,
+      resetKey,
+    });
 
-  useEffect(() => {
-    if (!isReady) return;
-    if (!isAuthenticated) return void router.replace("/login");
-    if (requiresProfileCompletion) return void router.replace("/register");
-    if (!roles.includes("ADMIN")) return void router.replace("/");
-    void load();
-  }, [isReady, isAuthenticated, requiresProfileCompletion, roles, statusFilter]);
+  if (!isReady) return null;
+  if (!isAuthenticated) { void router.replace("/login"); return null; }
+  if (requiresProfileCompletion) { void router.replace("/register"); return null; }
+  if (!roles.includes("ADMIN")) { void router.replace("/"); return null; }
 
-  useEffect(() => {
-    if (!canLoadClients) return;
-
-    const timer = setTimeout(() => {
-      void load();
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery, canLoadClients]);
-
-  if (!isReady || !isAuthenticated || !roles.includes("ADMIN")) {
-    return null;
-  }
-
-  const inactiveCount = getInactiveCount(items);
-  const activeCount = items.length - inactiveCount;
+  const statusOptions = STATUS_OPTIONS.map((opt) => ({
+    ...opt,
+    count: opt.key === "all" ? totalCount : undefined,
+  }));
 
   return (
     <MobileWorkspaceShell
@@ -91,151 +75,87 @@ export default function AdminClientsScreen() {
       testID={adminTestIds.clients.listScreen}
       nativeID={adminTestIds.clients.listScreen}
       actions={(
-        <View style={styles.headerActions}>
-          <Pressable
-            style={styles.button}
-            onPress={() => setShowFilters((current) => !current)}
-            accessibilityRole="button"
-            accessibilityLabel={showFilters ? "Ocultar filtros" : "Mostrar filtros"}
-          >
-            <Text style={styles.buttonText}>{showFilters ? "Ocultar filtros" : "Filtros"}</Text>
-          </Pressable>
-          <Pressable
-            style={styles.buttonPrimary}
-            onPress={() => router.push("/admin/clients/create" as never)}
-            testID={adminTestIds.clients.primaryAction}
-            nativeID={adminTestIds.clients.primaryAction}
-            accessibilityRole="button"
-            accessibilityLabel="Crear nuevo cliente"
-          >
-            <Text style={styles.buttonPrimaryText}>Crear</Text>
-          </Pressable>
-        </View>
-      )}
-    >
-      {/* Summary chip — counts only, no instructional text */}
-      <Text
-        style={styles.summaryChip}
-        testID={adminTestIds.clients.statusChip}
-        nativeID={adminTestIds.clients.statusChip}
-      >
-        {inactiveCount > 0
-          ? `${inactiveCount} inactivos · ${activeCount} activos`
-          : `${activeCount} clientes activos`}
-      </Text>
-
-      {!!error && (
-        <Text
-          style={styles.error}
-          testID={adminTestIds.clients.errorBanner}
-          nativeID={adminTestIds.clients.errorBanner}
+        <Pressable
+          style={styles.buttonPrimary}
+          onPress={() => router.push("/admin/clients/create" as never)}
+          testID={adminTestIds.clients.primaryAction}
+          nativeID={adminTestIds.clients.primaryAction}
+          accessibilityRole="button"
+          accessibilityLabel="Crear nuevo cliente"
         >
-          {error}
-        </Text>
+          <Text style={styles.buttonPrimaryText}>Crear</Text>
+        </Pressable>
       )}
+      disableScroll
+    >
+      <View style={styles.container}>
+        <FilterChips
+          options={statusOptions}
+          value={statusFilter}
+          onChange={(key) => { setStatusFilter(key); }}
+          testIDPrefix="admin-clients-filter"
+        />
 
-      {showFilters && (
-        <View style={styles.filtersCard}>
-          <Text style={styles.filtersTitle}>Filtros de búsqueda</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Buscar por nombre, correo o cédula"
+          placeholderTextColor={designTokens.color.ink.muted}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          accessibilityLabel="Buscar cliente por nombre, correo o cédula"
+          testID={adminTestIds.clients.statusChip}
+          nativeID={adminTestIds.clients.statusChip}
+        />
 
-          <Text style={styles.filterLabel}>Estado</Text>
-          <View style={styles.filterChips}>
-            {(["all", "active", "inactive"] as const).map((status) => {
-              const isActive = statusFilter === status;
-              return (
-                <Pressable
-                  key={status}
-                  style={[styles.chip, isActive && styles.chipActive]}
-                  onPress={() => setStatusFilter(status)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Filtrar por estado: ${status === "all" ? "Todos" : status === "active" ? "Activos" : "Inactivos"}`}
-                  accessibilityState={{ selected: isActive }}
-                >
-                  <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
-                    {status === "all" ? "Todos" : status === "active" ? "Activos" : "Inactivos"}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+        <Banner tone="error" message={error} />
 
-          <Text style={styles.filterLabel}>Buscar</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Nombre, correo o número de identificación"
-            placeholderTextColor={designTokens.color.ink.muted}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            accessibilityLabel="Buscar cliente por nombre, correo o cédula"
-          />
-        </View>
-      )}
+        {!isLoading && items.length === 0 && !error && (
+          <Text style={styles.empty}>No se encontraron clientes.</Text>
+        )}
 
-      {loading && <Text style={styles.loading}>Cargando...</Text>}
+        <ScrollView
+          style={styles.list}
+          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} />}
+        >
+          {items.map((item) => {
+            const meta = [
+              item.email,
+              item.identificationNumber ? `Cédula ${item.identificationNumber}` : null,
+              `${item.ownedCareRequestsCount} ${item.ownedCareRequestsCount === 1 ? "solicitud" : "solicitudes"}`,
+              item.lastCareRequestAtUtc ? formatDateTimeES(item.lastCareRequestAtUtc) : null,
+            ];
+            return (
+              <ListRow
+                key={item.userId}
+                title={item.displayName}
+                badge={
+                  <StatusBadge
+                    label={item.isActive ? "Activo" : "Inactivo"}
+                    tone={item.isActive ? "success" : "danger"}
+                  />
+                }
+                metaLines={meta}
+                onPress={() => router.push(`/admin/clients/${item.userId}` as never)}
+                testID={`admin-client-card-${item.userId}`}
+                accessibilityLabel={`Ver detalle del cliente ${item.displayName}`}
+              />
+            );
+          })}
+        </ScrollView>
 
-      {!loading && items.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>No se encontraron clientes.</Text>
-        </View>
-      ) : null}
-
-      <ScrollView
-        style={styles.list}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
-      >
-        {items.map((item) => {
-          const secondLine = [item.email, item.identificationNumber ? `Cédula ${item.identificationNumber}` : null]
-            .filter(Boolean)
-            .join(" · ");
-          return (
-            <Pressable
-              key={item.userId}
-              onPress={() => router.push(`/admin/clients/${item.userId}` as never)}
-              style={styles.card}
-              testID={`admin-client-card-${item.userId}`}
-              nativeID={`admin-client-card-${item.userId}`}
-              accessibilityRole="button"
-              accessibilityLabel={`Ver detalle del cliente ${item.displayName}`}
-            >
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>{item.displayName}</Text>
-                <StatusBadge
-                  label={item.isActive ? "Activo" : "Inactivo"}
-                  tone={item.isActive ? "success" : "danger"}
-                />
-              </View>
-
-              {!!secondLine && <Text style={styles.cardMeta}>{secondLine}</Text>}
-
-              <View style={styles.cardStats}>
-                <Text style={styles.cardStat}>
-                  {item.ownedCareRequestsCount} {item.ownedCareRequestsCount === 1 ? "solicitud" : "solicitudes"}
-                </Text>
-                {item.lastCareRequestAtUtc ? (
-                  <Text style={styles.cardStatMuted}>
-                    {formatTimestamp(item.lastCareRequestAtUtc)}
-                  </Text>
-                ) : null}
-              </View>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+        <Pagination
+          currentPage={page}
+          totalPages={pageCount}
+          onPageChange={setPage}
+          testID="admin-clients-pagination"
+        />
+      </View>
     </MobileWorkspaceShell>
   );
 }
 
 const styles = StyleSheet.create({
-  headerActions: { flexDirection: "row", gap: designTokens.spacing.sm },
-  button: {
-    backgroundColor: designTokens.color.surface.primary,
-    borderRadius: designTokens.radius.md,
-    paddingHorizontal: designTokens.spacing.md,
-    paddingVertical: designTokens.spacing.sm,
-    borderWidth: 1,
-    borderColor: designTokens.color.border.strong,
-  },
-  buttonText: { ...designTokens.typography.label, color: designTokens.color.ink.primary },
+  container: { flex: 1, gap: 8 },
   buttonPrimary: {
     backgroundColor: designTokens.color.ink.accentStrong,
     borderRadius: designTokens.radius.md,
@@ -243,85 +163,20 @@ const styles = StyleSheet.create({
     paddingVertical: designTokens.spacing.sm,
   },
   buttonPrimaryText: { ...designTokens.typography.label, color: designTokens.color.surface.primary },
-  summaryChip: {
-    ...designTokens.typography.label,
-    alignSelf: "flex-start",
-    backgroundColor: designTokens.color.status.infoBg,
-    color: designTokens.color.status.infoText,
-    borderRadius: designTokens.radius.pill,
-    paddingHorizontal: designTokens.spacing.md,
-    paddingVertical: designTokens.spacing.xs,
-    marginBottom: designTokens.spacing.sm,
-  },
-  error: {
-    ...designTokens.typography.body,
-    backgroundColor: designTokens.color.surface.danger,
-    color: designTokens.color.ink.danger,
-    padding: designTokens.spacing.md,
+  input: {
+    backgroundColor: designTokens.color.surface.primary,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.strong,
     borderRadius: designTokens.radius.md,
-    marginBottom: designTokens.spacing.md,
+    padding: designTokens.spacing.md,
+    color: designTokens.color.ink.primary,
+    fontSize: 14,
   },
-  loading: {
-    ...designTokens.typography.body,
+  list: { flex: 1 },
+  empty: {
     color: designTokens.color.ink.muted,
+    fontSize: 14,
     textAlign: "center",
     padding: designTokens.spacing.lg,
   },
-  filtersCard: { ...mobileSurfaceCard, padding: designTokens.spacing.md, marginBottom: designTokens.spacing.sm },
-  filtersTitle: { ...designTokens.typography.sectionTitle, fontSize: 16, marginBottom: designTokens.spacing.sm },
-  filterLabel: {
-    ...designTokens.typography.label,
-    marginTop: designTokens.spacing.xs,
-    marginBottom: designTokens.spacing.xs,
-  },
-  filterChips: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: designTokens.spacing.sm,
-    marginBottom: designTokens.spacing.sm,
-  },
-  chip: {
-    backgroundColor: designTokens.color.surface.primary,
-    borderRadius: designTokens.radius.pill,
-    paddingHorizontal: designTokens.spacing.md,
-    paddingVertical: designTokens.spacing.xs,
-    borderWidth: 1,
-    borderColor: designTokens.color.border.strong,
-  },
-  chipActive: { backgroundColor: designTokens.color.ink.primary, borderColor: designTokens.color.ink.primary },
-  chipText: { ...designTokens.typography.label, fontSize: 12 },
-  chipTextActive: { color: designTokens.color.surface.primary },
-  input: {
-    ...designTokens.typography.body,
-    backgroundColor: designTokens.color.surface.primary,
-    borderWidth: 1,
-    borderColor: designTokens.color.border.strong,
-    borderRadius: designTokens.radius.md,
-    padding: designTokens.spacing.md,
-  },
-  emptyState: { padding: designTokens.spacing.xl, alignItems: "center" },
-  emptyStateText: { ...designTokens.typography.body, color: designTokens.color.ink.muted, textAlign: "center" },
-  list: { gap: designTokens.spacing.sm },
-  card: { ...mobileSurfaceCard, padding: designTokens.spacing.md, marginBottom: designTokens.spacing.sm },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: designTokens.spacing.xs,
-  },
-  cardTitle: { ...designTokens.typography.sectionTitle, flex: 1 },
-  cardMeta: {
-    ...designTokens.typography.body,
-    fontSize: 13,
-    color: designTokens.color.ink.muted,
-    marginBottom: designTokens.spacing.xs,
-  },
-  cardStats: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: designTokens.spacing.sm,
-    marginTop: designTokens.spacing.xs,
-  },
-  cardStat: { ...designTokens.typography.label, fontSize: 13, color: designTokens.color.ink.secondary },
-  cardStatMuted: { ...designTokens.typography.label, fontSize: 12, color: designTokens.color.ink.muted },
 });

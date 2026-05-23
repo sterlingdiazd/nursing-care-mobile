@@ -503,10 +503,10 @@ export default function CreateCareRequestScreen() {
     setClientLookupError(null);
     const trimmed = clientSearchTerm.trim();
     const params = trimmed.length >= 3 ? { search: trimmed, status: "active" as const } : { status: "active" as const };
-    getAdminClients(params)
-      .then((clients) => {
+    getAdminClients({ ...params, pageSize: 50 })
+      .then((result) => {
         if (cancelled) return;
-        setClientOptions(clients);
+        setClientOptions(result.items);
         setClientLookupError(null);
       })
       .catch((err: unknown) => {

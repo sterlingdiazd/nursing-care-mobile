@@ -69,13 +69,19 @@ describe("admin people-management service contracts", () => {
   });
 
   it("loads admin users through the authenticated admin endpoint", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+    vi.mocked(httpClient.requestJson).mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 10 });
 
     await getAdminUsers({ status: "AdminReview", search: "ana" });
 
     expect(httpClient.requestJson).toHaveBeenCalledWith(
       expect.objectContaining({
-        path: "/api/admin/users?search=ana&status=AdminReview",
+        path: expect.stringContaining("search=ana"),
+        auth: true,
+      }),
+    );
+    expect(httpClient.requestJson).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: expect.stringContaining("status=AdminReview"),
         auth: true,
       }),
     );

@@ -71,9 +71,17 @@ export async function getAdminDashboard() {
   });
 }
 
-export async function getAdminActionItems() {
-  return requestJson<AdminActionItemDto[]>({
-    path: "/api/admin/action-items",
+export interface GetAdminActionItemsParams {
+  page?: number;
+  pageSize?: number;
+}
+
+export async function getAdminActionItems(params: GetAdminActionItemsParams = {}) {
+  const searchParams = new URLSearchParams();
+  searchParams.set("page", String(params.page ?? 1));
+  searchParams.set("pageSize", String(params.pageSize ?? 10));
+  return requestJson<AdminPagedResult<AdminActionItemDto>>({
+    path: `/api/admin/action-items?${searchParams.toString()}`,
     method: "GET",
     auth: true,
   });
@@ -85,6 +93,13 @@ export type AdminNotificationStatus =
   | "ActionRequired"
   | "Archived"
   | "All";
+
+export interface AdminPagedResult<T> {
+  items: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
 
 export interface AdminNotificationListPageDto {
   items: AdminNotificationDto[];
@@ -368,12 +383,19 @@ export interface CreateAdminCareRequestDto {
   careRequestDate?: string;
 }
 
-export async function getAdminCareRequests(params?: { view?: AdminCareRequestView; search?: string }) {
+export async function getAdminCareRequests(params?: {
+  view?: AdminCareRequestView;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}) {
   const searchParams = new URLSearchParams();
   if (params?.view && params.view !== "all") searchParams.append("view", params.view);
   if (params?.search) searchParams.append("search", params.search);
+  searchParams.set("page", String(params?.page ?? 1));
+  searchParams.set("pageSize", String(params?.pageSize ?? 10));
 
-  return requestJson<AdminCareRequestListItemDto[]>({
+  return requestJson<AdminPagedResult<AdminCareRequestListItemDto>>({
     path: `/api/admin/care-requests?${searchParams.toString()}`,
     method: "GET",
     auth: true,
@@ -832,30 +854,51 @@ export interface NurseCategoryListItemDto {
 }
 
 
+export interface GetNurseProfilesParams {
+  page?: number;
+  pageSize?: number;
+}
+
 // Nurse Profile service functions
-export async function getPendingNurseProfiles() {
-  return requestJson<PendingNurseProfileDto[]>({
-    path: "/api/admin/nurse-profiles/pending",
+export async function getPendingNurseProfiles(params: GetNurseProfilesParams = {}) {
+  const searchParams = new URLSearchParams();
+  searchParams.set("page", String(params.page ?? 1));
+  searchParams.set("pageSize", String(params.pageSize ?? 10));
+  return requestJson<AdminPagedResult<PendingNurseProfileDto>>({
+    path: `/api/admin/nurse-profiles/pending?${searchParams.toString()}`,
     method: "GET",
     auth: true,
   });
 }
 
-export async function getActiveNurseProfiles() {
-  return requestJson<ActiveNurseProfileSummaryDto[]>({
-    path: "/api/admin/nurse-profiles/active",
+export async function getActiveNurseProfilesPaged(params: GetNurseProfilesParams = {}) {
+  const searchParams = new URLSearchParams();
+  searchParams.set("page", String(params.page ?? 1));
+  searchParams.set("pageSize", String(params.pageSize ?? 10));
+  return requestJson<AdminPagedResult<ActiveNurseProfileSummaryDto>>({
+    path: `/api/admin/nurse-profiles/active?${searchParams.toString()}`,
     method: "GET",
     auth: true,
   });
 }
 
-export async function getInactiveNurseProfiles() {
-  return requestJson<NurseProfileSummaryDto[]>({
-    path: "/api/admin/nurse-profiles/inactive",
+export async function getInactiveNurseProfiles(params: GetNurseProfilesParams = {}) {
+  const searchParams = new URLSearchParams();
+  searchParams.set("page", String(params.page ?? 1));
+  searchParams.set("pageSize", String(params.pageSize ?? 10));
+  return requestJson<AdminPagedResult<NurseProfileSummaryDto>>({
+    path: `/api/admin/nurse-profiles/inactive?${searchParams.toString()}`,
     method: "GET",
     auth: true,
   });
 }
+
+/**
+ * Backward-compatible alias kept for callers that imported getActiveNurseProfiles
+ * from adminPortalService before the pagination refactor.
+ * Returns the paginated envelope (AdminPagedResult), not a bare array.
+ */
+export const getActiveNurseProfiles = getActiveNurseProfilesPaged;
 
 export async function getNurseProfileForAdmin(userId: string) {
   return requestJson<NurseProfileAdminRecordDto>({
@@ -911,8 +954,13 @@ export async function setNurseOperationalAccessForAdmin(
 }
 
 
+export interface AdminClientListParamsPaged extends AdminClientListParams {
+  page?: number;
+  pageSize?: number;
+}
+
 // Client service functions
-export async function getAdminClients(params: AdminClientListParams = {}) {
+export async function getAdminClients(params: AdminClientListParamsPaged = {}) {
   const searchParams = new URLSearchParams();
   if (params.search?.trim()) {
     searchParams.set("search", params.search.trim());
@@ -920,10 +968,11 @@ export async function getAdminClients(params: AdminClientListParams = {}) {
   if (params.status) {
     searchParams.set("status", params.status);
   }
+  searchParams.set("page", String(params.page ?? 1));
+  searchParams.set("pageSize", String(params.pageSize ?? 10));
 
-  const suffix = searchParams.toString();
-  return requestJson<AdminClientListItemDto[]>({
-    path: `/api/admin/clients${suffix ? `?${suffix}` : ""}`,
+  return requestJson<AdminPagedResult<AdminClientListItemDto>>({
+    path: `/api/admin/clients?${searchParams.toString()}`,
     method: "GET",
     auth: true,
   });
@@ -965,8 +1014,13 @@ export async function updateAdminClientActiveState(id: string, isActive: boolean
 }
 
 
+export interface AdminUserListParamsPaged extends AdminUserListParams {
+  page?: number;
+  pageSize?: number;
+}
+
 // User service functions
-export async function getAdminUsers(params: AdminUserListParams = {}) {
+export async function getAdminUsers(params: AdminUserListParamsPaged = {}) {
   const searchParams = new URLSearchParams();
   if (params.search?.trim()) {
     searchParams.set("search", params.search.trim());
@@ -980,10 +1034,11 @@ export async function getAdminUsers(params: AdminUserListParams = {}) {
   if (params.status) {
     searchParams.set("status", params.status);
   }
+  searchParams.set("page", String(params.page ?? 1));
+  searchParams.set("pageSize", String(params.pageSize ?? 10));
 
-  const suffix = searchParams.toString();
-  return requestJson<AdminUserListItemDto[]>({
-    path: `/api/admin/users${suffix ? `?${suffix}` : ""}`,
+  return requestJson<AdminPagedResult<AdminUserListItemDto>>({
+    path: `/api/admin/users?${searchParams.toString()}`,
     method: "GET",
     auth: true,
   });

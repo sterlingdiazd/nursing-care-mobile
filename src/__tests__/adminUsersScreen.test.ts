@@ -11,6 +11,10 @@ vi.mock("../services/httpClient", () => ({
   requestJson: vi.fn(),
 }));
 
+function makeEnvelope<T>(items: T[]) {
+  return { items, totalCount: items.length, page: 1, pageSize: 10 };
+}
+
 // ─── Access Control Logic ────────────────────────────────────────────────────
 
 describe("adminUsersScreen", () => {
@@ -78,14 +82,14 @@ describe("Admin Users Screen - Data Loading", () => {
   });
 
   it("should call getAdminUsers with no params on initial load", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     await getAdminUsers();
     expect(httpClient.requestJson).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/admin/users", auth: true }),
+      expect.objectContaining({ path: expect.stringContaining("/api/admin/users"), auth: true }),
     );
   });
 
-  it("should display items returned from the API", async () => {
+  it("should return items from the paginated envelope", async () => {
     const mockItems: AdminUserListItemDto[] = [
       {
         id: "user-1",
@@ -105,10 +109,11 @@ describe("Admin Users Screen - Data Loading", () => {
         createdAtUtc: "2025-01-15T08:00:00Z",
       },
     ];
-    vi.mocked(httpClient.requestJson).mockResolvedValue(mockItems);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope(mockItems));
     const result = await getAdminUsers();
-    expect(result).toHaveLength(1);
-    expect(result[0].displayName).toBe("Ana López");
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].displayName).toBe("Ana López");
+    expect(result.totalCount).toBe(1);
   });
 
   it("should propagate errors from the API", async () => {
@@ -116,10 +121,11 @@ describe("Admin Users Screen - Data Loading", () => {
     await expect(getAdminUsers()).rejects.toThrow("No fue posible cargar los usuarios.");
   });
 
-  it("should return empty array when no users exist", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+  it("should return empty items array when no users exist", async () => {
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     const result = await getAdminUsers();
-    expect(result).toHaveLength(0);
+    expect(result.items).toHaveLength(0);
+    expect(result.totalCount).toBe(0);
   });
 
   it("should include all required card fields in returned data", async () => {
@@ -142,10 +148,10 @@ describe("Admin Users Screen - Data Loading", () => {
         createdAtUtc: "2025-06-01T08:00:00Z",
       },
     ];
-    vi.mocked(httpClient.requestJson).mockResolvedValue(mockItems);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope(mockItems));
     const result = await getAdminUsers();
 
-    const user = result[0];
+    const user = result.items[0];
     expect(user.id).toBeDefined();
     expect(user.displayName).toBeDefined();
     expect(user.email).toBeDefined();
@@ -164,39 +170,39 @@ describe("Admin Users Screen - Filtering and Search", () => {
   });
 
   it("should pass role filter to API call", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     await getAdminUsers({ role: "NURSE" });
     expect(httpClient.requestJson).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/admin/users?role=NURSE" }),
+      expect.objectContaining({ path: expect.stringContaining("role=NURSE") }),
     );
   });
 
   it("should pass profileType filter to API call", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     await getAdminUsers({ profileType: "CLIENT" });
     expect(httpClient.requestJson).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/admin/users?profileType=CLIENT" }),
+      expect.objectContaining({ path: expect.stringContaining("profileType=CLIENT") }),
     );
   });
 
   it("should pass status filter to API call", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     await getAdminUsers({ status: "Active" });
     expect(httpClient.requestJson).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/admin/users?status=Active" }),
+      expect.objectContaining({ path: expect.stringContaining("status=Active") }),
     );
   });
 
   it("should pass search query to API call", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     await getAdminUsers({ search: "Ana" });
     expect(httpClient.requestJson).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/admin/users?search=Ana" }),
+      expect.objectContaining({ path: expect.stringContaining("search=Ana") }),
     );
   });
 
   it("should pass multiple filters to API call", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     await getAdminUsers({ role: "ADMIN", status: "Active", search: "Carlos" });
     expect(httpClient.requestJson).toHaveBeenCalledWith(
       expect.objectContaining({ path: expect.stringContaining("role=ADMIN") }),
@@ -209,17 +215,17 @@ describe("Admin Users Screen - Filtering and Search", () => {
     );
   });
 
-  it("should not include params when no filters are set", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+  it("should include pagination params in query string", async () => {
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     await getAdminUsers({});
     expect(httpClient.requestJson).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/admin/users" }),
+      expect.objectContaining({ path: expect.stringContaining("page=1&pageSize=10") }),
     );
   });
 
   it("should support all valid role filter values", async () => {
     const roles: AdminUserRoleName[] = ["ADMIN", "CLIENT", "NURSE"];
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
 
     for (const role of roles) {
       await getAdminUsers({ role });
@@ -230,7 +236,7 @@ describe("Admin Users Screen - Filtering and Search", () => {
 
   it("should support all valid account status filter values", async () => {
     const statuses: AdminUserAccountStatus[] = ["Active", "Inactive", "ProfileIncomplete", "AdminReview", "ManualIntervention"];
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
 
     for (const status of statuses) {
       await getAdminUsers({ status });
@@ -240,10 +246,10 @@ describe("Admin Users Screen - Filtering and Search", () => {
   });
 
   it("should trim whitespace from search query", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     await getAdminUsers({ search: "  Ana  " });
     expect(httpClient.requestJson).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/admin/users?search=Ana" }),
+      expect.objectContaining({ path: expect.stringContaining("search=Ana") }),
     );
   });
 });

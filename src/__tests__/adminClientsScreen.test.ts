@@ -11,6 +11,10 @@ vi.mock("../services/httpClient", () => ({
   requestJson: vi.fn(),
 }));
 
+function makeEnvelope<T>(items: T[]) {
+  return { items, totalCount: items.length, page: 1, pageSize: 10 };
+}
+
 function canLoadAdminClientList(authState: {
   isReady: boolean;
   isAuthenticated: boolean;
@@ -97,15 +101,15 @@ describe("Admin Clients Screen - Data Loading", () => {
     vi.clearAllMocks();
   });
 
-  it("should call getAdminClients with no params on initial load", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+  it("should call getAdminClients with pagination params on initial load", async () => {
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     await getAdminClients();
     expect(httpClient.requestJson).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/admin/clients", auth: true }),
+      expect.objectContaining({ path: expect.stringContaining("/api/admin/clients"), auth: true }),
     );
   });
 
-  it("should display items returned from the API", async () => {
+  it("should return items from the paginated envelope", async () => {
     const mockItems: AdminClientListItemDto[] = [
       {
         userId: "client-1",
@@ -121,10 +125,11 @@ describe("Admin Clients Screen - Data Loading", () => {
         createdAtUtc: "2025-01-15T08:00:00Z",
       },
     ];
-    vi.mocked(httpClient.requestJson).mockResolvedValue(mockItems);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope(mockItems));
     const result = await getAdminClients();
-    expect(result).toHaveLength(1);
-    expect(result[0].displayName).toBe("Juan Pérez");
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].displayName).toBe("Juan Pérez");
+    expect(result.totalCount).toBe(1);
   });
 
   it("should propagate errors from the API", async () => {
@@ -132,10 +137,11 @@ describe("Admin Clients Screen - Data Loading", () => {
     await expect(getAdminClients()).rejects.toThrow("No fue posible cargar los clientes.");
   });
 
-  it("should return empty array when no clients exist", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+  it("should return empty items when no clients exist", async () => {
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     const result = await getAdminClients();
-    expect(result).toHaveLength(0);
+    expect(result.items).toHaveLength(0);
+    expect(result.totalCount).toBe(0);
   });
 
   it("should include all required card fields in returned data", async () => {
@@ -154,10 +160,10 @@ describe("Admin Clients Screen - Data Loading", () => {
         createdAtUtc: "2025-06-01T08:00:00Z",
       },
     ];
-    vi.mocked(httpClient.requestJson).mockResolvedValue(mockItems);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope(mockItems));
     const result = await getAdminClients();
 
-    const client = result[0];
+    const client = result.items[0];
     expect(client.userId).toBeDefined();
     expect(client.displayName).toBeDefined();
     expect(client.email).toBeDefined();
@@ -175,31 +181,31 @@ describe("Admin Clients Screen - Filtering and Search", () => {
   });
 
   it("should pass active status filter to API call", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     await getAdminClients({ status: "active" });
     expect(httpClient.requestJson).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/admin/clients?status=active" }),
+      expect.objectContaining({ path: expect.stringContaining("status=active") }),
     );
   });
 
   it("should pass inactive status filter to API call", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     await getAdminClients({ status: "inactive" });
     expect(httpClient.requestJson).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/admin/clients?status=inactive" }),
+      expect.objectContaining({ path: expect.stringContaining("status=inactive") }),
     );
   });
 
   it("should pass search query to API call", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     await getAdminClients({ search: "Juan" });
     expect(httpClient.requestJson).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/admin/clients?search=Juan" }),
+      expect.objectContaining({ path: expect.stringContaining("search=Juan") }),
     );
   });
 
   it("should pass both status and search to API call", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     await getAdminClients({ status: "active", search: "María" });
     expect(httpClient.requestJson).toHaveBeenCalledWith(
       expect.objectContaining({ path: expect.stringContaining("status=active") }),
@@ -209,17 +215,17 @@ describe("Admin Clients Screen - Filtering and Search", () => {
     );
   });
 
-  it("should not include status param when no status filter is set", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+  it("should include pagination params in query string", async () => {
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     await getAdminClients({});
     expect(httpClient.requestJson).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/admin/clients" }),
+      expect.objectContaining({ path: expect.stringContaining("page=1&pageSize=10") }),
     );
   });
 
   it("should support all valid status filter values", async () => {
     const statuses: AdminClientListStatus[] = ["active", "inactive"];
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
 
     for (const status of statuses) {
       await getAdminClients({ status });
@@ -229,10 +235,10 @@ describe("Admin Clients Screen - Filtering and Search", () => {
   });
 
   it("should trim whitespace from search query", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     await getAdminClients({ search: "  Juan  " });
     expect(httpClient.requestJson).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/admin/clients?search=Juan" }),
+      expect.objectContaining({ path: expect.stringContaining("search=Juan") }),
     );
   });
 });
@@ -311,8 +317,8 @@ describe("Admin Clients Screen - Date Formatting", () => {
         createdAtUtc: "2025-01-01T00:00:00Z",
       },
     ];
-    vi.mocked(httpClient.requestJson).mockResolvedValue(mockItems);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope(mockItems));
     const result = await getAdminClients();
-    expect(result[0].lastCareRequestAtUtc).toBeNull();
+    expect(result.items[0].lastCareRequestAtUtc).toBeNull();
   });
 });

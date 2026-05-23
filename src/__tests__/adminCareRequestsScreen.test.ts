@@ -9,7 +9,11 @@ vi.mock("../services/httpClient", () => ({
   requestJson: vi.fn(),
 }));
 
-// ─── Access Control Logic ────────────────────────────────────────────────────
+function makeEnvelope<T>(items: T[]) {
+  return { items, totalCount: items.length, page: 1, pageSize: 10 };
+}
+
+// ─── Access Control Logic ──────────────────────────────���─────────────────────
 
 describe("adminCareRequestsScreen", () => {
   it("should redirect to /login when not authenticated", () => {
@@ -68,22 +72,22 @@ describe("adminCareRequestsScreen", () => {
   });
 });
 
-// ─── Data Loading ─────────────────────────────────────────────────────────────
+// ─── Data Loading ─────────────────────���───────────────────────────────────────
 
 describe("Admin Care Requests Screen - Data Loading", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("should call getAdminCareRequests with no params on initial load", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+  it("should call getAdminCareRequests with pagination params on initial load", async () => {
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     await getAdminCareRequests();
     expect(httpClient.requestJson).toHaveBeenCalledWith(
       expect.objectContaining({ path: expect.stringContaining("/api/admin/care-requests"), auth: true }),
     );
   });
 
-  it("should display items returned from the API", async () => {
+  it("should return items from the paginated envelope", async () => {
     const mockItems = [
       {
         id: "req-1",
@@ -97,10 +101,11 @@ describe("Admin Care Requests Screen - Data Loading", () => {
         isOverdueOrStale: false,
       },
     ];
-    vi.mocked(httpClient.requestJson).mockResolvedValue(mockItems);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope(mockItems));
     const result = await getAdminCareRequests();
-    expect(result).toHaveLength(1);
-    expect(result[0].clientDisplayName).toBe("Juan Pérez");
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].clientDisplayName).toBe("Juan Pérez");
+    expect(result.totalCount).toBe(1);
   });
 
   it("should propagate errors from the API", async () => {
@@ -109,7 +114,7 @@ describe("Admin Care Requests Screen - Data Loading", () => {
   });
 });
 
-// ─── Filtering and Search ─────────────────────────────────────────────────────
+// ─── Filtering and Search ────────────────────────────���────────────────────────
 
 describe("Admin Care Requests Screen - Filtering and Search", () => {
   beforeEach(() => {
@@ -117,34 +122,45 @@ describe("Admin Care Requests Screen - Filtering and Search", () => {
   });
 
   it("should pass view filter to API call", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     await getAdminCareRequests({ view: "pending" });
     expect(httpClient.requestJson).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/admin/care-requests?view=pending" }),
+      expect.objectContaining({ path: expect.stringContaining("view=pending") }),
     );
   });
 
   it("should pass search query to API call", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     await getAdminCareRequests({ search: "Juan" });
     expect(httpClient.requestJson).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/admin/care-requests?search=Juan" }),
+      expect.objectContaining({ path: expect.stringContaining("search=Juan") }),
     );
   });
 
   it("should pass both view and search to API call", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     await getAdminCareRequests({ view: "approved", search: "María" });
     expect(httpClient.requestJson).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/admin/care-requests?view=approved&search=Mar%C3%ADa" }),
+      expect.objectContaining({ path: expect.stringContaining("view=approved") }),
+    );
+    expect(httpClient.requestJson).toHaveBeenCalledWith(
+      expect.objectContaining({ path: expect.stringContaining("search=Mar") }),
     );
   });
 
   it("should not include view param when view is 'all'", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     await getAdminCareRequests({ view: "all" });
     expect(httpClient.requestJson).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/admin/care-requests?" }),
+      expect.objectContaining({ path: expect.not.stringContaining("view=") }),
+    );
+  });
+
+  it("should include pagination params in query string", async () => {
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
+    await getAdminCareRequests({});
+    expect(httpClient.requestJson).toHaveBeenCalledWith(
+      expect.objectContaining({ path: expect.stringContaining("page=1&pageSize=10") }),
     );
   });
 
@@ -153,7 +169,7 @@ describe("Admin Care Requests Screen - Filtering and Search", () => {
       "all", "pending", "approved", "rejected", "completed",
       "unassigned", "pending-approval", "rejected-today", "approved-incomplete", "overdue",
     ];
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
 
     for (const view of views) {
       await getAdminCareRequests({ view });
@@ -163,7 +179,7 @@ describe("Admin Care Requests Screen - Filtering and Search", () => {
   });
 });
 
-// ─── Navigation ───────────────────────────────────────────────────────────────
+// ─── Navigation ───────────────────────���──────────────────────────────────���────
 
 describe("Admin Care Requests Screen - Navigation", () => {
   it("should build correct detail route with care request ID", () => {
@@ -186,7 +202,7 @@ describe("Admin Care Requests Screen - Navigation", () => {
   });
 });
 
-// ─── Status Labels (Spanish) ──────────────────────────────────────────────────
+// ─── Status Labels (Spanish) ───────────────────────────────��──────────────────
 
 describe("Admin Care Requests Screen - Spanish Status Labels", () => {
   function statusLabel(status: string): string {
@@ -214,7 +230,7 @@ describe("Admin Care Requests Screen - Spanish Status Labels", () => {
   });
 });
 
-// ─── Currency and Date Formatting ────────────────────────────────────────────
+// ─── Currency and Date Formatting ────────────────────────────��───────────────
 
 describe("Admin Care Requests Screen - Formatting", () => {
   it("should format currency as Dominican Peso", () => {

@@ -13,21 +13,27 @@ describe("careRequestService", () => {
     vi.clearAllMocks();
   });
 
-  it("loads active nurse profiles from the admin endpoint", async () => {
-    vi.mocked(requestJson).mockResolvedValue([
-      {
-        userId: "nurse-1",
-        email: "nurse@example.com",
-        name: "Luisa",
-        lastName: "Martinez",
-        specialty: "Atencion domiciliaria",
-        category: "Senior",
-      },
-    ]);
+  it("loads active nurse profiles from the admin endpoint and unwraps the envelope", async () => {
+    vi.mocked(requestJson).mockResolvedValue({
+      items: [
+        {
+          userId: "nurse-1",
+          email: "nurse@example.com",
+          name: "Luisa",
+          lastName: "Martinez",
+          specialty: "Atencion domiciliaria",
+          category: "Senior",
+        },
+      ],
+      totalCount: 1,
+      page: 1,
+      pageSize: 100,
+    });
 
-    await expect(getActiveNurseProfiles()).resolves.toHaveLength(1);
+    const result = await getActiveNurseProfiles();
+    await expect(Promise.resolve(result)).resolves.toHaveLength(1);
     expect(requestJson).toHaveBeenCalledWith({
-      path: "/api/admin/nurse-profiles/active",
+      path: "/api/admin/nurse-profiles/active?page=1&pageSize=100",
       method: "GET",
       auth: true,
     });

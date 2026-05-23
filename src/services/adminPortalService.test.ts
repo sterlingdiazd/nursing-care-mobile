@@ -26,14 +26,17 @@ describe("adminPortalService", () => {
     });
   });
 
-  it("carga la cola administrativa", async () => {
-    vi.mocked(requestJson).mockResolvedValue([]);
-    await getAdminActionItems();
+  it("carga la cola administrativa con paginación", async () => {
+    const envelope = { items: [], totalCount: 0, page: 1, pageSize: 10 };
+    vi.mocked(requestJson).mockResolvedValue(envelope);
+    const result = await getAdminActionItems({ page: 1, pageSize: 10 });
     expect(requestJson).toHaveBeenCalledWith({
-      path: "/api/admin/action-items",
+      path: "/api/admin/action-items?page=1&pageSize=10",
       method: "GET",
       auth: true,
     });
+    expect(result.items).toEqual([]);
+    expect(result.totalCount).toBe(0);
   });
 
   it("carga notificaciones con filtros", async () => {

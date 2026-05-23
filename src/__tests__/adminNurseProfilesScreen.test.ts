@@ -12,6 +12,10 @@ vi.mock("../services/httpClient", () => ({
   requestJson: vi.fn(),
 }));
 
+function makeEnvelope<T>(items: T[]) {
+  return { items, totalCount: items.length, page: 1, pageSize: 10 };
+}
+
 // ─── Access Control Logic ────────────────────────────────────────────────────
 
 describe("adminNurseProfilesScreen", () => {
@@ -79,30 +83,30 @@ describe("Admin Nurse Profiles Screen - Tab Switching and Data Loading", () => {
   });
 
   it("should call getPendingNurseProfiles for pending tab", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     await getPendingNurseProfiles();
     expect(httpClient.requestJson).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/admin/nurse-profiles/pending", auth: true }),
+      expect.objectContaining({ path: expect.stringContaining("/api/admin/nurse-profiles/pending"), auth: true }),
     );
   });
 
   it("should call getActiveNurseProfiles for active tab", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     await getActiveNurseProfiles();
     expect(httpClient.requestJson).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/admin/nurse-profiles/active", auth: true }),
+      expect.objectContaining({ path: expect.stringContaining("/api/admin/nurse-profiles/active"), auth: true }),
     );
   });
 
   it("should call getInactiveNurseProfiles for inactive tab", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     await getInactiveNurseProfiles();
     expect(httpClient.requestJson).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/admin/nurse-profiles/inactive", auth: true }),
+      expect.objectContaining({ path: expect.stringContaining("/api/admin/nurse-profiles/inactive"), auth: true }),
     );
   });
 
-  it("should return pending nurse profiles from API", async () => {
+  it("should return pending nurse profiles from envelope", async () => {
     const mockPending: PendingNurseProfileDto[] = [
       {
         userId: "nurse-1",
@@ -116,13 +120,13 @@ describe("Admin Nurse Profiles Screen - Tab Switching and Data Loading", () => {
         createdAtUtc: "2026-03-01T08:00:00Z",
       },
     ];
-    vi.mocked(httpClient.requestJson).mockResolvedValue(mockPending);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope(mockPending));
     const result = await getPendingNurseProfiles();
-    expect(result).toHaveLength(1);
-    expect(result[0].email).toBe("ana@example.com");
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].email).toBe("ana@example.com");
   });
 
-  it("should return active nurse profiles from API", async () => {
+  it("should return active nurse profiles from envelope", async () => {
     const mockActive: NurseProfileSummaryDto[] = [
       {
         userId: "nurse-2",
@@ -145,10 +149,10 @@ describe("Admin Nurse Profiles Screen - Tab Switching and Data Loading", () => {
         },
       },
     ];
-    vi.mocked(httpClient.requestJson).mockResolvedValue(mockActive);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope(mockActive));
     const result = await getActiveNurseProfiles();
-    expect(result).toHaveLength(1);
-    expect(result[0].specialty).toBe("Cuidados intensivos");
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].specialty).toBe("Cuidados intensivos");
   });
 
   it("should propagate errors from the API", async () => {
@@ -156,10 +160,10 @@ describe("Admin Nurse Profiles Screen - Tab Switching and Data Loading", () => {
     await expect(getPendingNurseProfiles()).rejects.toThrow("No fue posible cargar perfiles de enfermeras.");
   });
 
-  it("should return empty array when no nurses in tab", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
+  it("should return empty items when no nurses in tab", async () => {
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope([]));
     const result = await getInactiveNurseProfiles();
-    expect(result).toHaveLength(0);
+    expect(result.items).toHaveLength(0);
   });
 });
 
@@ -184,10 +188,10 @@ describe("Admin Nurse Profiles Screen - Card Display Fields", () => {
         createdAtUtc: "2026-03-01T08:00:00Z",
       },
     ];
-    vi.mocked(httpClient.requestJson).mockResolvedValue(mockPending);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope(mockPending));
     const result = await getPendingNurseProfiles();
 
-    const nurse = result[0];
+    const nurse = result.items[0];
     expect(nurse.userId).toBeDefined();
     expect(nurse.email).toBeDefined();
     expect(nurse.name).toBeDefined();
@@ -216,10 +220,10 @@ describe("Admin Nurse Profiles Screen - Card Display Fields", () => {
         },
       },
     ];
-    vi.mocked(httpClient.requestJson).mockResolvedValue(mockActive);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope(mockActive));
     const result = await getActiveNurseProfiles();
 
-    const nurse = result[0];
+    const nurse = result.items[0];
     expect(nurse.userId).toBeDefined();
     expect(nurse.email).toBeDefined();
     expect(nurse.specialty).toBeDefined();
@@ -243,12 +247,12 @@ describe("Admin Nurse Profiles Screen - Card Display Fields", () => {
         workload: undefined,
       },
     ];
-    vi.mocked(httpClient.requestJson).mockResolvedValue(mockActive);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope(mockActive));
     const result = await getActiveNurseProfiles();
 
-    expect(result[0].name).toBeNull();
-    expect(result[0].specialty).toBeNull();
-    expect(result[0].workload).toBeUndefined();
+    expect(result.items[0].name).toBeNull();
+    expect(result.items[0].specialty).toBeNull();
+    expect(result.items[0].workload).toBeUndefined();
   });
 
   it("should flag pending nurses for visual indicator", async () => {
@@ -263,12 +267,11 @@ describe("Admin Nurse Profiles Screen - Card Display Fields", () => {
         createdAtUtc: "2026-03-01T08:00:00Z",
       },
     ];
-    vi.mocked(httpClient.requestJson).mockResolvedValue(mockPending);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope(mockPending));
     const result = await getPendingNurseProfiles();
 
-    // Pending nurses come from the pending endpoint - they are inherently pending review
-    expect(result).toHaveLength(1);
-    expect(result[0].userId).toBe("nurse-1");
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].userId).toBe("nurse-1");
   });
 });
 
@@ -366,10 +369,10 @@ describe("Admin Nurse Profiles Screen - Workload Summary", () => {
         },
       },
     ];
-    vi.mocked(httpClient.requestJson).mockResolvedValue(mockActive);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope(mockActive));
     const result = await getActiveNurseProfiles();
 
-    const workload = result[0].workload!;
+    const workload = result.items[0].workload!;
     expect(workload.totalAssignedCareRequests).toBe(10);
     expect(workload.pendingAssignedCareRequests).toBe(3);
     expect(workload.approvedAssignedCareRequests).toBe(4);
@@ -389,9 +392,9 @@ describe("Admin Nurse Profiles Screen - Workload Summary", () => {
         workload: undefined,
       },
     ];
-    vi.mocked(httpClient.requestJson).mockResolvedValue(mockActive);
+    vi.mocked(httpClient.requestJson).mockResolvedValue(makeEnvelope(mockActive));
     const result = await getActiveNurseProfiles();
 
-    expect(result[0].workload).toBeUndefined();
+    expect(result.items[0].workload).toBeUndefined();
   });
 });

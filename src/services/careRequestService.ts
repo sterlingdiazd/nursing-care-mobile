@@ -157,11 +157,12 @@ export async function assignCareRequestNurse(
 }
 
 export async function getActiveNurseProfiles(): Promise<ActiveNurseProfileSummary[]> {
-  return requestJson<ActiveNurseProfileSummary[]>({
-    path: "/api/admin/nurse-profiles/active",
+  const envelope = await requestJson<{ items: ActiveNurseProfileSummary[]; totalCount: number; page: number; pageSize: number }>({
+    path: "/api/admin/nurse-profiles/active?page=1&pageSize=100",
     method: "GET",
     auth: true,
   });
+  return envelope.items;
 }
 
 export interface PricingDiscrepancy {

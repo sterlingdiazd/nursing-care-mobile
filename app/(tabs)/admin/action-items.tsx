@@ -1,23 +1,25 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { FilterChips } from "@/src/components/shared/FilterChips";
+import { ListRow } from "@/src/components/shared/ListRow";
+import { Pagination } from "@/src/components/shared/Pagination";
+import { Banner } from "@/src/components/shared/Banner";
 import { mobileTheme } from "@/src/design-system/mobileStyles";
 import { designTokens } from "@/src/design-system/tokens";
 import { toneStyles, type WorkCardTone } from "@/src/design-system/tones";
 import { useAuth } from "@/src/context/AuthContext";
+import { usePagedList } from "@/src/hooks/usePagedList";
 import { getAdminActionItems, type AdminActionItemDto } from "@/src/services/adminPortalService";
 import { adminTestIds } from "@/src/testing/testIds";
 import {
@@ -29,22 +31,6 @@ import {
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 type SeverityFilter = "All" | "High" | "Medium" | "Low";
-
-interface FilterDef {
-  key: SeverityFilter;
-  label: string;
-  tone: WorkCardTone | null;
-}
-
-const FILTERS: FilterDef[] = [
-  { key: "All", label: "Todas", tone: null },
-  { key: "High", label: "Urgentes", tone: "danger" },
-  { key: "Medium", label: "Medias", tone: "orange" },
-  { key: "Low", label: "Bajas", tone: "warning" },
-];
-
-const PAGE_SIZE = 10;
-const SHELL_HORIZONTAL_PADDING = 18;
 
 const ENTITY_LABELS: Record<AdminActionItemDto["entityType"], string> = {
   CareRequest: "Solicitud",
@@ -66,17 +52,14 @@ function severityToTone(severity: AdminActionItemDto["severity"]): WorkCardTone 
   }
 }
 
-function buildPageDisplay(current: number, total: number): Array<number | "ellipsis"> {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-  const out: Array<number | "ellipsis"> = [1];
-  if (current > 3) out.push("ellipsis");
-  const lo = Math.max(2, current - 1);
-  const hi = Math.min(total - 1, current + 1);
-  for (let i = lo; i <= hi; i++) out.push(i);
-  if (current < total - 2) out.push("ellipsis");
-  out.push(total);
-  return out;
-}
+const FILTER_OPTIONS: ReadonlyArray<{ key: SeverityFilter; label: string }> = [
+  { key: "All", label: "Todas" },
+  { key: "High", label: "Urgentes" },
+  { key: "Medium", label: "Medias" },
+  { key: "Low", label: "Bajas" },
+];
+
+const PAGE_SIZE = 10;
 
 function ActionItemCard({ item }: { item: AdminActionItemDto }) {
   const tone = toneStyles[severityToTone(item.severity)];
@@ -102,7 +85,7 @@ function ActionItemCard({ item }: { item: AdminActionItemDto }) {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={getAdminActionItemPrimaryLabel(item)}
-        onPress={() => router.push(resolveAdminOperationalDeepLink(item.deepLinkPath) as any)}
+        onPress={() => router.push(resolveAdminOperationalDeepLink(item.deepLinkPath) as never)}
         style={({ pressed }) => [styles.cardCta, pressed && styles.pressed]}
       >
         <Text style={styles.cardCtaText}>{getAdminActionItemPrimaryLabel(item)}</Text>
@@ -113,86 +96,40 @@ function ActionItemCard({ item }: { item: AdminActionItemDto }) {
 
 export default function AdminActionItemsScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
-  const { width: viewportWidth } = useWindowDimensions();
-  const pageWidth = Math.max(0, viewportWidth - SHELL_HORIZONTAL_PADDING * 2);
-
-  const [items, setItems] = useState<AdminActionItemDto[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<SeverityFilter>("All");
-  const [currentPage, setCurrentPage] = useState(1);
-  const pagerRef = useRef<FlatList<AdminActionItemDto[]> | null>(null);
-  const fetchedRef = useRef(false);
 
-  useEffect(() => {
-    if (!isReady) return;
-    if (!isAuthenticated) return void router.replace("/login");
-    if (requiresProfileCompletion) return void router.replace("/register");
-    if (!roles.includes("ADMIN")) return void router.replace("/");
+  const isEnabled = isReady && isAuthenticated && !requiresProfileCompletion && roles.includes("ADMIN");
 
-    if (fetchedRef.current) return;
-    fetchedRef.current = true;
-    setIsLoading(true);
-    void getAdminActionItems()
-      .then((response) => setItems(sortAdminActionItems(response)))
-      .catch((nextError) => setError(nextError instanceof Error ? nextError.message : "No fue posible cargar acciones."))
-      .finally(() => setIsLoading(false));
-  }, [isReady, isAuthenticated, requiresProfileCompletion, roles]);
+  const { items: rawItems, totalCount, page, pageCount, isLoading, isRefreshing, error, setPage, refresh } =
+    usePagedList<AdminActionItemDto>({
+      fetcher: (p, ps) => getAdminActionItems({ page: p, pageSize: ps }),
+      pageSize: PAGE_SIZE,
+      enabled: isEnabled,
+      resetKey: "action-items",
+    });
 
-  useEffect(() => {
-    setCurrentPage(1);
-    pagerRef.current?.scrollToOffset({ offset: 0, animated: false });
-  }, [filter]);
+  if (!isReady) return null;
+  if (!isAuthenticated) { void router.replace("/login"); return null; }
+  if (requiresProfileCompletion) { void router.replace("/register"); return null; }
+  if (!roles.includes("ADMIN")) { void router.replace("/"); return null; }
 
-  const filtered = useMemo(() => {
-    if (filter === "All") return items;
-    return items.filter((item) => item.severity === filter);
-  }, [items, filter]);
-
-  const pages = useMemo(() => {
-    if (filtered.length === 0) return [];
-    const out: AdminActionItemDto[][] = [];
-    for (let i = 0; i < filtered.length; i += PAGE_SIZE) {
-      out.push(filtered.slice(i, i + PAGE_SIZE));
-    }
-    return out;
-  }, [filtered]);
-
-  const totalPages = pages.length;
-
-  useEffect(() => {
-    if (currentPage > totalPages && totalPages > 0) {
-      setCurrentPage(totalPages);
-      pagerRef.current?.scrollToIndex({ index: totalPages - 1, animated: false });
-    }
-  }, [currentPage, totalPages]);
-
-  const goToPage = useCallback(
-    (n: number) => {
-      const target = Math.min(Math.max(1, n), totalPages);
-      setCurrentPage(target);
-      pagerRef.current?.scrollToIndex({ index: target - 1, animated: true });
-    },
-    [totalPages],
-  );
-
-  const onMomentumEnd = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      if (pageWidth === 0) return;
-      const idx = Math.round(e.nativeEvent.contentOffset.x / pageWidth);
-      const next = Math.min(Math.max(0, idx), Math.max(0, totalPages - 1));
-      setCurrentPage(next + 1);
-    },
-    [pageWidth, totalPages],
-  );
+  // Client-side severity filter applied to the fetched page
+  const items = useMemo(() => {
+    const sorted = sortAdminActionItems(rawItems);
+    if (filter === "All") return sorted;
+    return sorted.filter((item) => item.severity === filter);
+  }, [rawItems, filter]);
 
   const counts = useMemo(() => {
-    const out: Record<SeverityFilter, number> = { All: items.length, High: 0, Medium: 0, Low: 0 };
-    for (const item of items) out[item.severity] = (out[item.severity] ?? 0) + 1;
+    const out: Record<SeverityFilter, number> = { All: totalCount, High: 0, Medium: 0, Low: 0 };
+    for (const item of rawItems) out[item.severity] = (out[item.severity] ?? 0) + 1;
     return out;
-  }, [items]);
+  }, [rawItems, totalCount]);
 
-  const display = buildPageDisplay(currentPage, totalPages);
+  const filterOptions = FILTER_OPTIONS.map((opt) => ({
+    ...opt,
+    count: counts[opt.key],
+  }));
 
   return (
     <MobileWorkspaceShell
@@ -202,128 +139,42 @@ export default function AdminActionItemsScreen() {
       disableScroll
     >
       <View {...automationProps(adminTestIds.actionQueue.screen)} style={styles.screenRoot}>
-        {error ? (
-          <Text {...automationProps(adminTestIds.actionQueue.errorBanner)} style={styles.error}>
-            {error}
-          </Text>
-        ) : null}
+        <FilterChips
+          options={filterOptions}
+          value={filter}
+          onChange={(key) => setFilter(key)}
+          testIDPrefix="admin-action-items-filter"
+        />
 
-        <View style={styles.filterStrip}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterContent}>
-            {FILTERS.map((f) => {
-              const active = filter === f.key;
-              const count = counts[f.key];
-              const tone = f.tone ? toneStyles[f.tone] : null;
-              const badgeBg = tone ? tone.soft : (active ? "rgba(255,255,255,0.25)" : designTokens.color.surface.secondary);
-              const badgeFg = tone ? tone.color : (active ? designTokens.color.ink.inverse : designTokens.color.ink.primary);
-              return (
-                <Pressable
-                  key={f.key}
-                  onPress={() => setFilter(f.key)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
-                  style={({ pressed }) => [
-                    styles.filterChip,
-                    active && styles.filterChipActive,
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
-                    {f.label}
-                  </Text>
-                  <View style={[styles.filterCount, { backgroundColor: badgeBg }]}>
-                    <Text style={[styles.filterCountText, { color: badgeFg }]}>{count}</Text>
-                  </View>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        </View>
+        <Banner tone="error" message={error} />
 
-        {isLoading && filtered.length === 0 ? (
+        {isLoading && items.length === 0 ? (
           <View style={styles.loadingState}>
             <ActivityIndicator color={designTokens.color.ink.accentStrong} accessibilityLabel="Cargando..." />
           </View>
-        ) : filtered.length === 0 ? (
+        ) : !isLoading && items.length === 0 && !error ? (
           <View style={styles.loadingState}>
             <Text style={styles.emptyText}>No hay acciones en este filtro.</Text>
           </View>
         ) : (
-          <View style={styles.pagerWrap}>
-            <FlatList
-              ref={pagerRef}
-              data={pages}
-              keyExtractor={(_, idx) => `page-${idx}`}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              onMomentumScrollEnd={onMomentumEnd}
-              getItemLayout={(_, index) => ({ length: pageWidth, offset: pageWidth * index, index })}
-              renderItem={({ item: pageItems }) => (
-                <View style={[styles.page, { width: pageWidth }]}>
-                  <FlatList
-                    data={pageItems}
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => <ActionItemCard item={item} />}
-                    ItemSeparatorComponent={() => <View style={styles.separator} />}
-                    contentContainerStyle={styles.listContent}
-                  />
-                </View>
-              )}
-            />
-
-            <View style={styles.paginationBar}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Página anterior"
-                onPress={() => goToPage(currentPage - 1)}
-                disabled={currentPage <= 1}
-                style={({ pressed }) => [
-                  styles.pageNav,
-                  currentPage <= 1 && styles.disabled,
-                  pressed && currentPage > 1 && styles.pressed,
-                ]}
-              >
-                <Text style={styles.pageNavGlyph}>‹</Text>
-              </Pressable>
-              {display.map((entry, idx) => {
-                if (entry === "ellipsis") {
-                  return <Text key={`e-${idx}`} style={styles.pageEllipsis}>…</Text>;
-                }
-                const active = entry === currentPage;
-                return (
-                  <Pressable
-                    key={entry}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Página ${entry}`}
-                    accessibilityState={{ selected: active }}
-                    onPress={() => goToPage(entry)}
-                    style={({ pressed }) => [
-                      styles.pageChip,
-                      active && styles.pageChipActive,
-                      pressed && !active && styles.pressed,
-                    ]}
-                  >
-                    <Text style={[styles.pageChipText, active && styles.pageChipTextActive]}>{entry}</Text>
-                  </Pressable>
-                );
-              })}
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Página siguiente"
-                onPress={() => goToPage(currentPage + 1)}
-                disabled={currentPage >= totalPages}
-                style={({ pressed }) => [
-                  styles.pageNav,
-                  currentPage >= totalPages && styles.disabled,
-                  pressed && currentPage < totalPages && styles.pressed,
-                ]}
-              >
-                <Text style={styles.pageNavGlyph}>›</Text>
-              </Pressable>
-            </View>
-          </View>
+          <ScrollView
+            style={styles.list}
+            refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} />}
+          >
+            {items.map((item) => (
+              <View key={item.id} style={styles.itemWrap}>
+                <ActionItemCard item={item} />
+              </View>
+            ))}
+          </ScrollView>
         )}
+
+        <Pagination
+          currentPage={page}
+          totalPages={pageCount}
+          onPageChange={setPage}
+          testID="admin-action-items-pagination"
+        />
       </View>
     </MobileWorkspaceShell>
   );
@@ -333,30 +184,12 @@ const styles = StyleSheet.create({
   screenRoot: {
     flex: 1,
     minHeight: 0,
-    gap: 4,
+    gap: 8,
   },
-  filterStrip: { paddingBottom: 12 },
-  filterContent: { flexDirection: "row", gap: 8, paddingRight: 8 },
-  filterChip: {
-    flexDirection: "row", alignItems: "center", gap: 6,
-    borderRadius: 999, borderWidth: 1,
-    borderColor: designTokens.color.border.subtle,
-    backgroundColor: designTokens.color.surface.primary,
-    paddingHorizontal: 12, paddingVertical: 8,
-  },
-  filterChipActive: {
-    borderColor: designTokens.color.ink.accent,
-    backgroundColor: designTokens.color.ink.accent,
-  },
-  filterChipText: { color: designTokens.color.ink.primary, fontSize: 13, fontWeight: "800" },
-  filterChipTextActive: { color: designTokens.color.ink.inverse },
-  filterCount: { minWidth: 22, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 999, alignItems: "center" },
-  filterCountText: { fontSize: 11, fontWeight: "900" },
-
-  pagerWrap: { flex: 1, minHeight: 0 },
-  page: { flex: 1 },
-  listContent: { paddingBottom: 12 },
-  separator: { height: 12 },
+  list: { flex: 1 },
+  itemWrap: { marginBottom: 12 },
+  loadingState: { flex: 1, paddingVertical: 48, alignItems: "center", justifyContent: "center" },
+  emptyText: { color: designTokens.color.ink.muted, fontSize: 14 },
 
   card: {
     backgroundColor: mobileTheme.colors.surface.primary,
@@ -387,44 +220,5 @@ const styles = StyleSheet.create({
   },
   cardCtaText: { color: mobileTheme.colors.ink.accent, fontSize: 13, fontWeight: "900" },
 
-  paginationBar: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
-    paddingTop: 12, paddingBottom: 8,
-  },
-  pageNav: {
-    width: 36, height: 36, borderRadius: 999,
-    borderWidth: 1, borderColor: designTokens.color.border.subtle,
-    backgroundColor: designTokens.color.surface.primary,
-    alignItems: "center", justifyContent: "center",
-  },
-  pageNavGlyph: { color: designTokens.color.ink.primary, fontSize: 22, lineHeight: 22, fontWeight: "800" },
-  pageChip: {
-    minWidth: 36, height: 36, paddingHorizontal: 10,
-    borderRadius: 999, borderWidth: 1,
-    borderColor: designTokens.color.border.subtle,
-    backgroundColor: designTokens.color.surface.primary,
-    alignItems: "center", justifyContent: "center",
-  },
-  pageChipActive: {
-    borderColor: designTokens.color.ink.accent,
-    backgroundColor: designTokens.color.ink.accent,
-  },
-  pageChipText: { color: designTokens.color.ink.primary, fontSize: 13, fontWeight: "800" },
-  pageChipTextActive: { color: designTokens.color.ink.inverse },
-  pageEllipsis: { color: designTokens.color.ink.muted, fontSize: 16, fontWeight: "900", paddingHorizontal: 4 },
-
   pressed: { opacity: 0.78 },
-  disabled: { opacity: 0.35 },
-  loadingState: { flex: 1, paddingVertical: 48, alignItems: "center", justifyContent: "center" },
-  emptyText: { color: designTokens.color.ink.muted, fontSize: 14 },
-  error: {
-    backgroundColor: designTokens.color.status.dangerBg,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: designTokens.color.border.danger,
-    color: designTokens.color.status.dangerText,
-    padding: 12,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
 });

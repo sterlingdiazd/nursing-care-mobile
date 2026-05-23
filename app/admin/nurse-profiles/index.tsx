@@ -1,95 +1,82 @@
 // @generated-by: implementation-agent
-// @pipeline-run: 2026-04-20T-priority-1
-// @diffs: DIFF-ADMIN-NP-001
+// @pipeline-run: 2026-05-23-pagination-refactor
 // @do-not-edit: false
 
-import { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { FilterChips } from "@/src/components/shared/FilterChips";
+import { ListRow } from "@/src/components/shared/ListRow";
+import { Pagination } from "@/src/components/shared/Pagination";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
+import { Banner } from "@/src/components/shared/Banner";
 import { useAuth } from "@/src/context/AuthContext";
+import { usePagedList } from "@/src/hooks/usePagedList";
+import { adminTestIds } from "@/src/testing/testIds/adminTestIds";
 import { designTokens } from "@/src/design-system/tokens";
-import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import {
   getPendingNurseProfiles,
-  getActiveNurseProfiles,
+  getActiveNurseProfilesPaged,
   getInactiveNurseProfiles,
   type PendingNurseProfileDto,
   type ActiveNurseProfileSummaryDto,
   type NurseProfileSummaryDto,
 } from "@/src/services/adminPortalService";
-import { adminTestIds } from "@/src/testing/testIds/adminTestIds";
-
-const PAGE_SIZE = 10;
+import { useState } from "react";
 
 type TabType = "pending" | "active" | "inactive";
 
-const TAB_CHIPS: { label: string; value: TabType }[] = [
-  { label: "Pendientes", value: "pending" },
-  { label: "Activas", value: "active" },
-  { label: "Inactivas", value: "inactive" },
-];
-
-function nurseStatusLabel(tab: TabType): string {
-  switch (tab) {
-    case "pending": return "Pendiente";
-    case "active": return "Activa";
-    case "inactive": return "Inactiva";
-  }
-}
+const PAGE_SIZE = 10;
 
 export default function AdminNurseProfilesScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
-  // Default to the active roster (the day-to-day management view); the "Pendientes" chip shows a
-  // count badge when there are profiles awaiting review.
+  // Default to active tab — pending is often empty, active is day-to-day management.
   const [tab, setTab] = useState<TabType>("active");
-  const [pendingItems, setPendingItems] = useState<PendingNurseProfileDto[]>([]);
-  const [activeItems, setActiveItems] = useState<ActiveNurseProfileSummaryDto[]>([]);
-  const [inactiveItems, setInactiveItems] = useState<NurseProfileSummaryDto[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  // Load all three buckets once so the chip count badges are accurate and switching tabs is instant.
-  const load = async () => {
-    try {
-      setError(null);
-      setLoading(true);
-      const [pending, active, inactive] = await Promise.all([
-        getPendingNurseProfiles(),
-        getActiveNurseProfiles(),
-        getInactiveNurseProfiles(),
-      ]);
-      setPendingItems(pending);
-      setActiveItems(active);
-      setInactiveItems(inactive);
-    } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "No fue posible cargar perfiles de enfermeras.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const isEnabled = isReady && isAuthenticated && !requiresProfileCompletion && roles.includes("ADMIN");
 
-  useEffect(() => {
-    if (!isReady) return;
-    if (!isAuthenticated) return void router.replace("/login" as any);
-    if (requiresProfileCompletion) return void router.replace("/register" as any);
-    if (!roles.includes("ADMIN")) return void router.replace("/" as any);
-    void load();
-  }, [isReady, isAuthenticated, requiresProfileCompletion, roles]);
+  const pending = usePagedList<PendingNurseProfileDto>({
+    fetcher: (p, ps) => getPendingNurseProfiles({ page: p, pageSize: ps }),
+    pageSize: PAGE_SIZE,
+    enabled: isEnabled,
+    resetKey: "pending",
+  });
 
-  if (!isReady || !isAuthenticated || !roles.includes("ADMIN")) {
-    return null;
-  }
+  const active = usePagedList<ActiveNurseProfileSummaryDto>({
+    fetcher: (p, ps) => getActiveNurseProfilesPaged({ page: p, pageSize: ps }),
+    pageSize: PAGE_SIZE,
+    enabled: isEnabled,
+    resetKey: "active",
+  });
 
-  const currentItems = tab === "pending" ? pendingItems : tab === "active" ? activeItems : inactiveItems;
+  const inactive = usePagedList<NurseProfileSummaryDto>({
+    fetcher: (p, ps) => getInactiveNurseProfiles({ page: p, pageSize: ps }),
+    pageSize: PAGE_SIZE,
+    enabled: isEnabled,
+    resetKey: "inactive",
+  });
 
-  function countFor(t: TabType): number {
-    if (t === "pending") return pendingItems.length;
-    if (t === "active") return activeItems.length;
-    return inactiveItems.length;
+  if (!isReady) return null;
+  if (!isAuthenticated) { void router.replace("/login" as never); return null; }
+  if (requiresProfileCompletion) { void router.replace("/register" as never); return null; }
+  if (!roles.includes("ADMIN")) { void router.replace("/" as never); return null; }
+
+  const current = tab === "pending" ? pending : tab === "active" ? active : inactive;
+
+  const chipOptions = [
+    { key: "active" as TabType, label: "Activas", count: active.totalCount > 0 ? active.totalCount : undefined },
+    { key: "pending" as TabType, label: "Pendientes", count: pending.totalCount > 0 ? pending.totalCount : undefined },
+    { key: "inactive" as TabType, label: "Inactivas", count: inactive.totalCount > 0 ? inactive.totalCount : undefined },
+  ];
+
+  const anyError = current.error;
+
+  function handleRefresh() {
+    pending.refresh();
+    active.refresh();
+    inactive.refresh();
   }
 
   return (
@@ -106,7 +93,7 @@ export default function AdminNurseProfilesScreen() {
           testID={adminTestIds.nurses.listCreateButton}
           nativeID={adminTestIds.nurses.listCreateButton}
           style={styles.buttonPrimary}
-          onPress={() => router.push("/admin/nurse-profiles/create" as any)}
+          onPress={() => router.push("/admin/nurse-profiles/create" as never)}
           accessibilityRole="button"
           accessibilityLabel="Crear perfil de enfermera"
         >
@@ -114,135 +101,96 @@ export default function AdminNurseProfilesScreen() {
         </Pressable>
       )}
     >
-      {/* Status filter chips */}
-      <View
-        style={styles.chipRow}
-        testID={adminTestIds.nurses.listReadinessChip}
-        nativeID={adminTestIds.nurses.listReadinessChip}
-      >
-        {TAB_CHIPS.map((chip) => {
-          const isActive = tab === chip.value;
-          const count = countFor(chip.value);
-          return (
-            <Pressable
-              key={chip.value}
-              style={[styles.chip, isActive && styles.chipActive]}
-              onPress={() => setTab(chip.value)}
-              accessibilityRole="tab"
-              accessibilityLabel={`Filtrar por: ${chip.label}`}
-              accessibilityState={{ selected: isActive }}
-              testID={`admin-nurse-status-chip-${chip.value}`}
-              nativeID={`admin-nurse-status-chip-${chip.value}`}
-            >
-              <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
-                {chip.label}
-              </Text>
-              {count > 0 && (
-                <View style={[styles.chipCount, isActive && styles.chipCountActive]}>
-                  <Text style={[styles.chipCountText, isActive && styles.chipCountTextActive]}>
-                    {count}
-                  </Text>
-                </View>
-              )}
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {!!error && (
-        <Text
-          testID={adminTestIds.nurses.listErrorBanner}
-          nativeID={adminTestIds.nurses.listErrorBanner}
-          style={styles.error}
+      <View style={styles.container}>
+        <View
+          testID={adminTestIds.nurses.listReadinessChip}
+          nativeID={adminTestIds.nurses.listReadinessChip}
         >
-          {error}
-        </Text>
-      )}
+          <FilterChips
+            options={chipOptions}
+            value={tab}
+            onChange={(key) => setTab(key)}
+            testIDPrefix="admin-nurse-status-chip"
+          />
+        </View>
 
-      {loading && (
-        <ActivityIndicator
-          color={designTokens.color.ink.accent}
-          accessibilityLabel="Cargando perfiles de enfermeras"
-          style={{ marginVertical: 20 }}
-        />
-      )}
+        <Banner tone="error" message={anyError} />
 
-      {!loading && currentItems.length === 0 && (
-        <Text style={styles.emptyText}>No hay enfermeras en este filtro.</Text>
-      )}
+        {!current.isLoading && current.items.length === 0 && !anyError && (
+          <Text
+            style={styles.empty}
+            testID={adminTestIds.nurses.listErrorBanner}
+            nativeID={adminTestIds.nurses.listErrorBanner}
+          >
+            No hay enfermeras en este filtro.
+          </Text>
+        )}
 
-      <FlatList
-        data={currentItems as Array<PendingNurseProfileDto | ActiveNurseProfileSummaryDto | NurseProfileSummaryDto>}
-        keyExtractor={(item) => item.userId}
-        style={styles.list}
-        showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
-        renderItem={({ item }) => {
-          if (tab === "pending") {
-            const p = item as PendingNurseProfileDto;
-            return (
-              <Pressable
-                onPress={() => router.push(`/admin/nurse-profiles/${p.userId}` as any)}
-                style={[styles.card, styles.cardPending]}
+        <ScrollView
+          style={styles.list}
+          refreshControl={<RefreshControl refreshing={current.isRefreshing} onRefresh={handleRefresh} />}
+        >
+          {tab === "pending" && pending.items.map((p) => (
+            <View key={p.userId}>
+              <ListRow
+                title={`${p.name ?? ""} ${p.lastName ?? ""}`.trim()}
+                badge={<StatusBadge label="Pendiente" tone="warning" testID={`admin-nurse-profile-status-badge-${p.userId}`} />}
+                metaLines={[p.identificationNumber, p.specialty]}
+                railColor={designTokens.color.ink.warning}
+                onPress={() => router.push(`/admin/nurse-profiles/${p.userId}` as never)}
                 testID={`admin-nurse-profile-pending-card-${p.userId}`}
-                nativeID={`admin-nurse-profile-pending-card-${p.userId}`}
-                accessibilityRole="button"
                 accessibilityLabel={`Perfil pendiente de ${p.name} ${p.lastName}`}
               >
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardTitle} numberOfLines={1}>{p.name} {p.lastName}</Text>
-                  <StatusBadge
-                    label="Pendiente"
-                    tone="warning"
-                    testID={`admin-nurse-profile-status-badge-${p.userId}`}
-                  />
-                </View>
-                <Text style={styles.cardMeta} numberOfLines={1}>
-                  {[p.identificationNumber, p.specialty].filter(Boolean).join(" · ")}
-                </Text>
                 <Pressable
                   style={styles.reviewButton}
-                  onPress={() => router.push(`/admin/nurse-profiles/${p.userId}/review` as any)}
+                  onPress={() => router.push(`/admin/nurse-profiles/${p.userId}/review` as never)}
                   accessibilityRole="button"
                   accessibilityLabel={`Revisar perfil de ${p.name} ${p.lastName}`}
                 >
                   <Text style={styles.reviewButtonText}>Revisar perfil</Text>
                 </Pressable>
-              </Pressable>
-            );
-          }
+              </ListRow>
+            </View>
+          ))}
 
-          const a = item as ActiveNurseProfileSummaryDto | NurseProfileSummaryDto;
-          return (
-            <Pressable
-              onPress={() => router.push(`/admin/nurse-profiles/${a.userId}` as any)}
-              style={styles.card}
-              testID={`admin-nurse-profile-${tab}-card-${a.userId}`}
-              nativeID={`admin-nurse-profile-${tab}-card-${a.userId}`}
-              accessibilityRole="button"
+          {tab === "active" && active.items.map((a) => (
+            <ListRow
+              key={a.userId}
+              title={`${a.name ?? ""} ${a.lastName ?? ""}`.trim()}
+              badge={<StatusBadge label="Activa" tone="success" testID={`admin-nurse-profile-status-badge-${a.userId}`} />}
+              metaLines={[a.specialty, (a as ActiveNurseProfileSummaryDto).category]}
+              onPress={() => router.push(`/admin/nurse-profiles/${a.userId}` as never)}
+              testID={`admin-nurse-profile-active-card-${a.userId}`}
               accessibilityLabel={`Perfil de ${a.name} ${a.lastName}`}
-            >
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle} numberOfLines={1}>{a.name} {a.lastName}</Text>
-                <StatusBadge
-                  label={nurseStatusLabel(tab)}
-                  tone={tab === "active" ? "success" : "neutral"}
-                  testID={`admin-nurse-profile-status-badge-${a.userId}`}
-                />
-              </View>
-              <Text style={styles.cardMeta} numberOfLines={1}>
-                {[a.specialty, (a as ActiveNurseProfileSummaryDto).category].filter(Boolean).join(" · ")}
-              </Text>
-            </Pressable>
-          );
-        }}
-        contentContainerStyle={styles.listContent}
-      />
+            />
+          ))}
+
+          {tab === "inactive" && inactive.items.map((n) => (
+            <ListRow
+              key={n.userId}
+              title={`${n.name ?? ""} ${n.lastName ?? ""}`.trim()}
+              badge={<StatusBadge label="Inactiva" tone="neutral" testID={`admin-nurse-profile-status-badge-${n.userId}`} />}
+              metaLines={[n.specialty, n.category]}
+              onPress={() => router.push(`/admin/nurse-profiles/${n.userId}` as never)}
+              testID={`admin-nurse-profile-inactive-card-${n.userId}`}
+              accessibilityLabel={`Perfil de ${n.name} ${n.lastName}`}
+            />
+          ))}
+        </ScrollView>
+
+        <Pagination
+          currentPage={current.page}
+          totalPages={current.pageCount}
+          onPageChange={current.setPage}
+          testID="admin-nurses-pagination"
+        />
+      </View>
     </MobileWorkspaceShell>
   );
 }
 
 const styles = StyleSheet.create({
+  container: { flex: 1, gap: 8 },
   buttonPrimary: {
     backgroundColor: designTokens.color.ink.accent,
     borderRadius: 14,
@@ -254,102 +202,18 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 14,
   },
-  error: {
-    backgroundColor: designTokens.color.surface.danger,
-    color: designTokens.color.ink.danger,
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  chipRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: 8,
-    paddingVertical: 4,
-    paddingHorizontal: 2,
-    marginBottom: 12,
-  },
   list: { flex: 1 },
-  chip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: designTokens.color.ink.inverse,
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderWidth: 1,
-    borderColor: designTokens.color.border.subtle,
-  },
-  chipActive: {
-    backgroundColor: designTokens.color.ink.primary,
-    borderColor: designTokens.color.ink.primary,
-  },
-  chipText: {
-    color: designTokens.color.ink.primary,
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  chipTextActive: {
-    color: designTokens.color.ink.inverse,
-  },
-  chipCount: {
-    backgroundColor: designTokens.color.surface.secondary,
-    borderRadius: 999,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-  },
-  chipCountActive: {
-    backgroundColor: "rgba(255,255,255,0.2)",
-  },
-  chipCountText: {
-    color: designTokens.color.ink.muted,
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  chipCountTextActive: {
-    color: designTokens.color.ink.inverse,
-  },
-  emptyText: {
+  empty: {
     color: designTokens.color.ink.muted,
     fontSize: 14,
     textAlign: "center",
-    marginVertical: 24,
-  },
-  listContent: {
-    gap: 10,
-    paddingBottom: 24,
-  },
-  card: { ...mobileSurfaceCard, padding: 14 },
-  cardPending: {
-    borderColor: designTokens.color.ink.warning,
-    borderLeftWidth: 4,
-    borderLeftColor: designTokens.color.ink.warning,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 4,
-    gap: 8,
-  },
-  cardTitle: {
-    color: designTokens.color.ink.primary,
-    fontWeight: "800",
-    fontSize: 16,
-    flex: 1,
-  },
-  cardMeta: {
-    color: designTokens.color.ink.muted,
-    fontSize: 13,
-    marginTop: 2,
+    padding: designTokens.spacing.lg,
   },
   reviewButton: {
     backgroundColor: designTokens.color.ink.accent,
     borderRadius: 12,
     paddingVertical: 8,
-    marginTop: 12,
+    marginTop: 8,
     alignItems: "center",
   },
   reviewButtonText: {

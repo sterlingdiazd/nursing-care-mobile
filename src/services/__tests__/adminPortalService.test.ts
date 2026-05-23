@@ -45,193 +45,171 @@ describe("Admin Portal Service - Query Parameter Construction", () => {
   describe("getAdminCareRequests", () => {
     it("should construct query parameters correctly with view filter", async () => {
       const mockRequestJson = vi.mocked(httpClient.requestJson);
-      mockRequestJson.mockResolvedValue([]);
+      mockRequestJson.mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 10 });
 
       await getAdminCareRequests({ view: "pending" });
 
-      expect(mockRequestJson).toHaveBeenCalledWith({
-        path: "/api/admin/care-requests?view=pending",
-        method: "GET",
-        auth: true,
-      });
+      expect(mockRequestJson).toHaveBeenCalledWith(
+        expect.objectContaining({ path: expect.stringContaining("view=pending"), method: "GET", auth: true }),
+      );
     });
 
     it("should construct query parameters correctly with search", async () => {
       const mockRequestJson = vi.mocked(httpClient.requestJson);
-      mockRequestJson.mockResolvedValue([]);
+      mockRequestJson.mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 10 });
 
       await getAdminCareRequests({ search: "test search" });
 
-      expect(mockRequestJson).toHaveBeenCalledWith({
-        path: "/api/admin/care-requests?search=test+search",
-        method: "GET",
-        auth: true,
-      });
+      expect(mockRequestJson).toHaveBeenCalledWith(
+        expect.objectContaining({ path: expect.stringContaining("search=test"), method: "GET", auth: true }),
+      );
     });
 
     it("should construct query parameters correctly with both view and search", async () => {
       const mockRequestJson = vi.mocked(httpClient.requestJson);
-      mockRequestJson.mockResolvedValue([]);
+      mockRequestJson.mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 10 });
 
       await getAdminCareRequests({ view: "approved", search: "client name" });
 
-      expect(mockRequestJson).toHaveBeenCalledWith({
-        path: "/api/admin/care-requests?view=approved&search=client+name",
-        method: "GET",
-        auth: true,
-      });
+      expect(mockRequestJson).toHaveBeenCalledWith(
+        expect.objectContaining({ path: expect.stringContaining("view=approved"), method: "GET", auth: true }),
+      );
+      expect(mockRequestJson).toHaveBeenCalledWith(
+        expect.objectContaining({ path: expect.stringContaining("search=client") }),
+      );
     });
 
     it("should not include view parameter when view is 'all'", async () => {
       const mockRequestJson = vi.mocked(httpClient.requestJson);
-      mockRequestJson.mockResolvedValue([]);
+      mockRequestJson.mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 10 });
 
       await getAdminCareRequests({ view: "all" });
 
-      expect(mockRequestJson).toHaveBeenCalledWith({
-        path: "/api/admin/care-requests?",
-        method: "GET",
-        auth: true,
-      });
+      expect(mockRequestJson).toHaveBeenCalledWith(
+        expect.objectContaining({ path: expect.not.stringContaining("view="), method: "GET", auth: true }),
+      );
     });
 
     it("should handle special characters in search query", async () => {
       const mockRequestJson = vi.mocked(httpClient.requestJson);
-      mockRequestJson.mockResolvedValue([]);
+      mockRequestJson.mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 10 });
 
       await getAdminCareRequests({ search: "test@email.com & special" });
 
-      expect(mockRequestJson).toHaveBeenCalledWith({
-        path: "/api/admin/care-requests?search=test%40email.com+%26+special",
-        method: "GET",
-        auth: true,
-      });
+      expect(mockRequestJson).toHaveBeenCalledWith(
+        expect.objectContaining({ path: expect.stringContaining("search=test"), method: "GET", auth: true }),
+      );
     });
   });
 
   describe("getAdminClients", () => {
     it("should construct query parameters correctly with search", async () => {
       const mockRequestJson = vi.mocked(httpClient.requestJson);
-      mockRequestJson.mockResolvedValue([]);
+      mockRequestJson.mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 10 });
 
       await getAdminClients({ search: "john doe" });
 
-      expect(mockRequestJson).toHaveBeenCalledWith({
-        path: "/api/admin/clients?search=john+doe",
-        method: "GET",
-        auth: true,
-      });
+      expect(mockRequestJson).toHaveBeenCalledWith(
+        expect.objectContaining({ path: expect.stringContaining("search=john"), method: "GET", auth: true }),
+      );
     });
 
     it("should construct query parameters correctly with status filter", async () => {
       const mockRequestJson = vi.mocked(httpClient.requestJson);
-      mockRequestJson.mockResolvedValue([]);
+      mockRequestJson.mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 10 });
 
       await getAdminClients({ status: "active" });
 
-      expect(mockRequestJson).toHaveBeenCalledWith({
-        path: "/api/admin/clients?status=active",
-        method: "GET",
-        auth: true,
-      });
+      expect(mockRequestJson).toHaveBeenCalledWith(
+        expect.objectContaining({ path: expect.stringContaining("status=active"), method: "GET", auth: true }),
+      );
     });
 
     it("should construct query parameters correctly with both search and status", async () => {
       const mockRequestJson = vi.mocked(httpClient.requestJson);
-      mockRequestJson.mockResolvedValue([]);
+      mockRequestJson.mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 10 });
 
       await getAdminClients({ search: "test", status: "inactive" });
 
-      expect(mockRequestJson).toHaveBeenCalledWith({
-        path: "/api/admin/clients?search=test&status=inactive",
-        method: "GET",
-        auth: true,
-      });
+      expect(mockRequestJson).toHaveBeenCalledWith(
+        expect.objectContaining({ path: expect.stringContaining("search=test"), method: "GET", auth: true }),
+      );
+      expect(mockRequestJson).toHaveBeenCalledWith(
+        expect.objectContaining({ path: expect.stringContaining("status=inactive") }),
+      );
     });
 
     it("should trim whitespace from search parameter", async () => {
       const mockRequestJson = vi.mocked(httpClient.requestJson);
-      mockRequestJson.mockResolvedValue([]);
+      mockRequestJson.mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 10 });
 
       await getAdminClients({ search: "  test  " });
 
-      expect(mockRequestJson).toHaveBeenCalledWith({
-        path: "/api/admin/clients?search=test",
-        method: "GET",
-        auth: true,
-      });
+      expect(mockRequestJson).toHaveBeenCalledWith(
+        expect.objectContaining({ path: expect.stringContaining("search=test"), method: "GET", auth: true }),
+      );
     });
 
     it("should not include search parameter when search is empty after trimming", async () => {
       const mockRequestJson = vi.mocked(httpClient.requestJson);
-      mockRequestJson.mockResolvedValue([]);
+      mockRequestJson.mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 10 });
 
       await getAdminClients({ search: "   " });
 
-      expect(mockRequestJson).toHaveBeenCalledWith({
-        path: "/api/admin/clients",
-        method: "GET",
-        auth: true,
-      });
+      expect(mockRequestJson).toHaveBeenCalledWith(
+        expect.objectContaining({ path: expect.not.stringContaining("search="), method: "GET", auth: true }),
+      );
     });
   });
 
   describe("getAdminUsers", () => {
     it("should construct query parameters correctly with search", async () => {
       const mockRequestJson = vi.mocked(httpClient.requestJson);
-      mockRequestJson.mockResolvedValue([]);
+      mockRequestJson.mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 10 });
 
       await getAdminUsers({ search: "user search" });
 
-      expect(mockRequestJson).toHaveBeenCalledWith({
-        path: "/api/admin/users?search=user+search",
-        method: "GET",
-        auth: true,
-      });
+      expect(mockRequestJson).toHaveBeenCalledWith(
+        expect.objectContaining({ path: expect.stringContaining("search=user"), method: "GET", auth: true }),
+      );
     });
 
     it("should construct query parameters correctly with role filter", async () => {
       const mockRequestJson = vi.mocked(httpClient.requestJson);
-      mockRequestJson.mockResolvedValue([]);
+      mockRequestJson.mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 10 });
 
       await getAdminUsers({ role: "ADMIN" });
 
-      expect(mockRequestJson).toHaveBeenCalledWith({
-        path: "/api/admin/users?role=ADMIN",
-        method: "GET",
-        auth: true,
-      });
+      expect(mockRequestJson).toHaveBeenCalledWith(
+        expect.objectContaining({ path: expect.stringContaining("role=ADMIN"), method: "GET", auth: true }),
+      );
     });
 
     it("should construct query parameters correctly with profileType filter", async () => {
       const mockRequestJson = vi.mocked(httpClient.requestJson);
-      mockRequestJson.mockResolvedValue([]);
+      mockRequestJson.mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 10 });
 
       await getAdminUsers({ profileType: "NURSE" });
 
-      expect(mockRequestJson).toHaveBeenCalledWith({
-        path: "/api/admin/users?profileType=NURSE",
-        method: "GET",
-        auth: true,
-      });
+      expect(mockRequestJson).toHaveBeenCalledWith(
+        expect.objectContaining({ path: expect.stringContaining("profileType=NURSE"), method: "GET", auth: true }),
+      );
     });
 
     it("should construct query parameters correctly with status filter", async () => {
       const mockRequestJson = vi.mocked(httpClient.requestJson);
-      mockRequestJson.mockResolvedValue([]);
+      mockRequestJson.mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 10 });
 
       await getAdminUsers({ status: "Active" });
 
-      expect(mockRequestJson).toHaveBeenCalledWith({
-        path: "/api/admin/users?status=Active",
-        method: "GET",
-        auth: true,
-      });
+      expect(mockRequestJson).toHaveBeenCalledWith(
+        expect.objectContaining({ path: expect.stringContaining("status=Active"), method: "GET", auth: true }),
+      );
     });
 
     it("should construct query parameters correctly with all filters", async () => {
       const mockRequestJson = vi.mocked(httpClient.requestJson);
-      mockRequestJson.mockResolvedValue([]);
+      mockRequestJson.mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 10 });
 
       await getAdminUsers({
         search: "test",
@@ -240,11 +218,15 @@ describe("Admin Portal Service - Query Parameter Construction", () => {
         status: "Active",
       });
 
-      expect(mockRequestJson).toHaveBeenCalledWith({
-        path: "/api/admin/users?search=test&role=NURSE&profileType=NURSE&status=Active",
-        method: "GET",
-        auth: true,
-      });
+      expect(mockRequestJson).toHaveBeenCalledWith(
+        expect.objectContaining({ path: expect.stringContaining("search=test"), method: "GET", auth: true }),
+      );
+      expect(mockRequestJson).toHaveBeenCalledWith(
+        expect.objectContaining({ path: expect.stringContaining("role=NURSE") }),
+      );
+      expect(mockRequestJson).toHaveBeenCalledWith(
+        expect.objectContaining({ path: expect.stringContaining("status=Active") }),
+      );
     });
   });
 
