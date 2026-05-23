@@ -95,6 +95,8 @@ const TONE_COLOR: Record<AuditTone, string> = {
   info: designTokens.color.ink.accent,
 };
 
+const PAGE_SIZE = 10;
+
 export default function AdminAuditLogsScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
   const isAdmin = roles.includes("ADMIN");
@@ -123,7 +125,7 @@ export default function AdminAuditLogsScreen() {
         action: nextActionFilter || undefined,
         entityType: nextEntityTypeFilter || undefined,
         pageNumber: page,
-        pageSize: 20,
+        pageSize: PAGE_SIZE,
       });
       setItems(response.items);
       setTotalCount(response.totalCount);
@@ -341,7 +343,7 @@ export default function AdminAuditLogsScreen() {
         ))}
       </View>
 
-      {totalCount > 20 && (
+      {totalCount > PAGE_SIZE && (
         <View style={styles.pagination}>
           <Pressable
             style={[styles.button, pageNumber === 1 && styles.buttonDisabled]}
@@ -356,9 +358,9 @@ export default function AdminAuditLogsScreen() {
           </Pressable>
           <Text style={styles.pageInfo}>Pagina {pageNumber}</Text>
           <Pressable
-            style={[styles.button, pageNumber * 20 >= totalCount && styles.buttonDisabled]}
+            style={[styles.button, pageNumber * PAGE_SIZE >= totalCount && styles.buttonDisabled]}
             onPress={() => setPageNumber((p) => p + 1)}
-            disabled={pageNumber * 20 >= totalCount}
+            disabled={pageNumber * PAGE_SIZE >= totalCount}
             testID="admin-audit-logs-next-btn"
             nativeID="admin-audit-logs-next-btn"
             accessibilityRole="button"
