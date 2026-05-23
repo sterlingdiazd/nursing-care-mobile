@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -128,10 +128,16 @@ export default function AdminCareRequestsScreen() {
       resetKey: filter,
     });
 
-  if (!isReady) return null;
-  if (!isAuthenticated) { void router.replace("/login" as never); return null; }
-  if (requiresProfileCompletion) { void router.replace("/register" as never); return null; }
-  if (!roles.includes("ADMIN")) { void router.replace("/" as never); return null; }
+  // Auth gating runs in an effect — calling router.replace() during render updates
+  // the navigator mid-render ("Cannot update a component while rendering a different component").
+  useEffect(() => {
+    if (!isReady) return;
+    if (!isAuthenticated) router.replace("/login" as never);
+    else if (requiresProfileCompletion) router.replace("/register" as never);
+    else if (!roles.includes("ADMIN")) router.replace("/" as never);
+  }, [isReady, isAuthenticated, requiresProfileCompletion, roles]);
+
+  if (!isEnabled) return null;
 
   const filterOptions = FILTER_OPTIONS.map((opt) => ({
     ...opt,

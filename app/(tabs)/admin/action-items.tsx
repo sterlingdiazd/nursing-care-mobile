@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -108,11 +108,6 @@ export default function AdminActionItemsScreen() {
       resetKey: "action-items",
     });
 
-  if (!isReady) return null;
-  if (!isAuthenticated) { void router.replace("/login"); return null; }
-  if (requiresProfileCompletion) { void router.replace("/register"); return null; }
-  if (!roles.includes("ADMIN")) { void router.replace("/"); return null; }
-
   // Client-side severity filter applied to the fetched page
   const items = useMemo(() => {
     const sorted = sortAdminActionItems(rawItems);
@@ -125,6 +120,17 @@ export default function AdminActionItemsScreen() {
     for (const item of rawItems) out[item.severity] = (out[item.severity] ?? 0) + 1;
     return out;
   }, [rawItems, totalCount]);
+
+  // Auth gating runs in an effect — calling router.replace() during render updates
+  // the navigator mid-render ("Cannot update a component while rendering a different component").
+  useEffect(() => {
+    if (!isReady) return;
+    if (!isAuthenticated) router.replace("/login");
+    else if (requiresProfileCompletion) router.replace("/register");
+    else if (!roles.includes("ADMIN")) router.replace("/");
+  }, [isReady, isAuthenticated, requiresProfileCompletion, roles]);
+
+  if (!isEnabled) return null;
 
   const filterOptions = FILTER_OPTIONS.map((opt) => ({
     ...opt,

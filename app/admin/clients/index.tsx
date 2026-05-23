@@ -2,7 +2,7 @@
 // @pipeline-run: 2026-05-23-pagination-refactor
 // @do-not-edit: false
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
@@ -56,10 +56,16 @@ export default function AdminClientsScreen() {
       resetKey,
     });
 
-  if (!isReady) return null;
-  if (!isAuthenticated) { void router.replace("/login"); return null; }
-  if (requiresProfileCompletion) { void router.replace("/register"); return null; }
-  if (!roles.includes("ADMIN")) { void router.replace("/"); return null; }
+  // Auth gating runs in an effect — calling router.replace() during render updates
+  // the navigator mid-render ("Cannot update a component while rendering a different component").
+  useEffect(() => {
+    if (!isReady) return;
+    if (!isAuthenticated) router.replace("/login");
+    else if (requiresProfileCompletion) router.replace("/register");
+    else if (!roles.includes("ADMIN")) router.replace("/");
+  }, [isReady, isAuthenticated, requiresProfileCompletion, roles]);
+
+  if (!isEnabled) return null;
 
   const statusOptions = STATUS_OPTIONS.map((opt) => ({
     ...opt,

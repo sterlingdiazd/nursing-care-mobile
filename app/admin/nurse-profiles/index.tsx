@@ -24,7 +24,7 @@ import {
   type ActiveNurseProfileSummaryDto,
   type NurseProfileSummaryDto,
 } from "@/src/services/adminPortalService";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type TabType = "pending" | "active" | "inactive";
 
@@ -58,10 +58,16 @@ export default function AdminNurseProfilesScreen() {
     resetKey: "inactive",
   });
 
-  if (!isReady) return null;
-  if (!isAuthenticated) { void router.replace("/login" as never); return null; }
-  if (requiresProfileCompletion) { void router.replace("/register" as never); return null; }
-  if (!roles.includes("ADMIN")) { void router.replace("/" as never); return null; }
+  // Auth gating runs in an effect — calling router.replace() during render updates
+  // the navigator mid-render ("Cannot update a component while rendering a different component").
+  useEffect(() => {
+    if (!isReady) return;
+    if (!isAuthenticated) router.replace("/login" as never);
+    else if (requiresProfileCompletion) router.replace("/register" as never);
+    else if (!roles.includes("ADMIN")) router.replace("/" as never);
+  }, [isReady, isAuthenticated, requiresProfileCompletion, roles]);
+
+  if (!isEnabled) return null;
 
   const current = tab === "pending" ? pending : tab === "active" ? active : inactive;
 
