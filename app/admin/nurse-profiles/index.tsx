@@ -72,10 +72,11 @@ export default function AdminNurseProfilesScreen() {
 
   const current = tab === "pending" ? pending : tab === "active" ? active : inactive;
 
+  // Always show all three tab counts — every bucket is loaded, so the numbers are known.
   const chipOptions = [
-    { key: "active" as TabType, label: "Activas", count: active.totalCount > 0 ? active.totalCount : undefined },
-    { key: "pending" as TabType, label: "Pendientes", count: pending.totalCount > 0 ? pending.totalCount : undefined },
-    { key: "inactive" as TabType, label: "Inactivas", count: inactive.totalCount > 0 ? inactive.totalCount : undefined },
+    { key: "active" as TabType, label: "Activas", count: active.totalCount },
+    { key: "pending" as TabType, label: "Pendientes", count: pending.totalCount },
+    { key: "inactive" as TabType, label: "Inactivas", count: inactive.totalCount },
   ];
 
   const anyError = current.error;
@@ -95,18 +96,14 @@ export default function AdminNurseProfilesScreen() {
       testID={adminTestIds.nurses.listScreen}
       nativeID={adminTestIds.nurses.listScreen}
       disableScroll
-      actions={(
-        <Pressable
-          testID={adminTestIds.nurses.listCreateButton}
-          nativeID={adminTestIds.nurses.listCreateButton}
-          style={styles.buttonPrimary}
-          onPress={() => router.push("/admin/nurse-profiles/create" as never)}
-          accessibilityRole="button"
-          accessibilityLabel="Crear perfil de enfermera"
-        >
-          <Text style={styles.buttonPrimaryText}>Crear</Text>
-        </Pressable>
-      )}
+      systemActions={[
+        {
+          label: "Crear",
+          onPress: () => router.push("/admin/nurse-profiles/create" as never),
+          variant: "primary",
+          testID: adminTestIds.nurses.listCreateButton,
+        },
+      ]}
     >
       <View style={styles.container}>
         <View
@@ -200,17 +197,6 @@ export default function AdminNurseProfilesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, gap: 8 },
-  buttonPrimary: {
-    backgroundColor: designTokens.color.ink.accent,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  buttonPrimaryText: {
-    color: designTokens.color.ink.inverse,
-    fontWeight: "700",
-    fontSize: 14,
-  },
   list: { flex: 1 },
   empty: {
     color: designTokens.color.ink.muted,

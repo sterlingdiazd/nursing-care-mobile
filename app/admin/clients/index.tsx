@@ -3,7 +3,7 @@
 // @do-not-edit: false
 
 import { useEffect, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
@@ -81,18 +81,14 @@ export default function AdminClientsScreen() {
       title="Gestión de clientes"
       testID={adminTestIds.clients.listScreen}
       nativeID={adminTestIds.clients.listScreen}
-      actions={(
-        <Pressable
-          style={styles.buttonPrimary}
-          onPress={() => router.push("/admin/clients/create" as never)}
-          testID={adminTestIds.clients.primaryAction}
-          nativeID={adminTestIds.clients.primaryAction}
-          accessibilityRole="button"
-          accessibilityLabel="Crear nuevo cliente"
-        >
-          <Text style={styles.buttonPrimaryText}>Crear</Text>
-        </Pressable>
-      )}
+      systemActions={[
+        {
+          label: "Crear",
+          onPress: () => router.push("/admin/clients/create" as never),
+          variant: "primary",
+          testID: adminTestIds.clients.primaryAction,
+        },
+      ]}
       disableScroll
     >
       <View style={styles.container}>
@@ -165,13 +161,6 @@ export default function AdminClientsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, gap: 8 },
-  buttonPrimary: {
-    backgroundColor: designTokens.color.ink.accentStrong,
-    borderRadius: designTokens.radius.md,
-    paddingHorizontal: designTokens.spacing.md,
-    paddingVertical: designTokens.spacing.sm,
-  },
-  buttonPrimaryText: { ...designTokens.typography.label, color: designTokens.color.surface.primary },
   input: {
     backgroundColor: designTokens.color.surface.primary,
     borderWidth: 1,

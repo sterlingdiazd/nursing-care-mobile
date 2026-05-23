@@ -93,6 +93,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     padding: 16,
+    marginBottom: 12,
     overflow: "hidden",
   },
   cardPressed: { opacity: 0.85 },
