@@ -26,10 +26,12 @@ import {
   transitionCareRequest,
   type ActiveNurseProfileSummary,
 } from "@/src/services/careRequestService";
+import { StatusBadge } from "@/src/components/shared/StatusBadge";
 import { careRequestTestIds } from "@/src/testing/testIds";
 import { CareRequestDto, CareRequestTransitionAction } from "@/src/types/careRequest";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
+import { formatDOP } from "@/src/utils/currency";
 
 function getStatusPalette(status: CareRequestDto["status"]) {
   switch (status) {
@@ -478,6 +480,9 @@ export default function CareRequestDetailScreen() {
               <Text style={styles.cardTitle}>{careRequest.rejectionReason}</Text>
             </View>
           ) : null}
+
+          {/* Estado de pago — visible for statuses where billing information is relevant */}
+          <PaymentStatusCard careRequest={careRequest} />
         </ScrollView>
       </MobileWorkspaceShell>
 
@@ -512,6 +517,104 @@ export default function CareRequestDetailScreen() {
         onSubmit={runReportPayment}
       />
     </>
+  );
+}
+
+/**
+ * Maps a paymentStatus string (from backend) to a StatusBadge tone.
+ * - "Anulado"              → danger
+ * - "Pagado"               → success
+ * - "Facturado"            → info (warning tone used for "en proceso")
+ * - "Pendiente de factura" → neutral
+ */
+function getPaymentStatusTone(paymentStatus: string | null | undefined): "neutral" | "warning" | "success" | "danger" | "info" {
+  switch (paymentStatus) {
+    case "Anulado": return "danger";
+    case "Pagado": return "success";
+    case "Facturado": return "info";
+    default: return "neutral";
+  }
+}
+
+/**
+ * Renders an "Estado de pago" card for the client.
+ * Only shown when the care request has reached Completed status or beyond
+ * (i.e., billing information is relevant). Hidden for Pending/Approved/Rejected/Cancelled.
+ */
+function PaymentStatusCard({ careRequest }: { careRequest: CareRequestDto }) {
+  const showBilling =
+    careRequest.status === "Completed" ||
+    careRequest.status === "Invoiced" ||
+    careRequest.status === "PaymentReported" ||
+    careRequest.status === "Paid" ||
+    careRequest.status === "Voided";
+
+  if (!showBilling) return null;
+
+  const paymentStatus = careRequest.paymentStatus ?? "Pendiente de factura";
+  const tone = getPaymentStatusTone(paymentStatus);
+
+  return (
+    <View
+      style={styles.card}
+      testID={careRequestTestIds.detail.paymentStatusCard}
+      nativeID={careRequestTestIds.detail.paymentStatusCard}
+    >
+      <View style={styles.cardHeaderRow}>
+        <Text style={styles.cardEyebrow}>Estado de pago</Text>
+        <StatusBadge
+          label={paymentStatus}
+          tone={tone}
+          testID={careRequestTestIds.detail.paymentStatusBadge}
+        />
+      </View>
+
+      {/* Total charged to the client */}
+      <View
+        style={styles.totalRow}
+        testID={careRequestTestIds.detail.paymentStatusTotal}
+        nativeID={careRequestTestIds.detail.paymentStatusTotal}
+      >
+        <Text style={styles.totalLabel}>Total</Text>
+        <Text style={styles.totalValue}>{formatDOP(careRequest.total)}</Text>
+      </View>
+
+      {/* Invoice number */}
+      {careRequest.invoiceNumber ? (
+        <View
+          style={styles.billingRow}
+          testID={careRequestTestIds.detail.paymentStatusInvoiceNumber}
+          nativeID={careRequestTestIds.detail.paymentStatusInvoiceNumber}
+        >
+          <Text style={styles.billingLabel}>N.o de factura</Text>
+          <Text style={styles.billingValue}>{careRequest.invoiceNumber}</Text>
+        </View>
+      ) : null}
+
+      {/* Invoice date */}
+      {careRequest.invoicedAtUtc ? (
+        <View
+          style={styles.billingRow}
+          testID={careRequestTestIds.detail.paymentStatusInvoicedAt}
+          nativeID={careRequestTestIds.detail.paymentStatusInvoicedAt}
+        >
+          <Text style={styles.billingLabel}>Fecha de factura</Text>
+          <Text style={styles.billingValue}>{formatDateTimeES(careRequest.invoicedAtUtc)}</Text>
+        </View>
+      ) : null}
+
+      {/* Paid date */}
+      {careRequest.paidAtUtc ? (
+        <View
+          style={styles.billingRow}
+          testID={careRequestTestIds.detail.paymentStatusPaidAt}
+          nativeID={careRequestTestIds.detail.paymentStatusPaidAt}
+        >
+          <Text style={styles.billingLabel}>Fecha de pago</Text>
+          <Text style={styles.billingValue}>{formatDateTimeES(careRequest.paidAtUtc)}</Text>
+        </View>
+      ) : null}
+    </View>
   );
 }
 
@@ -970,6 +1073,16 @@ const styles = StyleSheet.create({
   },
   totalValue: {
     color: mobileTheme.colors.ink.accent, fontSize: 22, fontWeight: "900",
+  },
+  billingRow: {
+    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+    paddingTop: 8, gap: 12,
+  },
+  billingLabel: {
+    color: mobileTheme.colors.ink.muted, fontSize: 13, fontWeight: "700", flex: 1,
+  },
+  billingValue: {
+    color: mobileTheme.colors.ink.primary, fontSize: 13, fontWeight: "800", textAlign: "right", flex: 1,
   },
   linkButton: {
     borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6,

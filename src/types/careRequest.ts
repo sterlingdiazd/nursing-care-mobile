@@ -60,6 +60,16 @@ export interface CareRequestDto {
   lineBeforeVolumeDiscount?: number | null;
   unitPriceAfterVolumeDiscount?: number | null;
   subtotalBeforeSupplies?: number | null;
+  // Billing fields — owning client's own invoice/payment visibility only.
+  // Nurse pay, cost, and margin internals are intentionally omitted.
+  invoicedAtUtc?: string | null;
+  paidAtUtc?: string | null;
+  voidedAtUtc?: string | null;
+  /**
+   * Derived server-side from billing timestamps.
+   * "Pendiente de factura" | "Facturado" | "Pagado" | "Anulado"
+   */
+  paymentStatus?: string | null;
 }
 
 export type CareRequestTransitionAction = "approve" | "reject" | "complete" | "cancel";

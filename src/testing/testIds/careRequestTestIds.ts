@@ -19,6 +19,13 @@ export const careRequestTestIds = {
     overflowTrigger: "care-detail-overflow-trigger",
     overflowSheet: "care-detail-overflow-sheet",
     overflowAction: (key: string) => `care-detail-overflow-action-${key}`,
+    // Billing / payment status section (client-facing)
+    paymentStatusCard: "care-detail-payment-status-card",
+    paymentStatusBadge: "care-detail-payment-status-badge",
+    paymentStatusTotal: "care-detail-payment-status-total",
+    paymentStatusInvoiceNumber: "care-detail-payment-status-invoice-number",
+    paymentStatusInvoicedAt: "care-detail-payment-status-invoiced-at",
+    paymentStatusPaidAt: "care-detail-payment-status-paid-at",
   },
   create: {
     screen: "care-request-create-screen",

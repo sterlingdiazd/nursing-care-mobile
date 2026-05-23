@@ -68,9 +68,31 @@ function getStatusLabel(status: CareRequestDto["status"]) {
   }
 }
 
+/**
+ * Returns a payment status badge label and tone for statuses where the client
+ * needs to see billing progress at a glance. Returns null for pre-billing statuses
+ * where the payment status adds no information (Pending/Approved/Rejected/Cancelled).
+ */
+function getPaymentBadgeProps(item: CareRequestDto): { label: string; tone: "neutral" | "warning" | "success" | "danger" } | null {
+  const ps = item.paymentStatus;
+  if (!ps || ps === "Pendiente de factura") {
+    // Only show the payment badge once the service is completed/invoiced/paid/voided.
+    if (item.status !== "Completed" && item.status !== "Invoiced" &&
+        item.status !== "PaymentReported" && item.status !== "Paid" && item.status !== "Voided") {
+      return null;
+    }
+    return { label: "Pendiente de factura", tone: "neutral" };
+  }
+  if (ps === "Facturado") return { label: "Facturado", tone: "warning" };
+  if (ps === "Pagado") return { label: "Pagado", tone: "success" };
+  if (ps === "Anulado") return { label: "Anulado", tone: "danger" };
+  return null;
+}
+
 function CareRequestCard({ item }: { item: CareRequestDto }) {
   const colors = getStatusColors(item.status);
   const statusLabel = getStatusLabel(item.status);
+  const paymentBadge = getPaymentBadgeProps(item);
   return (
     <Pressable
       testID={`care-request-card-${item.id}`}
@@ -91,7 +113,16 @@ function CareRequestCard({ item }: { item: CareRequestDto }) {
         </Text>
         <StatusBadge label={statusLabel} colors={{ bg: colors.bg, fg: colors.fg }} />
       </View>
-      <Text style={styles.cardMeta}>Creada {formatDateTimeES(item.createdAtUtc)}</Text>
+      <View style={styles.cardFooter}>
+        <Text style={styles.cardMeta}>Creada {formatDateTimeES(item.createdAtUtc)}</Text>
+        {paymentBadge ? (
+          <StatusBadge
+            label={paymentBadge.label}
+            tone={paymentBadge.tone}
+            testID={`care-request-payment-badge-${item.id}`}
+          />
+        ) : null}
+      </View>
     </Pressable>
   );
 }
@@ -448,5 +479,6 @@ const styles = StyleSheet.create({
   },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", gap: 12, marginBottom: 10 },
   cardTitle: { flex: 1, color: designTokens.color.ink.primary, fontSize: 18, lineHeight: 24, fontWeight: "800" },
-  cardMeta: { color: designTokens.color.ink.muted, fontSize: 13, lineHeight: 19 },
+  cardFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 4 },
+  cardMeta: { color: designTokens.color.ink.muted, fontSize: 13, lineHeight: 19, flex: 1 },
 });

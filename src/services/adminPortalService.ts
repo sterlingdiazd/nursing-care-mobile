@@ -1440,6 +1440,52 @@ export interface NotificationVolumeReportDto {
   notificationsByCategory: Record<string, number>;
 }
 
+export interface NursePaymentsDailyRowDto {
+  date: string;
+  serviceCount: number;
+  amount: number;
+  cumulativeAmount: number;
+}
+
+export interface NursePaymentsDailyReportDto {
+  rows: NursePaymentsDailyRowDto[];
+  totalAccrued: number;
+}
+
+export interface NursePaymentsByTypeRowDto {
+  serviceType: string;
+  serviceCount: number;
+  amount: number;
+}
+
+export interface NursePaymentsByTypeReportDto {
+  rows: NursePaymentsByTypeRowDto[];
+  total: number;
+}
+
+export interface NursePaymentsByPeriodRowDto {
+  periodLabel: string;
+  serviceCount: number;
+  amount: number;
+}
+
+export interface NursePaymentsByPeriodReportDto {
+  rows: NursePaymentsByPeriodRowDto[];
+  total: number;
+}
+
+export interface NursePaymentsRankingRowDto {
+  nurseName: string;
+  serviceCount: number;
+  daysWorked: number;
+  amount: number;
+}
+
+export interface NursePaymentsRankingReportDto {
+  rows: NursePaymentsRankingRowDto[];
+  total: number;
+}
+
 export type AdminReportResponseDto =
   | CareRequestPipelineReportDto
   | AssignmentApprovalBacklogReportDto
@@ -1448,7 +1494,11 @@ export type AdminReportResponseDto =
   | NurseUtilizationReportDto
   | CareRequestCompletionReportDto
   | PriceUsageSummaryReportDto
-  | NotificationVolumeReportDto;
+  | NotificationVolumeReportDto
+  | NursePaymentsDailyReportDto
+  | NursePaymentsByTypeReportDto
+  | NursePaymentsByPeriodReportDto
+  | NursePaymentsRankingReportDto;
 
 export async function getAdminReport(key: string, params?: { from?: string; to?: string }) {
   const searchParams = new URLSearchParams();

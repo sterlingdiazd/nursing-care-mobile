@@ -28,7 +28,12 @@ import {
   type CareRequestCompletionReportDto,
   type PriceUsageSummaryReportDto,
   type NotificationVolumeReportDto,
+  type NursePaymentsDailyReportDto,
+  type NursePaymentsByTypeReportDto,
+  type NursePaymentsByPeriodReportDto,
+  type NursePaymentsRankingReportDto,
 } from "@/src/services/adminPortalService";
+import { formatDOP } from "@/src/utils/currency";
 import { getCachedAuthSession } from "@/src/services/authSession";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { MetricCard } from "@/src/components/shared/MetricCard";
@@ -69,11 +74,38 @@ const REPORTS: ReportMetadata[] = [
     label: "Resumen de servicios",
     description: "Distribucion por tipo y complejidad.",
   },
+  {
+    key: "nurse-payments-daily",
+    label: "Pago diario (acumulado)",
+    description: "Cómo se acumula la nómina día a día.",
+  },
+  {
+    key: "nurse-payments-by-type",
+    label: "Pago por tipo de servicio",
+    description: "Pago a enfermeras por hogar / domicilio / médicos.",
+  },
+  {
+    key: "nurse-payments-by-period",
+    label: "Pago por período",
+    description: "Total de nómina por quincena.",
+  },
+  {
+    key: "nurse-payments-ranking",
+    label: "Ranking de pago",
+    description: "Enfermeras que más acumularon.",
+  },
 ];
 
 // CSV export only earns its place where the data is row-level / accounting-grade. The aggregate
 // snapshot reports are read on screen; a 6-number CSV adds a button to maintain with no analysis value.
-const EXPORTABLE_REPORTS = new Set<string>(["nurse-utilization", "price-usage-summary"]);
+const EXPORTABLE_REPORTS = new Set<string>([
+  "nurse-utilization",
+  "price-usage-summary",
+  "nurse-payments-daily",
+  "nurse-payments-by-type",
+  "nurse-payments-by-period",
+  "nurse-payments-ranking",
+]);
 
 export default function AdminReportsScreen() {
   const { isReady, isAuthenticated, roles } = useAuth();
@@ -253,6 +285,14 @@ function ReportVisualizer({ reportKey, data }: { reportKey: string; data: AdminR
       return <PriceVisualizer data={data as PriceUsageSummaryReportDto} />;
     case "notification-volume":
       return <NotificationsVisualizer data={data as NotificationVolumeReportDto} />;
+    case "nurse-payments-daily":
+      return <NursePaymentsDailyVisualizer data={data as NursePaymentsDailyReportDto} />;
+    case "nurse-payments-by-type":
+      return <NursePaymentsByTypeVisualizer data={data as NursePaymentsByTypeReportDto} />;
+    case "nurse-payments-by-period":
+      return <NursePaymentsByPeriodVisualizer data={data as NursePaymentsByPeriodReportDto} />;
+    case "nurse-payments-ranking":
+      return <NursePaymentsRankingVisualizer data={data as NursePaymentsRankingReportDto} />;
     default:
       return <Text>Visualizador no implementado</Text>;
   }
@@ -455,6 +495,138 @@ function NotificationsVisualizer({ data }: { data: NotificationVolumeReportDto }
           </View>
         ))}
       </View>
+    </View>
+  );
+}
+
+function NursePaymentsDailyVisualizer({ data }: { data: NursePaymentsDailyReportDto }) {
+  const rows = data.rows ?? [];
+  const daysWithServices = rows.filter((r) => (r.serviceCount ?? 0) > 0).length;
+  const insightText = `La nómina del período va en ${formatDOP(data.totalAccrued ?? 0)} (${daysWithServices} día${daysWithServices !== 1 ? "s" : ""} con servicios).`;
+  return (
+    <View style={styles.stack}>
+      <MetricCard
+        label="Acumulado del período"
+        value={formatDOP(data.totalAccrued ?? 0)}
+        color={designTokens.color.status.successText}
+      />
+      <ReportInsight tone="info" text={insightText} />
+      <View style={styles.table}>
+        <View style={styles.tableHeader}>
+          <Text style={[styles.tableHeaderText, { flex: 2 }]}>Fecha</Text>
+          <Text style={[styles.tableHeaderText, { flex: 1, textAlign: "right" }]}>Servicios</Text>
+          <Text style={[styles.tableHeaderText, { flex: 2, textAlign: "right" }]}>Monto día</Text>
+          <Text style={[styles.tableHeaderText, { flex: 2, textAlign: "right" }]}>Acumulado</Text>
+        </View>
+        {rows.map((row, idx) => (
+          <View key={`${row.date}-${idx}`} style={styles.tableRow}>
+            <Text style={[styles.tableCell, { flex: 2 }]}>{row.date}</Text>
+            <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>{row.serviceCount ?? 0}</Text>
+            <Text style={[styles.tableCell, { flex: 2, textAlign: "right" }]}>{formatDOP(row.amount ?? 0)}</Text>
+            <Text style={[styles.tableCell, { flex: 2, textAlign: "right", fontWeight: "700" }]}>{formatDOP(row.cumulativeAmount ?? 0)}</Text>
+          </View>
+        ))}
+        {rows.length === 0 && (
+          <Text style={styles.tableNote}>Sin datos para este período.</Text>
+        )}
+      </View>
+    </View>
+  );
+}
+
+function NursePaymentsByTypeVisualizer({ data }: { data: NursePaymentsByTypeReportDto }) {
+  const rows = data.rows ?? [];
+  const topRow = rows.length > 0
+    ? rows.reduce((best, r) => ((r.amount ?? 0) > (best.amount ?? 0) ? r : best), rows[0])
+    : null;
+  const insightText = topRow
+    ? `El tipo con mayor pago es "${topRow.serviceType}" con ${formatDOP(topRow.amount ?? 0)}.`
+    : "Sin datos de pago por tipo en este período.";
+  const tone: InsightTone = topRow ? "info" : "warning";
+  return (
+    <View style={styles.stack}>
+      <ReportInsight tone={tone} text={insightText} />
+      <View style={styles.table}>
+        <View style={styles.tableHeader}>
+          <Text style={[styles.tableHeaderText, { flex: 3 }]}>Tipo de servicio</Text>
+          <Text style={[styles.tableHeaderText, { flex: 1, textAlign: "right" }]}>Serv.</Text>
+          <Text style={[styles.tableHeaderText, { flex: 2, textAlign: "right" }]}>Monto</Text>
+        </View>
+        {rows.map((row, idx) => (
+          <View key={`${row.serviceType}-${idx}`} style={styles.tableRow}>
+            <Text style={[styles.tableCell, { flex: 3 }]} numberOfLines={1}>{row.serviceType}</Text>
+            <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>{row.serviceCount ?? 0}</Text>
+            <Text style={[styles.tableCell, { flex: 2, textAlign: "right", fontWeight: "700" }]}>{formatDOP(row.amount ?? 0)}</Text>
+          </View>
+        ))}
+        {rows.length === 0 && (
+          <Text style={styles.tableNote}>Sin datos para este período.</Text>
+        )}
+      </View>
+      <MetricCard label="Total nómina" value={formatDOP(data.total ?? 0)} color={designTokens.color.status.successText} />
+    </View>
+  );
+}
+
+function NursePaymentsByPeriodVisualizer({ data }: { data: NursePaymentsByPeriodReportDto }) {
+  const rows = data.rows ?? [];
+  return (
+    <View style={styles.stack}>
+      <View style={styles.table}>
+        <View style={styles.tableHeader}>
+          <Text style={[styles.tableHeaderText, { flex: 3 }]}>Período</Text>
+          <Text style={[styles.tableHeaderText, { flex: 1, textAlign: "right" }]}>Serv.</Text>
+          <Text style={[styles.tableHeaderText, { flex: 2, textAlign: "right" }]}>Monto</Text>
+        </View>
+        {rows.map((row, idx) => (
+          <View key={`${row.periodLabel}-${idx}`} style={styles.tableRow}>
+            <Text style={[styles.tableCell, { flex: 3 }]} numberOfLines={1}>{row.periodLabel}</Text>
+            <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>{row.serviceCount ?? 0}</Text>
+            <Text style={[styles.tableCell, { flex: 2, textAlign: "right", fontWeight: "700" }]}>{formatDOP(row.amount ?? 0)}</Text>
+          </View>
+        ))}
+        {rows.length === 0 && (
+          <Text style={styles.tableNote}>Sin datos para este período.</Text>
+        )}
+      </View>
+      <MetricCard label="Total nómina" value={formatDOP(data.total ?? 0)} color={designTokens.color.status.successText} />
+    </View>
+  );
+}
+
+function NursePaymentsRankingVisualizer({ data }: { data: NursePaymentsRankingReportDto }) {
+  const rows = (data.rows ?? []).slice(0, 15);
+  const topNurse = rows.length > 0 ? rows[0] : null;
+  const insightText = topNurse
+    ? `${topNurse.nurseName} lideró la nómina con ${formatDOP(topNurse.amount ?? 0)}.`
+    : "Sin datos de ranking en este período.";
+  const tone: InsightTone = topNurse ? "success" : "info";
+  return (
+    <View style={styles.stack}>
+      <ReportInsight tone={tone} text={insightText} />
+      <View style={styles.table}>
+        <View style={styles.tableHeader}>
+          <Text style={[styles.tableHeaderText, { flex: 3 }]}>Enfermera</Text>
+          <Text style={[styles.tableHeaderText, { flex: 1, textAlign: "right" }]}>Serv.</Text>
+          <Text style={[styles.tableHeaderText, { flex: 1, textAlign: "right" }]}>Días</Text>
+          <Text style={[styles.tableHeaderText, { flex: 2, textAlign: "right" }]}>Monto</Text>
+        </View>
+        {rows.map((row, idx) => (
+          <View key={`${row.nurseName}-${idx}`} style={styles.tableRow}>
+            <Text style={[styles.tableCell, { flex: 3 }]} numberOfLines={1}>{row.nurseName}</Text>
+            <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>{row.serviceCount ?? 0}</Text>
+            <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>{row.daysWorked ?? 0}</Text>
+            <Text style={[styles.tableCell, { flex: 2, textAlign: "right", fontWeight: "700" }]}>{formatDOP(row.amount ?? 0)}</Text>
+          </View>
+        ))}
+        {rows.length === 0 && (
+          <Text style={styles.tableNote}>Sin datos para este período.</Text>
+        )}
+        {(data.rows?.length ?? 0) > 15 && (
+          <Text style={styles.tableNote}>Mostrando top 15 resultados.</Text>
+        )}
+      </View>
+      <MetricCard label="Total nómina" value={formatDOP(data.total ?? 0)} color={designTokens.color.status.successText} />
     </View>
   );
 }
