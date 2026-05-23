@@ -121,16 +121,11 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
     new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP" }).format(amount);
 
   const describeLineCompensation = (line: AdminPayrollLineItem) => {
+    // Pay = tarifa × días (base) + ajustes. Transport/complexity/supplies are decoupled (always 0),
+    // so they are not shown. Deductions are period-level (in the nurse/period summary).
     const parts: string[] = [];
     if (line.baseCompensation > 0) parts.push(`Base ${formatCurrency(line.baseCompensation)}`);
-    if (line.transportIncentive > 0)
-      parts.push(`Transporte ${formatCurrency(line.transportIncentive)}`);
-    if (line.complexityBonus > 0)
-      parts.push(`Complejidad ${formatCurrency(line.complexityBonus)}`);
-    if (line.medicalSuppliesCompensation > 0)
-      parts.push(`Insumos ${formatCurrency(line.medicalSuppliesCompensation)}`);
-    if (line.adjustmentsTotal > 0) parts.push(`Ajustes ${formatCurrency(line.adjustmentsTotal)}`);
-    // Deductions are period-level (shown in the nurse/period summary), never per service line.
+    if (line.adjustmentsTotal !== 0) parts.push(`Ajustes ${formatCurrency(line.adjustmentsTotal)}`);
     return parts.join("  ·  ");
   };
 
@@ -282,9 +277,16 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
 
   // --- Period close (keep destructive confirmation as Alert.alert) ---
   const handleClosePeriod = () => {
+    // Safeguard: flag nurses whose pay is 0 (rate not set) or negative (deductions > gross) before
+    // locking the period. Closing is irreversible, so surface this for review first.
+    const flagged = period.staffSummary.filter((s) => s.netCompensation <= 0);
+    const warning =
+      flagged.length > 0
+        ? `\n\nAtención: ${flagged.length} enfermera(s) con pago en 0 o negativo (revisa tarifas y deducciones). El cierre es irreversible.`
+        : "";
     Alert.alert(
       "Cerrar Período",
-      `¿Estás seguro de cerrar el período "${period.startDate} - ${period.endDate}"?`,
+      `¿Estás seguro de cerrar el período "${period.startDate} - ${period.endDate}"?${warning}`,
       [
         { text: "Cancelar", style: "cancel" },
         {

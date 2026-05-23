@@ -88,7 +88,7 @@ export default function PayrollHubScreen() {
   return (
     <MobileWorkspaceShell
       title="Gestión de Nómina"
-      description="Períodos de pago, reglas, deducciones y descuentos de las enfermeras."
+      description="Períodos de pago, deducciones, descuentos y ajustes de las enfermeras."
       onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.adminHome)}
       primaryReturnLabel="Volver"
     >
