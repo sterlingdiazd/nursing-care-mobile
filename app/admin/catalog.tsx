@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { router } from "expo-router";
+import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import {
   listCareRequestCategories,
   listCareRequestTypes,
@@ -435,6 +436,8 @@ export default function AdminCatalogScreen() {
 
   return (
     <MobileWorkspaceShell
+      onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.adminHome)}
+      primaryReturnLabel="Volver"
       eyebrow="Administración"
       title="Catálogo de precios"
       description="Gestiona opciones y factores desde una sola vista."

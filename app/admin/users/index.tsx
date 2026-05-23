@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
+import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
@@ -114,6 +115,8 @@ export default function AdminUsersScreen() {
 
   return (
     <MobileWorkspaceShell
+      onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.adminHome)}
+      primaryReturnLabel="Volver"
       eyebrow="Usuarios"
       title="Gestion de usuarios"
       description="Prioriza cuentas con riesgo operativo y deja los filtros como apoyo progresivo."

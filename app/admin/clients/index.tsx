@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
+import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
@@ -81,6 +82,8 @@ export default function AdminClientsScreen() {
 
   return (
     <MobileWorkspaceShell
+      onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.adminHome)}
+      primaryReturnLabel="Volver"
       eyebrow="Clientes"
       title="Gestión de clientes"
       description="Prioriza seguimiento operativo y deja los filtros como apoyo progresivo."

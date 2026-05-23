@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
+import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
@@ -152,6 +153,8 @@ export default function AdminShiftsScreen() {
 
   return (
     <MobileWorkspaceShell
+      onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.adminHome)}
+      primaryReturnLabel="Volver"
       eyebrow="Administración"
       title="Turnos"
       description="Gestiona los turnos de enfermeras asignados."

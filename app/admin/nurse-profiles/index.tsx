@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
+import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
@@ -68,6 +69,8 @@ export default function AdminNurseProfilesScreen() {
 
   return (
     <MobileWorkspaceShell
+      onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.adminHome)}
+      primaryReturnLabel="Volver"
       eyebrow="Perfiles de Enfermeras"
       title="Gestión de enfermeras"
       description="Administra perfiles y estado operativo del personal de enfermería."
