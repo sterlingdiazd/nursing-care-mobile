@@ -4,6 +4,7 @@ import { StatusBadge } from "@/src/components/shared/StatusBadge";
 import { CATEGORY_META, type CalendarAssignment } from "./serviceCategory";
 import type { CalendarNurse } from "@/src/hooks/useServiceCalendar";
 import type { AdminCareRequestStatus } from "@/src/services/adminPortalService";
+import { withHapticFeedback } from "@/src/utils/haptics";
 
 function statusLabel(s: AdminCareRequestStatus): string {
   switch (s) {
@@ -41,7 +42,7 @@ const longDate = (iso: string) => {
 function AssignmentRow({ a, onOpen }: { a: CalendarAssignment; onOpen: () => void }) {
   return (
     <Pressable
-      onPress={onOpen}
+      onPress={withHapticFeedback(onOpen, "selection")}
       accessibilityRole="button"
       accessibilityLabel={`Servicio de ${a.clientName}`}
       testID={`calendar-assignment-${a.id}`}

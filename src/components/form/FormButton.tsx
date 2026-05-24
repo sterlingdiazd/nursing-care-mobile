@@ -9,6 +9,7 @@ import {
 import { designTokens } from "@/src/design-system/tokens";
 import { mobilePrimaryButton, mobileSecondaryButton } from "@/src/design-system/mobileStyles";
 import { testProps } from "@/src/testing/testIds";
+import { withHapticFeedback } from "@/src/utils/haptics";
 
 interface FormButtonProps extends Omit<TouchableOpacityProps, "testID"> {
   testID: string;
@@ -28,9 +29,11 @@ export function FormButton({
   style,
   disabled,
   accessibilityLabel,
+  onPress,
   ...props
 }: FormButtonProps) {
   const isActuallyLoading = isLoading || loading;
+  const handlePress: TouchableOpacityProps["onPress"] = withHapticFeedback(onPress, "light");
 
   const getVariantStyle = () => {
     switch (variant) {
@@ -76,6 +79,7 @@ export function FormButton({
       accessibilityRole="button"
       accessibilityLabel={resolvedAccessibilityLabel}
       accessibilityState={accessibilityState}
+      onPress={handlePress}
       {...props}
     >
       {isActuallyLoading ? (

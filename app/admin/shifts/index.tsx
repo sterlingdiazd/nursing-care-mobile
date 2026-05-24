@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { FilterChips } from "@/src/components/shared/FilterChips";
@@ -48,7 +49,10 @@ export default function AdminServiceCalendarScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.navRow}>
           <Pressable
-            onPress={cal.goPrev}
+            onPress={() => {
+              hapticFeedback.selection();
+              cal.goPrev();
+            }}
             accessibilityRole="button"
             accessibilityLabel="Anterior"
             testID="admin-calendar-prev"
@@ -60,7 +64,10 @@ export default function AdminServiceCalendarScreen() {
           <Text style={styles.monthLabel}>{cal.label}</Text>
 
           <Pressable
-            onPress={cal.goNext}
+            onPress={() => {
+              hapticFeedback.selection();
+              cal.goNext();
+            }}
             accessibilityRole="button"
             accessibilityLabel="Siguiente"
             testID="admin-calendar-next"
@@ -70,7 +77,10 @@ export default function AdminServiceCalendarScreen() {
           </Pressable>
 
           <Pressable
-            onPress={cal.goToday}
+            onPress={() => {
+              hapticFeedback.selection();
+              cal.goToday();
+            }}
             accessibilityRole="button"
             accessibilityLabel="Ir a hoy"
             testID="admin-calendar-today"
@@ -102,7 +112,10 @@ export default function AdminServiceCalendarScreen() {
           dateIso={cal.selectedDay}
           assignments={dayAssignments}
           roster={cal.roster}
-          onOpenRequest={(id) => router.push(`/admin/care-requests/${id}` as never)}
+          onOpenRequest={(id) => {
+            hapticFeedback.selection();
+            router.push(`/admin/care-requests/${id}` as never);
+          }}
         />
       </ScrollView>
     </MobileWorkspaceShell>

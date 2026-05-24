@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { designTokens } from "@/src/design-system/tokens";
+import { hapticFeedback } from "@/src/utils/haptics";
 import { formatDateES } from "@/src/utils/spanishTextValidator";
 
 const toIso = (date: Date): string => {
@@ -70,18 +71,26 @@ export function DateField({
   const [draft, setDraft] = useState<Date>(() => parseIso(value) ?? noonToday());
 
   const open = () => {
+    hapticFeedback.selection();
     setDraft(parseIso(value) ?? noonToday());
     setPickerVisible(true);
   };
-  const close = () => setPickerVisible(false);
+  const close = () => {
+    hapticFeedback.selection();
+    setPickerVisible(false);
+  };
   const confirm = () => {
+    hapticFeedback.light();
     onChange(toIso(draft));
     setPickerVisible(false);
   };
 
   const handleNativeChange = (event: DateTimePickerEvent, selected?: Date) => {
     if (Platform.OS === "android") {
-      if (event.type === "set" && selected) onChange(toIso(selected));
+      if (event.type === "set" && selected) {
+        hapticFeedback.selection();
+        onChange(toIso(selected));
+      }
       setPickerVisible(false);
       return;
     }
@@ -137,7 +146,10 @@ export function DateField({
           </Text>
           {clearable && value ? (
             <Pressable
-              onPress={() => onChange("")}
+              onPress={() => {
+                hapticFeedback.selection();
+                onChange("");
+              }}
               accessibilityRole="button"
               accessibilityLabel={`Limpiar ${label}`}
               hitSlop={8}

@@ -529,7 +529,10 @@ export default function RegisterScreen() {
             <View style={styles.footer}>
               <Text style={styles.footerText}>¿Ya tienes cuenta?</Text>
               <TouchableOpacity
-                onPress={() => router.push("/login")}
+                onPress={() => {
+                  hapticFeedback.selection();
+                  router.push("/login");
+                }}
                 accessibilityRole="link"
                 accessibilityLabel="Inicia sesión"
               >

@@ -1,5 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
 import { mobilePrimaryButton, mobileSecondaryButton, mobileTheme } from "@/src/design-system/mobileStyles";
+import { withHapticFeedback } from "@/src/utils/haptics";
 
 export interface WorkflowAction {
   label: string;
@@ -26,7 +27,7 @@ export default function WorkflowActionBar({ actions }: WorkflowActionBarProps) {
           testID={action.testID}
           nativeID={action.testID}
           disabled={action.disabled}
-          onPress={action.onPress}
+          onPress={withHapticFeedback(action.onPress, action.variant === "secondary" ? "selection" : "light")}
           style={({ pressed }) => [
             styles.button,
             action.variant === "primary" && styles.primaryButton,

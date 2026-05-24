@@ -15,6 +15,7 @@ import {
 import { adminTestIds } from "@/src/testing/testIds";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { formatDateES } from "@/src/utils/spanishTextValidator";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 type StatusTone = "success" | "warning" | "danger" | "neutral";
 
@@ -78,6 +79,7 @@ export default function AdminNurseProfileDetailScreen() {
 
   const handleToggleOperationalAccess = async () => {
     if (!detail) return;
+    hapticFeedback.light();
     try {
       setToggling(true);
       const newStatus = !detail.nurseProfileIsActive;

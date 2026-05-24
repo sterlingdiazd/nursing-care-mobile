@@ -20,6 +20,7 @@ import { designTokens } from "@/src/design-system/tokens";
 import { useToast } from "@/src/components/shared/ToastProvider";
 import { formatDateES } from "@/src/utils/spanishTextValidator";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 export default function NursePayrollScreen() {
   const { userId: paramUserId } = useLocalSearchParams<{ userId?: string }>();
@@ -76,6 +77,7 @@ export default function NursePayrollScreen() {
   };
 
   const handlePeriodPress = async (periodId: string) => {
+    hapticFeedback.selection();
     if (expandedPeriodId === periodId) {
       setExpandedPeriodId(null);
       setPeriodDetail(null);
@@ -101,6 +103,7 @@ export default function NursePayrollScreen() {
 
   const handleDownloadVoucher = async (periodId: string) => {
     if (downloadingVoucher) return;
+    hapticFeedback.light();
     setDownloadingVoucher(true);
     try {
       const session = getCachedAuthSession();

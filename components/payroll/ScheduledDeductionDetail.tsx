@@ -27,6 +27,7 @@ import { useToast } from "@/src/components/shared/ToastProvider";
 import { formatDateES } from "@/src/utils/spanishTextValidator";
 import { formatDOP } from "@/src/utils/currency";
 import { DateField } from "@/src/components/form";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 function formatPeriodRange(start?: string | null, end?: string | null, fallback?: string): string {
   if (start && end) return `${formatDateES(start)} – ${formatDateES(end)}`;
@@ -101,6 +102,7 @@ function RescheduleModal({ visible, isAmortizing, onClose, onSubmit }: Reschedul
   const [error, setError] = useState<string | null>(null);
 
   const handleClose = () => {
+    hapticFeedback.selection();
     setInstallmentAmount("");
     setRecurringAmount("");
     setEndDate("");
@@ -110,6 +112,7 @@ function RescheduleModal({ visible, isAmortizing, onClose, onSubmit }: Reschedul
   };
 
   const handleSubmit = async () => {
+    hapticFeedback.light();
     setLoading(true);
     setError(null);
     try {
@@ -245,6 +248,7 @@ export function ScheduledDeductionDetail({ detail, onBack, onRefresh }: Schedule
   const pendingInstallments = installments.filter((i) => !i.paid && i.payrollPeriodId != null);
 
   const handlePayoff = () => {
+    hapticFeedback.selection();
     Alert.alert(
       "Liquidación anticipada",
       "¿Confirmas la liquidación anticipada de esta deducción? El saldo restante quedará cancelado.",
@@ -290,6 +294,7 @@ export function ScheduledDeductionDetail({ detail, onBack, onRefresh }: Schedule
   };
 
   const handleSkip = () => {
+    hapticFeedback.selection();
     if (pendingInstallments.length === 0) {
       Alert.alert("Sin cuotas pendientes", "No hay cuotas pendientes con período asignado para omitir.");
       return;
@@ -325,6 +330,7 @@ export function ScheduledDeductionDetail({ detail, onBack, onRefresh }: Schedule
   };
 
   const handleCancel = () => {
+    hapticFeedback.selection();
     Alert.prompt(
       "Anular deducción",
       "Ingresa el motivo de la anulación:",

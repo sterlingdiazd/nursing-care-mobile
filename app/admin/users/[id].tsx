@@ -19,6 +19,7 @@ import {
 import { adminTestIds } from "@/src/testing/testIds";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 function translateRole(role: AdminUserRoleName): string {
   switch (role) {
@@ -103,6 +104,7 @@ export default function AdminUserDetailScreen() {
 
   const handleToggleActiveState = async () => {
     if (!detail) return;
+    hapticFeedback.light();
     try {
       setToggling(true);
       const newState = !detail.isActive;
@@ -118,6 +120,7 @@ export default function AdminUserDetailScreen() {
 
   const handleInvalidateSessions = async () => {
     if (!detail) return;
+    hapticFeedback.light();
     setShowOverflow(false);
     try {
       setInvalidating(true);
@@ -135,6 +138,7 @@ export default function AdminUserDetailScreen() {
 
   const handleSaveRoles = async () => {
     if (!detail) return;
+    hapticFeedback.light();
     try {
       setSavingRoles(true);
       setRolesError(null);
@@ -151,6 +155,7 @@ export default function AdminUserDetailScreen() {
   };
 
   const toggleRole = (role: AdminUserRoleName) => {
+    hapticFeedback.selection();
     setSelectedRoles((prev) =>
       prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role],
     );
@@ -198,7 +203,10 @@ export default function AdminUserDetailScreen() {
       headerAccessory={
         detail ? (
           <Pressable
-            onPress={() => setShowOverflow(true)}
+            onPress={() => {
+              hapticFeedback.selection();
+              setShowOverflow(true);
+            }}
             accessibilityRole="button"
             accessibilityLabel="Más acciones"
             testID="admin-user-overflow-trigger"
@@ -222,7 +230,10 @@ export default function AdminUserDetailScreen() {
             {error}
           </Text>
           <Pressable
-            onPress={() => void load()}
+            onPress={() => {
+              hapticFeedback.light();
+              void load();
+            }}
             style={styles.retryButton}
             accessibilityRole="button"
             accessibilityLabel="Reintentar"
@@ -322,7 +333,13 @@ export default function AdminUserDetailScreen() {
         animationType="fade"
         onRequestClose={() => setShowOverflow(false)}
       >
-        <Pressable style={styles.modalOverlay} onPress={() => setShowOverflow(false)}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            hapticFeedback.selection();
+            setShowOverflow(false);
+          }}
+        >
           <Pressable style={styles.overflowSheet} onPress={(e) => e.stopPropagation()}>
             <Text style={styles.overflowTitle}>Acciones</Text>
             <Pressable
@@ -377,7 +394,10 @@ export default function AdminUserDetailScreen() {
             <View style={styles.modalActions}>
               <Pressable
                 style={[styles.modalButton, styles.modalButtonSecondary]}
-                onPress={() => setShowRolesModal(false)}
+                onPress={() => {
+                  hapticFeedback.selection();
+                  setShowRolesModal(false);
+                }}
                 accessibilityRole="button"
                 accessibilityLabel="Cancelar"
               >

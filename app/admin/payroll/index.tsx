@@ -9,6 +9,7 @@ import { mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles
 import { designTokens } from "@/src/design-system/tokens";
 import { MetricCard } from "@/src/components/shared/MetricCard";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+import { hapticFeedback } from "@/src/utils/haptics";
 import {
   getAdminMobilePayrollSummary,
   type AdminMobilePayrollSummaryDto,
@@ -128,7 +129,10 @@ export default function PayrollHubScreen() {
               nativeID={card.testID}
               accessibilityRole="button"
               accessibilityLabel={card.label}
-              onPress={() => router.push(card.path as any)}
+              onPress={() => {
+                hapticFeedback.selection();
+                router.push(card.path as any);
+              }}
               style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
             >
               <View style={styles.iconWrap}>

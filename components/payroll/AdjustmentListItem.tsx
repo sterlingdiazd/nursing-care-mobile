@@ -2,6 +2,7 @@ import { StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native";
 import type { AdminCompensationAdjustmentListItem } from "@/src/services/payrollService";
 import { designTokens } from "@/src/design-system/tokens";
 import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 interface AdjustmentListItemProps {
   adjustment: AdminCompensationAdjustmentListItem;
@@ -25,6 +26,7 @@ export function AdjustmentListItem({ adjustment, onDelete, onEdit }: AdjustmentL
   const isPositive = adjustment.amount >= 0;
 
   const handleDelete = () => {
+    hapticFeedback.selection();
     Alert.alert(
       "Eliminar Ajuste",
       `¿Estás seguro de eliminar el ajuste "${adjustment.label}"?`,
@@ -39,11 +41,16 @@ export function AdjustmentListItem({ adjustment, onDelete, onEdit }: AdjustmentL
     );
   };
 
+  const handleEdit = () => {
+    hapticFeedback.selection();
+    onEdit(adjustment);
+  };
+
   return (
     <View style={styles.container}>
       <TouchableOpacity
         style={styles.content}
-        onPress={() => onEdit(adjustment)}
+        onPress={handleEdit}
         accessibilityRole="button"
         accessibilityLabel={`Editar ajuste ${adjustment.label}`}
       >

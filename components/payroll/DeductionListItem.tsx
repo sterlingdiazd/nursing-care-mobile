@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native";
 import type { AdminDeductionListItem } from "@/src/services/payrollService";
 import { designTokens } from "@/src/design-system/tokens";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 interface DeductionListItemProps {
   deduction: AdminDeductionListItem;
@@ -27,6 +28,7 @@ function deductionTypeLabel(type: string): string {
 
 export function DeductionListItem({ deduction, onDelete, onPress }: DeductionListItemProps) {
   const handleDelete = () => {
+    hapticFeedback.selection();
     Alert.alert(
       "Eliminar Deducción",
       `¿Estás seguro de eliminar la deducción "${deduction.label}"?`,
@@ -41,11 +43,18 @@ export function DeductionListItem({ deduction, onDelete, onPress }: DeductionLis
     );
   };
 
+  const handlePress = onPress
+    ? () => {
+        hapticFeedback.selection();
+        onPress(deduction);
+      }
+    : undefined;
+
   return (
     <View style={styles.container}>
       <Pressable
         style={styles.content}
-        onPress={onPress ? () => onPress(deduction) : undefined}
+        onPress={handlePress}
         testID={`deduction-item-${deduction.id}`}
         nativeID={`deduction-item-${deduction.id}`}
         accessibilityRole="button"

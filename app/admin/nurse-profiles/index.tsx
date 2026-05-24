@@ -5,6 +5,7 @@
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { FilterChips } from "@/src/components/shared/FilterChips";
@@ -148,7 +149,10 @@ export default function AdminNurseProfilesScreen() {
               >
                 <Pressable
                   style={styles.reviewButton}
-                  onPress={() => router.push(`/admin/nurse-profiles/${p.userId}/review` as never)}
+                  onPress={() => {
+                    hapticFeedback.selection();
+                    router.push(`/admin/nurse-profiles/${p.userId}/review` as never);
+                  }}
                   accessibilityRole="button"
                   accessibilityLabel={`Revisar perfil de ${p.name} ${p.lastName}`}
                 >

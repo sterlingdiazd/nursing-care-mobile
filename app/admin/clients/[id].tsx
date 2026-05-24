@@ -14,6 +14,7 @@ import {
 import { adminTestIds } from "@/src/testing/testIds";
 import { mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 function formatTimestamp(value: string | null) {
   if (!value) return "N/A";
@@ -94,12 +95,21 @@ export default function AdminClientDetailScreen() {
       primaryReturnLabel="Volver a clientes"
       actions={detail ? (
         <View style={styles.headerActions}>
-          <Pressable style={styles.buttonSecondary} onPress={() => void load()}>
+          <Pressable
+            style={styles.buttonSecondary}
+            onPress={() => {
+              hapticFeedback.light();
+              void load();
+            }}
+          >
             <Text style={styles.buttonSecondaryText}>Actualizar</Text>
           </Pressable>
           <Pressable
             style={styles.buttonPrimary}
-            onPress={() => router.push(`/admin/clients/${id}/edit` as never)}
+            onPress={() => {
+              hapticFeedback.selection();
+              router.push(`/admin/clients/${id}/edit` as never);
+            }}
             testID={adminTestIds.clients.detailPrimaryAction}
             nativeID={adminTestIds.clients.detailPrimaryAction}
           >
@@ -183,7 +193,14 @@ export default function AdminClientDetailScreen() {
               Actualiza el estado del cliente o crea una nueva solicitud directamente desde esta ficha.
             </Text>
 
-            <Pressable style={styles.buttonToggle} onPress={handleToggleActiveState} disabled={toggling}>
+            <Pressable
+              style={styles.buttonToggle}
+              onPress={() => {
+                hapticFeedback.light();
+                void handleToggleActiveState();
+              }}
+              disabled={toggling}
+            >
               <Text style={styles.buttonToggleText}>
                 {toggling ? "Actualizando..." : detail.isActive ? "Desactivar cliente" : "Activar cliente"}
               </Text>
@@ -192,7 +209,10 @@ export default function AdminClientDetailScreen() {
             {detail.canAdminCreateCareRequest ? (
               <Pressable
                 style={styles.buttonPrimary}
-                onPress={() => router.push(`/admin/care-requests/create?clientUserId=${detail.userId}` as never)}
+                onPress={() => {
+                  hapticFeedback.selection();
+                  router.push(`/admin/care-requests/create?clientUserId=${detail.userId}` as never);
+                }}
               >
                 <Text style={styles.buttonPrimaryText}>Crear solicitud</Text>
               </Pressable>
@@ -209,7 +229,10 @@ export default function AdminClientDetailScreen() {
                 <Pressable
                   key={item.careRequestId}
                   style={styles.historyItem}
-                  onPress={() => router.push(`/admin/care-requests/${item.careRequestId}` as never)}
+                  onPress={() => {
+                    hapticFeedback.selection();
+                    router.push(`/admin/care-requests/${item.careRequestId}` as never);
+                  }}
                 >
                   <View style={styles.historyHeader}>
                     <Text style={styles.historyTitle}>{item.careRequestDescription}</Text>

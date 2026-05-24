@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import { designTokens } from "@/src/design-system/tokens";
+import { withHapticFeedback } from "@/src/utils/haptics";
 
 type IconName = ComponentProps<typeof FontAwesome>["name"];
 
@@ -53,11 +54,14 @@ export function FormModalScaffold({
   submitTestID?: string;
   cancelTestID?: string;
 }) {
+  const handleClose = withHapticFeedback(onClose, "selection");
+  const handleSubmit = withHapticFeedback(onSubmit, "light");
+
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
       <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <View style={styles.nav}>
-          <TouchableOpacity onPress={onClose} style={styles.x} accessibilityRole="button" accessibilityLabel="Cerrar" testID={cancelTestID}>
+          <TouchableOpacity onPress={handleClose} style={styles.x} accessibilityRole="button" accessibilityLabel="Cerrar" testID={cancelTestID}>
             <FontAwesome name="times" size={16} color={designTokens.color.ink.secondary} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
@@ -74,11 +78,11 @@ export function FormModalScaffold({
         </ScrollView>
 
         <View style={styles.footer}>
-          <TouchableOpacity onPress={onClose} style={[styles.btn, styles.ghost]} accessibilityRole="button" accessibilityLabel={cancelLabel}>
+          <TouchableOpacity onPress={handleClose} style={[styles.btn, styles.ghost]} accessibilityRole="button" accessibilityLabel={cancelLabel}>
             <Text style={styles.ghostText}>{cancelLabel}</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={onSubmit}
+            onPress={handleSubmit}
             disabled={submitDisabled || submitLoading}
             style={[styles.btn, styles.primary, (submitDisabled || submitLoading) ? styles.primaryDisabled : null]}
             accessibilityRole="button"
@@ -129,7 +133,7 @@ function IconBox({ icon }: { icon?: IconName }) {
 
 export function SelectRow({ icon, value, subtitle, placeholder, onPress, loading, disabled, testID, accessibilityLabel }: { icon?: IconName; value?: string | null; subtitle?: string | null; placeholder: string; onPress: () => void; loading?: boolean; disabled?: boolean; testID?: string; accessibilityLabel?: string }) {
   return (
-    <TouchableOpacity style={styles.row} onPress={onPress} disabled={disabled || loading} testID={testID} accessibilityRole="button" accessibilityLabel={accessibilityLabel}>
+    <TouchableOpacity style={styles.row} onPress={withHapticFeedback(onPress, "selection")} disabled={disabled || loading} testID={testID} accessibilityRole="button" accessibilityLabel={accessibilityLabel}>
       <IconBox icon={icon} />
       <View style={{ flex: 1 }}>
         {loading ? (
@@ -172,7 +176,7 @@ export function ChipGroup({ options, value, onChange, testIDPrefix, containerTes
           <TouchableOpacity
             key={opt.value}
             style={[styles.chip, on ? styles.chipOn : null]}
-            onPress={() => onChange(opt.value)}
+            onPress={withHapticFeedback(() => onChange(opt.value), "selection")}
             accessibilityRole="button"
             accessibilityState={{ selected: on }}
             accessibilityLabel={opt.label}
@@ -199,14 +203,16 @@ export function SummaryBanner({ label, value, tag }: { label: string; value: str
 }
 
 export function PickerSheet({ visible, title, onClose, children }: { visible: boolean; title: string; onClose: () => void; children: ReactNode }) {
+  const handleClose = withHapticFeedback(onClose, "selection");
+
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Cerrar selector" />
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
+      <Pressable style={styles.backdrop} onPress={handleClose} accessibilityLabel="Cerrar selector" />
       <View style={styles.sheet}>
         <View style={styles.grab} />
         <View style={styles.sheetHeader}>
           <Text style={styles.sheetTitle}>{title}</Text>
-          <TouchableOpacity onPress={onClose} accessibilityRole="button" accessibilityLabel="Cerrar selector">
+          <TouchableOpacity onPress={handleClose} accessibilityRole="button" accessibilityLabel="Cerrar selector">
             <Text style={styles.sheetClose}>Cerrar</Text>
           </TouchableOpacity>
         </View>
@@ -222,7 +228,7 @@ export function PickerSearchInput(props: ComponentProps<typeof TextInput>) {
 
 export function PickerOption({ title, subtitle, selected, badge, onPress, testID, accessibilityLabel }: { title: string; subtitle?: string | null; selected?: boolean; badge?: { label: string; tone: "open" | "closed" } | null; onPress: () => void; testID?: string; accessibilityLabel?: string }) {
   return (
-    <TouchableOpacity style={styles.optionRow} onPress={onPress} accessibilityRole="button" accessibilityLabel={accessibilityLabel} accessibilityState={{ selected: !!selected }} testID={testID}>
+    <TouchableOpacity style={styles.optionRow} onPress={withHapticFeedback(onPress, "selection")} accessibilityRole="button" accessibilityLabel={accessibilityLabel} accessibilityState={{ selected: !!selected }} testID={testID}>
       <View style={{ flex: 1 }}>
         <Text style={styles.optionTitle}>{title}</Text>
         {subtitle ? <Text style={styles.optionSubtitle}>{subtitle}</Text> : null}

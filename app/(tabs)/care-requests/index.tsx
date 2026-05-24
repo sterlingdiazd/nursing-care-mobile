@@ -24,6 +24,7 @@ import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
 import { usePaginatedList } from "@/src/hooks/usePaginatedList";
 import { designTokens } from "@/src/design-system/tokens";
 import { navigationTestIds } from "@/src/testing/testIds/navigationTestIds";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 type StatusFilter = "Active" | "Pending" | "Approved" | "Completed" | "Rejected" | "Cancelled" | "All";
 
@@ -99,12 +100,13 @@ function CareRequestCard({ item }: { item: CareRequestDto }) {
       nativeID={`care-request-card-${item.id}`}
       accessibilityRole="link"
       accessibilityLabel={`Ver detalle de solicitud: ${item.careRequestDescription}`}
-      onPress={() =>
+      onPress={() => {
+        hapticFeedback.selection();
         router.push({
           pathname: "/(tabs)/care-requests/[id]",
           params: { id: item.id },
-        } as never)
-      }
+        } as never);
+      }}
       style={({ pressed }) => [styles.card, pressed && styles.buttonPressed]}
     >
       <View style={styles.cardHeader}>
@@ -223,10 +225,11 @@ export default function CareRequestsScreen() {
   const goToPage = useCallback(
     (n: number) => {
       const target = Math.min(Math.max(1, n), totalPages);
+      if (target !== currentPage) hapticFeedback.selection();
       setCurrentPage(target);
       pagerRef.current?.scrollToIndex({ index: target - 1, animated: true });
     },
-    [totalPages],
+    [currentPage, totalPages],
   );
 
   const onMomentumEnd = useCallback(
@@ -285,7 +288,10 @@ export default function CareRequestsScreen() {
             return (
               <Pressable
                 key={f.key}
-                onPress={() => setFilter(f.key)}
+                onPress={() => {
+                  hapticFeedback.selection();
+                  setFilter(f.key);
+                }}
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
                 style={({ pressed }) => [

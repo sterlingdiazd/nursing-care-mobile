@@ -16,6 +16,7 @@ import {
 } from "@/src/services/adminPortalService";
 import { adminTestIds } from "@/src/testing/testIds";
 import { buildAdminNurseProfileDetailPath, goBackOrReplace } from "@/src/utils/navigationEscapes";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 const TOTAL_STEPS = 3;
 
@@ -154,18 +155,30 @@ export default function AdminEditNurseProfileScreen() {
   };
 
   const handleNext = () => {
-    if (step === 1 && !validateStep1()) return;
-    if (step === 2 && !validateStep2()) return;
+    hapticFeedback.selection();
+    if (step === 1 && !validateStep1()) {
+      hapticFeedback.error();
+      return;
+    }
+    if (step === 2 && !validateStep2()) {
+      hapticFeedback.error();
+      return;
+    }
     setStep((s) => Math.min(TOTAL_STEPS, s + 1));
   };
 
   const handlePrevious = () => {
+    hapticFeedback.selection();
     setErrors({});
     setStep((s) => Math.max(1, s - 1));
   };
 
   const handleSubmit = async () => {
-    if (!validateStep3() || !id) return;
+    if (!validateStep3() || !id) {
+      hapticFeedback.error();
+      return;
+    }
+    hapticFeedback.light();
     try {
       setSubmitError(null);
       setSubmitting(true);
@@ -181,6 +194,7 @@ export default function AdminEditNurseProfileScreen() {
   };
 
   const exitToDetail = () => {
+    hapticFeedback.selection();
     setShowLeaveConfirm(false);
     if (id) {
       goBackOrReplace(router, buildAdminNurseProfileDetailPath(id));
@@ -190,6 +204,7 @@ export default function AdminEditNurseProfileScreen() {
   };
 
   const handleBack = () => {
+    hapticFeedback.selection();
     if (isDirty) {
       setShowLeaveConfirm(true);
     } else {
@@ -421,7 +436,13 @@ export default function AdminEditNurseProfileScreen() {
         animationType="fade"
         onRequestClose={() => setShowLeaveConfirm(false)}
       >
-        <Pressable style={styles.modalOverlay} onPress={() => setShowLeaveConfirm(false)}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            hapticFeedback.selection();
+            setShowLeaveConfirm(false);
+          }}
+        >
           <Pressable style={styles.modal} onPress={(e) => e.stopPropagation()}>
             <Text style={styles.modalTitle}>¿Salir sin guardar?</Text>
             <Text style={styles.modalBody}>
@@ -430,7 +451,10 @@ export default function AdminEditNurseProfileScreen() {
             <View style={styles.modalActions}>
               <Pressable
                 style={[styles.modalButton, styles.modalButtonSecondary]}
-                onPress={() => setShowLeaveConfirm(false)}
+                onPress={() => {
+                  hapticFeedback.selection();
+                  setShowLeaveConfirm(false);
+                }}
                 accessibilityRole="button"
                 accessibilityLabel="Continuar editando"
                 testID="admin-edit-nurse-leave-cancel-button"

@@ -30,6 +30,7 @@ import {
   sortAdminActionItems,
 } from "@/src/utils/adminOperationalUx";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 type SeverityFilter = "All" | "High" | "Medium" | "Low";
 
@@ -86,7 +87,10 @@ function ActionItemCard({ item }: { item: AdminActionItemDto }) {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={getAdminActionItemPrimaryLabel(item)}
-        onPress={() => router.push(resolveAdminOperationalDeepLink(item.deepLinkPath) as never)}
+        onPress={() => {
+          hapticFeedback.selection();
+          router.push(resolveAdminOperationalDeepLink(item.deepLinkPath) as never);
+        }}
         style={({ pressed }) => [styles.cardCta, pressed && styles.pressed]}
       >
         <Text style={styles.cardCtaText}>{getAdminActionItemPrimaryLabel(item)}</Text>

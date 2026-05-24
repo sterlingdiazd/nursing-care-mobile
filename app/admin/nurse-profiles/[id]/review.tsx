@@ -16,6 +16,7 @@ import { adminTestIds } from "@/src/testing/testIds";
 import { getAdminNurseReviewProgress } from "@/src/utils/adminCreationUx";
 import { buildAdminNurseProfileDetailPath, goBackOrReplace } from "@/src/utils/navigationEscapes";
 import { formatDateES } from "@/src/utils/spanishTextValidator";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 const CATEGORIES = ["Auxiliar", "Tecnico", "Profesional", "Especialista"];
 
@@ -97,7 +98,11 @@ export default function AdminReviewNurseProfileScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!validate() || !id) return;
+    if (!validate() || !id) {
+      hapticFeedback.error();
+      return;
+    }
+    hapticFeedback.light();
 
     try {
       setSubmitError(null);
@@ -252,7 +257,10 @@ export default function AdminReviewNurseProfileScreen() {
               <Pressable
                 key={category}
                 style={[styles.chip, form.category === category && styles.chipActive]}
-                onPress={() => setForm({ ...form, category })}
+                onPress={() => {
+                  hapticFeedback.selection();
+                  setForm({ ...form, category });
+                }}
                 accessibilityRole="button"
                 accessibilityLabel={`Categoría: ${category}`}
                 accessibilityState={{ selected: form.category === category }}
@@ -278,6 +286,7 @@ export default function AdminReviewNurseProfileScreen() {
         <Pressable
           style={styles.button}
           onPress={() => {
+            hapticFeedback.selection();
             if (!id) {
               return;
             }

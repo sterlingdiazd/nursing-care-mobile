@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { financeTheme as t } from "./financeTheme";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 export function SegmentedTabs({
   tabs,
@@ -17,7 +18,10 @@ export function SegmentedTabs({
         return (
           <Pressable
             key={tab.key}
-            onPress={() => onChange(tab.key)}
+            onPress={() => {
+              hapticFeedback.selection();
+              onChange(tab.key);
+            }}
             accessibilityRole="button"
             accessibilityState={{ selected: on }}
             style={[styles.tab, on ? styles.tabActive : null]}

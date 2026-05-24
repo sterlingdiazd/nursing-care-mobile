@@ -6,6 +6,7 @@ import { router, usePathname } from "expo-router";
 import { useAuth, UserProfileType } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
 import { navigationTestIds } from "@/src/testing/testIds/navigationTestIds";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 interface TabConfig {
   key: string;
@@ -112,6 +113,7 @@ export default function BottomBar() {
   }
 
   const handlePress = (tab: TabConfig) => {
+    hapticFeedback.selection();
     if (tab.route === pathname) return;
     router.replace(tab.route as never);
   };

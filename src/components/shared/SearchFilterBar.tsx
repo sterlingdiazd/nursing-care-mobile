@@ -6,6 +6,7 @@
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { mobilePrimaryButton, mobileSecondarySurface, mobileTheme } from "@/src/design-system/mobileStyles";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 export interface SearchFilterBarProps {
   searchPlaceholder: string;
@@ -24,6 +25,16 @@ export default function SearchFilterBar({
   onClear,
   filters,
 }: SearchFilterBarProps) {
+  const handleSearch = () => {
+    hapticFeedback.selection();
+    onSearch();
+  };
+
+  const handleClear = () => {
+    hapticFeedback.selection();
+    onClear();
+  };
+
   return (
     <View style={styles.container} testID="search-filter-bar" nativeID="search-filter-bar">
       <View style={styles.inputRow}>
@@ -33,7 +44,7 @@ export default function SearchFilterBar({
           placeholderTextColor={mobileTheme.colors.ink.muted}
           value={searchValue}
           onChangeText={onSearchChange}
-          onSubmitEditing={onSearch}
+          onSubmitEditing={handleSearch}
           returnKeyType="search"
           testID="search-filter-bar-input"
           nativeID="search-filter-bar-input"
@@ -41,7 +52,7 @@ export default function SearchFilterBar({
         {searchValue.length > 0 && (
           <Pressable
             style={styles.clearButton}
-            onPress={onClear}
+            onPress={handleClear}
             testID="search-filter-bar-clear"
             nativeID="search-filter-bar-clear"
             accessibilityRole="button"
@@ -52,7 +63,7 @@ export default function SearchFilterBar({
         )}
         <Pressable
           style={styles.searchButton}
-          onPress={onSearch}
+          onPress={handleSearch}
           testID="search-filter-bar-search"
           nativeID="search-filter-bar-search"
           accessibilityRole="button"

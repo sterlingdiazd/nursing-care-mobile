@@ -1,5 +1,6 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { designTokens } from "@/src/design-system/tokens";
+import { withHapticFeedback } from "@/src/utils/haptics";
 
 type StateKind = "loading" | "empty" | "error";
 
@@ -23,7 +24,7 @@ export function StateView({
       {state === "loading" ? <ActivityIndicator color={designTokens.color.ink.accent} /> : null}
       <Text style={[styles.message, state === "error" ? styles.errorText : null]}>{message ?? defaultMessage}</Text>
       {state === "error" && onRetry ? (
-        <Pressable onPress={onRetry} style={styles.retry} accessibilityRole="button" accessibilityLabel={retryLabel}>
+        <Pressable onPress={withHapticFeedback(onRetry, "light")} style={styles.retry} accessibilityRole="button" accessibilityLabel={retryLabel}>
           <Text style={styles.retryText}>{retryLabel}</Text>
         </Pressable>
       ) : null}

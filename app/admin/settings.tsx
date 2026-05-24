@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { Banner } from "@/src/components/shared/Banner";
@@ -177,7 +178,10 @@ export default function AdminSettingsScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={`Editar ${settingLabel(setting)}`}
                   style={styles.settingCard}
-                  onPress={() => editTarget?.key === setting.key ? handleCloseEdit() : handleOpenEdit(setting)}
+                  onPress={() => {
+                    hapticFeedback.selection();
+                    editTarget?.key === setting.key ? handleCloseEdit() : handleOpenEdit(setting);
+                  }}
                   testID={`admin-setting-card-${setting.key}`}
                   nativeID={`admin-setting-card-${setting.key}`}
                 >
@@ -211,7 +215,10 @@ export default function AdminSettingsScreen() {
                           accessibilityRole="button"
                           accessibilityLabel="Guardar parametro"
                           style={[styles.buttonPrimary, saveLoading && styles.buttonDisabled]}
-                          onPress={() => void handleSave()}
+                          onPress={() => {
+                            hapticFeedback.light();
+                            void handleSave();
+                          }}
                           disabled={saveLoading}
                           testID="admin-setting-save-btn"
                           nativeID="admin-setting-save-btn"
@@ -225,7 +232,10 @@ export default function AdminSettingsScreen() {
                           accessibilityRole="button"
                           accessibilityLabel="Cancelar edicion"
                           style={styles.button}
-                          onPress={handleCloseEdit}
+                          onPress={() => {
+                            hapticFeedback.selection();
+                            handleCloseEdit();
+                          }}
                           testID="admin-setting-cancel-btn"
                           nativeID="admin-setting-cancel-btn"
                         >
@@ -260,7 +270,10 @@ export default function AdminSettingsScreen() {
                                 <Pressable
                                   key={val}
                                   style={[styles.chip, editValue === val && styles.chipActive]}
-                                  onPress={() => setEditValue(val)}
+                                  onPress={() => {
+                                    hapticFeedback.selection();
+                                    setEditValue(val);
+                                  }}
                                   testID={`admin-setting-value-chip-${val}`}
                                   nativeID={`admin-setting-value-chip-${val}`}
                                 >

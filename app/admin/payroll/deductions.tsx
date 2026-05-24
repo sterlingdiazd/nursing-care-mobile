@@ -13,6 +13,7 @@ import { Pagination } from "@/src/components/shared/Pagination";
 import { useClientPaging } from "@/src/hooks/usePagedList";
 import { SwipePager } from "@/src/components/shared/SwipePager";
 import { designTokens } from "@/src/design-system/tokens";
+import { hapticFeedback } from "@/src/utils/haptics";
 import {
   getDeductions,
   createDeduction,
@@ -98,6 +99,7 @@ export default function DeductionsScreen() {
 
   const handleDeleteDeduction = useCallback(
     (deduction: AdminDeductionListItem) => {
+      hapticFeedback.selection();
       Alert.alert(
         "Eliminar deducción",
         `¿Eliminar la deducción "${deduction.label}"?`,

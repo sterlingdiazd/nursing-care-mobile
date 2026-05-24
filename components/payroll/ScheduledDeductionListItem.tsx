@@ -4,6 +4,7 @@ import { designTokens } from "@/src/design-system/tokens";
 import { adminTestIds } from "@/src/testing/testIds/adminTestIds";
 import { formatDateES } from "@/src/utils/spanishTextValidator";
 import { StatusBadge, type BadgeTone } from "@/src/components/shared/StatusBadge";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 interface ScheduledDeductionListItemProps {
   item: ScheduledDeductionListItemType;
@@ -53,11 +54,15 @@ export function ScheduledDeductionListItem({ item, onPress }: ScheduledDeduction
       : null;
   const statusTone: BadgeTone =
     item.status === "Active" ? "success" : item.status === "Completed" ? "neutral" : "danger";
+  const handlePress = () => {
+    hapticFeedback.selection();
+    onPress(item.id);
+  };
 
   return (
     <TouchableOpacity
       style={styles.container}
-      onPress={() => onPress(item.id)}
+      onPress={handlePress}
       testID={adminTestIds.payroll.scheduledListItem(item.id)}
       accessibilityRole="button"
       accessibilityLabel={`Descuento fijo ${item.label} de ${item.nurseDisplayName}`}

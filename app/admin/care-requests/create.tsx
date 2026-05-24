@@ -32,6 +32,7 @@ import type {
 } from "@/src/types/catalog";
 import { getAdminCareCreateProgress } from "@/src/utils/adminCreationUx";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 // User-facing labels for the catalog category codes that come back from the API.
 const CATEGORY_LABELS: Record<string, string> = {
@@ -214,22 +215,31 @@ export default function CreateAdminCareRequestScreen() {
   };
 
   const openDatePicker = () => {
+    hapticFeedback.selection();
     setDraftServiceDate(parseIsoDate(form.careRequestDate ?? undefined) ?? new Date());
     setIsDatePickerVisible(true);
   };
 
-  const closeDatePicker = () => setIsDatePickerVisible(false);
+  const closeDatePicker = () => {
+    hapticFeedback.selection();
+    setIsDatePickerVisible(false);
+  };
 
   const confirmDateSelection = () => {
+    hapticFeedback.light();
     setForm((prev) => ({ ...prev, careRequestDate: formatDateToIso(draftServiceDate) }));
     setIsDatePickerVisible(false);
   };
 
-  const clearSelectedDate = () => setForm((prev) => ({ ...prev, careRequestDate: "" }));
+  const clearSelectedDate = () => {
+    hapticFeedback.selection();
+    setForm((prev) => ({ ...prev, careRequestDate: "" }));
+  };
 
   const handleNativeDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
     if (Platform.OS === "android") {
       if (event.type === "set" && selectedDate) {
+        hapticFeedback.selection();
         setForm((prev) => ({ ...prev, careRequestDate: formatDateToIso(selectedDate) }));
       }
       setIsDatePickerVisible(false);
@@ -253,6 +263,7 @@ export default function CreateAdminCareRequestScreen() {
     if (isSubmittingRef.current) return;
 
     if (!validateAll()) {
+      hapticFeedback.error();
       setError("Por favor complete todos los campos obligatorios");
       setTimeout(() => scrollViewRef.current?.scrollTo({ y: 0, animated: true }), 100);
       return;
@@ -293,6 +304,7 @@ export default function CreateAdminCareRequestScreen() {
       // Redirigir a la lista en lugar del detalle
       router.push(`/admin/care-requests` as any);
     } catch (err) {
+      hapticFeedback.error();
       setError(err instanceof Error ? err.message : "No fue posible crear la solicitud");
       setTimeout(() => scrollViewRef.current?.scrollTo({ y: 0, animated: true }), 100);
     } finally {
@@ -302,14 +314,21 @@ export default function CreateAdminCareRequestScreen() {
   };
 
   const handleSelectClient = (client: AdminCareRequestClientOptionDto) => {
+    hapticFeedback.selection();
     setSelectedClient(client);
     setForm({ ...form, clientUserId: client.userId });
     setShowClientPicker(false);
     setClientSearch("");
   };
 
-  const incrementUnit = () => setForm((prev) => ({ ...prev, unit: (prev.unit || 0) + 1 }));
-  const decrementUnit = () => setForm((prev) => ({ ...prev, unit: Math.max(1, (prev.unit || 0) - 1) }));
+  const incrementUnit = () => {
+    hapticFeedback.selection();
+    setForm((prev) => ({ ...prev, unit: (prev.unit || 0) + 1 }));
+  };
+  const decrementUnit = () => {
+    hapticFeedback.selection();
+    setForm((prev) => ({ ...prev, unit: Math.max(1, (prev.unit || 0) - 1) }));
+  };
 
   const creationProgress = getAdminCareCreateProgress(form);
   const advancedPricingLocked = !creationProgress.coreReady;
@@ -326,11 +345,13 @@ export default function CreateAdminCareRequestScreen() {
     clientSearch.trim().length > 0;
 
   const exitToList = () => {
+    hapticFeedback.selection();
     setShowLeaveConfirm(false);
     goBackOrReplace(router, mobileNavigationEscapes.adminCareRequests);
   };
 
   const handleBackPress = () => {
+    hapticFeedback.selection();
     if (isDirty && !submitting) {
       setShowLeaveConfirm(true);
     } else {
@@ -396,7 +417,11 @@ export default function CreateAdminCareRequestScreen() {
                 <Text style={styles.selectedClientEmail}>{selectedClient.email}</Text>
               </View>
               <Pressable
-                onPress={() => { setSelectedClient(null); setForm({ ...form, clientUserId: "" }); }}
+                onPress={() => {
+                  hapticFeedback.selection();
+                  setSelectedClient(null);
+                  setForm({ ...form, clientUserId: "" });
+                }}
                 accessibilityRole="button"
                 accessibilityLabel="Cambiar cliente seleccionado"
               >
@@ -457,7 +482,10 @@ export default function CreateAdminCareRequestScreen() {
               <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
                 <Pressable
                   style={{ flex: 1, backgroundColor: designTokens.color.surface.secondary, padding: 8, borderRadius: 8, alignItems: "center" }}
-                  onPress={() => setForm({ ...form, careRequestDate: formatDateToIso(new Date()) })}
+                  onPress={() => {
+                    hapticFeedback.selection();
+                    setForm({ ...form, careRequestDate: formatDateToIso(new Date()) });
+                  }}
                   accessibilityRole="button"
                   accessibilityLabel="Seleccionar fecha de hoy"
                 >
@@ -466,6 +494,7 @@ export default function CreateAdminCareRequestScreen() {
                 <Pressable
                   style={{ flex: 1, backgroundColor: designTokens.color.surface.secondary, padding: 8, borderRadius: 8, alignItems: "center" }}
                   onPress={() => {
+                    hapticFeedback.selection();
                     const d = new Date(); d.setDate(d.getDate() + 1);
                     setForm({ ...form, careRequestDate: formatDateToIso(d) });
                   }}
@@ -516,7 +545,10 @@ export default function CreateAdminCareRequestScreen() {
                   return (
                     <Pressable
                       key={code}
-                      onPress={() => setActiveCategoryCode(code)}
+                      onPress={() => {
+                        hapticFeedback.selection();
+                        setActiveCategoryCode(code);
+                      }}
                       accessibilityRole="button"
                       accessibilityLabel={`Categoría ${label}`}
                       accessibilityState={{ selected: active }}
@@ -540,7 +572,10 @@ export default function CreateAdminCareRequestScreen() {
                   return (
                     <Pressable
                       key={type.code}
-                      onPress={() => setForm((prev) => ({ ...prev, careRequestType: type.code }))}
+                      onPress={() => {
+                        hapticFeedback.selection();
+                        setForm((prev) => ({ ...prev, careRequestType: type.code }));
+                      }}
                       accessibilityRole="button"
                       accessibilityLabel={`Tipo ${type.displayName}`}
                       accessibilityState={{ selected: active }}
@@ -632,6 +667,7 @@ export default function CreateAdminCareRequestScreen() {
                     key={nurse.userId}
                     style={styles.clientOption}
                     onPress={() => {
+                      hapticFeedback.selection();
                       setForm({ ...form, suggestedNurse: nurse.displayName });
                       setShowNursePicker(false);
                     }}
@@ -679,6 +715,7 @@ export default function CreateAdminCareRequestScreen() {
             style={[styles.accordionHeader, advancedPricingLocked ? styles.accordionHeaderDisabled : undefined]}
             onPress={() => {
               if (advancedPricingLocked) return;
+              hapticFeedback.selection();
               setShowAdvancedPricing(!showAdvancedPricing);
             }}
             accessibilityRole="button"
@@ -789,7 +826,10 @@ export default function CreateAdminCareRequestScreen() {
             <View style={styles.leaveActions}>
               <Pressable
                 style={styles.leaveCancelButton}
-                onPress={() => setShowLeaveConfirm(false)}
+                onPress={() => {
+                  hapticFeedback.selection();
+                  setShowLeaveConfirm(false);
+                }}
                 accessibilityRole="button"
                 accessibilityLabel="Continuar editando"
               >

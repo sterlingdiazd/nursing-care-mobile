@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { designTokens } from "@/src/design-system/tokens";
+import { withHapticFeedback } from "@/src/utils/haptics";
 
 interface EmptyViewProps {
   title: string;
@@ -17,7 +18,7 @@ export function EmptyView({ title, subtitle, actionLabel, onAction }: EmptyViewP
       {actionLabel && onAction && (
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={onAction}
+          onPress={withHapticFeedback(onAction, "light")}
           accessibilityRole="button"
           accessibilityLabel={actionLabel}
         >

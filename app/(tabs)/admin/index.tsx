@@ -9,6 +9,7 @@ import { useAuth } from "@/src/context/AuthContext";
 import { mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
 import { navigationTestIds, adminTestIds } from "@/src/testing/testIds";
 import { automationProps } from "@/src/utils/adminOperationalUx";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 type MenuItem = {
   key: string;
@@ -97,6 +98,7 @@ export default function AdminMenuTab() {
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles]);
 
   const handleEditProfile = () => {
+    hapticFeedback.selection();
     router.push("/admin/profile" as any);
   };
 
@@ -113,6 +115,7 @@ export default function AdminMenuTab() {
 
   const handleLogoutPress = () => {
     if (isLoggingOut) return;
+    hapticFeedback.selection();
     if (Platform.OS === "web") {
       // Alert.alert is unreliable on web; just confirm via window.confirm.
       const confirmed = typeof window !== "undefined" && typeof window.confirm === "function"
@@ -194,7 +197,10 @@ export default function AdminMenuTab() {
                     {...automationProps(adminTestIds.menu.item(item.key))}
                     accessibilityRole="button"
                     accessibilityLabel={item.label}
-                    onPress={() => router.push(item.path as any)}
+                    onPress={() => {
+                      hapticFeedback.selection();
+                      router.push(item.path as any);
+                    }}
                     style={({ pressed }) => [styles.menuItem, pressed && styles.pressed]}
                   >
                     <View style={styles.iconWrap}>

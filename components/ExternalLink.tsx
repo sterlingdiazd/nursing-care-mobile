@@ -2,6 +2,7 @@ import { Link } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React from 'react';
 import { Platform } from 'react-native';
+import { hapticFeedback } from '@/src/utils/haptics';
 
 export function ExternalLink(
   props: Omit<React.ComponentProps<typeof Link>, 'href'> & { href: string }
@@ -12,6 +13,7 @@ export function ExternalLink(
       {...props}
       href={props.href as any}
       onPress={(e) => {
+        hapticFeedback.selection();
         if (Platform.OS !== 'web') {
           // Prevent the default behavior of linking to the default browser on native.
           e.preventDefault();

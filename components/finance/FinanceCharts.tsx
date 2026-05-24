@@ -6,6 +6,7 @@ import type { CategoryMargin, ClientRevenueRow, TrendPoint } from "@/src/service
 import { financeTheme as t, fmtMoneyCompact } from "./financeTheme";
 import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import { designTokens } from "@/src/design-system/tokens";
+import { withHapticFeedback } from "@/src/utils/haptics";
 
 const W = Dimensions.get("window").width;
 const CHART_W = W - 68; // screen padding (18*2) + card padding (16*2)
@@ -34,7 +35,7 @@ export function SectionCard({
   return (
     <Wrapper
       style={({ pressed }: { pressed?: boolean }) => [styles.section, pressed && onPress ? { opacity: 0.9 } : null]}
-      onPress={onPress}
+      onPress={onPress ? withHapticFeedback(onPress, "selection") : undefined}
       accessibilityRole={onPress ? "button" : undefined}
     >
       <View style={styles.sectionTitleRow}>

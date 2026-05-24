@@ -39,6 +39,7 @@ import {
   resolveAdminOperationalDeepLink,
 } from "@/src/utils/adminOperationalUx";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 const PAGE_SIZE = 10;
 
@@ -107,6 +108,7 @@ export default function AdminNotificationsScreen() {
   }, [isReady, isAuthenticated]);
 
   const runAction = async (work: () => Promise<void>) => {
+    hapticFeedback.light();
     try {
       await work();
       // Re-fetch the current page after a mutation; counts may shift filters.
@@ -236,6 +238,7 @@ export default function AdminNotificationsScreen() {
                     style={[styles.cardButton, isLead && styles.cardButtonLead]}
                     onPress={() => {
                       if (item.deepLinkPath) {
+                        hapticFeedback.selection();
                         router.push(resolveAdminOperationalDeepLink(item.deepLinkPath) as any);
                         return;
                       }
@@ -254,7 +257,10 @@ export default function AdminNotificationsScreen() {
                   <Pressable
                     {...(isLead ? automationProps(adminTestIds.notifications.secondaryToggle) : {})}
                     style={styles.secondaryToggle}
-                    onPress={() => setExpandedId(isExpanded ? null : item.id)}
+                    onPress={() => {
+                      hapticFeedback.selection();
+                      setExpandedId(isExpanded ? null : item.id);
+                    }}
                   >
                     <Text style={styles.secondaryToggleText}>
                       {isExpanded ? "Ocultar más" : "Más acciones"}

@@ -6,6 +6,7 @@ import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useAuth, UserProfileType } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
 import { navigationTestIds } from "@/src/testing/testIds/navigationTestIds";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 interface TabConfig {
   key: string;
@@ -62,6 +63,7 @@ export default function AppTabBar({ state, navigation }: BottomTabBarProps) {
   };
 
   const handlePress = (tabKey: string) => {
+    hapticFeedback.selection();
     const routeKey = getRouteKey(tabKey);
     const route = state.routes.find((r) => r.name === routeKey);
     if (!route) return;

@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View, TouchableOpacity, ActivityIndicator } from "react-native";
 import { designTokens } from "@/src/design-system/tokens";
+import { withHapticFeedback } from "@/src/utils/haptics";
 
 interface ErrorViewProps {
   message: string;
@@ -19,7 +20,7 @@ export function ErrorView({ message, onRetry, loading }: ErrorViewProps) {
           {onRetry && (
             <TouchableOpacity
               style={styles.retryButton}
-              onPress={onRetry}
+              onPress={withHapticFeedback(onRetry, "light")}
               accessibilityRole="button"
               accessibilityLabel="Reintentar"
             >

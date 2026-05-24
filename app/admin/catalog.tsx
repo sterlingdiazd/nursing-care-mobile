@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+import { hapticFeedback } from "@/src/utils/haptics";
 import {
   listCareRequestCategories,
   listCareRequestTypes,
@@ -394,7 +395,10 @@ export default function AdminCatalogScreen() {
         <Pressable
           key={key}
           style={styles.checkboxRow}
-          onPress={() => setFormData({ ...formData, [key]: !value })}
+          onPress={() => {
+            hapticFeedback.selection();
+            setFormData({ ...formData, [key]: !value });
+          }}
           accessibilityRole="checkbox"
           accessibilityLabel={label}
           accessibilityState={{ checked: !!value }}
@@ -470,7 +474,10 @@ export default function AdminCatalogScreen() {
         <View style={styles.headerActions}>
           <Pressable
             style={[styles.button, includeInactive && styles.buttonActive]}
-            onPress={() => setIncludeInactive(!includeInactive)}
+            onPress={() => {
+              hapticFeedback.selection();
+              setIncludeInactive(!includeInactive);
+            }}
             testID="admin-catalog-toggle-inactive"
             nativeID="admin-catalog-toggle-inactive"
             accessibilityRole="button"
@@ -482,7 +489,10 @@ export default function AdminCatalogScreen() {
           </Pressable>
           <Pressable
             style={styles.button}
-            onPress={() => void loadData()}
+            onPress={() => {
+              hapticFeedback.light();
+              void loadData();
+            }}
             testID="admin-catalog-refresh-btn"
             nativeID="admin-catalog-refresh-btn"
             accessibilityRole="button"
@@ -492,7 +502,10 @@ export default function AdminCatalogScreen() {
           </Pressable>
           <Pressable
             style={styles.buttonPrimary}
-            onPress={() => handleCreate(activeTab)}
+            onPress={() => {
+              hapticFeedback.light();
+              handleCreate(activeTab);
+            }}
             testID="admin-catalog-create-btn"
             nativeID="admin-catalog-create-btn"
             accessibilityRole="button"
@@ -541,7 +554,10 @@ export default function AdminCatalogScreen() {
                 <View style={styles.editActions}>
                   <Pressable
                     style={[styles.buttonPrimary, saving && styles.buttonDisabled]}
-                    onPress={() => void handleSave()}
+                    onPress={() => {
+                      hapticFeedback.light();
+                      void handleSave();
+                    }}
                     disabled={saving}
                     testID="admin-catalog-save-btn"
                     nativeID="admin-catalog-save-btn"
@@ -552,7 +568,10 @@ export default function AdminCatalogScreen() {
                   </Pressable>
                   <Pressable
                     style={styles.button}
-                    onPress={handleCancelEdit}
+                    onPress={() => {
+                      hapticFeedback.selection();
+                      handleCancelEdit();
+                    }}
                     testID="admin-catalog-cancel-btn"
                     nativeID="admin-catalog-cancel-btn"
                     accessibilityRole="button"
@@ -600,6 +619,7 @@ export default function AdminCatalogScreen() {
                             nativeID={`admin-catalog-pricing-preview-${itemCode}`}
                             style={styles.previewButton}
                             onPress={(e) => {
+                              hapticFeedback.selection();
                               e.stopPropagation?.();
                               void handlePricingPreview(itemCode);
                             }}
@@ -628,7 +648,11 @@ export default function AdminCatalogScreen() {
                       footer={(
                         <Pressable
                           style={styles.button}
-                          onPress={() => { setPricingPreviewItemCode(null); setPricingPreviewResult(null); }}
+                          onPress={() => {
+                            hapticFeedback.selection();
+                            setPricingPreviewItemCode(null);
+                            setPricingPreviewResult(null);
+                          }}
                           accessibilityRole="button"
                           accessibilityLabel="Cerrar vista previa de precio"
                         >

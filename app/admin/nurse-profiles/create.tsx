@@ -14,6 +14,7 @@ import { FormButton } from "@/src/components/form/FormButton";
 import { adminTestIds } from "@/src/testing/testIds";
 import { getAdminNurseCreateProgress } from "@/src/utils/adminCreationUx";
 import { mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 const CATEGORIES = ["Auxiliar", "Técnico", "Profesional", "Especialista"];
 
@@ -90,6 +91,7 @@ export default function AdminCreateNurseProfileScreen() {
 
   const handleSubmit = async () => {
     if (!validateAll()) {
+      hapticFeedback.error();
       setError("Por favor revise los campos en rojo.");
       return;
     }
@@ -249,7 +251,10 @@ export default function AdminCreateNurseProfileScreen() {
           <View style={styles.chipsContainer}>
             <Pressable
               style={[styles.chip, form.isOperationallyActive && styles.chipSuccess]}
-              onPress={() => setForm({ ...form, isOperationallyActive: true })}
+              onPress={() => {
+                hapticFeedback.selection();
+                setForm({ ...form, isOperationallyActive: true });
+              }}
               accessibilityRole="button"
               accessibilityLabel="Marcar enfermera como activa"
               accessibilityState={{ selected: form.isOperationallyActive }}
@@ -258,7 +263,10 @@ export default function AdminCreateNurseProfileScreen() {
             </Pressable>
             <Pressable
               style={[styles.chip, !form.isOperationallyActive && styles.chipDanger]}
-              onPress={() => setForm({ ...form, isOperationallyActive: false })}
+              onPress={() => {
+                hapticFeedback.selection();
+                setForm({ ...form, isOperationallyActive: false });
+              }}
               accessibilityRole="button"
               accessibilityLabel="Marcar enfermera como inactiva"
               accessibilityState={{ selected: !form.isOperationallyActive }}
@@ -273,7 +281,11 @@ export default function AdminCreateNurseProfileScreen() {
               <Pressable
                 key={cat}
                 style={[styles.chip, form.category === cat && styles.chipActive]}
-                onPress={() => { setForm({ ...form, category: cat }); setCustomCategory(""); }}
+                onPress={() => {
+                  hapticFeedback.selection();
+                  setForm({ ...form, category: cat });
+                  setCustomCategory("");
+                }}
                 accessibilityRole="button"
                 accessibilityLabel={`Categoría: ${cat}`}
                 accessibilityState={{ selected: form.category === cat }}
@@ -386,7 +398,10 @@ export default function AdminCreateNurseProfileScreen() {
         <View style={styles.accordionWrap}>
           <Pressable
             style={styles.accordionHeader}
-            onPress={() => setShowBankingInfo(!showBankingInfo)}
+            onPress={() => {
+              hapticFeedback.selection();
+              setShowBankingInfo(!showBankingInfo);
+            }}
             accessibilityRole="button"
             accessibilityLabel="Mostrar u ocultar información bancaria"
             accessibilityState={{ expanded: showBankingInfo }}

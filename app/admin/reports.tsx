@@ -37,6 +37,7 @@ import {
 import { formatDOP } from "@/src/utils/currency";
 import { getCachedAuthSession } from "@/src/services/authSession";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+import { hapticFeedback } from "@/src/utils/haptics";
 import { MetricCard } from "@/src/components/shared/MetricCard";
 import { SelectRow, PickerSheet, PickerOption } from "@/components/payroll/FormModalScaffold";
 
@@ -204,7 +205,10 @@ export default function AdminReportsScreen() {
         EXPORTABLE_REPORTS.has(selectedReportKey) ? (
         <Pressable
           style={[styles.exportButton, isExporting && styles.disabledButton]}
-          onPress={handleExport}
+          onPress={() => {
+            hapticFeedback.light();
+            void handleExport();
+          }}
           disabled={isExporting}
           accessibilityRole="button"
           accessibilityLabel="Exportar reporte en formato CSV"

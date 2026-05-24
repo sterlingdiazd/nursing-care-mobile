@@ -4,6 +4,7 @@ import { designTokens } from "@/src/design-system/tokens";
 import { DateField } from "@/src/components/form";
 import { nextQuincenaAfter, stepQuincena, rangesOverlap } from "@/src/utils/payrollPeriods";
 import { FormModalScaffold, FormCard } from "@/components/payroll/FormModalScaffold";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 interface PeriodScheduleValue {
   startDate: string;
@@ -33,6 +34,7 @@ export function CreatePeriodModal({ visible, onClose, onSubmit, period, existing
   const [error, setError] = useState<string | null>(null);
 
   const applySchedule = (s: PeriodScheduleValue) => {
+    hapticFeedback.selection();
     setStartDate(s.startDate);
     setEndDate(s.endDate);
     setCutoffDate(s.cutoffDate);
@@ -49,7 +51,12 @@ export function CreatePeriodModal({ visible, onClose, onSubmit, period, existing
       setPaymentDate(period.paymentDate ?? "");
       setError(null);
     } else {
-      applySchedule(nextQuincenaAfter(existingPeriods));
+      const nextSchedule = nextQuincenaAfter(existingPeriods);
+      setStartDate(nextSchedule.startDate);
+      setEndDate(nextSchedule.endDate);
+      setCutoffDate(nextSchedule.cutoffDate);
+      setPaymentDate(nextSchedule.paymentDate);
+      setError(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, period]);

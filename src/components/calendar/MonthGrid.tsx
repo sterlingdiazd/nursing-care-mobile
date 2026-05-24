@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { designTokens } from "@/src/design-system/tokens";
 import { CATEGORY_META } from "./serviceCategory";
 import type { CalendarDay } from "@/src/hooks/useServiceCalendar";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 const WEEKDAYS = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"];
 
@@ -33,7 +34,10 @@ export function MonthGrid({
             return (
               <Pressable
                 key={d.iso}
-                onPress={() => onSelectDay(d.iso)}
+                onPress={() => {
+                  hapticFeedback.selection();
+                  onSelectDay(d.iso);
+                }}
                 accessibilityRole="button"
                 accessibilityLabel={`Día ${dayNum}${d.count ? `, ${d.count} servicios` : ""}`}
                 accessibilityState={{ selected }}

@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { designTokens } from "@/src/design-system/tokens";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 interface ScreenHeaderProps {
   title: string;
@@ -11,11 +12,16 @@ interface ScreenHeaderProps {
 
 export function ScreenHeader({ title, showBack = false, onBack }: ScreenHeaderProps) {
   const insets = useSafeAreaInsets();
+  const handleBack = () => {
+    hapticFeedback.selection();
+    (onBack ?? router.back)();
+  };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top + 4 }]}>
       {showBack && (
         <Pressable
-          onPress={onBack ?? router.back}
+          onPress={handleBack}
           style={styles.backButton}
           accessibilityRole="button"
           accessibilityLabel="Volver"

@@ -238,7 +238,10 @@ export default function LoginScreen() {
             />
 
             <TouchableOpacity
-              onPress={() => router.push("/forgot-password")}
+              onPress={() => {
+                hapticFeedback.selection();
+                router.push("/forgot-password");
+              }}
               style={styles.forgotPassword}
               accessibilityRole="link"
               accessibilityLabel="¿Olvidaste tu contraseña?"
@@ -278,7 +281,13 @@ export default function LoginScreen() {
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>¿No tienes cuenta?</Text>
-            <TouchableOpacity onPress={() => router.push("/register")} accessibilityRole="link">
+            <TouchableOpacity
+              onPress={() => {
+                hapticFeedback.selection();
+                router.push("/register");
+              }}
+              accessibilityRole="link"
+            >
               <Text style={styles.registerLink}>Registrar</Text>
             </TouchableOpacity>
           </View>

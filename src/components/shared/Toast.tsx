@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { designTokens } from "@/src/design-system/tokens";
+import { withHapticFeedback } from "@/src/utils/haptics";
 
 export type ToastVariant = "success" | "error" | "info" | "warning";
 
@@ -88,7 +89,7 @@ export function Toast({
       nativeID="toast-container"
     >
       <TouchableOpacity
-        onPress={onDismiss}
+        onPress={withHapticFeedback(onDismiss, "selection")}
         activeOpacity={0.9}
         style={styles.touchable}
         accessibilityRole="button"

@@ -8,6 +8,7 @@ import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { Pagination } from "@/src/components/shared/Pagination";
 import { SwipePager } from "@/src/components/shared/SwipePager";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 const PAGE_SIZE = 10;
 
@@ -68,7 +69,13 @@ export default function FinanceDetailScreen() {
       ) : error ? (
         <View style={styles.errorBox}>
           <Text style={styles.errorText}>{error}</Text>
-          <Pressable onPress={() => void load()} style={styles.retry}>
+          <Pressable
+            onPress={() => {
+              hapticFeedback.light();
+              void load();
+            }}
+            style={styles.retry}
+          >
             <Text style={styles.retryText}>Reintentar</Text>
           </Pressable>
         </View>

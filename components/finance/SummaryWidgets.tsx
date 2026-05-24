@@ -4,6 +4,7 @@ import { FontAwesome } from "@expo/vector-icons";
 import { financeTheme as t } from "./financeTheme";
 import { Sparkline } from "./Sparkline";
 import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
+import { withHapticFeedback } from "@/src/utils/haptics";
 
 /** A small donut "gauge" (filled arc vs remainder) with a centered value and a caption. */
 export function RingGauge({
@@ -31,7 +32,7 @@ export function RingGauge({
   return (
     <Wrapper
       style={({ pressed }: { pressed?: boolean }) => [styles.gauge, pressed && onPress ? { opacity: 0.7 } : null]}
-      onPress={onPress}
+      onPress={onPress ? withHapticFeedback(onPress, "selection") : undefined}
       accessibilityRole={onPress ? "button" : undefined}
       accessibilityLabel={onPress ? `Ver detalle de ${label}` : undefined}
     >
@@ -137,7 +138,7 @@ export function FocusCard({
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={onPress ? withHapticFeedback(onPress, "selection") : undefined}
       accessibilityRole={onPress ? "button" : undefined}
       style={({ pressed }) => [
         styles.focus,

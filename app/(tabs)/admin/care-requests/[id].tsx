@@ -29,6 +29,7 @@ import {
 } from "@/src/utils/adminCareRequestBilling";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 function automationProps(testId: string) {
   return {
@@ -206,7 +207,10 @@ export default function AdminCareRequestDetailScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Más acciones"
-              onPress={() => setOverflowSheetVisible(true)}
+              onPress={() => {
+                hapticFeedback.selection();
+                setOverflowSheetVisible(true);
+              }}
               style={({ pressed }) => [styles.overflowButton, pressed && styles.pressed]}
             >
               <Text style={styles.overflowGlyph}>⋯</Text>
@@ -271,7 +275,10 @@ export default function AdminCareRequestDetailScreen() {
                 <Pressable
                   accessibilityRole="link"
                   accessibilityLabel={`Ver perfil de ${detail.clientDisplayName}`}
-                  onPress={() => router.push(`/admin/users/${detail.clientUserId}` as any)}
+                  onPress={() => {
+                    hapticFeedback.selection();
+                    router.push(`/admin/users/${detail.clientUserId}` as any);
+                  }}
                   style={({ pressed }) => [styles.linkButton, pressed && styles.pressed]}
                 >
                   <Text style={styles.linkButtonText}>Ver perfil</Text>
@@ -297,7 +304,10 @@ export default function AdminCareRequestDetailScreen() {
                   <Pressable
                     accessibilityRole="link"
                     accessibilityLabel={`Ver perfil de enfermera ${detail.assignedNurseDisplayName}`}
-                    onPress={() => router.push(`/admin/nurse-profiles/${detail.assignedNurseUserId}` as any)}
+                    onPress={() => {
+                      hapticFeedback.selection();
+                      router.push(`/admin/nurse-profiles/${detail.assignedNurseUserId}` as any);
+                    }}
                     style={({ pressed }) => [styles.linkButton, pressed && styles.pressed]}
                   >
                     <Text style={styles.linkButtonText}>Ver perfil</Text>
@@ -322,7 +332,10 @@ export default function AdminCareRequestDetailScreen() {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Ver desglose de precios"
-                  onPress={() => setPricingSheetVisible(true)}
+                  onPress={() => {
+                    hapticFeedback.selection();
+                    setPricingSheetVisible(true);
+                  }}
                   style={({ pressed }) => [styles.linkButton, pressed && styles.pressed]}
                 >
                   <Text style={styles.linkButtonText}>Ver desglose</Text>
@@ -379,7 +392,10 @@ export default function AdminCareRequestDetailScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Ver historial"
-                onPress={() => setHistorySheetVisible(true)}
+                onPress={() => {
+                  hapticFeedback.selection();
+                  setHistorySheetVisible(true);
+                }}
                 style={({ pressed }) => [styles.historyTrigger, pressed && styles.pressed]}
               >
                 <Text style={styles.historyTriggerText}>
@@ -396,21 +412,30 @@ export default function AdminCareRequestDetailScreen() {
         <PricingSheet
           visible={pricingSheetVisible}
           detail={detail}
-          onClose={() => setPricingSheetVisible(false)}
+          onClose={() => {
+            hapticFeedback.selection();
+            setPricingSheetVisible(false);
+          }}
         />
       ) : null}
 
       <OverflowActionsSheet
         visible={overflowSheetVisible}
         actions={overflowActions}
-        onClose={() => setOverflowSheetVisible(false)}
+        onClose={() => {
+          hapticFeedback.selection();
+          setOverflowSheetVisible(false);
+        }}
       />
 
       {detail ? (
         <HistorySheet
           visible={historySheetVisible}
           timeline={detail.timeline}
-          onClose={() => setHistorySheetVisible(false)}
+          onClose={() => {
+            hapticFeedback.selection();
+            setHistorySheetVisible(false);
+          }}
         />
       ) : null}
     </>
@@ -544,7 +569,10 @@ function OverflowActionsSheet({
                   key={action.testID ?? idx}
                   testID={action.testID}
                   nativeID={action.testID}
-                  onPress={action.onPress}
+                  onPress={() => {
+                    hapticFeedback.light();
+                    action.onPress();
+                  }}
                   disabled={action.disabled}
                   style={({ pressed }) => [
                     styles.overflowAction,

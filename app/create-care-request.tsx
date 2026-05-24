@@ -33,6 +33,7 @@ import type {
 import { CreateCareRequestDto } from "@/src/types/careRequest";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { estimateCareRequestPricingFromCatalog } from "@/src/utils/pricingFromCatalogOptions";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 // Category labels + order — keep in sync with the admin create page so the
 // two surfaces look the same. The list shown to the user is built by
@@ -104,11 +105,13 @@ export default function CreateCareRequestScreen() {
     clientSearchTerm.trim().length > 0;
 
   const exitToList = () => {
+    hapticFeedback.selection();
     setShowLeaveConfirm(false);
     goBackOrReplace(router, mobileNavigationEscapes.createCareRequest);
   };
 
   const handleBackPress = () => {
+    hapticFeedback.selection();
     if (isDirty && !isLoading) {
       setShowLeaveConfirm(true);
     } else {
@@ -116,8 +119,14 @@ export default function CreateCareRequestScreen() {
     }
   };
 
-  const incrementUnit = () => setForm((prev) => ({ ...prev, unit: (prev.unit || 0) + 1 }));
-  const decrementUnit = () => setForm((prev) => ({ ...prev, unit: Math.max(1, (prev.unit || 0) - 1) }));
+  const incrementUnit = () => {
+    hapticFeedback.selection();
+    setForm((prev) => ({ ...prev, unit: (prev.unit || 0) + 1 }));
+  };
+  const decrementUnit = () => {
+    hapticFeedback.selection();
+    setForm((prev) => ({ ...prev, unit: Math.max(1, (prev.unit || 0) - 1) }));
+  };
 
   const normalizeSearchValue = (value: string) => value.trim().toLocaleLowerCase();
   const formatDateToIso = (date: Date) => {
@@ -282,26 +291,31 @@ export default function CreateCareRequestScreen() {
   };
 
   const openDatePicker = () => {
+    hapticFeedback.selection();
     setDraftServiceDate(parseIsoDate(form.careRequestDate) ?? new Date());
     setIsDatePickerVisible(true);
   };
 
   const confirmDateSelection = () => {
+    hapticFeedback.light();
     setForm((prev) => ({ ...prev, careRequestDate: formatDateToIso(draftServiceDate) }));
     setIsDatePickerVisible(false);
   };
 
   const closeDatePicker = () => {
+    hapticFeedback.selection();
     setIsDatePickerVisible(false);
   };
 
   const clearSelectedDate = () => {
+    hapticFeedback.selection();
     setForm((prev) => ({ ...prev, careRequestDate: undefined }));
   };
 
   const handleNativeDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
     if (Platform.OS === "android") {
       if (event.type === "set" && selectedDate) {
+        hapticFeedback.selection();
         setForm((prev) => ({ ...prev, careRequestDate: formatDateToIso(selectedDate) }));
       }
       setIsDatePickerVisible(false);
@@ -336,6 +350,7 @@ export default function CreateCareRequestScreen() {
       });
       const msg = "La descripcion de la solicitud y el tipo de servicio son obligatorios.";
       setFormError(msg);
+      hapticFeedback.error();
 
       showAlert("Validacion", msg);
       return;
@@ -344,6 +359,7 @@ export default function CreateCareRequestScreen() {
     if (!canCreateRequest) {
       const msg = "Solo los perfiles de cliente o administracion pueden crear solicitudes de cuidado.";
       setFormError(msg);
+      hapticFeedback.error();
 
       showAlert("Accion no permitida", msg);
       return;
@@ -353,6 +369,7 @@ export default function CreateCareRequestScreen() {
       logClientEvent("mobile.ui", "Solicitud bloqueada mientras la sesion termina de cargar");
       const msg = "La sesion todavia se esta preparando. Espera un momento e intenta de nuevo.";
       setFormError(msg);
+      hapticFeedback.error();
 
       showAlert("Sesion cargando", msg);
       return;
@@ -362,6 +379,7 @@ export default function CreateCareRequestScreen() {
       logClientEvent("mobile.ui", "Solicitud bloqueada por sesion incompleta");
       const msg = "Inicia sesion nuevamente antes de crear una solicitud.";
       setFormError(msg);
+      hapticFeedback.error();
 
       showAlert("Autenticacion requerida", msg);
       return;
@@ -370,6 +388,7 @@ export default function CreateCareRequestScreen() {
     if (isAdminCaller && !selectedClient) {
       const msg = "Selecciona el cliente para el cual se crea la solicitud.";
       setFormError(msg);
+      hapticFeedback.error();
       showAlert("Cliente requerido", msg);
       return;
     }
@@ -560,7 +579,10 @@ export default function CreateCareRequestScreen() {
             <View style={styles.errorBanner}>
               <Text style={styles.errorBannerText}>{formError}</Text>
               <Pressable
-                onPress={() => setFormError(null)}
+                onPress={() => {
+                  hapticFeedback.selection();
+                  setFormError(null);
+                }}
                 accessibilityRole="button"
                 accessibilityLabel="Cerrar mensaje de error"
               >
@@ -612,6 +634,7 @@ export default function CreateCareRequestScreen() {
                     accessibilityRole="button"
                     accessibilityLabel="Quitar cliente seleccionado"
                     onPress={() => {
+                      hapticFeedback.selection();
                       setSelectedClient(null);
                       setClientSearchTerm("");
                       setShowClientOptions(true);
@@ -667,6 +690,7 @@ export default function CreateCareRequestScreen() {
                             testID={careRequestTestIds.create.clientOption(client.userId)}
                             nativeID={careRequestTestIds.create.clientOption(client.userId)}
                             onPress={() => {
+                              hapticFeedback.selection();
                               setSelectedClient(client);
                               setClientSearchTerm(client.displayName);
                               setShowClientOptions(false);
@@ -751,7 +775,10 @@ export default function CreateCareRequestScreen() {
                   <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
                     <Pressable
                       style={{ flex: 1, backgroundColor: designTokens.color.surface.secondary, padding: 8, borderRadius: 8, alignItems: "center" }}
-                      onPress={() => setForm((prev) => ({ ...prev, careRequestDate: formatDateToIso(new Date()) }))}
+                      onPress={() => {
+                        hapticFeedback.selection();
+                        setForm((prev) => ({ ...prev, careRequestDate: formatDateToIso(new Date()) }));
+                      }}
                       accessibilityRole="button"
                       accessibilityLabel="Seleccionar hoy como fecha del servicio"
                     >
@@ -760,6 +787,7 @@ export default function CreateCareRequestScreen() {
                     <Pressable
                       style={{ flex: 1, backgroundColor: designTokens.color.surface.secondary, padding: 8, borderRadius: 8, alignItems: "center" }}
                       onPress={() => {
+                        hapticFeedback.selection();
                         const d = new Date(); d.setDate(d.getDate() + 1);
                         setForm((prev) => ({ ...prev, careRequestDate: formatDateToIso(d) }));
                       }}
@@ -834,7 +862,10 @@ export default function CreateCareRequestScreen() {
                     return (
                       <Pressable
                         key={code}
-                        onPress={() => setActiveCategoryCode(code)}
+                        onPress={() => {
+                          hapticFeedback.selection();
+                          setActiveCategoryCode(code);
+                        }}
                         accessibilityRole="button"
                         accessibilityLabel={`Categoría ${label}`}
                         accessibilityState={{ selected: active }}
@@ -861,7 +892,10 @@ export default function CreateCareRequestScreen() {
                         accessibilityRole="button"
                         accessibilityLabel={row.displayName}
                         accessibilityState={{ selected: active }}
-                        onPress={() => setForm({ ...form, careRequestType: row.code })}
+                        onPress={() => {
+                          hapticFeedback.selection();
+                          setForm({ ...form, careRequestType: row.code });
+                        }}
                         style={[styles.chip, active && styles.chipActive]}
                       >
                         <Text style={[styles.chipText, active && styles.chipTextActive]}>
@@ -958,6 +992,7 @@ export default function CreateCareRequestScreen() {
                           <Pressable
                             key={nurse.userId}
                             onPress={() => {
+                              hapticFeedback.selection();
                               setSelectedNurse(nurse);
                               setForm((prev) => ({ ...prev, suggestedNurse: displayName }));
                               setShowSuggestedNurseOptions(false);
@@ -1037,7 +1072,13 @@ export default function CreateCareRequestScreen() {
         animationType="fade"
         onRequestClose={() => setShowLeaveConfirm(false)}
       >
-        <Pressable style={modalStyles.overlay} onPress={() => setShowLeaveConfirm(false)}>
+        <Pressable
+          style={modalStyles.overlay}
+          onPress={() => {
+            hapticFeedback.selection();
+            setShowLeaveConfirm(false);
+          }}
+        >
           <Pressable style={modalStyles.sheet} onPress={(e) => e.stopPropagation()}>
             <Text style={modalStyles.title}>¿Salir sin guardar?</Text>
             <Text style={modalStyles.body}>
@@ -1046,7 +1087,10 @@ export default function CreateCareRequestScreen() {
             <View style={modalStyles.actions}>
               <Pressable
                 style={[modalStyles.button, modalStyles.buttonSecondary]}
-                onPress={() => setShowLeaveConfirm(false)}
+                onPress={() => {
+                  hapticFeedback.selection();
+                  setShowLeaveConfirm(false);
+                }}
                 accessibilityRole="button"
                 accessibilityLabel="Continuar editando"
               >

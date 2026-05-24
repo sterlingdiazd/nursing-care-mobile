@@ -9,6 +9,7 @@ import { DashboardSkeleton } from "@/components/finance/DashboardSkeleton";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { router } from "expo-router";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 const TABS = [
   { key: "resumen", label: "Resumen" },
@@ -47,7 +48,10 @@ export default function AdminFinanceDashboard() {
 
   const refreshAccessory = (
     <Pressable
-      onPress={() => void load()}
+      onPress={() => {
+        hapticFeedback.light();
+        void load();
+      }}
       style={styles.iconBtn}
       accessibilityRole="button"
       accessibilityLabel="Actualizar"
@@ -74,7 +78,15 @@ export default function AdminFinanceDashboard() {
       ) : error ? (
         <View style={styles.errorBox}>
           <Text style={styles.errorText}>{error}</Text>
-          <Pressable onPress={() => void load()} style={styles.retry}><Text style={styles.retryText}>Reintentar</Text></Pressable>
+          <Pressable
+            onPress={() => {
+              hapticFeedback.light();
+              void load();
+            }}
+            style={styles.retry}
+          >
+            <Text style={styles.retryText}>Reintentar</Text>
+          </Pressable>
         </View>
       ) : data ? (
         <>
@@ -92,6 +104,7 @@ export default function AdminFinanceDashboard() {
 }
 
 function goDetail(data: FinanceOverview, metric: string, title: string) {
+  hapticFeedback.selection();
   router.push({ pathname: "/admin/finance/detail", params: { metric, from: data.from, to: data.to, title } } as never);
 }
 

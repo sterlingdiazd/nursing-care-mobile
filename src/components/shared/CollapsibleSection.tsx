@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { LayoutAnimation, Platform, Pressable, StyleSheet, Text, UIManager, View } from "react-native";
 import { designTokens } from "@/src/design-system/tokens";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -16,6 +17,7 @@ export function CollapsibleSection({ title, defaultExpanded = false, children }:
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   const toggle = () => {
+    hapticFeedback.selection();
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpanded((prev) => !prev);
   };

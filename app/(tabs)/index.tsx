@@ -194,6 +194,7 @@ export default function HomeScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Crear solicitud"
                 onPress={() => {
+                  hapticFeedback.selection();
                   logClientEvent("mobile.ui", "Home hero opened create care request");
                   if (canCreateRequest) {
                     router.push("/create-care-request");
@@ -212,6 +213,7 @@ export default function HomeScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Abrir cola de solicitudes"
                 onPress={() => {
+                  hapticFeedback.selection();
                   logClientEvent("mobile.ui", "Home hero opened care requests queue");
                   if (!isNurseUnderReview) {
                     router.push("/care-requests");
@@ -232,6 +234,7 @@ export default function HomeScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Iniciar sesion"
                 onPress={() => {
+                  hapticFeedback.selection();
                   logClientEvent("mobile.ui", "Home hero opened login");
                   router.push("/login");
                 }}
@@ -247,6 +250,7 @@ export default function HomeScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Registrar cuenta"
                 onPress={() => {
+                  hapticFeedback.selection();
                   logClientEvent("mobile.ui", "Home hero opened register");
                   router.push("/register");
                 }}

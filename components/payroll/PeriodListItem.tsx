@@ -3,6 +3,7 @@ import type { AdminPayrollPeriodListItem } from "@/src/services/payrollService";
 import { designTokens } from "@/src/design-system/tokens";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
 import { formatDateES } from "@/src/utils/spanishTextValidator";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 interface PeriodListItemProps {
   period: AdminPayrollPeriodListItem;
@@ -11,11 +12,15 @@ interface PeriodListItemProps {
 
 export function PeriodListItem({ period, onPress }: PeriodListItemProps) {
   const isOpen = period.status === "Open";
+  const handlePress = () => {
+    hapticFeedback.selection();
+    onPress(period.id);
+  };
 
   return (
     <TouchableOpacity
       style={styles.container}
-      onPress={() => onPress(period.id)}
+      onPress={handlePress}
       accessibilityRole="button"
       accessibilityLabel={`Período ${formatDateES(period.startDate)} - ${formatDateES(period.endDate)}, estado: ${isOpen ? "Abierto" : "Cerrado"}`}
     >

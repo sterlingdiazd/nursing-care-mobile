@@ -32,6 +32,7 @@ import { CareRequestDto, CareRequestTransitionAction } from "@/src/types/careReq
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
 import { formatDOP } from "@/src/utils/currency";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 function getStatusPalette(status: CareRequestDto["status"]) {
   switch (status) {
@@ -156,6 +157,7 @@ export default function CareRequestDetailScreen() {
       setSuccessMessage("Pago reportado. La administración verificará el comprobante y confirmará la recepción.");
       await loadCareRequest();
     } catch (nextError: any) {
+      hapticFeedback.error();
       setError(nextError?.message ?? "No se pudo reportar el pago.");
     } finally {
       setIsActing(false);
@@ -207,6 +209,7 @@ export default function CareRequestDetailScreen() {
       };
       setSuccessMessage(labels[action]);
     } catch (nextError: any) {
+      hapticFeedback.error();
       setError(nextError.message ?? "No fue posible actualizar la solicitud.");
     } finally {
       setIsActing(false);
@@ -223,6 +226,7 @@ export default function CareRequestDetailScreen() {
       setAssignmentSheetVisible(false);
       setSuccessMessage("Enfermera asignada correctamente.");
     } catch (nextError: any) {
+      hapticFeedback.error();
       setError(nextError.message ?? "No fue posible asignar la enfermera.");
     } finally {
       setIsActing(false);
@@ -344,7 +348,10 @@ export default function CareRequestDetailScreen() {
             <Pressable
               testID={careRequestTestIds.detail.overflowTrigger}
               nativeID={careRequestTestIds.detail.overflowTrigger}
-              onPress={() => setOverflowSheetVisible(true)}
+              onPress={() => {
+                hapticFeedback.selection();
+                setOverflowSheetVisible(true);
+              }}
               accessibilityRole="button"
               accessibilityLabel="Más acciones"
               style={({ pressed }) => [styles.overflowButton, pressed && styles.pressed]}
@@ -393,7 +400,10 @@ export default function CareRequestDetailScreen() {
             <View style={styles.cardHeaderRow}>
               <Text style={styles.cardEyebrow}>Servicio</Text>
               <Pressable
-                onPress={() => setPricingSheetVisible(true)}
+                onPress={() => {
+                  hapticFeedback.selection();
+                  setPricingSheetVisible(true);
+                }}
                 disabled={!hasPricingData}
                 testID={careRequestTestIds.detail.pricingBreakdownToggle}
                 nativeID={careRequestTestIds.detail.pricingBreakdownToggle}
@@ -442,7 +452,10 @@ export default function CareRequestDetailScreen() {
               <Text style={styles.cardEyebrow}>Asignación</Text>
               {isAdmin ? (
                 <Pressable
-                  onPress={() => setAssignmentSheetVisible(true)}
+                  onPress={() => {
+                    hapticFeedback.selection();
+                    setAssignmentSheetVisible(true);
+                  }}
                   testID={careRequestTestIds.detail.assignmentSheetTrigger}
                   nativeID={careRequestTestIds.detail.assignmentSheetTrigger}
                   style={({ pressed }) => [styles.linkButton, pressed && styles.pressed]}
@@ -489,7 +502,10 @@ export default function CareRequestDetailScreen() {
       <PricingSheet
         visible={pricingSheetVisible}
         careRequest={careRequest}
-        onClose={() => setPricingSheetVisible(false)}
+        onClose={() => {
+          hapticFeedback.selection();
+          setPricingSheetVisible(false);
+        }}
       />
 
       <AssignmentSheet
@@ -499,21 +515,33 @@ export default function CareRequestDetailScreen() {
         searchQuery={nurseSearchQuery}
         isSubmitting={isActing}
         onSearchChange={setNurseSearchQuery}
-        onSelect={setAssignedNurseId}
-        onClose={() => setAssignmentSheetVisible(false)}
+        onSelect={(value) => {
+          hapticFeedback.selection();
+          setAssignedNurseId(value);
+        }}
+        onClose={() => {
+          hapticFeedback.selection();
+          setAssignmentSheetVisible(false);
+        }}
         onConfirm={() => void runAssignment()}
       />
 
       <OverflowActionsSheet
         visible={overflowSheetVisible}
         actions={overflowActions}
-        onClose={() => setOverflowSheetVisible(false)}
+        onClose={() => {
+          hapticFeedback.selection();
+          setOverflowSheetVisible(false);
+        }}
       />
 
       <PaymentProofSheet
         visible={paymentSheetVisible}
         submitting={isActing}
-        onClose={() => setPaymentSheetVisible(false)}
+        onClose={() => {
+          hapticFeedback.selection();
+          setPaymentSheetVisible(false);
+        }}
         onSubmit={runReportPayment}
       />
     </>
@@ -644,6 +672,7 @@ function PaymentProofSheet({
   }, [visible]);
 
   const pickImage = async () => {
+    hapticFeedback.selection();
     setPickError(null);
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
@@ -706,7 +735,10 @@ function PaymentProofSheet({
           />
 
           <Pressable
-            onPress={() => imageUri && onSubmit(imageUri, mimeType, note)}
+            onPress={() => {
+              hapticFeedback.light();
+              if (imageUri) onSubmit(imageUri, mimeType, note);
+            }}
             disabled={!imageUri || submitting}
             style={({ pressed }) => [
               styles.proofSubmitButton,
@@ -870,7 +902,10 @@ function AssignmentSheet({
           <Pressable
             testID={careRequestTestIds.detail.assignmentConfirmButton}
             nativeID={careRequestTestIds.detail.assignmentConfirmButton}
-            onPress={onConfirm}
+            onPress={() => {
+              hapticFeedback.light();
+              onConfirm();
+            }}
             disabled={isSubmitting || !selectedNurseId}
             style={({ pressed }) => [
               styles.sheetPrimaryButton,
@@ -921,7 +956,10 @@ function OverflowActionsSheet({
                   key={action.testID ?? idx}
                   testID={action.testID}
                   nativeID={action.testID}
-                  onPress={action.onPress}
+                  onPress={() => {
+                    hapticFeedback.light();
+                    action.onPress();
+                  }}
                   disabled={action.disabled}
                   style={({ pressed }) => [
                     styles.overflowAction,
