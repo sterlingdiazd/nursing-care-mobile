@@ -15,6 +15,7 @@ import AppFooter, { type FooterAction } from "@/src/components/navigation/AppFoo
 import { mobileTheme } from "@/src/design-system/mobileStyles";
 import { designTokens } from "@/src/design-system/tokens";
 import { navigationTestIds } from "@/src/testing/testIds";
+import { hapticFeedback } from "@/src/utils/haptics";
 import { goBackOrReplace } from "@/src/utils/navigationEscapes";
 
 interface MobileWorkspaceShellProps {
@@ -65,6 +66,7 @@ export default function MobileWorkspaceShell({
   const footerBack = shouldRenderPrimaryReturn && primaryReturnPlacement === "footer";
 
   const handlePrimaryReturn = () => {
+    hapticFeedback.selection();
     if (onPrimaryReturn) {
       onPrimaryReturn();
       return;

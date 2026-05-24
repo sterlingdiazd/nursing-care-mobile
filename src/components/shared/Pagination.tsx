@@ -2,6 +2,7 @@ import { memo, useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { designTokens } from "@/src/design-system/tokens";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 /**
  * Visible window of page numbers around the current page. Always shows the
@@ -34,7 +35,13 @@ function PaginationComponent({ currentPage, totalPages, onPageChange, testID }: 
 
   if (totalPages <= 1) return null;
 
-  const go = (n: number) => onPageChange(Math.min(Math.max(1, n), totalPages));
+  const go = (n: number) => {
+    const nextPage = Math.min(Math.max(1, n), totalPages);
+    if (nextPage !== currentPage) {
+      hapticFeedback.selection();
+    }
+    onPageChange(nextPage);
+  };
 
   return (
     <View style={styles.paginationBar} testID={testID} nativeID={testID}>

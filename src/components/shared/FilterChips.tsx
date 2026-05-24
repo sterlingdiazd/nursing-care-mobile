@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View, Pressable } from "react-native";
 import { designTokens } from "@/src/design-system/tokens";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 export interface FilterChipOption<K extends string = string> {
   key: K;
@@ -23,6 +24,12 @@ interface FilterChipsProps<K extends string> {
  * response, never client length.
  */
 export function FilterChips<K extends string>({ options, value, onChange, testIDPrefix }: FilterChipsProps<K>) {
+  const handleChange = (key: K) => {
+    if (key === value) return;
+    hapticFeedback.selection();
+    onChange(key);
+  };
+
   return (
     <View style={styles.row}>
       {options.map((opt) => {
@@ -31,7 +38,7 @@ export function FilterChips<K extends string>({ options, value, onChange, testID
         return (
           <Pressable
             key={opt.key}
-            onPress={() => onChange(opt.key)}
+            onPress={() => handleChange(opt.key)}
             accessibilityRole="button"
             accessibilityLabel={`Filtro ${opt.label}`}
             accessibilityState={{ selected: active }}

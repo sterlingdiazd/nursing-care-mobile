@@ -14,6 +14,7 @@ import {
 } from "@/src/design-system/mobileStyles";
 import { designTokens } from "@/src/design-system/tokens";
 import { navigationTestIds } from "@/src/testing/testIds/navigationTestIds";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 export type FooterActionVariant = "primary" | "secondary" | "danger";
 
@@ -52,13 +53,18 @@ function FooterButton({
     Platform.OS === "web" && testID
       ? ({ id: testID, "data-testid": testID } as any)
       : null;
+  const handlePress = () => {
+    hapticFeedback.light();
+    onPress();
+  };
+
   return (
     <Pressable
       testID={testID}
       nativeID={testID}
       {...webProps}
       disabled={disabled}
-      onPress={onPress}
+      onPress={handlePress}
       style={({ pressed }) => [
         styles.button,
         variant === "primary" && styles.primaryButton,

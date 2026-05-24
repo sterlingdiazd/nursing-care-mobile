@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import { designTokens } from "@/src/design-system/tokens";
+import { hapticFeedback } from "@/src/utils/haptics";
 
 interface ListRowProps {
   title: string;
@@ -71,9 +72,14 @@ export function ListRow({
     );
   }
 
+  const handlePress = () => {
+    hapticFeedback.light();
+    onPress();
+  };
+
   return (
     <Pressable
-      onPress={onPress}
+      onPress={handlePress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? title}
       testID={testID}

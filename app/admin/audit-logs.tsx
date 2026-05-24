@@ -19,6 +19,7 @@ import {
 } from "@/src/services/adminPortalService";
 import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+import { hapticFeedback } from "@/src/utils/haptics";
 import { FilterChips, type FilterChipOption } from "@/src/components/shared/FilterChips";
 import { Pagination } from "@/src/components/shared/Pagination";
 import { SwipePager } from "@/src/components/shared/SwipePager";
@@ -257,7 +258,10 @@ export default function AdminAuditLogsScreen() {
             <View key={item.id}>
               <Pressable
                 style={[styles.row, expandedLogId === item.id && styles.rowExpanded]}
-                onPress={() => void handleViewDetail(item.id)}
+                onPress={() => {
+                  hapticFeedback.selection();
+                  void handleViewDetail(item.id);
+                }}
                 testID={`admin-audit-log-card-${item.id}`}
                 nativeID={`admin-audit-log-card-${item.id}`}
                 accessibilityRole="button"
@@ -290,8 +294,8 @@ export default function AdminAuditLogsScreen() {
                     secondary={selectedDetail.actorEmail}
                   />
                   <DetailField label="Rol del actor" value={roleLabel(selectedDetail.actorRole)} />
-                  <DetailField label="Acción" value={selectedDetail.action} />
-                  <DetailField label="Tipo de entidad" value={selectedDetail.entityType} />
+                  <DetailField label="Acción" value={actionLabel(selectedDetail.action)} />
+                  <DetailField label="Tipo de entidad" value={entityLabel(selectedDetail.entityType)} />
                   <DetailField label="ID de entidad" value={selectedDetail.entityId} mono />
                   {selectedDetail.notes ? (
                     <DetailField label="Notas" value={selectedDetail.notes} />

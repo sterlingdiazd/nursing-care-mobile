@@ -33,11 +33,45 @@ import {
 } from "@/src/services/payrollService";
 import { getCachedAuthSession } from "@/src/services/authSession";
 import { formatDateES, formatDateTimeES } from "@/src/utils/spanishTextValidator";
+import { hapticFeedback } from "@/src/utils/haptics";
 
-const SERVICE_REQUEST_ID_PATTERN = /\s*·?\s*solicitud\s+[0-9a-fA-F-]{36}\s*$/i;
+const SERVICE_REQUEST_ID_PATTERN = /\s*·?\s*solicitud\s*[0-9a-fA-F-]{36}\s*$/i;
+const GUID_PATTERN = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/g;
+const SERVICE_DISPLAY_NAMES: Record<string, string> = {
+  hogar_diario: "Hogar diario",
+  hogar_basico: "Hogar básico",
+  hogar_estandar: "Hogar estándar",
+  hogar_premium: "Hogar premium",
+  domicilio_dia_12h: "Domicilio día (12h)",
+  domicilio_noche_12h: "Domicilio noche (12h)",
+  domicilio_24h: "Domicilio 24h",
+  suero: "Suero",
+  medicamentos: "Medicamentos",
+  sonda_vesical: "Sonda vesical",
+  sonda_nasogastrica: "Sonda nasogástrica",
+  sonda_peg: "Sonda PEG",
+  curas: "Curas",
+};
 
-const formatServiceLabel = (description: string) =>
-  description.replace(SERVICE_REQUEST_ID_PATTERN, "").trim() || "Servicio";
+const formatServiceLabel = (description: string) => {
+  const cleanedService = description
+    .replace(SERVICE_REQUEST_ID_PATTERN, "")
+    .replace(GUID_PATTERN, "")
+    .replace(/\bsolicitud\b/gi, "")
+    .replace(/^Servicio\s+/i, "")
+    .trim();
+  const normalizedServiceCode = cleanedService.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
+  const mappedService = SERVICE_DISPLAY_NAMES[normalizedServiceCode];
+  if (mappedService) return mappedService;
+
+  const rawService = cleanedService
+    .replace(/[_.-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!rawService) return "Servicio";
+  return rawService.charAt(0).toUpperCase() + rawService.slice(1);
+};
 
 interface PeriodDetailProps {
   period: AdminPayrollPeriodDetail;
@@ -120,18 +154,10 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP" }).format(amount);
 
-  const describeLineCompensation = (line: AdminPayrollLineItem) => {
-    // Pay = tarifa × días (base) + ajustes. Transport/complexity/supplies are decoupled (always 0),
-    // so they are not shown. Deductions are period-level (in the nurse/period summary).
-    const parts: string[] = [];
-    if (line.baseCompensation > 0) parts.push(`Base ${formatCurrency(line.baseCompensation)}`);
-    if (line.adjustmentsTotal !== 0) parts.push(`Ajustes ${formatCurrency(line.adjustmentsTotal)}`);
-    return parts.join("  ·  ");
-  };
-
   // --- Report export/view actions ---
   const handleExport = async (format: "pdf" | "xlsx" | "csv") => {
     if (exporting) return;
+    hapticFeedback.light();
     setExporting(format);
     try {
       const exportConfig = {
@@ -169,6 +195,7 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
 
   // --- Override modal ---
   const openOverrideModal = (line: AdminPayrollLineItem) => {
+    hapticFeedback.selection();
     if (!isOpen) {
       setImmutabilityErrorVisible(true);
       return;
@@ -183,6 +210,7 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
 
   const handleSubmitOverride = async () => {
     if (!overrideLine) return;
+    hapticFeedback.light();
     const parsed = parseFloat(overrideAmount);
     if (isNaN(parsed) || parsed < 0) {
       showToast({ variant: "error", message: "Ingresa un monto válido." });
@@ -209,6 +237,7 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
 
   // --- Approve override (keep destructive confirmation as Alert.alert) ---
   const handleApproveOverride = async (line: AdminPayrollLineItem) => {
+    hapticFeedback.selection();
     Alert.alert(
       "Aprobar ajuste",
       "¿Confirmar la aprobación del ajuste pendiente?",
@@ -234,6 +263,7 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
 
   // --- Individual voucher download ---
   const handleDownloadVoucher = async (nurseUserId: string, nurseDisplayName: string) => {
+    hapticFeedback.light();
     setDownloadingVoucherId(nurseUserId);
     try {
       const url = getAdminPayrollVoucherUrl(period.id, nurseUserId);
@@ -253,6 +283,7 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
   // --- Bulk voucher download ---
   const handleDownloadAllVouchers = async () => {
     if (downloadingBulk) return;
+    hapticFeedback.light();
     setDownloadingBulk(true);
     try {
       const url = getAdminPayrollBulkVouchersUrl(period.id);
@@ -270,6 +301,7 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
 
   // --- Nurse drilldown ---
   const handleNursePress = (nurseUserId: string, nurseDisplayName: string) => {
+    hapticFeedback.selection();
     setSelectedNurseId(nurseUserId);
     setSelectedNurseName(nurseDisplayName);
     setNurseDetailModalVisible(true);
@@ -277,6 +309,7 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
 
   // --- Period close (keep destructive confirmation as Alert.alert) ---
   const handleClosePeriod = () => {
+    hapticFeedback.selection();
     // Safeguard: flag nurses whose pay is 0 (rate not set) or negative (deductions > gross) before
     // locking the period. Closing is irreversible, so surface this for review first.
     const flagged = period.staffSummary.filter((s) => s.netCompensation <= 0);
@@ -307,6 +340,7 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
 
   // --- Period delete (destructive confirmation, mirrors close) ---
   const handleDeletePeriodConfirm = () => {
+    hapticFeedback.selection();
     Alert.alert(
       "Eliminar Período",
       `¿Eliminar el período "${formatDateES(period.startDate)} - ${formatDateES(period.endDate)}"? Esta acción no se puede deshacer.`,
@@ -417,11 +451,24 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
     ? period.lines.filter((l) => l.nurseUserId === selectedNurseId)
     : [];
   const nurseDeductionLines = nurseLines.filter((line) => line.deductionsTotal > 0);
+  const getLineFacts = (line: AdminPayrollLineItem): Array<{ label: string; value: string; emphasized?: boolean }> => [
+    { label: "Base", value: formatCurrency(line.baseCompensation) },
+    { label: "Ajustes", value: formatCurrency(line.adjustmentsTotal) },
+    { label: "Deducciones", value: formatCurrency(line.deductionsTotal) },
+    { label: "Pago", value: formatCurrency(line.netCompensation), emphasized: true },
+    ...(line.serviceSubtotal > 0
+      ? [
+          { label: "Cobrado", value: formatCurrency(line.serviceSubtotal) },
+          { label: "Margen", value: formatCurrency(line.serviceSubtotal - line.netCompensation) },
+        ]
+      : []),
+  ];
 
   return (
     <>
       <ScrollView
         style={styles.container}
+        contentContainerStyle={styles.scrollContent}
         testID="admin-payroll-period-detail-page"
         nativeID="admin-payroll-period-detail-page"
       >
@@ -520,8 +567,9 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
                     nativeID={`admin-staff-name-${staff.nurseUserId}`}
                     accessibilityRole="button"
                     accessibilityLabel={`Ver detalle de ${staff.nurseDisplayName}`}
+                    accessibilityHint="Abre las líneas y deducciones de esta enfermera"
                   >
-                    <Text style={styles.staffName}>
+                    <Text style={[styles.staffName, styles.staffNameTappable]}>
                       {staff.nurseDisplayName}
                     </Text>
                   </Pressable>
@@ -581,28 +629,46 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
               </View>
             </View>
             {visibleLines.map((line) => {
-              const breakdown = describeLineCompensation(line);
+              const lineFacts = getLineFacts(line);
+              const serviceLabel = formatServiceLabel(line.description);
               return (
-              <View key={line.id} style={styles.lineItem}>
+              <View
+                key={line.id}
+                style={styles.lineItem}
+                testID="payroll-service-detail-card"
+                nativeID="payroll-service-detail-card"
+              >
                 <View style={styles.lineHeader}>
                   <Text style={styles.lineName} numberOfLines={1}>
                     {line.nurseDisplayName}
                   </Text>
                   <Text style={styles.lineNet}>{formatCurrency(line.netCompensation)}</Text>
                 </View>
-                <Text style={styles.lineDescription} numberOfLines={1}>
-                  {formatServiceLabel(line.description)}
-                </Text>
-                {breakdown ? (
-                  <Text style={styles.lineBreakdown} numberOfLines={2}>
-                    {breakdown}
+                <View style={styles.lineServiceBlock}>
+                  <Text style={styles.lineEyebrow}>Servicio</Text>
+                  <Text
+                    style={styles.lineServiceName}
+                    numberOfLines={2}
+                    testID="payroll-service-detail-label"
+                    nativeID="payroll-service-detail-label"
+                  >
+                    {serviceLabel}
                   </Text>
-                ) : null}
-                {line.serviceSubtotal > 0 ? (
-                  <Text style={styles.lineMargin} numberOfLines={1}>
-                    {`Cliente ${formatCurrency(line.serviceSubtotal)}  ·  Pago ${formatCurrency(line.netCompensation)}  ·  Margen ${formatCurrency(line.serviceSubtotal - line.netCompensation)}`}
-                  </Text>
-                ) : null}
+                </View>
+                <View style={styles.lineFactsGrid}>
+                  {lineFacts.map((fact) => (
+                    <View key={`${line.id}-${fact.label}`} style={styles.lineFactCell}>
+                      <Text style={styles.lineFactLabel}>{fact.label}</Text>
+                      <Text
+                        style={[styles.lineFactValue, fact.emphasized && styles.lineFactValueStrong]}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                      >
+                        {fact.value}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
                 {isOpen ? (
                   <View style={styles.lineActions}>
                     {line.pendingOverrideId ? (
@@ -673,7 +739,7 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
             <Text style={styles.modalTitle}>Ajustar línea de nómina</Text>
             {overrideLine && (
               <Text style={styles.modalSubtitle} numberOfLines={2}>
-                {overrideLine.nurseDisplayName} — {overrideLine.description}
+                {overrideLine.nurseDisplayName} — {formatServiceLabel(overrideLine.description)}
               </Text>
             )}
 
@@ -704,7 +770,10 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
             <View style={styles.modalActions}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalButtonSecondary]}
-                onPress={() => setOverrideModalVisible(false)}
+                onPress={() => {
+                  hapticFeedback.selection();
+                  setOverrideModalVisible(false);
+                }}
                 disabled={overrideSubmitting}
                 accessibilityRole="button"
                 accessibilityLabel="Cancelar ajuste"
@@ -760,7 +829,10 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
             <View style={styles.nurseDetailHeader}>
               <Text style={styles.modalTitle}>{selectedNurseName}</Text>
               <Pressable
-                onPress={() => setNurseDetailModalVisible(false)}
+                onPress={() => {
+                  hapticFeedback.selection();
+                  setNurseDetailModalVisible(false);
+                }}
                 testID="admin-nurse-detail-close-button"
                 nativeID="admin-nurse-detail-close-button"
                 accessibilityRole="button"
@@ -782,7 +854,7 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
                   nurseLines.map((line) => (
                     <View key={line.id} style={styles.nurseDetailLine}>
                       <Text style={styles.nurseDetailDescription} numberOfLines={2}>
-                        {line.description}
+                        {formatServiceLabel(line.description)}
                       </Text>
                       <View style={styles.nurseDetailAmounts}>
                         <Text style={styles.nurseDetailLabel}>Base:</Text>
@@ -813,7 +885,7 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
                   nurseDeductionLines.map((line) => (
                     <View key={`${line.id}-deduction`} style={styles.nurseDetailLine}>
                       <Text style={styles.nurseDetailDescription} numberOfLines={2}>
-                        {line.description}
+                        {formatServiceLabel(line.description)}
                       </Text>
                       <View style={styles.nurseDetailAmounts}>
                         <Text style={styles.nurseDetailLabel}>Deducción:</Text>
@@ -837,6 +909,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: designTokens.color.surface.primary,
+  },
+  scrollContent: {
+    paddingBottom: 112,
   },
   hiddenMarker: {
     height: 0,
@@ -1125,6 +1200,63 @@ const styles = StyleSheet.create({
   lineNet: {
     fontSize: 16,
     fontWeight: "800",
+    color: designTokens.color.status.successText,
+  },
+  lineServiceBlock: {
+    marginTop: 4,
+    marginBottom: 10,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: designTokens.color.surface.primary,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.subtle,
+  },
+  lineEyebrow: {
+    fontSize: 10,
+    lineHeight: 13,
+    fontWeight: "800",
+    color: designTokens.color.ink.muted,
+    textTransform: "uppercase",
+    letterSpacing: 0,
+    marginBottom: 3,
+  },
+  lineServiceName: {
+    fontSize: 14,
+    lineHeight: 19,
+    fontWeight: "800",
+    color: designTokens.color.ink.primary,
+  },
+  lineFactsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 10,
+  },
+  lineFactCell: {
+    minWidth: 108,
+    flexGrow: 1,
+    flexBasis: "31%",
+    paddingVertical: 8,
+    paddingHorizontal: 9,
+    borderRadius: 9,
+    backgroundColor: designTokens.color.surface.primary,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.subtle,
+  },
+  lineFactLabel: {
+    fontSize: 10,
+    lineHeight: 13,
+    fontWeight: "700",
+    color: designTokens.color.ink.muted,
+    marginBottom: 2,
+  },
+  lineFactValue: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: "800",
+    color: designTokens.color.ink.primary,
+  },
+  lineFactValueStrong: {
     color: designTokens.color.status.successText,
   },
   lineDescription: {
