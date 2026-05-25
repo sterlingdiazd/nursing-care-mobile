@@ -738,6 +738,7 @@ describe("Admin Portal Service - Auth: true Requirement", () => {
         clientUserId: "client-123",
         careRequestDescription: "Test request",
         careRequestType: "domicilio_24h",
+        assignedNurseId: "nurse-123",
       });
 
       expect(mockRequestJson).toHaveBeenCalledWith(

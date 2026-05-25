@@ -374,6 +374,8 @@ export interface CreateAdminCareRequestDto {
   careRequestDescription: string;
   careRequestType: string;
   unit?: number;
+  /** Required: the backend now requires a nurse assignment at creation time. */
+  assignedNurseId: string;
   suggestedNurse?: string;
   price?: number;
   clientBasePriceOverride?: number;
@@ -540,6 +542,52 @@ export async function getReceipt(id: string): Promise<GetReceiptResponse | null>
     if (err instanceof Error && err.message.includes("404")) return null;
     throw err;
   }
+}
+
+// Admin lifecycle action functions (non-billing)
+
+export async function adminAssignCareRequestNurse(
+  id: string,
+  assignedNurse: string,
+): Promise<AdminCareRequestDetailDto> {
+  const raw = await requestJson<AdminCareRequestDetailDto>({
+    path: `/api/admin/care-requests/${id}/assignment`,
+    method: "PUT",
+    body: { assignedNurse },
+    auth: true,
+  });
+  return normalizeAdminCareRequestDetail(raw);
+}
+
+export async function adminApproveCareRequest(id: string): Promise<AdminCareRequestDetailDto> {
+  const raw = await requestJson<AdminCareRequestDetailDto>({
+    path: `/api/admin/care-requests/${id}/approve`,
+    method: "POST",
+    auth: true,
+  });
+  return normalizeAdminCareRequestDetail(raw);
+}
+
+export async function adminRejectCareRequest(
+  id: string,
+  reason?: string,
+): Promise<AdminCareRequestDetailDto> {
+  const raw = await requestJson<AdminCareRequestDetailDto>({
+    path: `/api/admin/care-requests/${id}/reject`,
+    method: "POST",
+    body: reason ? { reason } : undefined,
+    auth: true,
+  });
+  return normalizeAdminCareRequestDetail(raw);
+}
+
+export async function adminCompleteCareRequest(id: string): Promise<AdminCareRequestDetailDto> {
+  const raw = await requestJson<AdminCareRequestDetailDto>({
+    path: `/api/admin/care-requests/${id}/complete`,
+    method: "POST",
+    auth: true,
+  });
+  return normalizeAdminCareRequestDetail(raw);
 }
 
 // Nurse Profile types and functions

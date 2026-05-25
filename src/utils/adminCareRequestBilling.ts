@@ -2,6 +2,7 @@ import type { AdminCareRequestStatus } from "@/src/services/adminPortalService";
 import { designTokens } from "@/src/design-system/tokens";
 
 export type AdminCareRequestBillingAction = "invoice" | "pay" | "void" | "receipt";
+export type AdminCareRequestLifecycleAction = "assign" | "approve" | "reject" | "complete";
 
 export interface BillingTaskActionDefinition {
   action: AdminCareRequestBillingAction;
@@ -133,4 +134,111 @@ export function isBillingTaskAllowed(
   action: AdminCareRequestBillingAction,
 ) {
   return getBillingTaskActions("route-check", status).some((item) => item.action === action);
+}
+
+// ─── Lifecycle (non-billing) action helpers ───────────────────────────────────
+
+export interface LifecycleActionDefinition {
+  action: AdminCareRequestLifecycleAction;
+  label: string;
+  /** Spanish guidance sentence shown in the ESTADO card. */
+  guidanceText: string;
+  variant: "primary" | "secondary" | "danger";
+  /** True if the action requires an input (e.g. rejection reason). */
+  requiresInput: boolean;
+}
+
+/**
+ * Returns the ordered lifecycle action set for a given status + assignment state.
+ * Billing actions (invoice / pay / void / receipt) are handled separately by getBillingTaskActions.
+ *
+ * Complete note: the backend auto-generates the invoice on complete, so the request
+ * immediately transitions to Invoiced — not Completed. getBillingTaskActions handles Invoiced.
+ */
+export function getLifecycleActions(
+  status: AdminCareRequestStatus,
+  isAssigned: boolean,
+): LifecycleActionDefinition[] {
+  switch (status) {
+    case "Pending":
+      if (!isAssigned) {
+        return [
+          {
+            action: "assign",
+            label: "Asignar enfermera",
+            guidanceText: "Asigna una enfermera para poder aprobar esta solicitud.",
+            variant: "primary",
+            requiresInput: false,
+          },
+          {
+            action: "reject",
+            label: "Rechazar",
+            guidanceText: "Asigna una enfermera para poder aprobar esta solicitud.",
+            variant: "danger",
+            requiresInput: true,
+          },
+        ];
+      }
+      return [
+        {
+          action: "approve",
+          label: "Aprobar",
+          guidanceText: "Revisa y aprueba o rechaza la solicitud.",
+          variant: "primary",
+          requiresInput: false,
+        },
+        {
+          action: "reject",
+          label: "Rechazar",
+          guidanceText: "Revisa y aprueba o rechaza la solicitud.",
+          variant: "danger",
+          requiresInput: true,
+        },
+      ];
+    case "Approved":
+      return [
+        {
+          action: "complete",
+          label: "Marcar completada",
+          guidanceText: "Marca el servicio como completado al terminar (se generará la factura).",
+          variant: "primary",
+          requiresInput: false,
+        },
+      ];
+    default:
+      return [];
+  }
+}
+
+/**
+ * Returns the "Próximo paso" guidance sentence for a given status + assignment state.
+ * For billing statuses (Completed, Invoiced, PaymentReported, Paid), guidance is derived
+ * from lifecycle — but those use billing actions handled by getBillingTaskActions.
+ */
+export function getLifecycleGuidance(
+  status: AdminCareRequestStatus,
+  isAssigned: boolean,
+): string {
+  switch (status) {
+    case "Pending":
+      return isAssigned
+        ? "Revisa y aprueba o rechaza la solicitud."
+        : "Asigna una enfermera para poder aprobar esta solicitud.";
+    case "Approved":
+      return "Marca el servicio como completado al terminar (se generará la factura).";
+    case "Completed":
+      return "Genera la factura para cobrar el servicio.";
+    case "Invoiced":
+      return "Registra el pago cuando el cliente pague.";
+    case "PaymentReported":
+      return "El cliente reportó un pago: verifícalo y confírmalo.";
+    case "Paid":
+      return "Servicio cobrado. Genera el comprobante.";
+    case "Rejected":
+    case "Cancelled":
+    case "Voided":
+      return "Sin acciones pendientes.";
+    default:
+      return "";
+  }
 }

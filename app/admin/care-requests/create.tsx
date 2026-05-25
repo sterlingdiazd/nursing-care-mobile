@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { router } from "expo-router";
@@ -64,6 +65,7 @@ export default function CreateAdminCareRequestScreen() {
     careRequestDescription: "",
     careRequestType: "",
     unit: 1,
+    assignedNurseId: "",
     suggestedNurse: "",
     price: undefined,
     clientBasePriceOverride: undefined,
@@ -93,10 +95,15 @@ export default function CreateAdminCareRequestScreen() {
   const [showClientPicker, setShowClientPicker] = useState(false);
   const [selectedClient, setSelectedClient] = useState<AdminCareRequestClientOptionDto | null>(null);
 
-  // Nurse search
+  // Nurse search (for "suggested" text field — free-text)
   const [nurses, setNurses] = useState<AvailableNurseOption[]>([]);
   const [nurseLookupLoading, setNurseLookupLoading] = useState(false);
   const [showNursePicker, setShowNursePicker] = useState(false);
+
+  // Required nurse assignment picker
+  const [showAssignedNurseSheet, setShowAssignedNurseSheet] = useState(false);
+  const [assignedNurseSearch, setAssignedNurseSearch] = useState("");
+  const [selectedAssignedNurse, setSelectedAssignedNurse] = useState<AvailableNurseOption | null>(null);
 
   // Date Picker
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
@@ -207,6 +214,16 @@ export default function CreateAdminCareRequestScreen() {
       .slice(0, 8);
   }, [form.suggestedNurse, nurses]);
 
+  const filteredAssignedNurses = useMemo(() => {
+    const query = assignedNurseSearch.trim().toLocaleLowerCase();
+    if (!query) return nurses;
+    return nurses.filter((nurse) =>
+      [nurse.displayName, nurse.specialty, nurse.category]
+        .filter(Boolean)
+        .some((value) => value.toLocaleLowerCase().includes(query)),
+    );
+  }, [assignedNurseSearch, nurses]);
+
   const parseIsoDate = (value?: string) => {
     if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
     const parsedDate = new Date(`${value}T00:00:00`);
@@ -255,6 +272,7 @@ export default function CreateAdminCareRequestScreen() {
     if (!form.careRequestType.trim()) newErrors.careRequestType = "El tipo es obligatorio";
     if (!form.unit || form.unit <= 0) newErrors.unit = "Las unidades deben ser mayores a 0";
     if (!form.careRequestDate) newErrors.careRequestDate = "La fecha es obligatoria";
+    if (!form.assignedNurseId) newErrors.assignedNurseId = "Debe asignar una enfermera";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -289,6 +307,7 @@ export default function CreateAdminCareRequestScreen() {
         careRequestDescription: "",
         careRequestType: "",
         unit: 1,
+        assignedNurseId: "",
         suggestedNurse: "",
         price: undefined,
         clientBasePriceOverride: undefined,
@@ -299,6 +318,8 @@ export default function CreateAdminCareRequestScreen() {
       });
       setSelectedClient(null);
       setClientSearch("");
+      setSelectedAssignedNurse(null);
+      setAssignedNurseSearch("");
       setShowAdvancedPricing(false);
 
       // Redirigir a la lista en lugar del detalle
@@ -334,14 +355,16 @@ export default function CreateAdminCareRequestScreen() {
   const advancedPricingLocked = !creationProgress.coreReady;
 
   // Dirty check for back-button confirmation. Treat any user-touched field
-  // (description, type, picked client, suggested nurse, custom unit) as dirty.
+  // (description, type, picked client, suggested nurse, custom unit, assigned nurse) as dirty.
   const isDirty =
     !!form.clientUserId ||
     form.careRequestDescription.trim().length > 0 ||
     !!form.careRequestType ||
     (form.unit ?? 1) !== 1 ||
     !!form.suggestedNurse?.trim() ||
+    !!form.assignedNurseId ||
     !!selectedClient ||
+    !!selectedAssignedNurse ||
     clientSearch.trim().length > 0;
 
   const exitToList = () => {
@@ -640,6 +663,58 @@ export default function CreateAdminCareRequestScreen() {
           />
         </View>
 
+        {/* === SECTION: ASSIGNED NURSE (Required) === */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Enfermera Asignada *</Text>
+          <Text style={styles.cardLabel}>El servicio requiere una enfermera asignada para poder crearse.</Text>
+
+          {selectedAssignedNurse ? (
+            <View style={styles.selectedClient}>
+              <View>
+                <Text style={styles.selectedClientName}>{selectedAssignedNurse.displayName}</Text>
+                <Text style={styles.selectedClientEmail}>
+                  {[selectedAssignedNurse.specialty, selectedAssignedNurse.category].filter(Boolean).join(" · ")}
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => {
+                  hapticFeedback.selection();
+                  setSelectedAssignedNurse(null);
+                  setForm({ ...form, assignedNurseId: "" });
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Cambiar enfermera asignada"
+              >
+                <Text style={styles.changeLink}>Cambiar</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable
+              testID={adminTestIds.careRequests.create.assignedNursePicker}
+              nativeID={adminTestIds.careRequests.create.assignedNursePicker}
+              onPress={() => {
+                hapticFeedback.selection();
+                setAssignedNurseSearch("");
+                setShowAssignedNurseSheet(true);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Seleccionar enfermera asignada"
+              style={({ pressed }) => [
+                styles.nurseSelectorButton,
+                errors.assignedNurseId ? styles.nurseSelectorButtonError : undefined,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              <Text style={styles.nurseSelectorButtonText}>
+                {nurseLookupLoading ? "Cargando enfermeras..." : "Seleccionar enfermera"}
+              </Text>
+            </Pressable>
+          )}
+          {errors.assignedNurseId ? (
+            <Text style={styles.errorText}>{errors.assignedNurseId}</Text>
+          ) : null}
+        </View>
+
         {/* === SECTION: NURSE (Optional) === */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Enfermera Sugerida (Opcional)</Text>
@@ -809,6 +884,86 @@ export default function CreateAdminCareRequestScreen() {
         )
       ) : null}
 
+      {/* Assigned-nurse picker sheet (required) */}
+      <Modal
+        transparent
+        animationType="slide"
+        visible={showAssignedNurseSheet}
+        onRequestClose={() => setShowAssignedNurseSheet(false)}
+      >
+        <View style={styles.sheetBackdrop}>
+          <View
+            style={styles.sheet}
+            testID={adminTestIds.careRequests.create.assignedNursePickerSheet}
+            nativeID={adminTestIds.careRequests.create.assignedNursePickerSheet}
+          >
+            <View style={styles.sheetHeader}>
+              <View>
+                <Text style={styles.sheetTitle}>Enfermera Asignada</Text>
+                <Text style={styles.sheetSubtitle}>{filteredAssignedNurses.length} enfermera{filteredAssignedNurses.length === 1 ? "" : "s"}</Text>
+              </View>
+              <Pressable
+                onPress={() => setShowAssignedNurseSheet(false)}
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar"
+                style={styles.sheetClose}
+              >
+                <Text style={styles.sheetCloseText}>Cerrar</Text>
+              </Pressable>
+            </View>
+            <TextInput
+              testID={adminTestIds.careRequests.create.assignedNursePickerSearch}
+              nativeID={adminTestIds.careRequests.create.assignedNursePickerSearch}
+              value={assignedNurseSearch}
+              onChangeText={setAssignedNurseSearch}
+              placeholder="Buscar por nombre o especialidad"
+              placeholderTextColor={designTokens.color.ink.muted}
+              style={styles.searchInput}
+              accessibilityLabel="Buscar enfermera"
+              autoCapitalize="none"
+            />
+            <ScrollView style={styles.nurseSheetList} contentContainerStyle={styles.nurseSheetListContent}>
+              {filteredAssignedNurses.length === 0 ? (
+                <Text style={styles.emptyText}>No se encontraron enfermeras.</Text>
+              ) : null}
+              {filteredAssignedNurses.map((nurse) => {
+                const selected = form.assignedNurseId === nurse.userId;
+                return (
+                  <Pressable
+                    key={nurse.userId}
+                    onPress={() => {
+                      hapticFeedback.selection();
+                      setSelectedAssignedNurse(nurse);
+                      setForm({ ...form, assignedNurseId: nurse.userId });
+                      setShowAssignedNurseSheet(false);
+                      setAssignedNurseSearch("");
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Seleccionar ${nurse.displayName}`}
+                    accessibilityState={{ selected }}
+                    style={({ pressed }) => [
+                      styles.nurseSheetRow,
+                      selected && styles.nurseSheetRowSelected,
+                      pressed && styles.buttonPressed,
+                    ]}
+                  >
+                    <View style={styles.nurseSheetRowText}>
+                      <Text style={styles.nurseSheetName}>{nurse.displayName}</Text>
+                      <Text style={styles.nurseSheetMeta} numberOfLines={1}>
+                        {[nurse.specialty, nurse.category].filter(Boolean).join(" · ") || "Sin datos adicionales"}
+                      </Text>
+                    </View>
+                    {selected ? (
+                      <Text style={styles.nurseSheetSelected}>Seleccionada</Text>
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
       {/* Leave-confirm modal — protects against accidental back-tap when the
           form has unsaved input. */}
       <Modal
@@ -947,4 +1102,56 @@ const styles = StyleSheet.create({
   dateModalConfirmText: { color: designTokens.color.ink.inverse, fontWeight: "700" },
 
   buttonPressed: { opacity: 0.8 },
+
+  // Required nurse picker button
+  nurseSelectorButton: {
+    minHeight: 48, borderRadius: 12, borderWidth: 1,
+    borderColor: designTokens.color.border.strong,
+    backgroundColor: designTokens.color.surface.secondary,
+    alignItems: "center", justifyContent: "center",
+    paddingHorizontal: 14,
+  },
+  nurseSelectorButtonError: { borderColor: designTokens.color.ink.danger },
+  nurseSelectorButtonText: { color: designTokens.color.ink.accent, fontSize: 15, fontWeight: "700" },
+
+  // Assigned nurse picker sheet
+  sheetBackdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.32)" },
+  sheet: {
+    maxHeight: "86%", minHeight: "58%",
+    backgroundColor: designTokens.color.surface.primary,
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    paddingHorizontal: 18, paddingTop: 16, paddingBottom: 18, gap: 12,
+  },
+  sheetHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  sheetTitle: { color: designTokens.color.ink.primary, fontSize: 20, fontWeight: "900" },
+  sheetSubtitle: { color: designTokens.color.ink.secondary, fontSize: 13, fontWeight: "700", marginTop: 2 },
+  sheetClose: {
+    minHeight: 38, borderRadius: 12, paddingHorizontal: 14,
+    alignItems: "center", justifyContent: "center",
+    backgroundColor: designTokens.color.surface.secondary,
+  },
+  sheetCloseText: { color: designTokens.color.ink.primary, fontWeight: "800" },
+  searchInput: {
+    minHeight: 48, borderRadius: 14, borderWidth: 1,
+    borderColor: designTokens.color.border.strong,
+    backgroundColor: designTokens.color.surface.primary,
+    color: designTokens.color.ink.primary, paddingHorizontal: 14, fontSize: 15,
+  },
+  nurseSheetList: { flex: 1 },
+  nurseSheetListContent: { paddingBottom: 8, gap: 8 },
+  nurseSheetRow: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12,
+    borderRadius: 14, borderWidth: 1, borderColor: designTokens.color.border.subtle,
+    backgroundColor: designTokens.color.surface.primary,
+    paddingHorizontal: 14, paddingVertical: 12,
+  },
+  nurseSheetRowSelected: {
+    borderColor: designTokens.color.ink.accent,
+    backgroundColor: designTokens.color.surface.accent,
+  },
+  nurseSheetRowText: { flex: 1, minWidth: 0 },
+  nurseSheetName: { color: designTokens.color.ink.primary, fontSize: 15, fontWeight: "900" },
+  nurseSheetMeta: { color: designTokens.color.ink.secondary, fontSize: 12, fontWeight: "600", marginTop: 3 },
+  nurseSheetSelected: { color: designTokens.color.ink.accent, fontSize: 12, fontWeight: "900" },
+  emptyText: { color: designTokens.color.ink.muted, fontSize: 14, textAlign: "center", paddingVertical: 24 },
 });

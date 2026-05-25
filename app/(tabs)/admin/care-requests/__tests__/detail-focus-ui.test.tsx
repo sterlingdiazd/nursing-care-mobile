@@ -42,6 +42,7 @@ vi.mock("@/src/services/adminPortalService", () => ({
 
 vi.mock("@/src/services/careRequestService", () => ({
   verifyCareRequestPricing: vi.fn(),
+  getActiveNurseProfiles: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock("@/components/app/MobileWorkspaceShell", () => ({

@@ -14,6 +14,7 @@ describe("getAdminCareCreateProgress", () => {
       careRequestType: "Cuidado Basico",
       unit: 2,
       careRequestDate: "2026-04-23",
+      assignedNurseId: "nurse-1",
       suggestedNurse: "",
     });
 
@@ -28,6 +29,7 @@ describe("getAdminCareCreateProgress", () => {
       careRequestType: "Cuidado Basico",
       unit: 0,
       careRequestDate: "",
+      assignedNurseId: "",
     });
 
     expect(progress.coreReady).toBe(false);

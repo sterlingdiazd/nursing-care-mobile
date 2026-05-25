@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
@@ -17,15 +18,22 @@ import { type FooterAction } from "@/src/components/navigation/AppFooter";
 import { useAuth } from "@/src/context/AuthContext";
 import {
   getAdminCareRequestDetail,
+  adminAssignCareRequestNurse,
+  adminApproveCareRequest,
+  adminRejectCareRequest,
+  adminCompleteCareRequest,
   type AdminCareRequestDetailDto,
   type AdminCareRequestStatus,
 } from "@/src/services/adminPortalService";
+import { getActiveNurseProfiles, type ActiveNurseProfileSummary } from "@/src/services/careRequestService";
 import { mobileTheme } from "@/src/design-system/mobileStyles";
 import { designTokens } from "@/src/design-system/tokens";
 import { adminTestIds } from "@/src/testing/testIds/adminTestIds";
 import {
   formatAdminCareRequestStatusLabel,
   getBillingTaskActions,
+  getLifecycleActions,
+  getLifecycleGuidance,
 } from "@/src/utils/adminCareRequestBilling";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
@@ -73,6 +81,28 @@ function getStatusColors(status: AdminCareRequestStatus) {
   }
 }
 
+/** Derive an overdue detail hint from the care request. */
+function formatOverdueHint(detail: AdminCareRequestDetailDto): string {
+  if (!detail.careRequestDate) return "Vencida";
+  const scheduled = new Date(detail.careRequestDate);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  scheduled.setHours(0, 0, 0, 0);
+  if (scheduled < today) {
+    return "Vencida · fecha pasada";
+  }
+  const diffDays = Math.floor((today.getTime() - scheduled.getTime()) / 86_400_000);
+  return diffDays > 0 ? `Vencida · +${diffDays} días` : "Vencida";
+}
+
+function buildNurseLabel(nurse: ActiveNurseProfileSummary) {
+  return [nurse.name, nurse.lastName].filter(Boolean).join(" ") || nurse.email;
+}
+
+function normalizeSearch(value: string) {
+  return value.trim().toLocaleLowerCase();
+}
+
 const BILLING_TEST_IDS: Record<string, string> = {
   invoice: adminTestIds.careRequests.detail.invoiceButton,
   pay: adminTestIds.careRequests.detail.payButton,
@@ -87,6 +117,13 @@ const BILLING_LABELS: Record<string, string> = {
   receipt: "Generar recibo",
 };
 
+const LIFECYCLE_TEST_IDS: Record<string, string> = {
+  assign: adminTestIds.careRequests.detail.assignButton,
+  approve: adminTestIds.careRequests.detail.approveButton,
+  reject: adminTestIds.careRequests.detail.rejectButton,
+  complete: adminTestIds.careRequests.detail.completeButton,
+};
+
 export default function AdminCareRequestDetailScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
   const { id, billingAction, billingRefresh } = useLocalSearchParams<{
@@ -97,9 +134,19 @@ export default function AdminCareRequestDetailScreen() {
   const [detail, setDetail] = useState<AdminCareRequestDetailDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [acting, setActing] = useState(false);
   const [pricingSheetVisible, setPricingSheetVisible] = useState(false);
   const [overflowSheetVisible, setOverflowSheetVisible] = useState(false);
   const [historySheetVisible, setHistorySheetVisible] = useState(false);
+  const [assignmentSheetVisible, setAssignmentSheetVisible] = useState(false);
+  const [rejectSheetVisible, setRejectSheetVisible] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+
+  // Nurse picker state (reused for assignment sheet)
+  const [nurses, setNurses] = useState<ActiveNurseProfileSummary[]>([]);
+  const [nurseSearch, setNurseSearch] = useState("");
+  const [selectedNurseId, setSelectedNurseId] = useState("");
+
   const hasAdminAccess = roles.includes("ADMIN");
   const expectedBillingReturnStatus =
     billingAction === "invoice" ? "Invoiced"
@@ -155,31 +202,158 @@ export default function AdminCareRequestDetailScreen() {
     void loadAfterBillingReturn();
   }, [billingRefresh, hasAdminAccess, isAuthenticated, isReady, loadAfterBillingReturn, requiresProfileCompletion]);
 
+  // Load nurses once for the assignment sheet
+  useEffect(() => {
+    if (!hasAdminAccess) return;
+    void getActiveNurseProfiles()
+      .then(setNurses)
+      .catch(() => setNurses([]));
+  }, [hasAdminAccess]);
+
+  const sortedNurses = useMemo(
+    () => [...nurses].sort((a, b) => buildNurseLabel(a).localeCompare(buildNurseLabel(b), "es")),
+    [nurses],
+  );
+
+  const filteredNurses = useMemo(() => {
+    const query = normalizeSearch(nurseSearch);
+    if (!query) return sortedNurses;
+    return sortedNurses.filter((n) =>
+      [buildNurseLabel(n), n.email, n.specialty ?? "", n.category ?? ""].some((v) =>
+        normalizeSearch(v).includes(query),
+      ),
+    );
+  }, [nurseSearch, sortedNurses]);
+
   const billingTaskActions = useMemo(() => {
     if (!detail) return [];
     return getBillingTaskActions(detail.id, detail.status);
   }, [detail]);
 
+  const lifecycleActions = useMemo(() => {
+    if (!detail) return [];
+    return getLifecycleActions(detail.status, Boolean(detail.assignedNurseUserId));
+  }, [detail]);
+
+  const guidanceText = useMemo(() => {
+    if (!detail) return "";
+    return getLifecycleGuidance(detail.status, Boolean(detail.assignedNurseUserId));
+  }, [detail]);
+
+  // ── Lifecycle action handlers ─────────────────────────────────────────────
+
+  const runAssign = useCallback(async () => {
+    if (!id || !selectedNurseId) return;
+    setActing(true);
+    setError(null);
+    try {
+      const updated = await adminAssignCareRequestNurse(id, selectedNurseId);
+      setDetail(updated);
+      setAssignmentSheetVisible(false);
+      setSelectedNurseId("");
+      setNurseSearch("");
+    } catch (nextError) {
+      hapticFeedback.error();
+      setError(nextError instanceof Error ? nextError.message : "No fue posible asignar la enfermera.");
+    } finally {
+      setActing(false);
+    }
+  }, [id, selectedNurseId]);
+
+  const runApprove = useCallback(async () => {
+    if (!id) return;
+    setActing(true);
+    setError(null);
+    try {
+      const updated = await adminApproveCareRequest(id);
+      setDetail(updated);
+    } catch (nextError) {
+      hapticFeedback.error();
+      setError(nextError instanceof Error ? nextError.message : "No fue posible aprobar la solicitud.");
+    } finally {
+      setActing(false);
+    }
+  }, [id]);
+
+  const runReject = useCallback(async () => {
+    if (!id) return;
+    setActing(true);
+    setError(null);
+    try {
+      const updated = await adminRejectCareRequest(id, rejectReason.trim() || undefined);
+      setDetail(updated);
+      setRejectSheetVisible(false);
+      setRejectReason("");
+    } catch (nextError) {
+      hapticFeedback.error();
+      setError(nextError instanceof Error ? nextError.message : "No fue posible rechazar la solicitud.");
+    } finally {
+      setActing(false);
+    }
+  }, [id, rejectReason]);
+
+  const runComplete = useCallback(async () => {
+    if (!id) return;
+    setActing(true);
+    setError(null);
+    try {
+      const updated = await adminCompleteCareRequest(id);
+      setDetail(updated);
+    } catch (nextError) {
+      hapticFeedback.error();
+      setError(nextError instanceof Error ? nextError.message : "No fue posible completar la solicitud.");
+    } finally {
+      setActing(false);
+    }
+  }, [id]);
+
+  const handleLifecycleAction = useCallback((action: string) => {
+    hapticFeedback.light();
+    switch (action) {
+      case "assign":
+        setAssignmentSheetVisible(true);
+        break;
+      case "approve":
+        void runApprove();
+        break;
+      case "reject":
+        setRejectSheetVisible(true);
+        break;
+      case "complete":
+        void runComplete();
+        break;
+    }
+  }, [runApprove, runComplete]);
+
   if (!isReady || !isAuthenticated || !hasAdminAccess) return null;
 
-  // Build the full priority-ordered action set. The bar shows up to MAX_BAR_ACTIONS;
-  // anything left over flows into the `⋯` overflow sheet. If everything fits, no overflow.
+  // ── Build footer action set ──────────────────────────────────────────────
+  // Priority: lifecycle actions first, then billing actions.
   const MAX_BAR_ACTIONS = 2;
   const allActions: FooterAction[] = [];
-  for (let i = 0; i < billingTaskActions.length; i += 1) {
-    const action = billingTaskActions[i];
+
+  for (const lcAction of lifecycleActions) {
     allActions.push({
-      label: BILLING_LABELS[action.action] ?? action.label,
-      onPress: () => router.push(action.route as any),
-      variant: "secondary", // promoted to primary below if first
-      testID: BILLING_TEST_IDS[action.action],
+      label: lcAction.label,
+      onPress: () => handleLifecycleAction(lcAction.action),
+      variant: lcAction.variant === "danger" ? "danger" : "secondary",
+      testID: LIFECYCLE_TEST_IDS[lcAction.action],
+      disabled: acting,
+    });
+  }
+
+  for (const billingAction of billingTaskActions) {
+    allActions.push({
+      label: BILLING_LABELS[billingAction.action] ?? billingAction.label,
+      onPress: () => router.push(billingAction.route as any),
+      variant: "secondary",
+      testID: BILLING_TEST_IDS[billingAction.action],
     });
   }
 
   const systemActions: FooterAction[] = allActions.slice(0, MAX_BAR_ACTIONS).map((a, idx) => ({
     ...a,
-    // First slot in the bar gets the primary blue treatment.
-    variant: idx === 0 ? "primary" : "secondary",
+    variant: idx === 0 && a.variant !== "danger" ? "primary" : a.variant,
   }));
   const overflowActions: FooterAction[] = allActions.slice(MAX_BAR_ACTIONS);
   const hasOverflow = overflowActions.length > 0;
@@ -252,11 +426,18 @@ export default function AdminCareRequestDetailScreen() {
                 ) : null}
               </View>
               <Text style={styles.cardTitle} numberOfLines={2}>{detail.careRequestDescription}</Text>
+
+              {/* Overdue flag — secondary chip with reason hint */}
               {(overdue || unassigned) ? (
                 <View style={styles.flagRow}>
                   {overdue ? (
-                    <View style={[styles.flag, { backgroundColor: designTokens.color.surface.warning }]}>
-                      <Text style={[styles.flagText, { color: designTokens.color.status.warningText }]}>Vencida</Text>
+                    <View
+                      style={[styles.flag, { backgroundColor: designTokens.color.surface.warning }]}
+                      {...automationProps(adminTestIds.careRequests.detail.overdueBadge)}
+                    >
+                      <Text style={[styles.flagText, { color: designTokens.color.status.warningText }]}>
+                        {formatOverdueHint(detail)}
+                      </Text>
                     </View>
                   ) : null}
                   {unassigned ? (
@@ -265,6 +446,16 @@ export default function AdminCareRequestDetailScreen() {
                     </View>
                   ) : null}
                 </View>
+              ) : null}
+
+              {/* Próximo paso guidance */}
+              {guidanceText ? (
+                <Text
+                  {...automationProps(adminTestIds.careRequests.detail.guidanceLine)}
+                  style={styles.guidanceLine}
+                >
+                  {guidanceText}
+                </Text>
               ) : null}
             </View>
 
@@ -438,9 +629,46 @@ export default function AdminCareRequestDetailScreen() {
           }}
         />
       ) : null}
+
+      {/* Assignment sheet — for assigning / re-assigning a nurse */}
+      <AdminAssignmentSheet
+        visible={assignmentSheetVisible}
+        nurses={filteredNurses}
+        selectedNurseId={selectedNurseId}
+        searchQuery={nurseSearch}
+        isSubmitting={acting}
+        onSearchChange={setNurseSearch}
+        onSelect={(value) => {
+          hapticFeedback.selection();
+          setSelectedNurseId(value);
+        }}
+        onClose={() => {
+          hapticFeedback.selection();
+          setAssignmentSheetVisible(false);
+          setSelectedNurseId("");
+          setNurseSearch("");
+        }}
+        onConfirm={() => void runAssign()}
+      />
+
+      {/* Reject sheet — captures optional rejection reason */}
+      <RejectSheet
+        visible={rejectSheetVisible}
+        reason={rejectReason}
+        isSubmitting={acting}
+        onReasonChange={setRejectReason}
+        onClose={() => {
+          hapticFeedback.selection();
+          setRejectSheetVisible(false);
+          setRejectReason("");
+        }}
+        onConfirm={() => void runReject()}
+      />
     </>
   );
 }
+
+// ── Sub-components ────────────────────────────────────────────────────────────
 
 function HistorySheet({
   visible,
@@ -599,6 +827,172 @@ function OverflowActionsSheet({
   );
 }
 
+function AdminAssignmentSheet({
+  visible, nurses, selectedNurseId, searchQuery, isSubmitting,
+  onSearchChange, onSelect, onClose, onConfirm,
+}: {
+  visible: boolean;
+  nurses: ActiveNurseProfileSummary[];
+  selectedNurseId: string;
+  searchQuery: string;
+  isSubmitting: boolean;
+  onSearchChange: (value: string) => void;
+  onSelect: (value: string) => void;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={styles.sheetBackdrop}>
+        <View
+          style={styles.sheet}
+          testID={adminTestIds.careRequests.detail.assignmentSheet}
+          nativeID={adminTestIds.careRequests.detail.assignmentSheet}
+        >
+          <View style={styles.sheetHeader}>
+            <View>
+              <Text style={styles.sheetTitle}>Seleccionar enfermera</Text>
+              <Text style={styles.sheetSubtitle}>{nurses.length} resultado{nurses.length === 1 ? "" : "s"}</Text>
+            </View>
+            <Pressable onPress={onClose} style={styles.sheetClose} accessibilityRole="button" accessibilityLabel="Cerrar">
+              <Text style={styles.sheetCloseText}>Cerrar</Text>
+            </Pressable>
+          </View>
+          <TextInput
+            testID={adminTestIds.careRequests.detail.assignmentSearchInput}
+            nativeID={adminTestIds.careRequests.detail.assignmentSearchInput}
+            value={searchQuery}
+            onChangeText={onSearchChange}
+            placeholder="Buscar por nombre, correo o especialidad"
+            placeholderTextColor={designTokens.color.ink.muted}
+            style={styles.searchInput}
+            accessibilityLabel="Buscar enfermera"
+            autoCapitalize="none"
+          />
+          <ScrollView style={styles.nurseList} contentContainerStyle={styles.nurseListContent}>
+            {nurses.length === 0 ? <Text style={styles.emptyText}>No se encontraron enfermeras.</Text> : null}
+            {nurses.map((item) => {
+              const selected = selectedNurseId === item.userId;
+              const meta = [item.specialty, item.category, item.email].filter(Boolean).join(" · ");
+              return (
+                <Pressable
+                  key={item.userId}
+                  testID={adminTestIds.careRequests.detail.assignmentNurseOption(item.userId)}
+                  nativeID={adminTestIds.careRequests.detail.assignmentNurseOption(item.userId)}
+                  onPress={() => onSelect(item.userId)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Seleccionar enfermera ${buildNurseLabel(item)}`}
+                  accessibilityState={{ selected }}
+                  style={({ pressed }) => [
+                    styles.nurseRow,
+                    selected && styles.nurseRowSelected,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <View style={styles.nurseRowText}>
+                    <Text style={styles.nurseName}>{buildNurseLabel(item)}</Text>
+                    <Text style={styles.nurseMeta} numberOfLines={1}>
+                      {meta || "Sin datos adicionales"}
+                    </Text>
+                  </View>
+                  <Text style={[styles.nurseCheck, selected && styles.nurseCheckSelected]}>
+                    {selected ? "Seleccionada" : "Elegir"}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+          <Pressable
+            testID={adminTestIds.careRequests.detail.assignmentConfirmButton}
+            nativeID={adminTestIds.careRequests.detail.assignmentConfirmButton}
+            onPress={() => {
+              hapticFeedback.light();
+              onConfirm();
+            }}
+            disabled={isSubmitting || !selectedNurseId}
+            style={({ pressed }) => [
+              styles.sheetPrimaryButton,
+              (isSubmitting || !selectedNurseId) && styles.disabled,
+              pressed && !isSubmitting && selectedNurseId ? styles.pressed : null,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Confirmar enfermera asignada"
+          >
+            <Text style={styles.sheetPrimaryButtonText}>
+              {isSubmitting ? "Guardando..." : "Confirmar asignación"}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function RejectSheet({
+  visible, reason, isSubmitting,
+  onReasonChange, onClose, onConfirm,
+}: {
+  visible: boolean;
+  reason: string;
+  isSubmitting: boolean;
+  onReasonChange: (value: string) => void;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={styles.sheetBackdrop}>
+        <View
+          style={[styles.sheet, { minHeight: undefined }]}
+          testID={adminTestIds.careRequests.detail.rejectSheet}
+          nativeID={adminTestIds.careRequests.detail.rejectSheet}
+        >
+          <View style={styles.sheetHeader}>
+            <Text style={styles.sheetTitle}>Rechazar solicitud</Text>
+            <Pressable onPress={onClose} style={styles.sheetClose} accessibilityRole="button" accessibilityLabel="Cerrar">
+              <Text style={styles.sheetCloseText}>Cerrar</Text>
+            </Pressable>
+          </View>
+          <Text style={styles.rejectHint}>
+            Puedes indicar el motivo del rechazo (opcional). El cliente podrá verlo.
+          </Text>
+          <TextInput
+            testID={adminTestIds.careRequests.detail.rejectReasonInput}
+            nativeID={adminTestIds.careRequests.detail.rejectReasonInput}
+            value={reason}
+            onChangeText={onReasonChange}
+            placeholder="Motivo del rechazo (opcional)"
+            placeholderTextColor={designTokens.color.ink.muted}
+            style={styles.rejectInput}
+            multiline
+            accessibilityLabel="Motivo del rechazo"
+          />
+          <Pressable
+            testID={adminTestIds.careRequests.detail.rejectConfirmButton}
+            nativeID={adminTestIds.careRequests.detail.rejectConfirmButton}
+            onPress={() => {
+              hapticFeedback.light();
+              onConfirm();
+            }}
+            disabled={isSubmitting}
+            style={({ pressed }) => [
+              styles.rejectConfirmButton,
+              isSubmitting && styles.disabled,
+              pressed && !isSubmitting ? styles.pressed : null,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Confirmar rechazo"
+          >
+            <Text style={styles.rejectConfirmButtonText}>
+              {isSubmitting ? "Rechazando..." : "Confirmar rechazo"}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 const styles = StyleSheet.create({
   body: { flex: 1, gap: 10 },
   hiddenMarker: { height: 0, width: 0, opacity: 0 },
@@ -623,6 +1017,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   loadingState: { paddingVertical: 48, alignItems: "center" },
+
+  guidanceLine: {
+    color: mobileTheme.colors.ink.secondary,
+    fontSize: 12, fontWeight: "700",
+    marginTop: 6,
+    fontStyle: "italic",
+  },
 
   card: {
     backgroundColor: mobileTheme.colors.surface.primary,
@@ -730,6 +1131,52 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center", paddingHorizontal: 16,
   },
   overflowActionText: { fontSize: 15, fontWeight: "900", color: designTokens.color.ink.primary },
+
+  // Assignment sheet
+  searchInput: {
+    minHeight: 48, borderRadius: 14, borderWidth: 1,
+    borderColor: designTokens.color.border.strong,
+    backgroundColor: designTokens.color.surface.primary,
+    color: designTokens.color.ink.primary, paddingHorizontal: 14, fontSize: 15,
+  },
+  nurseList: { flex: 1 },
+  nurseListContent: { paddingBottom: 8, gap: 8 },
+  nurseRow: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12,
+    borderRadius: 14, borderWidth: 1, borderColor: designTokens.color.border.subtle,
+    backgroundColor: designTokens.color.surface.primary,
+    paddingHorizontal: 14, paddingVertical: 12,
+  },
+  nurseRowSelected: {
+    borderColor: designTokens.color.ink.accent,
+    backgroundColor: designTokens.color.surface.accent,
+  },
+  nurseRowText: { flex: 1, minWidth: 0 },
+  nurseName: { color: designTokens.color.ink.primary, fontSize: 15, fontWeight: "900" },
+  nurseMeta: { color: designTokens.color.ink.secondary, fontSize: 12, fontWeight: "600", marginTop: 3 },
+  nurseCheck: { color: designTokens.color.ink.muted, fontSize: 12, fontWeight: "900" },
+  nurseCheckSelected: { color: designTokens.color.ink.accent },
+  emptyText: { color: designTokens.color.ink.muted, fontSize: 14, textAlign: "center", paddingVertical: 24 },
+  sheetPrimaryButton: {
+    minHeight: 50, borderRadius: 14, alignItems: "center", justifyContent: "center",
+    backgroundColor: designTokens.color.ink.accent,
+  },
+  sheetPrimaryButtonText: { color: designTokens.color.ink.inverse, fontSize: 15, fontWeight: "900" },
+
+  // Reject sheet
+  rejectHint: {
+    color: designTokens.color.ink.secondary, fontSize: 13, lineHeight: 19,
+  },
+  rejectInput: {
+    borderWidth: 1, borderColor: designTokens.color.border.strong,
+    borderRadius: 14, padding: 12, minHeight: 80,
+    color: designTokens.color.ink.primary, textAlignVertical: "top", fontSize: 14,
+  },
+  rejectConfirmButton: {
+    minHeight: 50, borderRadius: 14, alignItems: "center", justifyContent: "center",
+    backgroundColor: designTokens.color.status.dangerText,
+  },
+  rejectConfirmButtonText: { color: designTokens.color.ink.inverse, fontSize: 15, fontWeight: "900" },
 
   pressed: { opacity: 0.78 },
   disabled: { opacity: 0.45 },

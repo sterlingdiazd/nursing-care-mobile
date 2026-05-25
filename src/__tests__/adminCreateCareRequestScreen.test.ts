@@ -29,6 +29,7 @@ function makeForm(overrides?: Partial<CreateAdminCareRequestDto>): CreateAdminCa
     careRequestDescription: "Cuidado domiciliario post-operatorio",
     careRequestType: "domicilio",
     unit: 4,
+    assignedNurseId: "nurse-1",
     suggestedNurse: "",
     price: undefined,
     clientBasePriceOverride: undefined,
