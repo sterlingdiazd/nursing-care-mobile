@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { type FooterAction } from "@/src/components/navigation/AppFooter";
@@ -122,6 +122,21 @@ export default function PeriodsScreen() {
     setMode("list");
     reloadPeriods();
   }, [reloadPeriods]);
+
+  // Deep link: a notification can open a specific period in detail mode via
+  // /admin/payroll/periods?periodId=<id>. Consume it once so returning to the list
+  // (or re-renders) does not force the detail view open again.
+  const deepLinkParams = useLocalSearchParams<{ periodId?: string }>();
+  const deepLinkConsumed = useRef(false);
+  useEffect(() => {
+    if (!isReady$ || deepLinkConsumed.current) return;
+    const periodId = Array.isArray(deepLinkParams.periodId)
+      ? deepLinkParams.periodId[0]
+      : deepLinkParams.periodId;
+    if (!periodId) return;
+    deepLinkConsumed.current = true;
+    void handlePeriodPress(periodId);
+  }, [isReady$, deepLinkParams.periodId, handlePeriodPress]);
 
   const handleSubmitPeriod = useCallback(async (data: CreatePayrollPeriodRequest) => {
     if (editingPeriod) {

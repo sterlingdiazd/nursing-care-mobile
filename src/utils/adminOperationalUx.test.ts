@@ -27,6 +27,38 @@ describe("resolveAdminOperationalDeepLink", () => {
     expect(resolveAdminOperationalDeepLink("/care-requests/request-789")).toBe("/care-requests/request-789");
   });
 
+  it("routes a specific nurse profile deep link to its detail screen, not the list", () => {
+    expect(resolveAdminOperationalDeepLink("/admin/nurse-profiles/nurse-123")).toBe(
+      "/admin/nurse-profiles/nurse-123",
+    );
+  });
+
+  it("opens the periods screen focused on a specific payroll period, not the payroll hub", () => {
+    expect(resolveAdminOperationalDeepLink("/admin/payroll/periods?periodId=period-7")).toBe(
+      "/admin/payroll/periods?periodId=period-7",
+    );
+  });
+
+  it("normalizes a non-admin payroll period path and preserves the periodId", () => {
+    expect(resolveAdminOperationalDeepLink("/payroll/periods?periodId=period-7")).toBe(
+      "/admin/payroll/periods?periodId=period-7",
+    );
+  });
+
+  it("still routes the bare payroll path to the payroll hub", () => {
+    expect(resolveAdminOperationalDeepLink("/payroll")).toBe("/admin/payroll");
+  });
+
+  it("preserves the care-request list view filter (e.g. overdue daily summary)", () => {
+    expect(resolveAdminOperationalDeepLink("/admin/care-requests?view=overdue")).toBe(
+      "/admin/care-requests?view=overdue",
+    );
+  });
+
+  it("routes system-error alerts to the diagnostics screen (no standalone /alerts route)", () => {
+    expect(resolveAdminOperationalDeepLink("/admin/alerts")).toBe("/admin/diagnostics");
+  });
+
   it("falls back to the admin dashboard when the link is missing", () => {
     expect(resolveAdminOperationalDeepLink(null)).toBe("/admin");
   });
@@ -38,11 +70,16 @@ describe("resolveAdminOperationalDeepLink", () => {
       "/nurses",
       "/nurse-profiles",
       "/payroll",
+      "/payroll/periods?periodId=abc",
       "/settings",
+      "/admin/alerts",
+      "/admin/payroll/periods?periodId=abc",
       "/admin/care-requests",
+      "/admin/care-requests?view=overdue",
       "/admin/care-requests/abc",
       "/admin/care-requests?selected=abc",
       "/admin/nurse-profiles",
+      "/admin/nurse-profiles/abc",
       "/admin/nurse-profiles?view=pending&userId=abc",
       "/admin/clients/abc",
       "/admin/users/abc",

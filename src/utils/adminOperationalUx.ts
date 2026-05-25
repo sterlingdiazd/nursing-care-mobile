@@ -28,6 +28,12 @@ export function automationProps(testId: string) {
   };
 }
 
+/** Returns the query suffix of a path (including the leading `?`), or "" if none. */
+function queryOf(path: string) {
+  const i = path.indexOf("?");
+  return i >= 0 ? path.slice(i) : "";
+}
+
 export function resolveAdminOperationalDeepLink(path: string | null | undefined) {
   if (!path) {
     return "/admin";
@@ -43,8 +49,10 @@ export function resolveAdminOperationalDeepLink(path: string | null | undefined)
     return `/care-requests/${id}`;
   }
 
+  // Care request collection — preserve any view filter (e.g. ?view=overdue from the
+  // daily summary) so the list opens already focused on the relevant segment.
   if (path.startsWith("/admin/care-requests")) {
-    return "/admin/care-requests";
+    return path;
   }
 
   if (path.startsWith("/care-requests/")) {
@@ -53,7 +61,7 @@ export function resolveAdminOperationalDeepLink(path: string | null | undefined)
   }
 
   if (path.startsWith("/care-requests")) {
-    return "/admin/care-requests";
+    return `/admin/care-requests${queryOf(path)}`;
   }
 
   if (path.startsWith("/admin/notifications")) {
@@ -62,6 +70,18 @@ export function resolveAdminOperationalDeepLink(path: string | null | undefined)
 
   if (path.startsWith("/admin/action-items")) {
     return "/admin/action-items";
+  }
+
+  // System-error / alert notifications carry a correlation id; the diagnostics screen
+  // is where backend health and correlation ids are surfaced. There is no /alerts route.
+  if (path.startsWith("/admin/alerts") || path.startsWith("/alerts")) {
+    return "/admin/diagnostics";
+  }
+
+  // Payroll period deep links open the periods screen focused on that period via
+  // ?periodId=…; preserve the query whether or not the path carries the /admin prefix.
+  if (path.startsWith("/admin/payroll/periods") || path.startsWith("/payroll/periods")) {
+    return `/admin/payroll/periods${queryOf(path)}`;
   }
 
   if (path.startsWith("/payroll")) {
