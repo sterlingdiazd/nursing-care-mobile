@@ -281,4 +281,10 @@ export interface ConfirmNursePaymentResult {
   whatsappUrl: string;
   /** Spanish label describing where the voucher was delivered (demo wording). */
   recipientLabel: string;
+  /**
+   * Financial-validation/delivery detail. On a blocked delivery this carries the
+   * specific reason the comprobante did not pass validation (so it can be retried);
+   * on success it is a short confirmation note. May be null on older responses.
+   */
+  voucherDeliveryDetail?: string | null;
 }

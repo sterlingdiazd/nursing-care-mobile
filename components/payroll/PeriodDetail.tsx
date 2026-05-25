@@ -313,13 +313,21 @@ export function PeriodDetail({ period, onClose, onReopen, onBack, onPrepareRecal
         const canOpen = await Linking.canOpenURL(result.whatsappUrl).catch(() => false);
         if (canOpen) await Linking.openURL(result.whatsappUrl);
       }
-      const emailNote = result.voucherEmailSent
-        ? "Comprobante enviado por correo."
-        : "Pago confirmado (el correo no pudo enviarse).";
-      showToast({
-        variant: result.voucherEmailSent ? "success" : "info",
-        message: `${emailNote} ${result.recipientLabel}`.trim(),
-      });
+      // The backend runs a financial-validation gate before sending. If the comprobante
+      // is blocked, `voucherDeliveryDetail` carries the specific reason — surface it so
+      // the admin knows what to fix and retry. On success it confirms the send.
+      const detail = result.voucherDeliveryDetail?.trim();
+      if (result.voucherEmailSent) {
+        showToast({
+          variant: "success",
+          message: (detail || `Comprobante enviado por correo. ${result.recipientLabel}`).trim(),
+        });
+      } else {
+        showToast({
+          variant: "error",
+          message: (detail || `Pago confirmado, pero el comprobante no se envió. ${result.recipientLabel}`).trim(),
+        });
+      }
     } catch (e) {
       showToast({
         variant: "error",
