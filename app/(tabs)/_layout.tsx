@@ -4,5 +4,5 @@ import { Stack } from "expo-router";
 // layout so it persists across every authenticated route including
 // non-(tabs) admin sub-routes like /admin/payroll.
 export default function TabsLayout() {
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return <Stack screenOptions={{ headerShown: false, animation: "fade" }} />;
 }

@@ -74,7 +74,7 @@ function AuthenticatedRoutes() {
   return (
     <View style={styles.root}>
       <View style={styles.content}>
-        <Stack screenOptions={{ headerShown: false }}>
+        <Stack screenOptions={{ headerShown: false, animation: "fade" }}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="register" options={{ headerShown: false }} />
           <Stack.Screen name="login" options={{ headerShown: false }} />
