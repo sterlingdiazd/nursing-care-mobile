@@ -158,6 +158,7 @@ const styles = StyleSheet.create({
   },
   metricsRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 10,
   },
   grid: {
