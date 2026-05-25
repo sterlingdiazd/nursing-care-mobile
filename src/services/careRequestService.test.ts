@@ -1,11 +1,43 @@
 import {
   assignCareRequestNurse,
+  downloadAndShareCareRequestReceipt,
   getActiveNurseProfiles,
 } from "@/src/services/careRequestService";
 import { requestJson } from "@/src/services/httpClient";
+import * as authSession from "@/src/services/authSession";
+import { File, Paths } from "expo-file-system";
+import * as Sharing from "expo-sharing";
+
+vi.mock("@/src/config/api", () => ({
+  API_BASE_URL: "https://api.example.test",
+}));
 
 vi.mock("@/src/services/httpClient", () => ({
   requestJson: vi.fn(),
+}));
+
+vi.mock("@/src/services/authSession", () => ({
+  getCachedAuthSession: vi.fn(),
+  loadAuthSession: vi.fn(),
+}));
+
+vi.mock("expo-file-system", () => {
+  class MockFile {
+    uri: string;
+    constructor(...parts: any[]) {
+      this.uri = parts.map((part) => part?.uri ?? part).join("/");
+    }
+    static downloadFileAsync = vi.fn(async () => new MockFile("file:///cache/recibo.pdf"));
+  }
+  return {
+    File: MockFile,
+    Paths: { cache: { uri: "file:///cache" } },
+  };
+});
+
+vi.mock("expo-sharing", () => ({
+  isAvailableAsync: vi.fn(async () => true),
+  shareAsync: vi.fn(async () => undefined),
 }));
 
 describe("careRequestService", () => {
@@ -61,5 +93,38 @@ describe("careRequestService", () => {
       body: { assignedNurse: "nurse-1" },
       auth: true,
     });
+  });
+
+  it("downloads and shares a receipt with the current Expo File API", async () => {
+    vi.mocked(authSession.getCachedAuthSession).mockReturnValue({
+      token: "access-token",
+      refreshToken: "refresh-token",
+      expiresAtUtc: null,
+      userId: "client-1",
+      email: "client@example.com",
+      roles: ["CLIENT"],
+      profileType: 2,
+      requiresProfileCompletion: false,
+      requiresAdminReview: false,
+    });
+
+    const uri = await downloadAndShareCareRequestReceipt("care-1");
+
+    expect(File.downloadFileAsync).toHaveBeenCalledWith(
+      "https://api.example.test/api/care-requests/care-1/receipt",
+      expect.objectContaining({ uri: expect.stringContaining("recibo-solicitud-care-1.pdf") }),
+      expect.objectContaining({
+        idempotent: true,
+        headers: expect.objectContaining({
+          Authorization: "Bearer access-token",
+          Accept: "application/pdf",
+        }),
+      }),
+    );
+    expect(Sharing.shareAsync).toHaveBeenCalledWith("file:///cache/recibo.pdf", expect.objectContaining({
+      mimeType: "application/pdf",
+    }));
+    expect(Paths.cache).toBeTruthy();
+    expect(uri).toBe("file:///cache/recibo.pdf");
   });
 });

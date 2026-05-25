@@ -45,6 +45,13 @@ export interface AdminPayrollPeriodListItem {
   createdAtUtc: string;
   closedAtUtc?: string | null;
   lineCount: number;
+  totalGross: number;
+  totalNet: number;
+}
+
+export interface PeriodCloseWarnings {
+  negativeNetNurses: number;
+  unliquidatedServices: number;
 }
 
 export interface AdminPayrollPeriodListResult {
@@ -96,6 +103,10 @@ export interface AdminPayrollPeriodDetail {
   staffSummary: AdminPayrollStaffSummary[];
   /** True only while Open with no lines and no deductions/installments — editable/deletable. */
   canModify: boolean;
+  /** Reopen audit (most recent reopen + running count), present when the period was reopened. */
+  reopenedAtUtc?: string | null;
+  reopenReason?: string | null;
+  reopenCount: number;
 }
 
 export interface CreatePayrollPeriodRequest {
@@ -256,4 +267,18 @@ export interface RescheduleScheduledDeductionRequest {
   recurringAmount?: number;
   endDate?: string;
   maxOccurrences?: number;
+}
+
+/** Result of confirming a nurse's per-period bank transfer (demo: routes delivery to the admin). */
+export interface ConfirmNursePaymentResult {
+  periodId: string;
+  nurseUserId: string;
+  confirmedAtUtc: string;
+  bankReference: string | null;
+  /** Whether the voucher PDF email was sent (best-effort). */
+  voucherEmailSent: boolean;
+  /** wa.me link to open WhatsApp prefilled; empty string when no usable number. */
+  whatsappUrl: string;
+  /** Spanish label describing where the voucher was delivered (demo wording). */
+  recipientLabel: string;
 }

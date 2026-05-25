@@ -12,6 +12,7 @@ import type {
   AdminPayrollStaffSummary,
   AdminPayrollPeriodDetail,
   CreatePayrollPeriodRequest,
+  PeriodCloseWarnings,
   AdminDeductionListItem,
   AdminDeductionListResult,
   CreateDeductionRequest,
@@ -25,6 +26,7 @@ import type {
   ScheduledDeductionDetail,
   CreateScheduledDeductionRequest,
   RescheduleScheduledDeductionRequest,
+  ConfirmNursePaymentResult,
 } from "./payrollTypes";
 
 export async function getNursePayrollSummary(_userId: string): Promise<NursePayrollSummaryDto> {
@@ -100,10 +102,51 @@ export async function createPayrollPeriod(request: CreatePayrollPeriodRequest): 
   });
 }
 
-export async function closePayrollPeriod(id: string): Promise<void> {
+/** Pre-close advisory checks the UI surfaces before asking the admin to confirm. */
+export async function getPeriodCloseWarnings(id: string): Promise<PeriodCloseWarnings> {
+  return requestJson<PeriodCloseWarnings>({
+    path: `/api/admin/payroll/periods/${id}/close-warnings`,
+    method: "GET",
+    auth: true,
+  });
+}
+
+export async function closePayrollPeriod(
+  id: string,
+  options?: { acknowledgeWarnings?: boolean },
+): Promise<void> {
   return requestVoid({
     path: `/api/admin/payroll/periods/${id}/close`,
     method: "PATCH",
+    body: { acknowledgeWarnings: options?.acknowledgeWarnings ?? false },
+    auth: true,
+  });
+}
+
+/** Reopens a closed period for correction (audited). Requires a reason. */
+export async function reopenPayrollPeriod(id: string, reason: string): Promise<void> {
+  return requestVoid({
+    path: `/api/admin/payroll/periods/${id}/reopen`,
+    method: "POST",
+    body: { reason },
+    auth: true,
+  });
+}
+
+/**
+ * Confirms a nurse's bank transfer for a period and triggers voucher delivery.
+ * DEMO: the backend routes the voucher email + the returned wa.me link to the
+ * admin's own email/number (nurses are not messaged yet — see the next-initiative brief).
+ */
+export async function confirmNursePeriodPayment(
+  periodId: string,
+  nurseUserId: string,
+  bankReference?: string | null,
+): Promise<ConfirmNursePaymentResult> {
+  return requestJson<ConfirmNursePaymentResult>({
+    path: `/api/admin/payroll/periods/${periodId}/nurses/${nurseUserId}/confirm-payment`,
+    method: "POST",
+    body: { bankReference: bankReference ?? null },
     auth: true,
   });
 }
@@ -360,6 +403,7 @@ export type {
   AdminPayrollStaffSummary,
   AdminPayrollPeriodDetail,
   CreatePayrollPeriodRequest,
+  PeriodCloseWarnings,
   AdminDeductionListItem,
   AdminDeductionListResult,
   CreateDeductionRequest,
@@ -373,4 +417,5 @@ export type {
   ScheduledDeductionDetail,
   CreateScheduledDeductionRequest,
   RescheduleScheduledDeductionRequest,
+  ConfirmNursePaymentResult,
 } from "./payrollTypes";

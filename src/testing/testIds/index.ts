@@ -3,5 +3,6 @@ export { testProps } from "@/src/testing/authTestIds";
 
 export { adminTestIds } from "./adminTestIds";
 export { careRequestTestIds } from "./careRequestTestIds";
+export { clientTestIds } from "./clientTestIds";
 export { navigationTestIds } from "./navigationTestIds";
 export { nurseTestIds } from "./nurseTestIds";

@@ -44,6 +44,27 @@ const CATEGORY_LABELS: Record<string, string> = {
   medicos: "Médicos",
 };
 const CATEGORY_ORDER = ["hogar", "domicilio", "medicos"];
+const CLIENT_INTENTS = [
+  {
+    key: "hoy",
+    title: "Necesito ayuda hoy",
+    body: "Para cuidado cercano o acompañamiento urgente.",
+    description: "Necesito cuidado lo antes posible. ",
+  },
+  {
+    key: "programar",
+    title: "Quiero programar una visita",
+    body: "Para elegir fecha y detalles con calma.",
+    description: "Quiero programar una visita de cuidado. ",
+  },
+  {
+    key: "medico",
+    title: "Necesito apoyo médico",
+    body: "Para curas, medicamentos o seguimiento clínico.",
+    description: "Necesito apoyo médico en casa. ",
+  },
+] as const;
+type WizardStep = "intent" | "details" | "review";
 
 export default function CreateCareRequestScreen() {
   const { isAuthenticated, isReady, token, userId, roles } = useAuth();
@@ -77,6 +98,7 @@ export default function CreateCareRequestScreen() {
   const [draftServiceDate, setDraftServiceDate] = useState<Date>(new Date());
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [activeCategoryCode, setActiveCategoryCode] = useState<string>("hogar");
+  const [wizardStep, setWizardStep] = useState<WizardStep>("intent");
 
   // Client selector (admin-only). When ADMIN creates a care request, the form
   // requires picking a real CLIENT user. The selected client's userId is sent
@@ -103,6 +125,32 @@ export default function CreateCareRequestScreen() {
     !!selectedNurse ||
     !!selectedClient ||
     clientSearchTerm.trim().length > 0;
+
+  const selectedIntentTitle =
+    CLIENT_INTENTS.find((intent) => form.careRequestDescription.startsWith(intent.description))?.title ??
+    "Solicitud personalizada";
+
+  const goToNextStep = () => {
+    hapticFeedback.selection();
+    if (wizardStep === "intent") {
+      setWizardStep("details");
+      return;
+    }
+    if (wizardStep === "details") {
+      setWizardStep("review");
+    }
+  };
+
+  const goToPreviousStep = () => {
+    hapticFeedback.selection();
+    if (wizardStep === "review") {
+      setWizardStep("details");
+      return;
+    }
+    if (wizardStep === "details") {
+      setWizardStep("intent");
+    }
+  };
 
   const exitToList = () => {
     hapticFeedback.selection();
@@ -560,21 +608,61 @@ export default function CreateCareRequestScreen() {
   return (
     <MobileWorkspaceShell
       title="Nueva Solicitud"
+      description={
+        wizardStep === "intent"
+          ? "Elige lo que necesitas. Luego pediremos solo los detalles importantes."
+          : wizardStep === "details"
+            ? "Completa los datos del servicio."
+            : "Revisa antes de enviar."
+      }
       testID={careRequestTestIds.create.screen}
       nativeID={careRequestTestIds.create.screen}
       primaryReturnLabel="Volver"
       onPrimaryReturn={handleBackPress}
       workflowActions={[
-        {
-          label: isLoading ? "Creando…" : "Crear",
-          onPress: onSubmit,
-          variant: "primary",
-          disabled: isLoading || !canCreateRequest,
-          testID: careRequestTestIds.create.submitButton,
-        },
+        ...(wizardStep !== "intent"
+          ? [{
+              label: "Atrás",
+              onPress: goToPreviousStep,
+              variant: "secondary" as const,
+              disabled: isLoading,
+              testID: careRequestTestIds.create.backStepButton,
+            }]
+          : []),
+        wizardStep === "review"
+          ? {
+              label: isLoading ? "Creando..." : "Crear",
+              onPress: onSubmit,
+              variant: "primary",
+              disabled: isLoading || !canCreateRequest,
+              testID: careRequestTestIds.create.submitButton,
+            }
+          : {
+              label: "Continuar",
+              onPress: goToNextStep,
+              variant: "primary",
+              disabled: isLoading || !canCreateRequest,
+              testID: careRequestTestIds.create.nextButton,
+            },
       ]}
     >
       <View style={styles.flow}>
+          <View style={styles.stepHeader}>
+            <Text style={styles.stepHeaderText}>
+              Paso {wizardStep === "intent" ? "1" : wizardStep === "details" ? "2" : "3"} de 3
+            </Text>
+            <View style={styles.stepRail}>
+              {(["intent", "details", "review"] as WizardStep[]).map((step) => (
+                <View
+                  key={step}
+                  style={[
+                    styles.stepDot,
+                    step === wizardStep && styles.stepDotActive,
+                  ]}
+                />
+              ))}
+            </View>
+          </View>
           {!!formError && (
             <View style={styles.errorBanner}>
               <Text style={styles.errorBannerText}>{formError}</Text>
@@ -595,7 +683,60 @@ export default function CreateCareRequestScreen() {
               <Text style={styles.successBannerText}>{successMessage}</Text>
             </View>
           )}
-          {isAdminCaller ? (
+          {wizardStep === "intent" ? (
+            <View
+              style={styles.card}
+              testID={careRequestTestIds.create.intentStep}
+              nativeID={careRequestTestIds.create.intentStep}
+            >
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>¿Qué necesitas?</Text>
+                <Text style={styles.sectionCopy}>
+                  Elige la opción más parecida. Puedes ajustar los detalles en el siguiente paso.
+                </Text>
+              </View>
+              <View style={styles.intentList}>
+                {CLIENT_INTENTS.map((intent) => {
+                  const selected = form.careRequestDescription.startsWith(intent.description);
+                  return (
+                    <Pressable
+                      key={intent.key}
+                      testID={careRequestTestIds.create.intentOption(intent.key)}
+                      nativeID={careRequestTestIds.create.intentOption(intent.key)}
+                      accessibilityRole="button"
+                      accessibilityLabel={intent.title}
+                      accessibilityState={{ selected }}
+                      onPress={() => {
+                        hapticFeedback.selection();
+                        setForm((prev) => ({
+                          ...prev,
+                          careRequestDescription: prev.careRequestDescription.trim().length === 0 ||
+                            CLIENT_INTENTS.some((item) => prev.careRequestDescription.startsWith(item.description))
+                            ? intent.description
+                            : prev.careRequestDescription,
+                        }));
+                      }}
+                      style={({ pressed }) => [
+                        styles.intentOption,
+                        selected && styles.intentOptionSelected,
+                        pressed && styles.buttonPressed,
+                      ]}
+                    >
+                      <View style={styles.intentText}>
+                        <Text style={styles.intentTitle}>{intent.title}</Text>
+                        <Text style={styles.intentBody}>{intent.body}</Text>
+                      </View>
+                      <Text style={[styles.intentCheck, selected && styles.intentCheckSelected]}>
+                        {selected ? "Listo" : "Elegir"}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          ) : null}
+
+          {wizardStep === "details" && isAdminCaller ? (
             <View style={styles.card}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Cliente</Text>
@@ -712,7 +853,12 @@ export default function CreateCareRequestScreen() {
             </View>
           ) : null}
 
-          <View style={styles.card}>
+          {wizardStep === "details" ? (
+          <View
+            style={styles.card}
+            testID={careRequestTestIds.create.detailsStep}
+            nativeID={careRequestTestIds.create.detailsStep}
+          >
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Datos de la Solicitud</Text>
             </View>
@@ -937,8 +1083,10 @@ export default function CreateCareRequestScreen() {
               style={[styles.textArea, isLoading ? styles.inputDisabled : undefined]}
             />
           </View>
+          ) : null}
 
           {/* === CARD 2: NURSE === */}
+          {wizardStep === "details" ? (
           <View style={styles.card}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Enfermera sugerida (opcional)</Text>
@@ -1014,11 +1162,31 @@ export default function CreateCareRequestScreen() {
                 </View>
               )}
           </View>
+          ) : null}
 
           {/* Compact estimation summary — no raw enum codes, no verbose
               checklist. Only what the user needs to confirm before tapping
               Crear: total, picked service. */}
-          {selectedType ? (
+          {wizardStep === "review" ? (
+            <View
+              style={styles.card}
+              testID={careRequestTestIds.create.reviewStep}
+              nativeID={careRequestTestIds.create.reviewStep}
+            >
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Revisa tu solicitud</Text>
+                <Text style={styles.sectionCopy}>Si algo no luce correcto, vuelve y cámbialo antes de crearla.</Text>
+              </View>
+              <ReviewRow label="Necesidad" value={selectedIntentTitle} />
+              <ReviewRow label="Servicio" value={selectedType?.displayName ?? "Sin servicio"} />
+              <ReviewRow label="Fecha" value={form.careRequestDate ?? "Sin fecha"} />
+              <ReviewRow label="Cantidad" value={`${form.unit ?? 1}`} />
+              <ReviewRow label="Detalle" value={form.careRequestDescription.trim() || "Sin descripcion"} />
+              {selectedNurse ? <ReviewRow label="Enfermera sugerida" value={selectedNurse.displayName} /> : null}
+            </View>
+          ) : null}
+
+          {selectedType && wizardStep !== "intent" ? (
             <View style={styles.estimateCard}>
               <Text style={styles.estimateLabel}>Total estimado</Text>
               <Text style={styles.estimateAmount}>
@@ -1114,6 +1282,15 @@ export default function CreateCareRequestScreen() {
   );
 }
 
+function ReviewRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.reviewRow}>
+      <Text style={styles.reviewLabel}>{label}</Text>
+      <Text style={styles.reviewValue}>{value}</Text>
+    </View>
+  );
+}
+
 const modalStyles = StyleSheet.create({
   overlay: {
     position: "absolute",
@@ -1174,6 +1351,89 @@ const modalStyles = StyleSheet.create({
 const styles = StyleSheet.create({
   flow: {
     gap: 16,
+  },
+  stepHeader: {
+    backgroundColor: designTokens.color.surface.primary,
+    borderRadius: designTokens.radius.md,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.subtle,
+    padding: designTokens.spacing.md,
+    gap: designTokens.spacing.sm,
+  },
+  stepHeaderText: {
+    color: designTokens.color.ink.secondary,
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  stepRail: {
+    flexDirection: "row",
+    gap: designTokens.spacing.sm,
+  },
+  stepDot: {
+    flex: 1,
+    height: 6,
+    borderRadius: designTokens.radius.pill,
+    backgroundColor: designTokens.color.surface.tertiary,
+  },
+  stepDotActive: {
+    backgroundColor: designTokens.color.ink.accent,
+  },
+  intentList: {
+    gap: designTokens.spacing.md,
+  },
+  intentOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: designTokens.spacing.md,
+    borderRadius: designTokens.radius.md,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.subtle,
+    backgroundColor: designTokens.color.surface.secondary,
+    padding: designTokens.spacing.lg,
+  },
+  intentOptionSelected: {
+    borderColor: designTokens.color.border.accent,
+    backgroundColor: designTokens.color.surface.accent,
+  },
+  intentText: { flex: 1, minWidth: 0 },
+  intentTitle: {
+    color: designTokens.color.ink.primary,
+    fontSize: 17,
+    lineHeight: 22,
+    fontWeight: "900",
+  },
+  intentBody: {
+    color: designTokens.color.ink.secondary,
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 4,
+  },
+  intentCheck: {
+    color: designTokens.color.ink.muted,
+    fontSize: 13,
+    fontWeight: "900",
+  },
+  intentCheckSelected: {
+    color: designTokens.color.ink.accentStrong,
+  },
+  reviewRow: {
+    borderTopWidth: 1,
+    borderTopColor: designTokens.color.border.subtle,
+    paddingVertical: designTokens.spacing.md,
+    gap: 4,
+  },
+  reviewLabel: {
+    color: designTokens.color.ink.muted,
+    fontSize: 12,
+    fontWeight: "900",
+    textTransform: "uppercase",
+  },
+  reviewValue: {
+    color: designTokens.color.ink.primary,
+    fontSize: 15,
+    lineHeight: 21,
+    fontWeight: "700",
   },
   subtitle: { fontSize: 13, color: designTokens.color.ink.secondary, marginBottom: 12 },
   chipsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 },

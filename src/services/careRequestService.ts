@@ -1,6 +1,8 @@
 import { requestJson } from "@/src/services/httpClient";
 import { API_BASE_URL } from "@/src/config/api";
 import { getCachedAuthSession, loadAuthSession } from "@/src/services/authSession";
+import { File, Paths } from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import {
   CareRequestDto,
   CareRequestTransitionAction,
@@ -131,6 +133,37 @@ export async function getCareRequestById(id: string): Promise<CareRequestDto> {
     method: "GET",
     auth: true,
   });
+}
+
+export async function downloadAndShareCareRequestReceipt(id: string): Promise<string> {
+  const token = await currentAuthToken();
+  const fileName = `recibo-solicitud-${id}.pdf`;
+  const destination = new File(Paths.cache, fileName);
+
+  const file = await File.downloadFileAsync(
+    `${API_BASE_URL}/api/care-requests/${id}/receipt`,
+    destination,
+    {
+      idempotent: true,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/pdf",
+      },
+    },
+  );
+
+  const canShare = await Sharing.isAvailableAsync();
+  if (!canShare) {
+    throw new Error("Este dispositivo no permite compartir el recibo en este momento.");
+  }
+
+  await Sharing.shareAsync(file.uri, {
+    mimeType: "application/pdf",
+    UTI: "com.adobe.pdf",
+    dialogTitle: "Compartir recibo",
+  });
+
+  return file.uri;
 }
 
 export async function transitionCareRequest(

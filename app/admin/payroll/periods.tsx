@@ -13,7 +13,7 @@ import { usePagedList } from "@/src/hooks/usePagedList";
 import { SwipePager } from "@/src/components/shared/SwipePager";
 import { designTokens } from "@/src/design-system/tokens";
 import { formatDateES, formatDateTimeES } from "@/src/utils/spanishTextValidator";
-import { nextQuincenaAfter } from "@/src/utils/payrollPeriods";
+import { nextQuincenaAfter, quincenaLabel } from "@/src/utils/payrollPeriods";
 import {
   getPayrollPeriods,
   getPayrollPeriodById,
@@ -21,6 +21,7 @@ import {
   updatePayrollPeriod,
   deletePayrollPeriod,
   closePayrollPeriod,
+  reopenPayrollPeriod,
   recalculatePayroll,
   type AdminPayrollPeriodDetail,
   type CreatePayrollPeriodRequest,
@@ -155,7 +156,7 @@ export default function PeriodsScreen() {
     const data = nextQuincenaAfter(periodItemsRef.current);
     Alert.alert(
       "Crear quincena estándar",
-      `Se creará la quincena:\n\nInicio: ${formatDateES(data.startDate)}\nFin: ${formatDateES(data.endDate)}\nCorte: ${formatDateES(data.cutoffDate)}\nPago: ${formatDateES(data.paymentDate)}`,
+      `Se creará "${quincenaLabel(data.startDate, data.endDate)}":\n\nInicio: ${formatDateES(data.startDate)}\nFin: ${formatDateES(data.endDate)}\nCorte: ${formatDateES(data.cutoffDate)}\nPago: ${formatDateES(data.paymentDate)}`,
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -195,10 +196,21 @@ export default function PeriodsScreen() {
 
   const handleClosePeriod = useCallback(async () => {
     if (!selectedPeriod) return;
-    await closePayrollPeriod(selectedPeriod.id);
+    // The detail view surfaces the pre-close warnings and confirms before reaching here,
+    // so we acknowledge them on the close call (the backend gate still protects API callers).
+    await closePayrollPeriod(selectedPeriod.id, { acknowledgeWarnings: true });
     const detail = await getPayrollPeriodById(selectedPeriod.id);
     setSelectedPeriod(detail);
     showToast({ message: "Período de nómina cerrado correctamente", variant: "success" });
+    reloadPeriods();
+  }, [selectedPeriod, reloadPeriods, showToast]);
+
+  const handleReopenPeriod = useCallback(async (reason: string) => {
+    if (!selectedPeriod) return;
+    await reopenPayrollPeriod(selectedPeriod.id, reason);
+    const detail = await getPayrollPeriodById(selectedPeriod.id);
+    setSelectedPeriod(detail);
+    showToast({ message: "Período reabierto correctamente", variant: "success" });
     reloadPeriods();
   }, [selectedPeriod, reloadPeriods, showToast]);
 
@@ -218,8 +230,11 @@ export default function PeriodsScreen() {
   }, [reloadPeriods, showToast]);
 
   const openPeriodsCount = periodItems.filter((p) => p.status === "Open").length;
+  // Local YYYY-MM-DD for "current quincena" detection (the open period containing today).
+  const now = new Date();
+  const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const selectedPeriodLabel = selectedPeriod
-    ? `${formatDateES(selectedPeriod.startDate)} – ${formatDateES(selectedPeriod.endDate)}`
+    ? quincenaLabel(selectedPeriod.startDate, selectedPeriod.endDate)
     : openPeriodsCount > 0
       ? `${openPeriodsCount} período(s) abierto(s)`
       : "No hay períodos abiertos";
@@ -312,6 +327,7 @@ export default function PeriodsScreen() {
         <PeriodDetail
           period={selectedPeriod}
           onClose={handleClosePeriod}
+          onReopen={handleReopenPeriod}
           onBack={handleBackToList}
           onPrepareRecalculate={() => setMode("recalc-review")}
           onSetActions={setDetailActions}
@@ -351,8 +367,8 @@ export default function PeriodsScreen() {
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statCell}>
-            <Text style={styles.statLabel}>Página</Text>
-            <Text style={styles.statValue}>{page} / {pageCount}</Text>
+            <Text style={styles.statLabel}>Abiertos</Text>
+            <Text style={styles.statValue}>{openPeriodsCount}</Text>
           </View>
         </View>
 
@@ -391,6 +407,11 @@ export default function PeriodsScreen() {
                 key={period.id}
                 period={period}
                 onPress={handlePeriodPress}
+                isCurrent={
+                  period.status === "Open" &&
+                  period.startDate.slice(0, 10) <= todayIso &&
+                  todayIso <= period.endDate.slice(0, 10)
+                }
               />
             ))}
             <Pagination

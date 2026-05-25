@@ -1,0 +1,293 @@
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { router } from "expo-router";
+
+import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { FormInput } from "@/src/components/form";
+import { useAuth } from "@/src/context/AuthContext";
+import { designTokens } from "@/src/design-system/tokens";
+import { getClientProfile, updateClientProfile } from "@/src/services/clientProfileService";
+import type { UpdateClientProfileDto } from "@/src/types/client";
+import { clientTestIds } from "@/src/testing/testIds";
+import {
+  getExactDigitsFieldError,
+  getTextOnlyFieldError,
+  sanitizeDigitsOnlyInput,
+  sanitizeTextOnlyInput,
+} from "@/src/utils/identityValidation";
+import { hapticFeedback } from "@/src/utils/haptics";
+
+export default function ClientProfileScreen() {
+  const { isAuthenticated, isReady, roles } = useAuth();
+  const [form, setForm] = useState<UpdateClientProfileDto>({
+    name: "",
+    lastName: "",
+    identificationNumber: "",
+    phone: "",
+    preferredAddress: "",
+    emergencyContactName: "",
+    emergencyContactPhone: "",
+  });
+  const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isReady) return;
+    if (!isAuthenticated) {
+      router.replace("/login");
+      return;
+    }
+    if (!roles.includes("CLIENT")) {
+      router.replace("/account");
+    }
+  }, [isAuthenticated, isReady, roles]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !roles.includes("CLIENT")) return;
+    let cancelled = false;
+    setIsLoading(true);
+    setError(null);
+    void getClientProfile()
+      .then((profile) => {
+        if (cancelled) return;
+        setForm({
+          name: profile.name ?? "",
+          lastName: profile.lastName ?? "",
+          identificationNumber: profile.identificationNumber ?? "",
+          phone: profile.phone ?? "",
+          preferredAddress: profile.preferredAddress ?? "",
+          emergencyContactName: profile.emergencyContactName ?? "",
+          emergencyContactPhone: profile.emergencyContactPhone ?? "",
+        });
+      })
+      .catch((nextError: unknown) => {
+        if (!cancelled) setError(nextError instanceof Error ? nextError.message : "No fue posible cargar tu perfil.");
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, roles]);
+
+  const errors = {
+    name: getTextOnlyFieldError(form.name, "Nombre"),
+    lastName: getTextOnlyFieldError(form.lastName, "Apellido"),
+    identificationNumber: getExactDigitsFieldError(form.identificationNumber, "Cedula", 11),
+    phone: getExactDigitsFieldError(form.phone, "Telefono", 10),
+    emergencyContactName: getTextOnlyFieldError(form.emergencyContactName ?? "", "Contacto de emergencia", false),
+    emergencyContactPhone: getExactDigitsFieldError(form.emergencyContactPhone ?? "", "Telefono de emergencia", 10, false),
+  };
+  const hasErrors = Object.values(errors).some(Boolean);
+
+  const saveProfile = async () => {
+    hapticFeedback.selection();
+    setSuccess(null);
+    setError(null);
+    if (hasErrors) {
+      hapticFeedback.error();
+      setError("Revisa los campos marcados antes de guardar.");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const updated = await updateClientProfile({
+        ...form,
+        preferredAddress: form.preferredAddress?.trim() || null,
+        emergencyContactName: form.emergencyContactName?.trim() || null,
+        emergencyContactPhone: form.emergencyContactPhone?.trim() || null,
+      });
+      setForm({
+        name: updated.name ?? "",
+        lastName: updated.lastName ?? "",
+        identificationNumber: updated.identificationNumber ?? "",
+        phone: updated.phone ?? "",
+        preferredAddress: updated.preferredAddress ?? "",
+        emergencyContactName: updated.emergencyContactName ?? "",
+        emergencyContactPhone: updated.emergencyContactPhone ?? "",
+      });
+      setIsEditing(false);
+      setSuccess("Perfil actualizado.");
+      hapticFeedback.success();
+    } catch (nextError: unknown) {
+      hapticFeedback.error();
+      setError(nextError instanceof Error ? nextError.message : "No fue posible guardar tu perfil.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <MobileWorkspaceShell
+      title="Mi perfil"
+      description="Mantén tus datos listos para solicitar cuidado sin repetir información."
+      testID={clientTestIds.profile.screen}
+      nativeID={clientTestIds.profile.screen}
+      primaryReturnLabel="Volver"
+      onPrimaryReturn={() => router.back()}
+      systemActions={[
+        isEditing
+          ? {
+              label: isSaving ? "Guardando..." : "Guardar",
+              onPress: saveProfile,
+              variant: "primary",
+              disabled: isSaving,
+              testID: clientTestIds.profile.saveButton,
+            }
+          : {
+              label: "Editar",
+              onPress: () => {
+                hapticFeedback.selection();
+                setIsEditing(true);
+                setSuccess(null);
+              },
+              variant: "primary",
+              testID: clientTestIds.profile.editButton,
+            },
+      ]}
+    >
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+        {isLoading ? (
+          <View style={styles.stateCard}>
+            <ActivityIndicator color={designTokens.color.ink.accentStrong} accessibilityLabel="Cargando..." />
+            <Text style={styles.stateText}>Cargando tu perfil...</Text>
+          </View>
+        ) : (
+          <View style={styles.card}>
+            {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
+            {success ? <Text style={styles.successBanner}>{success}</Text> : null}
+
+            <FormInput
+              testID={clientTestIds.profile.nameInput}
+              label="Nombre"
+              value={form.name}
+              editable={isEditing && !isSaving}
+              error={isEditing ? errors.name : ""}
+              onChangeText={(value) => setForm((prev) => ({ ...prev, name: sanitizeTextOnlyInput(value) }))}
+            />
+            <FormInput
+              testID={clientTestIds.profile.lastNameInput}
+              label="Apellido"
+              value={form.lastName}
+              editable={isEditing && !isSaving}
+              error={isEditing ? errors.lastName : ""}
+              onChangeText={(value) => setForm((prev) => ({ ...prev, lastName: sanitizeTextOnlyInput(value) }))}
+            />
+            <FormInput
+              testID={clientTestIds.profile.identificationInput}
+              label="Cedula"
+              value={form.identificationNumber}
+              editable={isEditing && !isSaving}
+              keyboardType="number-pad"
+              error={isEditing ? errors.identificationNumber : ""}
+              onChangeText={(value) => setForm((prev) => ({ ...prev, identificationNumber: sanitizeDigitsOnlyInput(value, 11) }))}
+            />
+            <FormInput
+              testID={clientTestIds.profile.phoneInput}
+              label="Telefono"
+              value={form.phone}
+              editable={isEditing && !isSaving}
+              keyboardType="phone-pad"
+              error={isEditing ? errors.phone : ""}
+              onChangeText={(value) => setForm((prev) => ({ ...prev, phone: sanitizeDigitsOnlyInput(value, 10) }))}
+            />
+            <FormInput
+              testID={clientTestIds.profile.addressInput}
+              label="Direccion frecuente"
+              value={form.preferredAddress ?? ""}
+              editable={isEditing && !isSaving}
+              onChangeText={(value) => setForm((prev) => ({ ...prev, preferredAddress: value }))}
+              multiline
+            />
+            <FormInput
+              testID={clientTestIds.profile.emergencyNameInput}
+              label="Contacto de emergencia"
+              value={form.emergencyContactName ?? ""}
+              editable={isEditing && !isSaving}
+              error={isEditing ? errors.emergencyContactName : ""}
+              onChangeText={(value) => setForm((prev) => ({ ...prev, emergencyContactName: sanitizeTextOnlyInput(value) }))}
+            />
+            <FormInput
+              testID={clientTestIds.profile.emergencyPhoneInput}
+              label="Telefono de emergencia"
+              value={form.emergencyContactPhone ?? ""}
+              editable={isEditing && !isSaving}
+              keyboardType="phone-pad"
+              error={isEditing ? errors.emergencyContactPhone : ""}
+              onChangeText={(value) => setForm((prev) => ({ ...prev, emergencyContactPhone: sanitizeDigitsOnlyInput(value, 10) }))}
+            />
+
+            {isEditing ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Cancelar edicion"
+                onPress={() => {
+                  hapticFeedback.selection();
+                  setIsEditing(false);
+                  setError(null);
+                }}
+                style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}
+              >
+                <Text style={styles.cancelButtonText}>Cancelar edición</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        )}
+      </ScrollView>
+    </MobileWorkspaceShell>
+  );
+}
+
+const styles = StyleSheet.create({
+  content: { paddingBottom: designTokens.spacing.xxl },
+  card: {
+    backgroundColor: designTokens.color.surface.primary,
+    borderRadius: designTokens.radius.lg,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.subtle,
+    padding: designTokens.spacing.lg,
+  },
+  stateCard: {
+    alignItems: "center",
+    gap: designTokens.spacing.sm,
+    padding: designTokens.spacing.xxl,
+  },
+  stateText: {
+    color: designTokens.color.ink.secondary,
+    fontWeight: "700",
+  },
+  errorBanner: {
+    color: designTokens.color.status.dangerText,
+    backgroundColor: designTokens.color.surface.danger,
+    borderRadius: designTokens.radius.md,
+    padding: designTokens.spacing.md,
+    marginBottom: designTokens.spacing.md,
+    fontWeight: "700",
+  },
+  successBanner: {
+    color: designTokens.color.status.successText,
+    backgroundColor: designTokens.color.surface.success,
+    borderRadius: designTokens.radius.md,
+    padding: designTokens.spacing.md,
+    marginBottom: designTokens.spacing.md,
+    fontWeight: "700",
+  },
+  cancelButton: {
+    minHeight: 48,
+    borderRadius: designTokens.radius.md,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.strong,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cancelButtonText: {
+    color: designTokens.color.ink.secondary,
+    fontWeight: "800",
+  },
+  pressed: { opacity: 0.75 },
+});

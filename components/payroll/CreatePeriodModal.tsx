@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { designTokens } from "@/src/design-system/tokens";
 import { DateField } from "@/src/components/form";
-import { nextQuincenaAfter, stepQuincena, rangesOverlap } from "@/src/utils/payrollPeriods";
+import { nextQuincenaAfter, stepQuincena, rangesOverlap, quincenaHygieneWarnings } from "@/src/utils/payrollPeriods";
 import { FormModalScaffold, FormCard } from "@/components/payroll/FormModalScaffold";
 import { hapticFeedback } from "@/src/utils/haptics";
 
@@ -73,15 +73,21 @@ export function CreatePeriodModal({ visible, onClose, onSubmit, period, existing
   };
 
   const allFilled = startDate.length >= 8 && endDate.length >= 8 && cutoffDate.length >= 8 && paymentDate.length >= 8;
-  const datesInOrder = startDate <= endDate && startDate <= cutoffDate && cutoffDate <= paymentDate;
+  // Corte cae dentro del período (inicio ≤ corte ≤ fin) y pago ≥ corte — igual que el backend.
+  const datesInOrder = startDate <= endDate && startDate <= cutoffDate && cutoffDate <= endDate && cutoffDate <= paymentDate;
   const dateOrderError = allFilled && !datesInOrder
-    ? "Revisa el orden de las fechas: inicio ≤ corte ≤ pago, y fin igual o posterior al inicio."
+    ? "Revisa el orden de las fechas: inicio ≤ corte ≤ fin, y pago igual o posterior al corte."
     : null;
   const overlapError = !isEdit && allFilled && datesInOrder &&
     existingPeriods.some((p) => rangesOverlap(startDate, endDate, p.startDate, p.endDate))
     ? "El período se solapa con un período existente. Usa el selector de quincena o ajusta las fechas."
     : null;
   const isValid = allFilled && datesInOrder && !overlapError;
+
+  // Non-blocking calendar-hygiene advisories (alignment, length, gap). New periods only.
+  const hygieneWarnings = !isEdit && allFilled && datesInOrder && !overlapError
+    ? quincenaHygieneWarnings({ startDate, endDate, cutoffDate, paymentDate }, existingPeriods)
+    : [];
 
   const resetForm = () => {
     setStartDate("");
@@ -133,6 +139,14 @@ export function CreatePeriodModal({ visible, onClose, onSubmit, period, existing
         </View>
       )}
 
+      {hygieneWarnings.length > 0 && (
+        <View style={styles.hygieneCard} testID="period-hygiene-warnings">
+          {hygieneWarnings.map((w, i) => (
+            <Text key={i} style={styles.hygieneText}>• {w}</Text>
+          ))}
+        </View>
+      )}
+
       <FormCard title="Fechas del período">
         <DateField label="Fecha de inicio" value={startDate} onChange={setStartDate} testID="period-start-date" accessibilityLabel="Fecha de inicio del período" />
         <DateField label="Fecha de fin" value={endDate} onChange={onEndChange} testID="period-end-date" accessibilityLabel="Fecha de fin del período" />
@@ -147,4 +161,19 @@ const styles = StyleSheet.create({
   quincenaBar: { flexDirection: "row", gap: 8, marginBottom: 14 },
   quincenaBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: designTokens.color.border.subtle, backgroundColor: designTokens.color.surface.primary, alignItems: "center" },
   quincenaBtnText: { fontSize: 13, fontWeight: "700", color: designTokens.color.ink.accentStrong },
+  hygieneCard: {
+    marginBottom: 14,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: designTokens.color.surface.warning,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.warning,
+    gap: 4,
+  },
+  hygieneText: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: designTokens.color.status.warningText,
+    fontWeight: "600",
+  },
 });

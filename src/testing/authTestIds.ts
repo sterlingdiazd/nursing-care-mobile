@@ -60,6 +60,8 @@ export const authTestIds = {
     screen: "account-screen",
     googleButton: "account-google-oauth-button",
     logoutButton: "account-logout-button",
+    profileLink: "account-profile-link",
+    notificationsLink: "account-notifications-link",
   },
 } as const;
 

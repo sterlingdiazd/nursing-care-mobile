@@ -20,6 +20,7 @@ import { designTokens } from "@/src/design-system/tokens";
 import { logClientEvent } from "@/src/logging/clientLogger";
 import {
   assignCareRequestNurse,
+  downloadAndShareCareRequestReceipt,
   getActiveNurseProfiles,
   getCareRequestById,
   reportPayment,
@@ -127,6 +128,7 @@ export default function CareRequestDetailScreen() {
   const [assignmentSheetVisible, setAssignmentSheetVisible] = useState(false);
   const [overflowSheetVisible, setOverflowSheetVisible] = useState(false);
   const [paymentSheetVisible, setPaymentSheetVisible] = useState(false);
+  const [isDownloadingReceipt, setIsDownloadingReceipt] = useState(false);
   const [nurseSearchQuery, setNurseSearchQuery] = useState("");
 
   const loadCareRequest = async () => {
@@ -210,7 +212,9 @@ export default function CareRequestDetailScreen() {
   const selectedNurseRecord = activeNurses.find((n) => n.userId === assignedNurseId) ?? null;
   const assignedNurseLabel = assignedNurseRecord
     ? buildNurseLabel(assignedNurseRecord)
-    : careRequest?.assignedNurse ?? "Sin asignar";
+    : careRequest?.assignedNurse
+      ? "Enfermera asignada"
+      : "Sin asignar";
   const selectedNurseLabel = selectedNurseRecord ? buildNurseLabel(selectedNurseRecord) : assignedNurseLabel;
 
   const runAction = async (action: CareRequestTransitionAction) => {
@@ -248,6 +252,22 @@ export default function CareRequestDetailScreen() {
       setError(nextError.message ?? "No fue posible asignar la enfermera.");
     } finally {
       setIsActing(false);
+    }
+  };
+
+  const runReceiptDownload = async () => {
+    if (!id) return;
+    hapticFeedback.selection();
+    setIsDownloadingReceipt(true);
+    setError(null);
+    try {
+      await downloadAndShareCareRequestReceipt(id);
+      hapticFeedback.success();
+    } catch (nextError: any) {
+      hapticFeedback.error();
+      setError(nextError?.message ?? "No fue posible abrir el recibo.");
+    } finally {
+      setIsDownloadingReceipt(false);
     }
   };
 
@@ -514,7 +534,11 @@ export default function CareRequestDetailScreen() {
           ) : null}
 
           {/* Estado de pago — visible for statuses where billing information is relevant */}
-          <PaymentStatusCard careRequest={careRequest} />
+          <PaymentStatusCard
+            careRequest={careRequest}
+            downloadingReceipt={isDownloadingReceipt}
+            onDownloadReceipt={runReceiptDownload}
+          />
         </ScrollView>
       </MobileWorkspaceShell>
 
@@ -588,7 +612,15 @@ function getPaymentStatusTone(paymentStatus: string | null | undefined): "neutra
  * Only shown when the care request has reached Completed status or beyond
  * (i.e., billing information is relevant). Hidden for Pending/Approved/Rejected/Cancelled.
  */
-function PaymentStatusCard({ careRequest }: { careRequest: CareRequestDto }) {
+function PaymentStatusCard({
+  careRequest,
+  downloadingReceipt,
+  onDownloadReceipt,
+}: {
+  careRequest: CareRequestDto;
+  downloadingReceipt: boolean;
+  onDownloadReceipt: () => void;
+}) {
   const showBilling =
     careRequest.status === "Completed" ||
     careRequest.status === "Invoiced" ||
@@ -660,6 +692,26 @@ function PaymentStatusCard({ careRequest }: { careRequest: CareRequestDto }) {
           <Text style={styles.billingLabel}>Fecha de pago</Text>
           <Text style={styles.billingValue}>{formatDateTimeES(careRequest.paidAtUtc)}</Text>
         </View>
+      ) : null}
+
+      {careRequest.status === "Invoiced" || careRequest.status === "PaymentReported" || careRequest.status === "Paid" ? (
+        <Pressable
+          testID={careRequestTestIds.detail.receiptDownloadButton}
+          nativeID={careRequestTestIds.detail.receiptDownloadButton}
+          accessibilityRole="button"
+          accessibilityLabel="Descargar recibo"
+          disabled={downloadingReceipt}
+          onPress={onDownloadReceipt}
+          style={({ pressed }) => [
+            styles.receiptButton,
+            downloadingReceipt && styles.disabled,
+            pressed && !downloadingReceipt && styles.pressed,
+          ]}
+        >
+          <Text style={styles.receiptButtonText}>
+            {downloadingReceipt ? "Abriendo recibo..." : "Descargar recibo"}
+          </Text>
+        </Pressable>
       ) : null}
     </View>
   );
@@ -1140,6 +1192,19 @@ const styles = StyleSheet.create({
   },
   billingValue: {
     color: mobileTheme.colors.ink.primary, fontSize: 13, fontWeight: "800", textAlign: "right", flex: 1,
+  },
+  receiptButton: {
+    minHeight: 48,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 12,
+    backgroundColor: designTokens.color.ink.accent,
+  },
+  receiptButtonText: {
+    color: designTokens.color.ink.inverse,
+    fontSize: 15,
+    fontWeight: "900",
   },
   linkButton: {
     borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6,

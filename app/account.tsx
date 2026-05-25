@@ -1,7 +1,7 @@
 import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { StyleSheet, Text, View, ScrollView, Platform } from "react-native";
+import { Pressable, StyleSheet, Text, View, ScrollView } from "react-native";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
@@ -11,10 +11,8 @@ import {
   getGoogleOAuthAvailability,
   getGoogleOAuthStartUrl,
   getLocalHttpsCertificateWarning,
-  getMobileApiBaseUrl,
 } from "@/src/services/authService";
 import { authTestIds } from "@/src/testing/authTestIds";
-import { testProps } from "@/src/testing/testIds";
 import { formatRoleLabels } from "@/src/utils/roleLabels";
 import { hapticFeedback } from "@/src/utils/haptics";
 import { designTokens } from "@/src/design-system/tokens";
@@ -23,9 +21,8 @@ import { FormButton } from "@/src/components/form";
 
 export default function AccountScreen() {
   const router = useRouter();
-  const { email, isAuthenticated, logout, roles, token } = useAuth();
+  const { email, isAuthenticated, logout, roles } = useAuth();
   const { showToast } = useToast();
-  const apiBaseUrl = getMobileApiBaseUrl();
   // Only offer the Google button when the provider is configured server-side — otherwise
   // tapping it would navigate to a 400 ("Google OAuth no está configurado").
   const [googleAvailable, setGoogleAvailable] = useState(false);
@@ -86,19 +83,47 @@ export default function AccountScreen() {
             <Text style={styles.infoLabel}>Roles</Text>
             <Text style={styles.infoValue}>{formatRoleLabels(roles) || "Ninguno"}</Text>
           </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Servidor</Text>
-            <Text style={styles.infoValue}>{apiBaseUrl}</Text>
-          </View>
-
-          {token ? (
-            <View style={styles.tokenBox}>
-              <Text style={styles.tokenLabel}>Token de acceso</Text>
-              <Text style={styles.tokenValue}>{token.slice(0, 32)}...</Text>
-            </View>
-          ) : null}
         </View>
+
+        {isAuthenticated && roles.includes("CLIENT") ? (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Tu cuidado</Text>
+            <Pressable
+              testID={authTestIds.account.profileLink}
+              nativeID={authTestIds.account.profileLink}
+              accessibilityRole="button"
+              accessibilityLabel="Abrir mi perfil"
+              onPress={() => {
+                hapticFeedback.selection();
+                router.push("/client-profile" as never);
+              }}
+              style={({ pressed }) => [styles.linkRow, pressed && styles.pressed]}
+            >
+              <View>
+                <Text style={styles.linkTitle}>Mi perfil</Text>
+                <Text style={styles.linkBody}>Datos personales y contacto de emergencia.</Text>
+              </View>
+              <Text style={styles.chevron}>›</Text>
+            </Pressable>
+            <Pressable
+              testID={authTestIds.account.notificationsLink}
+              nativeID={authTestIds.account.notificationsLink}
+              accessibilityRole="button"
+              accessibilityLabel="Abrir avisos"
+              onPress={() => {
+                hapticFeedback.selection();
+                router.push("/client-notifications" as never);
+              }}
+              style={({ pressed }) => [styles.linkRow, pressed && styles.pressed]}
+            >
+              <View>
+                <Text style={styles.linkTitle}>Avisos</Text>
+                <Text style={styles.linkBody}>Cambios importantes de tus solicitudes.</Text>
+              </View>
+              <Text style={styles.chevron}>›</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         <View style={[styles.card, styles.actionsCard]}>
           <Text style={styles.sectionTitle}>Acciones</Text>
@@ -195,23 +220,32 @@ const styles = StyleSheet.create({
     color: designTokens.color.ink.primary,
     fontWeight: "600",
   },
-  tokenBox: {
-    marginTop: designTokens.spacing.md,
-    padding: designTokens.spacing.md,
-    backgroundColor: designTokens.color.surface.tertiary,
-    borderRadius: designTokens.radius.md,
+  linkRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: designTokens.color.border.subtle,
   },
-  tokenLabel: {
-    ...designTokens.typography.eyebrow,
-    fontSize: 10,
-    color: designTokens.color.ink.muted,
-    marginBottom: 4,
+  linkTitle: {
+    color: designTokens.color.ink.primary,
+    fontSize: 16,
+    fontWeight: "900",
   },
-  tokenValue: {
-    ...designTokens.typography.body,
-    fontSize: 11,
-    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+  linkBody: {
     color: designTokens.color.ink.secondary,
+    fontSize: 13,
+    marginTop: 3,
+  },
+  chevron: {
+    color: designTokens.color.ink.muted,
+    fontSize: 26,
+    lineHeight: 26,
+  },
+  pressed: {
+    opacity: 0.75,
   },
   copy: {
     ...designTokens.typography.body,

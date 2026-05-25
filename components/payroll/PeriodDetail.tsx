@@ -12,6 +12,7 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
+  Linking,
 } from "react-native";
 import { useToast } from "@/src/components/shared/ToastProvider";
 import { Pagination } from "@/src/components/shared/Pagination";
@@ -30,9 +31,12 @@ import {
   approvePayrollLineOverride,
   getAdminPayrollVoucherUrl,
   getAdminPayrollBulkVouchersUrl,
+  getPeriodCloseWarnings,
+  confirmNursePeriodPayment,
 } from "@/src/services/payrollService";
 import { getCachedAuthSession } from "@/src/services/authSession";
 import { formatDateES, formatDateTimeES } from "@/src/utils/spanishTextValidator";
+import { quincenaLabel } from "@/src/utils/payrollPeriods";
 import { hapticFeedback } from "@/src/utils/haptics";
 
 const SERVICE_REQUEST_ID_PATTERN = /\s*·?\s*solicitud\s*[0-9a-fA-F-]{36}\s*$/i;
@@ -76,6 +80,8 @@ const formatServiceLabel = (description: string) => {
 interface PeriodDetailProps {
   period: AdminPayrollPeriodDetail;
   onClose: () => Promise<void>;
+  /** Reopen a closed period for correction (audited). Requires a reason. */
+  onReopen?: (reason: string) => Promise<void>;
   onBack: () => void;
   onPrepareRecalculate?: () => void;
   /**
@@ -115,9 +121,14 @@ async function downloadAndShare(
   }
 }
 
-export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, onSetActions, onEdit, onDelete }: PeriodDetailProps) {
+export function PeriodDetail({ period, onClose, onReopen, onBack, onPrepareRecalculate, onSetActions, onEdit, onDelete }: PeriodDetailProps) {
   const { showToast } = useToast();
   const isOpen = period.status === "Open";
+
+  // Reopen-a-closed-period modal state.
+  const [reopenModalVisible, setReopenModalVisible] = useState(false);
+  const [reopenReason, setReopenReason] = useState("");
+  const [reopenSubmitting, setReopenSubmitting] = useState(false);
 
   // CSV export state
   const [exporting, setExporting] = useState<string | null>(null);
@@ -136,6 +147,11 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
   // Voucher download state
   const [downloadingVoucherId, setDownloadingVoucherId] = useState<string | null>(null);
   const [downloadingBulk, setDownloadingBulk] = useState(false);
+
+  // Per-nurse bank-transfer confirmation (DEMO: delivery routes to the admin's own
+  // email/number; nurses are not messaged yet — see the next-initiative brief).
+  const [confirmingNurseId, setConfirmingNurseId] = useState<string | null>(null);
+  const [confirmedNurseIds, setConfirmedNurseIds] = useState<Set<string>>(new Set());
 
   // Per-list pagination — both the staff summary and the payroll lines can
   // run long on a busy period. Reset to page 1 when the period changes.
@@ -280,6 +296,71 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
     }
   };
 
+  // --- Per-nurse bank-transfer confirmation (DEMO) ---
+  // Confirms the transfer, then the backend emails the voucher PDF and returns a wa.me
+  // link — both routed to the ADMIN's own email/number for the demo.
+  const runConfirmTransfer = async (nurseUserId: string, bankReference: string | null) => {
+    hapticFeedback.light();
+    setConfirmingNurseId(nurseUserId);
+    try {
+      const result = await confirmNursePeriodPayment(period.id, nurseUserId, bankReference);
+      setConfirmedNurseIds((prev) => {
+        const next = new Set(prev);
+        next.add(nurseUserId);
+        return next;
+      });
+      if (result.whatsappUrl) {
+        const canOpen = await Linking.canOpenURL(result.whatsappUrl).catch(() => false);
+        if (canOpen) await Linking.openURL(result.whatsappUrl);
+      }
+      const emailNote = result.voucherEmailSent
+        ? "Comprobante enviado por correo."
+        : "Pago confirmado (el correo no pudo enviarse).";
+      showToast({
+        variant: result.voucherEmailSent ? "success" : "info",
+        message: `${emailNote} ${result.recipientLabel}`.trim(),
+      });
+    } catch (e) {
+      showToast({
+        variant: "error",
+        message: e instanceof Error ? e.message : "No fue posible confirmar la transferencia.",
+      });
+    } finally {
+      setConfirmingNurseId(null);
+    }
+  };
+
+  const handleConfirmTransfer = (nurseUserId: string, nurseDisplayName: string) => {
+    if (confirmingNurseId) return;
+    hapticFeedback.light();
+    // Optional bank reference. Alert.prompt is iOS-only; elsewhere use a plain confirm.
+    if (Platform.OS === "ios") {
+      Alert.prompt(
+        "Confirmar transferencia",
+        `Confirma el pago a ${nurseDisplayName}. Puedes anotar la referencia bancaria (opcional).`,
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Confirmar",
+            onPress: (ref?: string) =>
+              void runConfirmTransfer(nurseUserId, ref && ref.trim() ? ref.trim() : null),
+          },
+        ],
+        "plain-text",
+        "",
+      );
+    } else {
+      Alert.alert(
+        "Confirmar transferencia",
+        `¿Confirmar el pago a ${nurseDisplayName}? Se enviará el comprobante (modo demo: al administrador).`,
+        [
+          { text: "Cancelar", style: "cancel" },
+          { text: "Confirmar", onPress: () => void runConfirmTransfer(nurseUserId, null) },
+        ],
+      );
+    }
+  };
+
   // --- Bulk voucher download ---
   const handleDownloadAllVouchers = async () => {
     if (downloadingBulk) return;
@@ -308,18 +389,28 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
   };
 
   // --- Period close (keep destructive confirmation as Alert.alert) ---
-  const handleClosePeriod = () => {
+  const handleClosePeriod = async () => {
     hapticFeedback.selection();
-    // Safeguard: flag nurses whose pay is 0 (rate not set) or negative (deductions > gross) before
-    // locking the period. Closing is irreversible, so surface this for review first.
-    const flagged = period.staffSummary.filter((s) => s.netCompensation <= 0);
-    const warning =
-      flagged.length > 0
-        ? `\n\nAtención: ${flagged.length} enfermera(s) con pago en 0 o negativo (revisa tarifas y deducciones). El cierre es irreversible.`
-        : "";
+    // Pull the authoritative pre-close warnings (unliquidated services + zero/negative net)
+    // so the single confirmation lists exactly what the backend would block on.
+    let warning = "";
+    try {
+      const w = await getPeriodCloseWarnings(period.id);
+      const parts: string[] = [];
+      if (w.unliquidatedServices > 0)
+        parts.push(`${w.unliquidatedServices} servicio(s) completado(s) sin línea de nómina (quedarían sin pagar)`);
+      if (w.negativeNetNurses > 0)
+        parts.push(`${w.negativeNetNurses} enfermera(s) con pago en 0 o negativo`);
+      if (parts.length > 0) warning = `\n\nAtención: ${parts.join("; ")}.`;
+    } catch {
+      // Fall back to the client-side net<=0 flag if the warnings call fails.
+      const flagged = period.staffSummary.filter((s) => s.netCompensation <= 0);
+      if (flagged.length > 0)
+        warning = `\n\nAtención: ${flagged.length} enfermera(s) con pago en 0 o negativo (revisa tarifas y deducciones).`;
+    }
     Alert.alert(
       "Cerrar Período",
-      `Antes de cerrar (es irreversible), confirma que revisaste:\n• Deducciones y descuentos\n• Ajustes por servicio\n• Comprobantes descargados${warning}\n\n¿Cerrar el período "${formatDateES(period.startDate)} - ${formatDateES(period.endDate)}"?`,
+      `Antes de cerrar (es irreversible), confirma que revisaste:\n• Deducciones y descuentos\n• Ajustes por servicio\n• Comprobantes descargados${warning}\n\n¿Cerrar "${quincenaLabel(period.startDate, period.endDate)}"?`,
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -338,12 +429,33 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
     );
   };
 
+  // --- Reopen a closed period (opens a reason modal; submit is audited server-side) ---
+  const handleSubmitReopen = async () => {
+    if (!onReopen) return;
+    const reason = reopenReason.trim();
+    if (!reason) {
+      showToast({ variant: "error", message: "Indica una razón para reabrir el período." });
+      return;
+    }
+    hapticFeedback.light();
+    setReopenSubmitting(true);
+    try {
+      await onReopen(reason);
+      setReopenModalVisible(false);
+      setReopenReason("");
+    } catch (e) {
+      showToast({ variant: "error", message: e instanceof Error ? e.message : "No fue posible reabrir el período." });
+    } finally {
+      setReopenSubmitting(false);
+    }
+  };
+
   // --- Period delete (destructive confirmation, mirrors close) ---
   const handleDeletePeriodConfirm = () => {
     hapticFeedback.selection();
     Alert.alert(
       "Eliminar Período",
-      `¿Eliminar el período "${formatDateES(period.startDate)} - ${formatDateES(period.endDate)}"? Esta acción no se puede deshacer.`,
+      `¿Eliminar "${quincenaLabel(period.startDate, period.endDate)}"? Esta acción no se puede deshacer.`,
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -418,12 +530,24 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
         variant: "danger",
       });
     }
+    if (!isOpen && onReopen) {
+      actions.push({
+        label: "Reabrir",
+        onPress: () => {
+          hapticFeedback.selection();
+          setReopenReason("");
+          setReopenModalVisible(true);
+        },
+        variant: "secondary",
+        testID: "admin-period-reopen-button",
+      });
+    }
     onSetActions(actions);
     return () => {
       onSetActions([]);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, exporting, downloadingBulk, period.id, period.canModify, onEdit, onDelete]);
+  }, [isOpen, exporting, downloadingBulk, period.id, period.canModify, onEdit, onDelete, onReopen]);
 
   const totalGross = period.staffSummary.reduce((sum, s) => sum + s.grossCompensation, 0);
   const totalNet = period.staffSummary.reduce((sum, s) => sum + s.netCompensation, 0);
@@ -431,7 +555,8 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
   const statusDescription = isOpen
     ? "Puedes revisar líneas, corregir montos y cerrar el período cuando esté listo."
     : "Período finalizado. Los comprobantes y reportes están disponibles para descarga.";
-  const periodLabel = `${formatDateES(period.startDate)} - ${formatDateES(period.endDate)}`;
+  const periodLabel = quincenaLabel(period.startDate, period.endDate);
+  const periodDateRange = `${formatDateES(period.startDate)} – ${formatDateES(period.endDate)}`;
   const nurseCountLabel = `${period.staffSummary.length} enfermera${period.staffSummary.length === 1 ? "" : "s"}`;
   const lineCountLabel = `${period.lines.length} línea${period.lines.length === 1 ? "" : "s"}`;
 
@@ -492,9 +617,9 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
         <View style={styles.overviewCard}>
           <View style={styles.overviewHeader}>
             <View style={styles.overviewTitleGroup}>
-              <Text style={styles.overviewEyebrow}>Nómina</Text>
+              <Text style={styles.overviewEyebrow}>{periodLabel}</Text>
               <Text style={styles.overviewTitle}>{statusTitle}</Text>
-              <Text style={styles.overviewPeriod}>{periodLabel}</Text>
+              <Text style={styles.overviewPeriod}>{periodDateRange}</Text>
             </View>
             <StatusBadge
               label={isOpen ? "Abierto" : "Cerrado"}
@@ -504,6 +629,16 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
           </View>
 
           <Text style={styles.overviewDescription}>{statusDescription}</Text>
+
+          {period.reopenedAtUtc && (
+            <View style={styles.reopenNotice} testID="payroll-period-reopen-notice">
+              <Text style={styles.reopenNoticeText}>
+                Reabierto el {formatDateTimeES(period.reopenedAtUtc)}
+                {period.reopenCount > 1 ? ` (${period.reopenCount} veces)` : ""}
+                {period.reopenReason ? ` — ${period.reopenReason}` : ""}
+              </Text>
+            </View>
+          )}
 
           <View style={styles.netPanel}>
             <Text style={styles.netLabel}>Total neto a pagar</Text>
@@ -599,6 +734,31 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
                       <ActivityIndicator color={designTokens.color.ink.accentStrong} size="small" accessibilityLabel="Cargando..." />
                     ) : (
                       <Text style={styles.voucherButtonText}>Descargar comprobante</Text>
+                    )}
+                  </Pressable>
+                  <Pressable
+                    style={[
+                      styles.confirmTransferButton,
+                      (confirmingNurseId === staff.nurseUserId || confirmedNurseIds.has(staff.nurseUserId)) &&
+                        styles.buttonDisabled,
+                    ]}
+                    onPress={() => handleConfirmTransfer(staff.nurseUserId, staff.nurseDisplayName)}
+                    disabled={confirmingNurseId === staff.nurseUserId || confirmedNurseIds.has(staff.nurseUserId)}
+                    testID={`admin-staff-confirm-transfer-${staff.nurseUserId}`}
+                    nativeID={`admin-staff-confirm-transfer-${staff.nurseUserId}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Confirmar transferencia de ${staff.nurseDisplayName}`}
+                    accessibilityState={{
+                      busy: confirmingNurseId === staff.nurseUserId,
+                      disabled: confirmedNurseIds.has(staff.nurseUserId),
+                    }}
+                  >
+                    {confirmingNurseId === staff.nurseUserId ? (
+                      <ActivityIndicator color={designTokens.color.surface.primary} size="small" accessibilityLabel="Confirmando..." />
+                    ) : (
+                      <Text style={styles.confirmTransferButtonText}>
+                        {confirmedNurseIds.has(staff.nurseUserId) ? "Transferencia confirmada" : "Confirmar transferencia"}
+                      </Text>
                     )}
                   </Pressable>
                 </View>
@@ -901,6 +1061,76 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
           </View>
         </View>
       </Modal>
+
+      {/* Reopen reason modal */}
+      <Modal
+        visible={reopenModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setReopenModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View
+            style={styles.modalCard}
+            testID="admin-period-reopen-modal"
+            nativeID="admin-period-reopen-modal"
+            accessibilityViewIsModal
+          >
+            <Text style={styles.modalTitle}>Reabrir período</Text>
+            <Text style={styles.modalSubtitle} numberOfLines={2}>
+              {periodLabel} — el período volverá a estado Abierto para correcciones.
+            </Text>
+
+            <Text style={styles.inputLabel}>Razón de la reapertura</Text>
+            <TextInput
+              style={[styles.input, styles.inputMultiline]}
+              multiline
+              value={reopenReason}
+              onChangeText={setReopenReason}
+              placeholder="Describe por qué se reabre el período..."
+              testID="admin-period-reopen-reason-input"
+              nativeID="admin-period-reopen-reason-input"
+              accessibilityLabel="Razón de la reapertura"
+            />
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={() => {
+                  hapticFeedback.selection();
+                  setReopenModalVisible(false);
+                }}
+                disabled={reopenSubmitting}
+                accessibilityRole="button"
+                accessibilityLabel="Cancelar reapertura"
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonTextSecondary]}>
+                  Cancelar
+                </Text>
+              </TouchableOpacity>
+              <Pressable
+                style={[styles.modalButton, reopenSubmitting && styles.buttonDisabled]}
+                onPress={handleSubmitReopen}
+                disabled={reopenSubmitting}
+                testID="admin-period-reopen-submit-button"
+                nativeID="admin-period-reopen-submit-button"
+                accessibilityRole="button"
+                accessibilityLabel={reopenSubmitting ? "Reabriendo período" : "Confirmar reapertura"}
+                accessibilityState={{ busy: reopenSubmitting }}
+              >
+                {reopenSubmitting ? (
+                  <ActivityIndicator color={designTokens.color.ink.inverse} size="small" accessibilityLabel="Cargando..." />
+                ) : (
+                  <Text style={styles.modalButtonText}>Reabrir</Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </>
   );
 }
@@ -977,6 +1207,21 @@ const styles = StyleSheet.create({
     color: designTokens.color.ink.secondary,
     fontSize: 13,
     lineHeight: 19,
+  },
+  reopenNotice: {
+    marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: designTokens.color.surface.warning,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.warning,
+  },
+  reopenNoticeText: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: designTokens.color.status.warningText,
+    fontWeight: "600",
   },
   netPanel: {
     marginTop: 14,
@@ -1153,6 +1398,8 @@ const styles = StyleSheet.create({
   staffActions: {
     flexDirection: "row",
     justifyContent: "flex-end",
+    flexWrap: "wrap",
+    gap: 8,
   },
   voucherButton: {
     paddingVertical: 8,
@@ -1166,6 +1413,21 @@ const styles = StyleSheet.create({
   },
   voucherButtonText: {
     color: designTokens.color.ink.accentStrong,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  confirmTransferButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: designTokens.color.ink.accentStrong,
+    backgroundColor: designTokens.color.ink.accentStrong,
+    minWidth: 170,
+    alignItems: "center",
+  },
+  confirmTransferButtonText: {
+    color: designTokens.color.surface.primary,
     fontSize: 13,
     fontWeight: "600",
   },

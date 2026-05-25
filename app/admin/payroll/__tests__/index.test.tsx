@@ -112,6 +112,8 @@ describe("PeriodsScreen", () => {
           createdAtUtc: "2026-04-01T00:00:00Z",
           closedAtUtc: null,
           lineCount: 2,
+          totalGross: 5000,
+          totalNet: 4500,
         },
       ],
       totalCount: 1,

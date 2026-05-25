@@ -19,6 +19,7 @@ import {
 import { designTokens } from "@/src/design-system/tokens";
 import { useToast } from "@/src/components/shared/ToastProvider";
 import { formatDateES } from "@/src/utils/spanishTextValidator";
+import { quincenaLabel } from "@/src/utils/payrollPeriods";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
 import { hapticFeedback } from "@/src/utils/haptics";
 
@@ -168,7 +169,9 @@ export default function NursePayrollScreen() {
               {formatCurrency(summary.totalCompensationThisPeriod)}
             </Text>
             <Text style={styles.heroPeriod}>
-              {summary.currentPeriodStartDate ? formatDateES(summary.currentPeriodStartDate) : ""} – {summary.currentPeriodEndDate ? formatDateES(summary.currentPeriodEndDate) : ""}
+              {summary.currentPeriodStartDate
+                ? quincenaLabel(summary.currentPeriodStartDate, summary.currentPeriodEndDate ?? undefined)
+                : ""}
             </Text>
           </View>
         ) : (
@@ -195,12 +198,12 @@ export default function NursePayrollScreen() {
                     testID={`nurse-payroll-period-item-${period.id}`}
                     nativeID={`nurse-payroll-period-item-${period.id}`}
                     accessibilityRole="button"
-                    accessibilityLabel={`Período ${period.startDate} a ${period.endDate}, ${isOpen ? "abierto" : "cerrado"}`}
+                    accessibilityLabel={`${quincenaLabel(period.startDate, period.endDate)}, ${isOpen ? "abierto" : "cerrado"}`}
                     accessibilityState={{ expanded: isExpanded }}
                   >
                     <View style={styles.historyTopRow}>
                       <Text style={styles.historyDate}>
-                        {formatDateES(period.startDate)} – {formatDateES(period.endDate)}
+                        {quincenaLabel(period.startDate, period.endDate)}
                       </Text>
                       <StatusBadge label={isOpen ? "Abierto" : "Cerrado"} tone={isOpen ? "success" : "neutral"} />
                     </View>

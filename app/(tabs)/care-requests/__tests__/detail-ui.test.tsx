@@ -40,6 +40,7 @@ vi.mock("@/src/services/careRequestService", () => ({
   getActiveNurseProfiles: mockGetActiveNurseProfiles,
   assignCareRequestNurse: mockAssignCareRequestNurse,
   transitionCareRequest: mockTransitionCareRequest,
+  downloadAndShareCareRequestReceipt: vi.fn(),
   reportPayment: vi.fn(),
 }));
 

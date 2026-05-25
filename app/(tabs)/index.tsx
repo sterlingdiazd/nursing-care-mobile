@@ -13,6 +13,7 @@ import {
   canCreateCareRequests,
 } from "@/src/utils/authRedirect";
 import { hapticFeedback } from "@/src/utils/haptics";
+import { clientTestIds } from "@/src/testing/testIds";
 
 const adminQuickSections = [
   {
@@ -49,19 +50,32 @@ const adminQuickSections = [
 
 const clientQuickSections = [
   {
-    title: "Solicitudes",
-    body: "Cola activa y seguimiento.",
-    path: "/care-requests",
-  },
-  {
-    title: "Nueva solicitud",
-    body: "Registrar un nuevo servicio.",
+    title: "Necesito cuidado",
+    body: "Cuéntanos qué necesitas y te guiamos paso a paso.",
     path: "/create-care-request",
+    key: "crear",
+    priority: "Ahora",
   },
   {
-    title: "Cuenta",
-    body: "Sesion, acceso y perfil.",
-    path: "/account",
+    title: "Ver mis servicios",
+    body: "Estado, fechas y pago de tus solicitudes.",
+    path: "/care-requests",
+    key: "servicios",
+    priority: "Seguimiento",
+  },
+  {
+    title: "Avisos importantes",
+    body: "Cambios recientes de tus solicitudes.",
+    path: "/client-notifications",
+    key: "avisos",
+    priority: "Pendiente",
+  },
+  {
+    title: "Mis datos",
+    body: "Perfil y contacto de emergencia.",
+    path: "/client-profile",
+    key: "perfil",
+    priority: "Cuenta",
   },
 ];
 
@@ -153,8 +167,8 @@ export default function HomeScreen() {
   const heroEyebrow = hasOperationalAccess
     ? isAdmin
       ? "Resumen admin"
-      : isClient
-        ? "Tus servicios"
+    : isClient
+      ? "Tus servicios"
         : "Tu jornada"
     : isAnonymous
       ? "Acceso y cuenta"
@@ -183,6 +197,8 @@ export default function HomeScreen() {
         : "Mientras termina la revision administrativa, no veras funciones operativas.";
   return (
     <MobileWorkspaceShell
+      testID={isClient ? clientTestIds.home.screen : undefined}
+      nativeID={isClient ? clientTestIds.home.screen : undefined}
       eyebrow={heroEyebrow}
       title={heroTitle}
       description={heroDescription}
@@ -281,10 +297,24 @@ export default function HomeScreen() {
         </>
       }
     >
+      {isClient && hasOperationalAccess ? (
+        <View style={styles.assistantPanel}>
+          <Text style={styles.assistantEyebrow}>¿Qué necesitas hoy?</Text>
+          <Text style={styles.assistantTitle}>Elige una opción y seguimos contigo.</Text>
+          <Text style={styles.assistantBody}>
+            Mostramos primero las acciones más comunes para evitar pasos técnicos.
+          </Text>
+        </View>
+      ) : null}
       <View style={styles.grid}>
-        {quickSectionsToShow.map((section) => (
+        {quickSectionsToShow.map((section) => {
+          const clientSection = section as typeof section & { key?: string; priority?: string };
+          const clientSelector = isClient && clientSection.key ? clientTestIds.home.intentCard(clientSection.key) : undefined;
+          return (
           <Pressable
             key={section.path}
+            testID={clientSelector}
+            nativeID={clientSelector}
             accessibilityRole="button"
             accessibilityLabel={section.title}
             onPress={() => {
@@ -301,13 +331,17 @@ export default function HomeScreen() {
           >
             <View style={styles.cardContent}>
               <View>
+                {clientSection.priority ? (
+                  <Text style={styles.cardPriority}>{clientSection.priority}</Text>
+                ) : null}
                 <Text style={styles.cardTitleSmall}>{section.title}</Text>
-                <Text style={styles.cardBodySmall} numberOfLines={1}>{section.body}</Text>
+                <Text style={styles.cardBodySmall} numberOfLines={2}>{section.body}</Text>
               </View>
               <Text style={styles.cardChevron}>›</Text>
             </View>
           </Pressable>
-        ))}
+          );
+        })}
       </View>
     </MobileWorkspaceShell>
   );
@@ -316,6 +350,33 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   grid: {
     gap: 14,
+  },
+  assistantPanel: {
+    backgroundColor: designTokens.color.surface.primary,
+    borderRadius: designTokens.radius.lg,
+    padding: designTokens.spacing.lg,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.accent,
+    marginBottom: designTokens.spacing.lg,
+  },
+  assistantEyebrow: {
+    color: designTokens.color.ink.accentStrong,
+    fontSize: 12,
+    fontWeight: "900",
+    textTransform: "uppercase",
+    marginBottom: 4,
+  },
+  assistantTitle: {
+    color: designTokens.color.ink.primary,
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: "900",
+  },
+  assistantBody: {
+    color: designTokens.color.ink.secondary,
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 6,
   },
   card: {
     backgroundColor: designTokens.color.ink.inverse,
@@ -338,6 +399,12 @@ elevation: 2,
     fontWeight: "700",
     color: designTokens.color.ink.primary,
     marginBottom: 4,
+  },
+  cardPriority: {
+    color: designTokens.color.ink.accentStrong,
+    fontSize: 12,
+    fontWeight: "900",
+    marginBottom: 5,
   },
   cardBodySmall: {
     fontSize: 13,

@@ -116,7 +116,9 @@ function CareRequestCard({ item }: { item: CareRequestDto }) {
         <StatusBadge label={statusLabel} colors={{ bg: colors.bg, fg: colors.fg }} />
       </View>
       <View style={styles.cardFooter}>
-        <Text style={styles.cardMeta}>Creada {formatDateTimeES(item.createdAtUtc)}</Text>
+        <Text style={styles.cardMeta}>
+          {item.careRequestDate ? `Servicio ${item.careRequestDate}` : `Creada ${formatDateTimeES(item.createdAtUtc)}`}
+        </Text>
         {paymentBadge ? (
           <StatusBadge
             label={paymentBadge.label}
