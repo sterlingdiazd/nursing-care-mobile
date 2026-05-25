@@ -104,7 +104,7 @@ export default function PayrollHubScreen() {
         {/* KPI metrics row — viewport-fit, metrics-forward */}
         <View style={styles.metricsRow}>
           <MetricCard
-            label="Compensación"
+            label="Nómina del período"
             value={dash ?? (summary ? formatCurrency(summary.totalCompensationCurrentPeriod) : "—")}
             testID="payroll-hub-metric-compensation"
           />
