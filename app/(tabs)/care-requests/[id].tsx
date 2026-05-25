@@ -26,6 +26,7 @@ import {
   transitionCareRequest,
   type ActiveNurseProfileSummary,
 } from "@/src/services/careRequestService";
+import { getCareRequestOptions } from "@/src/services/catalogOptionsService";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
 import { careRequestTestIds } from "@/src/testing/testIds";
 import { CareRequestDto, CareRequestTransitionAction } from "@/src/types/careRequest";
@@ -113,8 +114,9 @@ function normalizeSearchValue(value: string) {
 
 export default function CareRequestDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { roles, userId } = useAuth();
+  const { roles, userId, token } = useAuth();
   const [careRequest, setCareRequest] = useState<CareRequestDto | null>(null);
+  const [typeDisplayNames, setTypeDisplayNames] = useState<Record<string, string>>({});
   const [activeNurses, setActiveNurses] = useState<ActiveNurseProfileSummary[]>([]);
   const [assignedNurseId, setAssignedNurseId] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -145,6 +147,22 @@ export default function CareRequestDetailScreen() {
   };
 
   useEffect(() => { void loadCareRequest(); }, [id]);
+
+  // Map service-type codes to their friendly catalog names (no hardcoding — the catalog is the
+  // source of truth). Falls back to the raw code if the lookup is unavailable.
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    void getCareRequestOptions(token)
+      .then((options) => {
+        if (cancelled) return;
+        const map: Record<string, string> = {};
+        for (const type of options.careRequestTypes) map[type.code] = type.displayName;
+        setTypeDisplayNames(map);
+      })
+      .catch(() => { /* keep raw code fallback */ });
+    return () => { cancelled = true; };
+  }, [token]);
 
   const runReportPayment = async (imageUri: string, mimeType: string, note: string) => {
     if (!id) return;
@@ -422,7 +440,8 @@ export default function CareRequestDetailScreen() {
               <View style={styles.servicioCol}>
                 <Text style={styles.servicioLabel}>Tipo</Text>
                 <Text style={styles.servicioValue} numberOfLines={1}>
-                  {careRequest.careRequestType ?? "N/A"}
+                  {(careRequest.careRequestType ? typeDisplayNames[careRequest.careRequestType] : undefined)
+                    ?? careRequest.careRequestType ?? "N/A"}
                 </Text>
               </View>
               <View style={styles.servicioCol}>
