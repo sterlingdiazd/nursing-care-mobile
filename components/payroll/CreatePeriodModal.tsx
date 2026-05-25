@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { designTokens } from "@/src/design-system/tokens";
 import { DateField } from "@/src/components/form";
-import { nextQuincenaAfter, stepQuincena, rangesOverlap, quincenaHygieneWarnings } from "@/src/utils/payrollPeriods";
+import { nextQuincenaAfter, stepQuincena, rangesOverlap, quincenaHygieneWarnings, computeCutoffAndPayment, type PaymentDatePolicy } from "@/src/utils/payrollPeriods";
 import { FormModalScaffold, FormCard } from "@/components/payroll/FormModalScaffold";
 import { hapticFeedback } from "@/src/utils/haptics";
 
@@ -19,12 +19,11 @@ interface CreatePeriodModalProps {
   onSubmit: (data: PeriodScheduleValue) => Promise<void>;
   period?: PeriodScheduleValue | null;
   existingPeriods?: ReadonlyArray<{ startDate: string; endDate: string }>;
+  /** Admin-configured payment-date policy for the prefill; omit to keep the default behavior. */
+  paymentPolicy?: PaymentDatePolicy;
 }
 
-const toIso = (d: Date): string =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-
-export function CreatePeriodModal({ visible, onClose, onSubmit, period, existingPeriods = [] }: CreatePeriodModalProps) {
+export function CreatePeriodModal({ visible, onClose, onSubmit, period, existingPeriods = [], paymentPolicy }: CreatePeriodModalProps) {
   const isEdit = Boolean(period);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -51,7 +50,7 @@ export function CreatePeriodModal({ visible, onClose, onSubmit, period, existing
       setPaymentDate(period.paymentDate ?? "");
       setError(null);
     } else {
-      const nextSchedule = nextQuincenaAfter(existingPeriods);
+      const nextSchedule = nextQuincenaAfter(existingPeriods, paymentPolicy);
       setStartDate(nextSchedule.startDate);
       setEndDate(nextSchedule.endDate);
       setCutoffDate(nextSchedule.cutoffDate);
@@ -63,12 +62,10 @@ export function CreatePeriodModal({ visible, onClose, onSubmit, period, existing
 
   const onEndChange = (v: string) => {
     setEndDate(v);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
-      const end = new Date(`${v}T00:00:00`);
-      const cut = new Date(end);
-      cut.setDate(end.getDate() - 2);
-      setCutoffDate(toIso(cut));
-      setPaymentDate(toIso(end));
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v) && /^\d{4}-\d{2}-\d{2}$/.test(startDate)) {
+      const { cutoffDate: nextCutoff, paymentDate: nextPayment } = computeCutoffAndPayment(startDate, v, paymentPolicy);
+      setCutoffDate(nextCutoff);
+      setPaymentDate(nextPayment);
     }
   };
 
@@ -127,13 +124,13 @@ export function CreatePeriodModal({ visible, onClose, onSubmit, period, existing
     >
       {!isEdit && (
         <View style={styles.quincenaBar}>
-          <TouchableOpacity style={styles.quincenaBtn} onPress={() => applySchedule(stepQuincena(startDate, -1))} accessibilityRole="button" accessibilityLabel="Quincena anterior">
+          <TouchableOpacity style={styles.quincenaBtn} onPress={() => applySchedule(stepQuincena(startDate, -1, paymentPolicy))} accessibilityRole="button" accessibilityLabel="Quincena anterior">
             <Text style={styles.quincenaBtnText}>◀ Quincena</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.quincenaBtn} onPress={() => applySchedule(nextQuincenaAfter(existingPeriods))} accessibilityRole="button" accessibilityLabel="Restablecer a la quincena estándar siguiente">
+          <TouchableOpacity style={styles.quincenaBtn} onPress={() => applySchedule(nextQuincenaAfter(existingPeriods, paymentPolicy))} accessibilityRole="button" accessibilityLabel="Restablecer a la quincena estándar siguiente">
             <Text style={styles.quincenaBtnText}>Estándar</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.quincenaBtn} onPress={() => applySchedule(stepQuincena(startDate, 1))} accessibilityRole="button" accessibilityLabel="Quincena siguiente">
+          <TouchableOpacity style={styles.quincenaBtn} onPress={() => applySchedule(stepQuincena(startDate, 1, paymentPolicy))} accessibilityRole="button" accessibilityLabel="Quincena siguiente">
             <Text style={styles.quincenaBtnText}>Quincena ▶</Text>
           </TouchableOpacity>
         </View>

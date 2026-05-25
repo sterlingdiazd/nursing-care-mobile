@@ -13,7 +13,8 @@ import { usePagedList } from "@/src/hooks/usePagedList";
 import { SwipePager } from "@/src/components/shared/SwipePager";
 import { designTokens } from "@/src/design-system/tokens";
 import { formatDateES, formatDateTimeES } from "@/src/utils/spanishTextValidator";
-import { nextQuincenaAfter, quincenaLabel } from "@/src/utils/payrollPeriods";
+import { nextQuincenaAfter, quincenaLabel, type PaymentDatePolicy } from "@/src/utils/payrollPeriods";
+import { getPaymentDatePolicy } from "@/src/services/payrollPaymentPolicy";
 import {
   getPayrollPeriods,
   getPayrollPeriodById,
@@ -76,7 +77,28 @@ export default function PeriodsScreen() {
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("");
 
+  // Admin-configured payment-date policy that drives the standard-period prefill. Defaults
+  // (undefined here / DEFAULT_PAYMENT_DATE_POLICY in the util) reproduce the original behavior,
+  // so a fetch failure simply leaves the prefill on the default schedule.
+  const [paymentPolicy, setPaymentPolicy] = useState<PaymentDatePolicy | undefined>(undefined);
+  const paymentPolicyRef = useRef<PaymentDatePolicy | undefined>(undefined);
+  paymentPolicyRef.current = paymentPolicy;
+
   const isReady$ = isReady && isAuthenticated;
+
+  useEffect(() => {
+    if (!isReady$) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const policy = await getPaymentDatePolicy();
+        if (!cancelled) setPaymentPolicy(policy);
+      } catch {
+        // Leave the default behavior in place if the policy cannot be loaded.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isReady$]);
 
   const {
     items: periodItems,
@@ -153,7 +175,7 @@ export default function PeriodsScreen() {
   }, [editingPeriod, reloadPeriods, showToast]);
 
   const handleCreateStandardPeriod = useCallback(() => {
-    const data = nextQuincenaAfter(periodItemsRef.current);
+    const data = nextQuincenaAfter(periodItemsRef.current, paymentPolicyRef.current);
     Alert.alert(
       "Crear quincena estándar",
       `Se creará "${quincenaLabel(data.startDate, data.endDate)}":\n\nInicio: ${formatDateES(data.startDate)}\nFin: ${formatDateES(data.endDate)}\nCorte: ${formatDateES(data.cutoffDate)}\nPago: ${formatDateES(data.paymentDate)}`,
@@ -444,6 +466,7 @@ export default function PeriodsScreen() {
         onClose={() => { setShowCreatePeriodModal(false); setEditingPeriod(null); }}
         onSubmit={handleSubmitPeriod}
         existingPeriods={periodItems}
+        paymentPolicy={paymentPolicy}
         period={editingPeriod ? {
           startDate: editingPeriod.startDate,
           endDate: editingPeriod.endDate,

@@ -20,6 +20,115 @@ const parseIso = (iso: string): Date => new Date(`${iso}T00:00:00`);
 const lastDayOfMonth = (year: number, monthIndex0: number): number =>
   new Date(year, monthIndex0 + 1, 0).getDate();
 
+const clamp = (value: number, min: number, max: number): number =>
+  Math.min(Math.max(value, min), max);
+
+/**
+ * Admin-configurable payment-date policy for the standard quincena prefill, read from
+ * system settings. Defaults reproduce TODAY's behavior exactly: 1st quincena pays the
+ * 15th, 2nd quincena pays the last day of the month, cutoff = end − 2.
+ */
+export type PaymentDatePolicy = {
+  /** "FIXED_DAY": pay on a fixed day-of-month. "DAYS_BEFORE_MONTH_END": pay N days before the month ends (2nd half only). */
+  mode: "FIXED_DAY" | "DAYS_BEFORE_MONTH_END";
+  /** Day-of-month the 1st quincena pays on (clamped 1..last day of month). */
+  firstHalfPaymentDay: number;
+  /** Day-of-month the 2nd quincena pays on. 0 means "last day of the month". */
+  secondHalfPaymentDay: number;
+  /** Days before month-end the 2nd quincena pays on (only used in DAYS_BEFORE_MONTH_END mode). */
+  daysBeforeMonthEnd: number;
+};
+
+/** The default policy — reproduces the original hardcoded behavior (15th / last day, cutoff = end − 2). */
+export const DEFAULT_PAYMENT_DATE_POLICY: PaymentDatePolicy = {
+  mode: "FIXED_DAY",
+  firstHalfPaymentDay: 15,
+  secondHalfPaymentDay: 0,
+  daysBeforeMonthEnd: 0,
+};
+
+/**
+ * Compute `{ cutoffDate, paymentDate }` (ISO YYYY-MM-DD) for a quincena's [start, end]
+ * dates under `policy`. Pure and UTC-safe (operates on local Y/M/D parts only).
+ *
+ * The "half" is inferred from the calendar shape:
+ *   - 1st half = starts on the 1st and ends on the 15th
+ *   - 2nd half = starts on the 16th and ends on the last day of the month
+ * A period that is NOT aligned to either shape falls back to paymentDate = end
+ * (the original behavior), so an atypical manual range is never mis-dated.
+ *
+ * The cutoff starts from `end − 2` (the original rule) and is then pulled back to
+ * `min(end − 2, paymentDate)` and clamped to be ≥ start, because the backend validates
+ * `paymentDate >= cutoffDate` (with `start <= cutoff <= end`): an earlier payment must
+ * pull the cutoff with it.
+ */
+export function computeCutoffAndPayment(
+  startIso: string,
+  endIso: string,
+  policy: PaymentDatePolicy = DEFAULT_PAYMENT_DATE_POLICY,
+): { cutoffDate: string; paymentDate: string } {
+  const start = toLocalDate(startIso);
+  const end = toLocalDate(endIso);
+
+  const year = end.getFullYear();
+  const monthIndex0 = end.getMonth();
+  const lastDay = lastDayOfMonth(year, monthIndex0);
+
+  // Default cutoff: end − 2 (original rule).
+  const cutoffBase = new Date(end);
+  cutoffBase.setDate(end.getDate() - 2);
+
+  const isFirstHalf =
+    start.getDate() === 1 &&
+    end.getDate() === 15 &&
+    start.getMonth() === end.getMonth() &&
+    start.getFullYear() === end.getFullYear();
+  const isSecondHalf =
+    start.getDate() === 16 &&
+    end.getDate() === lastDay &&
+    start.getMonth() === end.getMonth() &&
+    start.getFullYear() === end.getFullYear();
+
+  // Resolve the payment day-of-month for this period's month under the policy.
+  let paymentDay: number;
+  if (isFirstHalf) {
+    // The 1st quincena always pays on its fixed day, even in offset mode.
+    paymentDay = clamp(policy.firstHalfPaymentDay, 1, lastDay);
+  } else if (isSecondHalf) {
+    if (policy.mode === "DAYS_BEFORE_MONTH_END") {
+      paymentDay = clamp(lastDay - policy.daysBeforeMonthEnd, 1, lastDay);
+    } else {
+      // FIXED_DAY: 0 means "last day of month".
+      paymentDay = policy.secondHalfPaymentDay === 0
+        ? lastDay
+        : clamp(policy.secondHalfPaymentDay, 1, lastDay);
+    }
+  } else {
+    // Non-standard period: fall back to the original behavior (pay on the end date).
+    paymentDay = end.getDate();
+  }
+
+  const payment = new Date(year, monthIndex0, paymentDay);
+  // A pathological policy (e.g. a huge DAYS_BEFORE_MONTH_END) could push payment before the
+  // period start; keep it within [start, end] so the backend's start <= cutoff <= end and
+  // payment >= cutoff invariants always hold.
+  if (payment.getTime() < start.getTime()) payment.setTime(start.getTime());
+
+  // The backend requires paymentDate >= cutoffDate; pull cutoff back so it never exceeds payment.
+  const cutoff = new Date(
+    Math.min(cutoffBase.getTime(), payment.getTime()),
+  );
+  // cutoff must also be >= start.
+  if (cutoff.getTime() < start.getTime()) {
+    cutoff.setTime(start.getTime());
+  }
+
+  return {
+    cutoffDate: toIso(cutoff),
+    paymentDate: toIso(payment),
+  };
+}
+
 const MONTHS_ES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
@@ -80,47 +189,58 @@ export function quincenaLabel(
   return `${MONTHS_ES[month]}${yearSuffix} · ${ordinal} Quincena`;
 }
 
-/** The standard quincena schedule that contains `anchor`. */
-export function standardQuincena(anchor: Date): CreatePayrollPeriodRequest {
+/**
+ * The standard quincena schedule that contains `anchor`. When a `policy` is supplied,
+ * the cutoff and payment dates follow that admin-configured policy; otherwise the
+ * default (15th / last day, cutoff = end − 2) is used.
+ */
+export function standardQuincena(anchor: Date, policy?: PaymentDatePolicy): CreatePayrollPeriodRequest {
   const y = anchor.getFullYear();
   const m = anchor.getMonth(); // 0-based
   const firstHalf = anchor.getDate() <= 15;
   const start = new Date(y, m, firstHalf ? 1 : 16);
   const end = new Date(y, m, firstHalf ? 15 : lastDayOfMonth(y, m));
-  const cutoff = new Date(end);
-  cutoff.setDate(end.getDate() - 2);
+  const startIso = toIso(start);
+  const endIso = toIso(end);
+  const { cutoffDate, paymentDate } = computeCutoffAndPayment(startIso, endIso, policy);
   return {
-    startDate: toIso(start),
-    endDate: toIso(end),
-    cutoffDate: toIso(cutoff),
-    paymentDate: toIso(end),
+    startDate: startIso,
+    endDate: endIso,
+    cutoffDate,
+    paymentDate,
   };
 }
 
-/** The quincena immediately after the latest existing period (or today's quincena if none). */
-export function nextQuincenaAfter(periods: ReadonlyArray<{ endDate: string }>): CreatePayrollPeriodRequest {
+/**
+ * The quincena immediately after the latest existing period (or today's quincena if none).
+ * An optional `policy` is forwarded to `standardQuincena` to drive the payment-date prefill.
+ */
+export function nextQuincenaAfter(
+  periods: ReadonlyArray<{ endDate: string }>,
+  policy?: PaymentDatePolicy,
+): CreatePayrollPeriodRequest {
   const latest = (periods ?? [])
     .map((p) => p.endDate)
     .filter(Boolean)
     .sort() // ISO dates sort chronologically
     .at(-1);
-  if (!latest) return standardQuincena(new Date());
+  if (!latest) return standardQuincena(new Date(), policy);
   const dayAfter = parseIso(latest);
   dayAfter.setDate(dayAfter.getDate() + 1);
-  return standardQuincena(dayAfter);
+  return standardQuincena(dayAfter, policy);
 }
 
-/** The quincena before/after the one starting at `startIso`. */
-export function stepQuincena(startIso: string, dir: -1 | 1): CreatePayrollPeriodRequest {
+/** The quincena before/after the one starting at `startIso`. An optional `policy` drives the payment-date prefill. */
+export function stepQuincena(startIso: string, dir: -1 | 1, policy?: PaymentDatePolicy): CreatePayrollPeriodRequest {
   const start = parseIso(startIso);
   if (dir === 1) {
     const end = parseIso(standardQuincena(start).endDate);
     end.setDate(end.getDate() + 1);
-    return standardQuincena(end);
+    return standardQuincena(end, policy);
   }
   const prev = new Date(start);
   prev.setDate(start.getDate() - 1);
-  return standardQuincena(prev);
+  return standardQuincena(prev, policy);
 }
 
 /** A run of `count` consecutive quincenas starting with the one that contains `anchor`. */

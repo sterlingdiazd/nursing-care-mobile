@@ -60,6 +60,10 @@ const SETTING_LABELS: Record<string, string> = {
   COMPANY_RNC: "RNC de la empresa",
   COMPANY_PHONE: "Teléfono de la empresa",
   COMPANY_ADDRESS: "Dirección de la empresa",
+  PAYROLL_PAYMENT_DATE_MODE: "Modo de fecha de pago de nómina",
+  PAYROLL_FIRST_HALF_PAYMENT_DAY: "Día de pago · 1ra quincena",
+  PAYROLL_SECOND_HALF_PAYMENT_DAY: "Día de pago · 2da quincena (0 = último día del mes)",
+  PAYROLL_DAYS_BEFORE_MONTH_END: "Días antes de fin de mes (modo offset)",
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -68,6 +72,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   Localization: "Idioma",
   Operations: "Operación",
   General: "General",
+  Nómina: "Nómina",
 };
 
 const settingLabel = (s: { key: string; description?: string | null }): string =>
