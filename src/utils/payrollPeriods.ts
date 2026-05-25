@@ -1,5 +1,4 @@
 import type { CreatePayrollPeriodRequest } from "@/src/services/payrollTypes";
-import { formatDateES } from "@/src/utils/spanishTextValidator";
 
 // Standard payroll-period (quincena) rules, matching the backend:
 //   - 1st half: day 1–15
@@ -149,9 +148,10 @@ const toLocalDate = (value: string | Date): Date => {
  * appended after the month only when it is not the current year ("Diciembre 2024 · 1ra
  * Quincena"). Standard quincenas cover fixed dates, so the dates themselves are omitted.
  *
- * Falls back to the exact date range for periods that are NOT aligned to the standard
- * quincena calendar (start not on the 1st/16th, or end not on the 15th/last day), so an
- * atypical manual period is never mislabelled.
+ * Periods that are NOT aligned to the standard quincena calendar (start not on the 1st/16th,
+ * or end not on the 15th/last day) are labelled by the standard quincena that contains their
+ * END date — i.e. "la quincena anterior" the period reaches — so an atypical manual period
+ * still reads as a quincena title rather than a raw date range.
  */
 export function quincenaLabel(
   startDate: string | Date,
@@ -179,9 +179,14 @@ export function quincenaLabel(
   }
 
   if (!aligned) {
-    return endDate != null
-      ? `${formatDateES(startDate)} – ${formatDateES(endDate)}`
-      : formatDateES(startDate);
+    // Non-aligned: label by the standard quincena that contains the END date (the most-recent
+    // quincena the period reaches — "la quincena anterior"). Half = end day <= 15 ? 1ra : 2da.
+    const end = endDate != null ? toLocalDate(endDate) : start;
+    const endYear = end.getFullYear();
+    const endMonth = end.getMonth();
+    const endOrdinal = end.getDate() <= 15 ? "1ra" : "2da";
+    const endYearSuffix = endYear !== now.getFullYear() ? ` ${endYear}` : "";
+    return `${MONTHS_ES[endMonth]}${endYearSuffix} · ${endOrdinal} Quincena`;
   }
 
   const ordinal = isFirstHalf ? "1ra" : "2da";

@@ -37,17 +37,24 @@ describe("quincenaLabel", () => {
     expect(quincenaLabel("2026-05-16", undefined, NOW_2026)).toBe("Mayo · 2da Quincena");
   });
 
-  it("falls back to the date range for a non-standard start day", () => {
-    // Non-standard periods are not named as a quincena — they show the exact date range.
-    const label = quincenaLabel("2026-05-03", "2026-05-18", NOW_2026);
-    expect(label).toContain(" – ");
-    expect(label).not.toContain("Quincena");
+  it("labels a non-standard period by the quincena containing its end date (2nd half)", () => {
+    // 03–18 May → end day 18 (> 15) → 2da Quincena of May, current year so no suffix.
+    expect(quincenaLabel("2026-05-03", "2026-05-18", NOW_2026)).toBe("Mayo · 2da Quincena");
   });
 
-  it("falls back to the date range when the end day is not the quincena boundary", () => {
-    const label = quincenaLabel("2026-05-01", "2026-05-20", NOW_2026);
-    expect(label).toContain(" – ");
-    expect(label).not.toContain("Quincena");
+  it("labels a non-standard period whose end falls in the first half (1ra)", () => {
+    // 01–20 May has an end day of 20 → 2da; pick an end <= 15 to exercise the 1ra branch.
+    expect(quincenaLabel("2026-05-01", "2026-05-12", NOW_2026)).toBe("Mayo · 1ra Quincena");
+  });
+
+  it("labels a non-standard full-month period by its end-date quincena", () => {
+    // Full March (01–31) is not a standard half; end day 31 → 2da Quincena of March.
+    expect(quincenaLabel("2026-03-01", "2026-03-31", new Date(2026, 4, 1))).toBe("Marzo · 2da Quincena");
+  });
+
+  it("uses the end-date month/year (not the start's) for a cross-month non-standard period", () => {
+    // 2024 → not the current year (2026) so the year is appended; end is in January.
+    expect(quincenaLabel("2024-12-20", "2025-01-10", NOW_2026)).toBe("Enero 2025 · 1ra Quincena");
   });
 });
 
