@@ -535,7 +535,7 @@ export default function AdminCareRequestDetailScreen() {
               <View style={styles.servicioGrid}>
                 <View style={styles.servicioCol}>
                   <Text style={styles.servicioLabel}>Tipo</Text>
-                  <Text style={styles.servicioValue} numberOfLines={1}>{detail.careRequestType}</Text>
+                  <Text style={styles.servicioValue} numberOfLines={1}>{detail.careRequestTypeDisplayName || detail.careRequestType}</Text>
                 </View>
                 <View style={styles.servicioCol}>
                   <Text style={styles.servicioLabel}>Unidades</Text>

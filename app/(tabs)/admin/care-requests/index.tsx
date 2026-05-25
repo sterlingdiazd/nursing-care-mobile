@@ -221,7 +221,7 @@ export default function AdminCareRequestsScreen() {
                       tone={getStatusTone(item.status)}
                     />
                   }
-                  subtitle={`${item.careRequestType} · ${formatCurrency(item.total)}`}
+                  subtitle={`${item.careRequestTypeDisplayName || item.careRequestType} · ${formatCurrency(item.total)}`}
                   metaLines={[
                     item.assignedNurseDisplayName ?? "Sin enfermera asignada",
                     flags.length > 0 ? flags.join(" · ") : null,

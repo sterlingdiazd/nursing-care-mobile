@@ -30,6 +30,33 @@ describe("resolveAdminOperationalDeepLink", () => {
   it("falls back to the admin dashboard when the link is missing", () => {
     expect(resolveAdminOperationalDeepLink(null)).toBe("/admin");
   });
+
+  it("maps every real backend-emitted path prefix to a real route (not the /admin fallback)", () => {
+    const backendEmittedPaths = [
+      "/care-requests",
+      "/care-requests/abc",
+      "/nurses",
+      "/nurse-profiles",
+      "/payroll",
+      "/settings",
+      "/admin/care-requests",
+      "/admin/care-requests/abc",
+      "/admin/care-requests?selected=abc",
+      "/admin/nurse-profiles",
+      "/admin/nurse-profiles?view=pending&userId=abc",
+      "/admin/clients/abc",
+      "/admin/users/abc",
+      "/admin/catalog",
+      "/admin/notifications",
+      "/admin/action-items",
+    ];
+
+    for (const path of backendEmittedPaths) {
+      const resolved = resolveAdminOperationalDeepLink(path);
+      expect(resolved, `path "${path}" must resolve to a real route, not the /admin fallback`).not.toBe("/admin");
+      expect(resolved, `path "${path}" must resolve to a path starting with /`).toMatch(/^\//);
+    }
+  });
 });
 
 describe("admin severity presentation", () => {

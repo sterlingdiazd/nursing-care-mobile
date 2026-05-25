@@ -261,6 +261,7 @@ export interface AdminCareRequestListItemDto {
   assignedNurseEmail: string | null;
   careRequestDescription: string;
   careRequestType: string;
+  careRequestTypeDisplayName?: string | null;
   unit: number;
   unitType: string;
   total: number;
@@ -319,6 +320,7 @@ export interface AdminCareRequestDetailDto {
   assignedNurseEmail: string | null;
   careRequestDescription: string;
   careRequestType: string;
+  careRequestTypeDisplayName?: string | null;
   unit: number;
   unitType: string;
   price: number;
