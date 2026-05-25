@@ -73,12 +73,26 @@ export function validateSpanishText(text: string): SpanishTextValidation {
 }
 
 /**
+ * Parse a value for display. A date-only string ("YYYY-MM-DD") is read as a LOCAL
+ * calendar date — NOT `new Date("YYYY-MM-DD")`, which JS parses as UTC midnight and
+ * then shifts a day in negative timezones (DR is UTC-4), printing the previous day.
+ * Anything else (a full timestamp or a Date) keeps the native parse.
+ */
+function toDisplayDate(date: string | Date): Date {
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    const [y, m, d] = date.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+  return typeof date === 'string' ? new Date(date) : date;
+}
+
+/**
  * Format date as DD-MM-YYYY (Dominican Republic convention: dash-separated,
  * day-first). Hand-formatted because `toLocaleDateString` returns slashes
  * and there's no locale switch to force dashes consistently across platforms.
  */
 export function formatDateES(date: string | Date): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
+  const d = toDisplayDate(date);
   if (isNaN(d.getTime())) return '';
   const dd = String(d.getDate()).padStart(2, '0');
   const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -91,7 +105,7 @@ export function formatDateES(date: string | Date): string {
  * timestamp shown to the user (audit logs, created-at, last-modified, etc).
  */
 export function formatDateTimeES(date: string | Date): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
+  const d = toDisplayDate(date);
   if (isNaN(d.getTime())) return '';
   const dd = String(d.getDate()).padStart(2, '0');
   const mm = String(d.getMonth() + 1).padStart(2, '0');
