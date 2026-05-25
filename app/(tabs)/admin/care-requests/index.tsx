@@ -29,16 +29,22 @@ import {
 import { adminTestIds } from "@/src/testing/testIds";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
-type Filter = "Active" | "Pending" | "Approved" | "Overdue" | "Unassigned" | "Completed" | "Rejected" | "All";
+type Filter =
+  | "Pending" | "Unassigned" | "Overdue" | "Approved" | "Completed"
+  | "Invoiced" | "PaymentReported" | "Paid" | "Rejected" | "Cancelled" | "Voided" | "All";
 
 const FILTER_TO_VIEW: Record<Filter, AdminCareRequestView | undefined> = {
-  Active: "pending",
   Pending: "pending",
-  Approved: "approved",
-  Overdue: "overdue",
   Unassigned: "unassigned",
+  Overdue: "overdue",
+  Approved: "approved",
   Completed: "completed",
+  Invoiced: "invoiced",
+  PaymentReported: "payment-reported",
+  Paid: "paid",
   Rejected: "rejected",
+  Cancelled: "cancelled",
+  Voided: "voided",
   All: undefined,
 };
 
@@ -49,15 +55,21 @@ function viewParamToFilter(view: string | string[] | undefined): Filter {
     case "unassigned": return "Unassigned";
     case "pending":
     case "pending-approval":
-    case "approved-incomplete":
       return "Pending";
-    case "approved": return "Approved";
+    case "approved":
+    case "approved-incomplete":
+      return "Approved";
+    case "completed": return "Completed";
+    case "invoiced": return "Invoiced";
+    case "payment-reported": return "PaymentReported";
+    case "paid": return "Paid";
     case "rejected":
     case "rejected-today":
       return "Rejected";
-    case "completed": return "Completed";
+    case "cancelled": return "Cancelled";
+    case "voided": return "Voided";
     case "all": return "All";
-    default: return "Active";
+    default: return "Pending";
   }
 }
 
@@ -94,13 +106,17 @@ function formatCurrency(value: number) {
 }
 
 const FILTER_OPTIONS: ReadonlyArray<{ key: Filter; label: string }> = [
-  { key: "Active", label: "Activas" },
   { key: "Pending", label: "Pendientes" },
-  { key: "Approved", label: "Aprobadas" },
-  { key: "Overdue", label: "Vencidas" },
   { key: "Unassigned", label: "Sin asignar" },
+  { key: "Overdue", label: "Vencidas" },
+  { key: "Approved", label: "Aprobadas" },
   { key: "Completed", label: "Completadas" },
+  { key: "Invoiced", label: "Facturadas" },
+  { key: "PaymentReported", label: "Pago reportado" },
+  { key: "Paid", label: "Pagadas" },
   { key: "Rejected", label: "Rechazadas" },
+  { key: "Cancelled", label: "Canceladas" },
+  { key: "Voided", label: "Anuladas" },
   { key: "All", label: "Todas" },
 ];
 

@@ -233,6 +233,11 @@ export type AdminCareRequestView =
   | "pending-approval"
   | "rejected-today"
   | "approved-incomplete"
+  | "cancelled"
+  | "invoiced"
+  | "payment-reported"
+  | "paid"
+  | "voided"
   | "overdue";
 
 export type AdminCareRequestStatus =
