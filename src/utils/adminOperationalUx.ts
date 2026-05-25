@@ -64,6 +64,18 @@ export function resolveAdminOperationalDeepLink(path: string | null | undefined)
     return "/admin/action-items";
   }
 
+  if (path.startsWith("/payroll")) {
+    return "/admin/payroll";
+  }
+
+  if (path.startsWith("/nurses") || path.startsWith("/nurse-profiles")) {
+    return "/admin/nurse-profiles";
+  }
+
+  if (path.startsWith("/settings")) {
+    return "/admin/settings";
+  }
+
   if (path.startsWith("/admin/")) {
     return path;
   }
