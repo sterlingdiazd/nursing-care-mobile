@@ -44,9 +44,11 @@ export function ListRow({
   const meta = (metaLines ?? []).filter(Boolean) as string[];
   const showChevron = Boolean(onPress) && !rightAccessory && !rightText;
 
-  const body = (
+  // The tappable content and the rightAccessory are rendered as SIBLINGS inside the card,
+  // never parent/child. Nesting an interactive rightAccessory (e.g. a delete button) inside
+  // the row's Pressable produced a <button>-in-<button> hydration error on web.
+  const mainContent = (
     <>
-      {railColor ? <View style={[styles.rail, { backgroundColor: railColor }]} /> : null}
       <View style={styles.content}>
         <View style={styles.headerRow}>
           <Text style={styles.title} numberOfLines={1}>{title}</Text>
@@ -59,35 +61,34 @@ export function ListRow({
         {children}
       </View>
       {rightText ? <Text style={styles.rightText}>{rightText}</Text> : null}
-      {rightAccessory ?? null}
       {showChevron ? <Text style={styles.chevron}>›</Text> : null}
     </>
   );
 
-  if (!onPress) {
-    return (
-      <View style={styles.card} testID={testID} nativeID={testID}>
-        {body}
-      </View>
-    );
-  }
-
   const handlePress = () => {
     hapticFeedback.light();
-    onPress();
+    onPress?.();
   };
 
   return (
-    <Pressable
-      onPress={handlePress}
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? title}
-      testID={testID}
-      nativeID={testID}
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-    >
-      {body}
-    </Pressable>
+    <View style={styles.card} testID={onPress ? undefined : testID} nativeID={onPress ? undefined : testID}>
+      {railColor ? <View style={[styles.rail, { backgroundColor: railColor }]} /> : null}
+      {onPress ? (
+        <Pressable
+          onPress={handlePress}
+          accessibilityRole="button"
+          accessibilityLabel={accessibilityLabel ?? title}
+          testID={testID}
+          nativeID={testID}
+          style={({ pressed }) => [styles.pressArea, pressed && styles.cardPressed]}
+        >
+          {mainContent}
+        </Pressable>
+      ) : (
+        <View style={styles.pressArea}>{mainContent}</View>
+      )}
+      {rightAccessory ?? null}
+    </View>
   );
 }
 
@@ -103,6 +104,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   cardPressed: { opacity: 0.85 },
+  pressArea: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12 },
   rail: {
     position: "absolute",
     left: 0,
