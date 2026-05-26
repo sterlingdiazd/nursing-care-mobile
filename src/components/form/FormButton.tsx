@@ -50,6 +50,8 @@ export function FormButton({
     switch (variant) {
       case "secondary":
         return styles.secondaryText;
+      case "danger":
+        return styles.dangerText;
       default:
         return styles.primaryText;
     }
@@ -84,7 +86,13 @@ export function FormButton({
     >
       {isActuallyLoading ? (
         <ActivityIndicator
-          color={variant === "secondary" ? designTokens.color.ink.accent : designTokens.color.ink.inverse}
+          color={
+            variant === "secondary"
+              ? designTokens.color.ink.accent
+              : variant === "danger"
+                ? designTokens.color.status.dangerText
+                : designTokens.color.ink.inverse
+          }
         />
       ) : (
         <Text style={[getTextStyle()]}>{children}</Text>
@@ -101,6 +109,10 @@ const styles = StyleSheet.create({
   secondaryText: {
     ...designTokens.typography.label,
     color: designTokens.color.ink.accent,
+  },
+  dangerText: {
+    ...designTokens.typography.label,
+    color: designTokens.color.status.dangerText,
   },
   dangerButton: {
     backgroundColor: designTokens.color.surface.danger,
