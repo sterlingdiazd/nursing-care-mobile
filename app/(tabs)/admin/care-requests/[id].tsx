@@ -579,7 +579,7 @@ export default function AdminCareRequestDetailScreen() {
             ) : null}
 
             {/* Historial trigger (opens sheet) */}
-            {detail.timeline.length > 0 ? (
+            {(detail.timeline?.length ?? 0) > 0 ? (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Ver historial"
@@ -590,7 +590,7 @@ export default function AdminCareRequestDetailScreen() {
                 style={({ pressed }) => [styles.historyTrigger, pressed && styles.pressed]}
               >
                 <Text style={styles.historyTriggerText}>
-                  Ver historial · {detail.timeline.length} evento{detail.timeline.length === 1 ? "" : "s"}
+                  Ver historial · {detail.timeline?.length ?? 0} evento{(detail.timeline?.length ?? 0) === 1 ? "" : "s"}
                 </Text>
                 <Text style={styles.historyTriggerChevron}>›</Text>
               </Pressable>
@@ -622,7 +622,7 @@ export default function AdminCareRequestDetailScreen() {
       {detail ? (
         <HistorySheet
           visible={historySheetVisible}
-          timeline={detail.timeline}
+          timeline={detail.timeline ?? []}
           onClose={() => {
             hapticFeedback.selection();
             setHistorySheetVisible(false);

@@ -358,6 +358,11 @@ function normalizeAdminCareRequestDetail(
 
   return {
     ...detail,
+    // Mutation endpoints (assign/approve/complete) can return a detail payload without the
+    // timeline array; guarantee it is always an array so the UI never reads `.length`/`.map`
+    // on undefined (this caused a "Cannot read properties of undefined (reading 'length')"
+    // crash on the admin detail screen right after assigning a nurse).
+    timeline: detail.timeline ?? [],
     invoiceNumber: detail.invoiceNumber ?? billingInfo?.invoiceNumber ?? undefined,
     invoicedAtUtc: detail.invoicedAtUtc ?? billingInfo?.invoicedAtUtc ?? undefined,
     bankReference: detail.bankReference ?? billingInfo?.bankReference ?? undefined,
