@@ -123,16 +123,6 @@ export async function closePayrollPeriod(
   });
 }
 
-/** Reopens a closed period for correction (audited). Requires a reason. */
-export async function reopenPayrollPeriod(id: string, reason: string): Promise<void> {
-  return requestVoid({
-    path: `/api/admin/payroll/periods/${id}/reopen`,
-    method: "POST",
-    body: { reason },
-    auth: true,
-  });
-}
-
 /**
  * Confirms a nurse's bank transfer for a period and triggers voucher delivery.
  * DEMO: the backend routes the voucher email + the returned wa.me link to the

@@ -22,7 +22,6 @@ import {
   updatePayrollPeriod,
   deletePayrollPeriod,
   closePayrollPeriod,
-  reopenPayrollPeriod,
   recalculatePayroll,
   type AdminPayrollPeriodDetail,
   type CreatePayrollPeriodRequest,
@@ -227,15 +226,6 @@ export default function PeriodsScreen() {
     reloadPeriods();
   }, [selectedPeriod, reloadPeriods, showToast]);
 
-  const handleReopenPeriod = useCallback(async (reason: string) => {
-    if (!selectedPeriod) return;
-    await reopenPayrollPeriod(selectedPeriod.id, reason);
-    const detail = await getPayrollPeriodById(selectedPeriod.id);
-    setSelectedPeriod(detail);
-    showToast({ message: "Período reabierto correctamente", variant: "success" });
-    reloadPeriods();
-  }, [selectedPeriod, reloadPeriods, showToast]);
-
   const handleRecalculate = useCallback(async () => {
     setRecalculateLoading(true);
     try {
@@ -349,7 +339,6 @@ export default function PeriodsScreen() {
         <PeriodDetail
           period={selectedPeriod}
           onClose={handleClosePeriod}
-          onReopen={handleReopenPeriod}
           onBack={handleBackToList}
           onPrepareRecalculate={() => setMode("recalc-review")}
           onSetActions={setDetailActions}
