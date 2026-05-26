@@ -51,7 +51,7 @@ const adminQuickSections = [
 const clientQuickSections = [
   {
     title: "Necesito cuidado",
-    body: "Cuéntanos qué necesitas y te guiamos paso a paso.",
+    body: "Crea una nueva solicitud de cuidado.",
     path: "/create-care-request",
     key: "crear",
     priority: "Ahora",
@@ -177,7 +177,7 @@ export default function HomeScreen() {
     ? isAdmin
       ? "Control rapido de la operacion."
       : isClient
-        ? "Solicita y da seguimiento sin complicaciones."
+        ? "Solicitudes y seguimiento"
         : "Revisa tus servicios desde un solo lugar."
     : isAnonymous
       ? "Cuidado profesional en pocos pasos."
@@ -297,15 +297,6 @@ export default function HomeScreen() {
         </>
       }
     >
-      {isClient && hasOperationalAccess ? (
-        <View style={styles.assistantPanel}>
-          <Text style={styles.assistantEyebrow}>¿Qué necesitas hoy?</Text>
-          <Text style={styles.assistantTitle}>Elige una opción y seguimos contigo.</Text>
-          <Text style={styles.assistantBody}>
-            Mostramos primero las acciones más comunes para evitar pasos técnicos.
-          </Text>
-        </View>
-      ) : null}
       <View style={styles.grid}>
         {quickSectionsToShow.map((section) => {
           const clientSection = section as typeof section & { key?: string; priority?: string };

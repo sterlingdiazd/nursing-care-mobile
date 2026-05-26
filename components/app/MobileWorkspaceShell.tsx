@@ -110,7 +110,7 @@ export default function MobileWorkspaceShell({
               </Pressable>
             ) : null}
             <View style={styles.headerTitleWrap}>
-              <Text style={styles.headerTitle} numberOfLines={1}>{title}</Text>
+              <Text style={styles.headerTitle} numberOfLines={2}>{title}</Text>
               {description ? (
                 <Text style={styles.headerDescription} numberOfLines={2}>{description}</Text>
               ) : null}
