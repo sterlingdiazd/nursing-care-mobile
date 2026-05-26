@@ -1,6 +1,12 @@
 import { vi } from 'vitest';
 import React from 'react';
 
+// Pin the suite to the Dominican Republic timezone (UTC-4, no DST). The date tests assert
+// the exact local rendering of UTC instants and date-only strings; without this they would
+// silently pass on a DR/negative-offset machine yet fail on a UTC CI runner. Set before any
+// Date is constructed so V8 resolves the offset from this value.
+process.env.TZ = "America/Santo_Domingo";
+
 Object.defineProperty(globalThis, "__DEV__", {
   value: false,
   writable: true,

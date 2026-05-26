@@ -342,33 +342,6 @@ const styles = StyleSheet.create({
   grid: {
     gap: 14,
   },
-  assistantPanel: {
-    backgroundColor: designTokens.color.surface.primary,
-    borderRadius: designTokens.radius.lg,
-    padding: designTokens.spacing.lg,
-    borderWidth: 1,
-    borderColor: designTokens.color.border.accent,
-    marginBottom: designTokens.spacing.lg,
-  },
-  assistantEyebrow: {
-    color: designTokens.color.ink.accentStrong,
-    fontSize: 12,
-    fontWeight: "900",
-    textTransform: "uppercase",
-    marginBottom: 4,
-  },
-  assistantTitle: {
-    color: designTokens.color.ink.primary,
-    fontSize: 20,
-    lineHeight: 26,
-    fontWeight: "900",
-  },
-  assistantBody: {
-    color: designTokens.color.ink.secondary,
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 6,
-  },
   card: {
     backgroundColor: designTokens.color.ink.inverse,
     borderRadius: 18,
