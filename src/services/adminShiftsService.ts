@@ -3,6 +3,7 @@
 // @diffs: DIFF-ADMIN-SHF-001, DIFF-ADMIN-SET-001
 // @do-not-edit: false
 
+import { requestList } from "@/src/services/apiShape";
 import { requestJson } from "@/src/services/httpClient";
 
 // ── Shifts ────────────────────────────────────────────────────────────────────
@@ -89,7 +90,7 @@ export async function getAdminShiftDetail(id: string): Promise<ShiftDetailDto> {
 }
 
 export async function getAdminShiftChanges(id: string): Promise<ShiftChangeHistoryItemDto[]> {
-  return requestJson<ShiftChangeHistoryItemDto[]>({
+  return requestList<ShiftChangeHistoryItemDto>({
     path: `/api/admin/shifts/${id}/changes`,
     method: "GET",
     auth: true,
@@ -112,7 +113,7 @@ export interface SystemSettingDto {
 }
 
 export async function listAdminSettings(): Promise<SystemSettingDto[]> {
-  return requestJson<SystemSettingDto[]>({
+  return requestList<SystemSettingDto>({
     path: "/api/admin/settings",
     method: "GET",
     auth: true,

@@ -1,3 +1,4 @@
+import { requestList } from "@/src/services/apiShape";
 import { requestJson } from "@/src/services/httpClient";
 import { API_BASE_URL } from "@/src/config/api";
 import { getCachedAuthSession, loadAuthSession } from "@/src/services/authSession";
@@ -120,7 +121,7 @@ export async function createCareRequest(
 }
 
 export async function getCareRequests(): Promise<CareRequestDto[]> {
-  return requestJson<CareRequestDto[]>({
+  return requestList<CareRequestDto>({
     path: "/api/care-requests",
     method: "GET",
     auth: true,

@@ -1,3 +1,4 @@
+import { requestList } from "@/src/services/apiShape";
 import { requestJson } from "@/src/services/httpClient";
 import { API_BASE_URL } from "@/src/config/api";
 
@@ -458,7 +459,7 @@ export async function getAdminCareRequestDetail(id: string) {
 
 export async function getAdminCareRequestClients(search?: string) {
   const searchParams = search ? `?search=${encodeURIComponent(search)}` : "";
-  return requestJson<AdminCareRequestClientOptionDto[]>({
+  return requestList<AdminCareRequestClientOptionDto>({
     path: `/api/admin/care-requests/clients${searchParams}`,
     method: "GET",
     auth: true,
@@ -1191,7 +1192,7 @@ export async function createAdminAccount(request: CreateAdminAccountRequest) {
 // Catalog service functions
 export async function listCareRequestCategories(includeInactive = false) {
   const path = `/api/admin/catalog/care-request-categories${includeInactive ? "?includeInactive=true" : ""}`;
-  return requestJson<CareRequestCategoryListItemDto[]>({
+  return requestList<CareRequestCategoryListItemDto>({
     path,
     method: "GET",
     auth: true,
@@ -1232,7 +1233,7 @@ export async function updateCareRequestCategory(
 
 export async function listCareRequestTypes(includeInactive = false) {
   const path = `/api/admin/catalog/care-request-types${includeInactive ? "?includeInactive=true" : ""}`;
-  return requestJson<CareRequestTypeListItemDto[]>({
+  return requestList<CareRequestTypeListItemDto>({
     path,
     method: "GET",
     auth: true,
@@ -1277,7 +1278,7 @@ export async function updateCareRequestType(
 
 export async function listUnitTypes(includeInactive = false) {
   const path = `/api/admin/catalog/unit-types${includeInactive ? "?includeInactive=true" : ""}`;
-  return requestJson<UnitTypeListItemDto[]>({
+  return requestList<UnitTypeListItemDto>({
     path,
     method: "GET",
     auth: true,
@@ -1312,7 +1313,7 @@ export async function updateUnitType(
 
 export async function listDistanceFactors(includeInactive = false) {
   const path = `/api/admin/catalog/distance-factors${includeInactive ? "?includeInactive=true" : ""}`;
-  return requestJson<DistanceFactorListItemDto[]>({
+  return requestList<DistanceFactorListItemDto>({
     path,
     method: "GET",
     auth: true,
@@ -1348,7 +1349,7 @@ export async function updateDistanceFactor(
 
 export async function listComplexityLevels(includeInactive = false) {
   const path = `/api/admin/catalog/complexity-levels${includeInactive ? "?includeInactive=true" : ""}`;
-  return requestJson<ComplexityLevelListItemDto[]>({
+  return requestList<ComplexityLevelListItemDto>({
     path,
     method: "GET",
     auth: true,
@@ -1384,7 +1385,7 @@ export async function updateComplexityLevel(
 
 export async function listVolumeDiscountRules(includeInactive = false) {
   const path = `/api/admin/catalog/volume-discount-rules${includeInactive ? "?includeInactive=true" : ""}`;
-  return requestJson<VolumeDiscountRuleListItemDto[]>({
+  return requestList<VolumeDiscountRuleListItemDto>({
     path,
     method: "GET",
     auth: true,
@@ -1419,7 +1420,7 @@ export async function updateVolumeDiscountRule(
 
 export async function listNurseSpecialties(includeInactive = false) {
   const path = `/api/admin/catalog/nurse-specialties${includeInactive ? "?includeInactive=true" : ""}`;
-  return requestJson<NurseSpecialtyListItemDto[]>({
+  return requestList<NurseSpecialtyListItemDto>({
     path,
     method: "GET",
     auth: true,
@@ -1455,7 +1456,7 @@ export async function updateNurseSpecialty(
 
 export async function listNurseCategories(includeInactive = false) {
   const path = `/api/admin/catalog/nurse-categories${includeInactive ? "?includeInactive=true" : ""}`;
-  return requestJson<NurseCategoryListItemDto[]>({
+  return requestList<NurseCategoryListItemDto>({
     path,
     method: "GET",
     auth: true,

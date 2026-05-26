@@ -1,3 +1,4 @@
+import { requestList } from "@/src/services/apiShape";
 import { requestJson, requestVoid } from "@/src/services/httpClient";
 import { API_BASE_URL } from "@/src/config/api";
 import type {
@@ -38,7 +39,7 @@ export async function getNursePayrollSummary(_userId: string): Promise<NursePayr
 }
 
 export async function getNursePayrollHistory(_userId: string): Promise<PayrollPeriodListItemDto[]> {
-  return requestJson<PayrollPeriodListItemDto[]>({
+  return requestList<PayrollPeriodListItemDto>({
     path: "/api/nurse/payroll/history",
     method: "GET",
     auth: true,

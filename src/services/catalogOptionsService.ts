@@ -1,3 +1,4 @@
+import { requestList } from "@/src/services/apiShape";
 import { requestJson } from "@/src/services/httpClient";
 import type {
   AvailableNurseOption,
@@ -23,7 +24,7 @@ export async function getNurseProfileOptions() {
 }
 
 export async function getAvailableNurses() {
-  return requestJson<AvailableNurseOption[]>({
+  return requestList<AvailableNurseOption>({
     path: "/api/catalog/available-nurses",
     method: "GET",
     auth: true,
