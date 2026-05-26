@@ -247,8 +247,8 @@ export default function AdminCareRequestDetailScreen() {
     setActing(true);
     setError(null);
     try {
-      const updated = await adminAssignCareRequestNurse(id, selectedNurseId);
-      setDetail(updated);
+      await adminAssignCareRequestNurse(id, selectedNurseId);
+      await load(); // re-fetch the FULL detail; mutation responses can be partial (missing timeline/pricing → crash)
       setAssignmentSheetVisible(false);
       setSelectedNurseId("");
       setNurseSearch("");
@@ -265,8 +265,8 @@ export default function AdminCareRequestDetailScreen() {
     setActing(true);
     setError(null);
     try {
-      const updated = await adminApproveCareRequest(id);
-      setDetail(updated);
+      await adminApproveCareRequest(id);
+      await load();
     } catch (nextError) {
       hapticFeedback.error();
       setError(nextError instanceof Error ? nextError.message : "No fue posible aprobar la solicitud.");
@@ -280,8 +280,8 @@ export default function AdminCareRequestDetailScreen() {
     setActing(true);
     setError(null);
     try {
-      const updated = await adminRejectCareRequest(id, rejectReason.trim() || undefined);
-      setDetail(updated);
+      await adminRejectCareRequest(id, rejectReason.trim() || undefined);
+      await load();
       setRejectSheetVisible(false);
       setRejectReason("");
     } catch (nextError) {
@@ -297,8 +297,8 @@ export default function AdminCareRequestDetailScreen() {
     setActing(true);
     setError(null);
     try {
-      const updated = await adminCompleteCareRequest(id);
-      setDetail(updated);
+      await adminCompleteCareRequest(id);
+      await load();
     } catch (nextError) {
       hapticFeedback.error();
       setError(nextError instanceof Error ? nextError.message : "No fue posible completar la solicitud.");
