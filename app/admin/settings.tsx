@@ -4,7 +4,7 @@
 // @do-not-edit: false
 
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { hapticFeedback } from "@/src/utils/haptics";
@@ -64,9 +64,19 @@ const SETTING_LABELS: Record<string, string> = {
   PAYROLL_FIRST_HALF_PAYMENT_DAY: "Día de pago · 1ra quincena",
   PAYROLL_SECOND_HALF_PAYMENT_DAY: "Día de pago · 2da quincena (0 = último día del mes)",
   PAYROLL_DAYS_BEFORE_MONTH_END: "Días antes de fin de mes (modo offset)",
+  PAYROLL_CUTOFF_DAYS_BEFORE_END: "Días para el corte (antes del fin)",
+  // Facturación (fiscal / DGII)
+  FISCAL_RNC: "RNC de la empresa",
+  FISCAL_ITBIS_RATE_PERCENT: "Tasa de ITBIS (%)",
+  FISCAL_NCF_ENABLED: "Modo fiscal e-CF (DGII)",
+  FISCAL_NCF_TYPE: "Tipo de e-NCF",
+  FISCAL_INVOICE_PREFIX: "Prefijo de cuenta de cobro",
+  FISCAL_CURRENCY: "Moneda",
+  FISCAL_LEGAL_FOOTER: "Pie legal del comprobante",
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
+  Facturación: "Facturación",
   Empresa: "Empresa",
   Dashboard: "Panel",
   Localization: "Idioma",
@@ -75,10 +85,37 @@ const CATEGORY_LABELS: Record<string, string> = {
   Nómina: "Nómina",
 };
 
+// Payments-first ordering so the screen reads as a coherent
+// "Pagos, facturación y nómina" hub. Listed categories come first in this order;
+// anything else falls to the end, preserving its discovery order.
+const CATEGORY_ORDER = ["Facturación", "Empresa", "Nómina"];
+
+function orderedCategories(grouped: Map<string, SystemSettingDto[]>): [string, SystemSettingDto[]][] {
+  const entries = Array.from(grouped.entries());
+  return entries.sort(([a], [b]) => {
+    const ia = CATEGORY_ORDER.indexOf(a);
+    const ib = CATEGORY_ORDER.indexOf(b);
+    const ra = ia === -1 ? CATEGORY_ORDER.length : ia;
+    const rb = ib === -1 ? CATEGORY_ORDER.length : ib;
+    return ra - rb;
+  });
+}
+
+// Compliance-critical fiscal keys: changing them affects DGII e-NCF emission.
+const FISCAL_CAUTION_KEYS = new Set(["FISCAL_NCF_ENABLED", "FISCAL_NCF_TYPE", "FISCAL_RNC"]);
+const FISCAL_CAUTION_MESSAGE =
+  "Afecta el cumplimiento fiscal (DGII). El momento de emisión del e-NCF requiere validación contable.";
+
 const settingLabel = (s: { key: string; description?: string | null }): string =>
   SETTING_LABELS[s.key] ?? (s.description?.trim() || s.key);
 
 const categoryLabel = (c: string): string => CATEGORY_LABELS[c] ?? c;
+
+// Boolean settings store "true"/"false" as strings; treat truthy variants loosely.
+const isBooleanTrue = (v: string): boolean => {
+  const t = v.trim().toLowerCase();
+  return t === "true" || t === "1" || t === "yes" || t === "sí" || t === "si";
+};
 
 export default function AdminSettingsScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
@@ -171,8 +208,54 @@ export default function AdminSettingsScreen() {
         </View>
       )}
 
+      {/* Pricing hub: where client prices and per-nurse rates are configured.
+          Keeps the owner's payments configuration findable from one place. */}
+      <View style={styles.categorySection} testID="admin-settings-pricing-section">
+        <Text style={styles.categoryTitle}>Precios y tarifas</Text>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Configurar precios al cliente"
+          style={styles.settingCard}
+          onPress={() => {
+            hapticFeedback.selection();
+            router.push("/admin/catalog");
+          }}
+          testID="admin-settings-pricing-link"
+          nativeID="admin-settings-pricing-link"
+        >
+          <View style={styles.settingCardHeader}>
+            <Text style={styles.settingKey} numberOfLines={2}>Precios al cliente</Text>
+            <Text style={styles.settingEditHint}>Abrir</Text>
+          </View>
+          <Text style={styles.settingDescription}>
+            Configure precios base, factores de categoría, distancia y complejidad, y descuentos por volumen.
+          </Text>
+        </Pressable>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Editar tarifas de enfermera"
+          style={styles.settingCard}
+          onPress={() => {
+            hapticFeedback.selection();
+            router.push("/admin/nurse-profiles");
+          }}
+          testID="admin-settings-nurse-rate-link"
+          nativeID="admin-settings-nurse-rate-link"
+        >
+          <View style={styles.settingCardHeader}>
+            <Text style={styles.settingKey} numberOfLines={2}>Tarifas de enfermera</Text>
+            <Text style={styles.settingEditHint}>Abrir</Text>
+          </View>
+          <Text style={styles.settingDescription}>
+            La tarifa por enfermera se edita en el perfil de cada enfermera.
+          </Text>
+        </Pressable>
+      </View>
+
       <View testID="admin-settings-list" nativeID="admin-settings-list">
-        {Array.from(grouped.entries()).map(([category, items]) => (
+        {orderedCategories(grouped).map(([category, items]) => (
           <View key={category} style={styles.categorySection}>
             <Text style={styles.categoryTitle}>{categoryLabel(category)}</Text>
             {items.map((setting) => {
@@ -256,7 +339,7 @@ export default function AdminSettingsScreen() {
 
                     <View style={styles.detailField}>
                       <Text style={styles.detailLabel}>Categoría</Text>
-                      <Text style={styles.detailValue}>{editTarget.category}</Text>
+                      <Text style={styles.detailValue}>{categoryLabel(editTarget.category)}</Text>
                     </View>
 
                     <View style={styles.detailField}>
@@ -264,9 +347,41 @@ export default function AdminSettingsScreen() {
                       <Text style={styles.detailValue}>{editTarget.valueType}</Text>
                     </View>
 
+                    {/* Compliance warning for DGII-sensitive fiscal parameters */}
+                    {FISCAL_CAUTION_KEYS.has(editTarget.key) && (
+                      <View style={{ marginTop: 8 }}>
+                        <Banner
+                          tone="warning"
+                          message={FISCAL_CAUTION_MESSAGE}
+                          testID="admin-setting-fiscal-caution"
+                        />
+                      </View>
+                    )}
+
                     <View style={[styles.detailField, { marginTop: 8 }]}>
                       <Text style={styles.detailLabel}>Valor</Text>
                       {(() => {
+                        // Boolean settings render as a Switch (true/false) instead of free text.
+                        if (editTarget.valueType === "Boolean") {
+                          const on = isBooleanTrue(editValue);
+                          return (
+                            <View style={styles.switchRow}>
+                              <Switch
+                                value={on}
+                                onValueChange={(next) => {
+                                  hapticFeedback.selection();
+                                  setEditValue(next ? "true" : "false");
+                                }}
+                                testID="admin-setting-value-switch"
+                                nativeID="admin-setting-value-switch"
+                                accessibilityRole="switch"
+                                accessibilityLabel={`${settingLabel(editTarget)}: ${on ? "Activado" : "Desactivado"}`}
+                                accessibilityState={{ checked: on }}
+                              />
+                              <Text style={styles.switchLabel}>{on ? "Activado" : "Desactivado"}</Text>
+                            </View>
+                          );
+                        }
                         const allowedValues = parseAllowedValues(editTarget.allowedValuesJson);
                         if (allowedValues && allowedValues.length > 0) {
                           return (
@@ -281,6 +396,9 @@ export default function AdminSettingsScreen() {
                                   }}
                                   testID={`admin-setting-value-chip-${val}`}
                                   nativeID={`admin-setting-value-chip-${val}`}
+                                  accessibilityRole="button"
+                                  accessibilityLabel={`Seleccionar valor ${val}`}
+                                  accessibilityState={{ selected: editValue === val }}
                                 >
                                   <Text style={[styles.chipText, editValue === val && styles.chipTextActive]}>
                                     {val}
@@ -349,4 +467,6 @@ const styles = StyleSheet.create({
   chipText: { color: designTokens.color.ink.primary, fontSize: 12, fontWeight: "600" },
   chipTextActive: { color: designTokens.color.ink.inverse },
   input: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.strong, borderRadius: 14, padding: 14, color: designTokens.color.ink.primary, fontSize: 14 },
+  switchRow: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 4 },
+  switchLabel: { color: designTokens.color.ink.primary, fontSize: 15, fontWeight: "700" },
 });
