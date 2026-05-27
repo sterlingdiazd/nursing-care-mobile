@@ -1,42 +1,63 @@
 export const designTokens = {
   color: {
     ink: {
-      primary: "#123044",
-      secondary: "#456274",
-      muted: "#6f8796",
+      primary: "#0F1F33",
+      secondary: "#475569",
+      muted: "#5B6B7F",
       inverse: "#ffffff",
-      accent: "#2e7da3",
-      accentStrong: "#1d5d80",
-      danger: "#b33c57",
-      warning: "#9a6b1f",
+      accent: "#2563EB",
+      accentStrong: "#1D4ED8",
+      danger: "#DC2626",
+      warning: "#D97706",
     },
     surface: {
-      canvas: "#eef6f7",
-      primary: "#fcfefd",
-      secondary: "#f3f9fa",
-      tertiary: "#e6f2f4",
-      accent: "#e2f1f8",
-      warning: "#fff7e8",
-      danger: "#fff2f5",
-      success: "#edf9f3",
+      canvas: "#F6F7FB",
+      primary: "#FFFFFF",
+      secondary: "#F1F5F9",
+      tertiary: "#E2E8F0",
+      accent: "#DBEAFE",
+      warning: "#FEF3C7",
+      danger: "#FEE2E2",
+      success: "#DCFCE7",
     },
     border: {
-      subtle: "#d8e6ea",
-      strong: "#bdd0d7",
-      accent: "#b8dbe9",
-      warning: "#f2d9aa",
-      danger: "#efc1cd",
-      success: "#bedfca",
+      subtle: "#E2E8F0",
+      strong: "#CBD5E1",
+      accent: "#BFDBFE",
+      warning: "#FDE68A",
+      danger: "#FECACA",
+      success: "#BBF7D0",
     },
     status: {
-      infoBg: "#dff0f7",
-      infoText: "#1d5d80",
-      successBg: "#dff4e8",
-      successText: "#0f6b54",
-      warningBg: "#fff0ca",
-      warningText: "#8c5a14",
-      dangerBg: "#fde1e8",
-      dangerText: "#9f1239",
+      infoBg: "#DBEAFE",
+      infoText: "#1D4ED8",
+      successBg: "#DCFCE7",
+      successText: "#15803D",
+      warningBg: "#FEF3C7",
+      warningText: "#B45309",
+      dangerBg: "#FEE2E2",
+      dangerText: "#B91C1C",
+    },
+    // Vivid semantic hue map — one source of truth for icon badges, action cards,
+    // module tiles, and any colored accent. Per hue:
+    //   color  — icon/rail/outline grade, AA >=3:1 (graphical) on its soft tint AND on white;
+    //   soft   — 100-grade light tint background (carries dark ink/`text` at AA);
+    //   border — 300-grade DECORATIVE hairline ONLY — NOT AA as a load-bearing outline
+    //            (~1.3-2:1); use `color` for any meaningful outline/rail/divider;
+    //   text   — 800-grade, for hue-colored TEXT on the soft tint or white (AA 4.5:1
+    //            even at small/bold sizes). Use `text` for labels, `color` for glyphs/rails.
+    // amber/green `color` are 700-grade (their 600 fails 3:1 on the soft tint).
+    palette: {
+      blue: { color: "#2563EB", soft: "#DBEAFE", border: "#93C5FD", text: "#1E40AF" },
+      teal: { color: "#0D9488", soft: "#CCFBF1", border: "#5EEAD4", text: "#115E59" },
+      green: { color: "#15803D", soft: "#DCFCE7", border: "#86EFAC", text: "#166534" },
+      amber: { color: "#B45309", soft: "#FEF3C7", border: "#FCD34D", text: "#92400E" },
+      orange: { color: "#EA580C", soft: "#FFEDD5", border: "#FDBA74", text: "#9A3412" },
+      red: { color: "#DC2626", soft: "#FEE2E2", border: "#FCA5A5", text: "#991B1B" },
+      purple: { color: "#7C3AED", soft: "#EDE9FE", border: "#C4B5FD", text: "#5B21B6" },
+      indigo: { color: "#4F46E5", soft: "#E0E7FF", border: "#A5B4FC", text: "#3730A3" },
+      pink: { color: "#DB2777", soft: "#FCE7F3", border: "#F9A8D4", text: "#9D174D" },
+      neutral: { color: "#475569", soft: "#F1F5F9", border: "#CBD5E1", text: "#334155" },
     },
   },
   radius: {
@@ -65,7 +86,7 @@ elevation: 2,
 elevation: 3,
     },
     accent: {
-      boxShadow: "0px 8px 20px rgba(46, 125, 163, 0.14)",
+      boxShadow: "0px 8px 20px rgba(37, 99, 235, 0.16)",
 elevation: 4,
     },
   },
@@ -99,3 +120,4 @@ elevation: 4,
 } as const;
 
 export type DesignTokens = typeof designTokens;
+export type PaletteHue = keyof typeof designTokens.color.palette;

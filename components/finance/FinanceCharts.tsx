@@ -84,7 +84,7 @@ export function RevenueDonut({ data }: { data: CategoryMargin[] }) {
 export function TrendArea({ data }: { data: TrendPoint[] }) {
   const revenue = data.map((p) => ({ value: p.revenue, label: p.label.slice(0, 2) }));
   const margin = data.map((p) => ({ value: p.margin }));
-  // Canvas colour for the area fill fade-to (#eef6f7)
+  // Canvas colour for the area fill fade-to (from the shared token)
   const canvasFade = designTokens.color.surface.canvas;
   return (
     <View>

@@ -61,8 +61,10 @@ export function getAdminCareRequestStatusColor(status: string): string {
   if (status === "Invoiced") return designTokens.color.status.warningText;
   if (status === "Voided") return designTokens.color.status.dangerText;
   if (status === "Completed") return designTokens.color.status.infoText;
-  if (status === "Rejected" || status === "Cancelled") return "#c2410c";
-  return "#17465e";
+  // .text (-800) not .color (-600): this renders as bold status TEXT on a white card,
+  // so it must clear AA 4.5:1 (orange .color is only 3.56:1 on white).
+  if (status === "Rejected" || status === "Cancelled") return designTokens.color.palette.orange.text;
+  return designTokens.color.ink.secondary;
 }
 
 export function buildAdminCareRequestBillingRoute(

@@ -100,7 +100,7 @@ describe("admin severity presentation", () => {
   it("marks high severity work as urgent", () => {
     expect(getAdminSeverityPresentation("High")).toMatchObject({
       label: "Urgente",
-      textColor: "#9f1239",
+      textColor: "#B91C1C",
     });
   });
 });

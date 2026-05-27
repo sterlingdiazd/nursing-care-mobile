@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   heroBadgeStandalone: { alignSelf: "flex-start" },
   heroBadgeText: { fontSize: 12.5, fontWeight: "800" },
   heroChips: { flexDirection: "row", gap: 10 },
-  // Sub-tiles: light secondary surface (#f3f9fa) with navy text
+  // Sub-tiles: elevated secondary surface with navy text
   chip: { flex: 1, backgroundColor: t.bgElevated, borderRadius: t.radiusSm, borderWidth: 1, borderColor: t.cardBorder, paddingVertical: 10, paddingHorizontal: 12, gap: 2 },
   chipLabel: { color: t.textMuted, fontSize: 10.5, fontWeight: "700", textTransform: "uppercase" },
   chipValue: { color: t.text, fontSize: 15, fontWeight: "800" },

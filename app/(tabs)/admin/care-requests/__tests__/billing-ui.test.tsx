@@ -29,15 +29,37 @@ describe("admin care request billing labels", () => {
 
 describe("admin care request billing colors", () => {
   it("returns green for Paid", () => {
-    expect(getAdminCareRequestStatusColor("Paid")).toBe("#0f6b54");
+    expect(getAdminCareRequestStatusColor("Paid")).toBe("#15803D");
   });
 
   it("returns gold for Invoiced", () => {
-    expect(getAdminCareRequestStatusColor("Invoiced")).toBe("#8c5a14");
+    expect(getAdminCareRequestStatusColor("Invoiced")).toBe("#B45309");
   });
 
   it("returns rose for Voided", () => {
-    expect(getAdminCareRequestStatusColor("Voided")).toBe("#9f1239");
+    expect(getAdminCareRequestStatusColor("Voided")).toBe("#B91C1C");
+  });
+
+  // Guards the AA-text class of bug: every status color renders as bold status text on a
+  // white card, so each must clear WCAG AA 4.5:1 on white. A token migration once silently
+  // swapped Rejected/Cancelled to a -600 hue at 3.56:1; this would have caught it.
+  it("every status color (incl. default) clears AA 4.5:1 as text on white", () => {
+    const luminance = (hex: string): number => {
+      const n = parseInt(hex.slice(1), 16);
+      const chan = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
+        const c = v / 255;
+        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * chan[0] + 0.7152 * chan[1] + 0.0722 * chan[2];
+    };
+    const ratioOnWhite = (hex: string): number => (1.0 + 0.05) / (luminance(hex) + 0.05);
+    const statuses = [
+      "Paid", "PaymentReported", "Invoiced", "Voided", "Completed", "Rejected", "Cancelled", "SomethingUnknown",
+    ];
+    for (const status of statuses) {
+      const color = getAdminCareRequestStatusColor(status);
+      expect(ratioOnWhite(color), `${status} -> ${color}`).toBeGreaterThanOrEqual(4.5);
+    }
   });
 });
 

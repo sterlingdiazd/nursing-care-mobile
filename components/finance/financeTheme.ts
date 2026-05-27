@@ -4,32 +4,33 @@ import { formatDOP, formatDOPCompact } from "@/src/utils/currency";
 
 const c = designTokens.color;
 
-// Light palette for the finance dashboard — uses the shared design-token system so
-// it stays in sync with the rest of the app (light teal canvas, white cards, navy ink).
+// Light palette for the finance dashboard — aliases the shared design-token system so
+// it stays in sync with the rest of the app (neutral canvas, white cards, navy ink, blue
+// accent). Values come from the tokens; do not hardcode hex here.
 export const financeTheme = {
   // Surfaces
-  bg: c.surface.canvas,         // #eef6f7  — screen canvas
-  bgElevated: c.surface.secondary, // #f3f9fa — slightly elevated surface
-  card: c.surface.primary,      // #fcfefd  — white card
-  cardBorder: c.border.subtle,  // #d8e6ea
-  cardSoft: c.surface.tertiary, // #e6f2f4  — light tint (donut track, bar track)
+  bg: c.surface.canvas,         // screen canvas
+  bgElevated: c.surface.secondary, // slightly elevated surface
+  card: c.surface.primary,      // white card
+  cardBorder: c.border.subtle,
+  cardSoft: c.surface.tertiary, // light tint (donut track, bar track)
 
   // Ink
-  text: c.ink.primary,          // #123044  — navy
-  textMuted: c.ink.muted,       // #6f8796
-  accent: c.ink.accent,         // #2e7da3  — teal
-  accentDeep: c.ink.accentStrong, // #1d5d80
-  navy: c.ink.primary,          // #123044
+  text: c.ink.primary,          // navy
+  textMuted: c.ink.muted,
+  accent: c.ink.accent,         // brand blue
+  accentDeep: c.ink.accentStrong,
+  navy: c.ink.primary,
 
   // Status colours (text)
-  green: c.status.successText,  // #0f6b54
-  amber: c.status.warningText,  // #8c5a14
-  red: c.status.dangerText,     // #9f1239
+  green: c.status.successText,
+  amber: c.status.warningText,
+  red: c.status.dangerText,
 
   // Status surfaces (for background pills / rails)
-  greenBg: c.status.successBg,  // #dff4e8
-  amberBg: c.status.warningBg,  // #fff0ca
-  redBg: c.status.dangerBg,     // #fde1e8
+  greenBg: c.status.successBg,
+  amberBg: c.status.warningBg,
+  redBg: c.status.dangerBg,
 
   // Shape
   radius: 20,

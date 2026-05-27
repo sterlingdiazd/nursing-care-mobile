@@ -7,11 +7,22 @@ import { router } from "expo-router";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
 import { toneStyles, type WorkCardTone } from "@/src/design-system/tones";
+import type { PaletteHue } from "@/src/design-system/tokens";
+import { ActionCard } from "@/src/components/shared/ActionCard";
 import { useAuth } from "@/src/context/AuthContext";
 import { getAdminDashboard, type AdminDashboardSnapshotDto } from "@/src/services/adminPortalService";
 import { adminTestIds } from "@/src/testing/testIds";
 import { automationProps } from "@/src/utils/adminOperationalUx";
 import { useToast } from "@/src/components/shared/ToastProvider";
+
+// Bridges the work-card "tone" vocabulary to the unified palette hues used by ActionCard.
+const TONE_TO_HUE: Record<WorkCardTone, PaletteHue> = {
+  danger: "red",
+  orange: "orange",
+  warning: "amber",
+  info: "blue",
+  neutral: "neutral",
+};
 
 interface WorkCardConfig {
   key: string;
@@ -181,51 +192,26 @@ export default function AdminDashboardScreen() {
             </Pressable>
 
             <View style={styles.workList}>
-              {workCards.map((card) => {
-                const tone = toneStyles[card.tone];
-
-                return (
-                  <Pressable
-                    key={card.key}
-                    {...automationProps(card.testID)}
-                    accessibilityRole="button"
-                    onPress={() => {
-                      if (card.count === 0) {
-                        showToast({ variant: "info", message: card.emptyMessage });
-                        return;
-                      }
-                      router.push(card.route as any);
-                    }}
-                    style={({ pressed }) => [
-                      styles.workCard,
-                      { borderLeftColor: tone.border },
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <View style={[styles.workIconWrap, { backgroundColor: tone.soft }]}>
-                      <FontAwesome name={card.icon} size={30} color={tone.color} />
-                    </View>
-                    <View style={styles.workBody}>
-                      <Text style={styles.workTitle} numberOfLines={1}>
-                        {card.title}
-                      </Text>
-                      <Text style={styles.workDescription} numberOfLines={1}>
-                        {card.description}
-                      </Text>
-                      <View style={[styles.countPill, { backgroundColor: tone.soft }]}>
-                        <Text style={[styles.countPillText, { color: tone.color }]}>
-                          {formatCountLabel(card.count, card.countLabel)}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.workAction}>
-                      <View style={[styles.actionButton, { borderColor: tone.color }]}>
-                        <Text style={[styles.actionButtonText, { color: tone.color }]}>{card.actionLabel}</Text>
-                      </View>
-                    </View>
-                  </Pressable>
-                );
-              })}
+              {workCards.map((card) => (
+                <ActionCard
+                  key={card.key}
+                  icon={card.icon}
+                  hue={TONE_TO_HUE[card.tone]}
+                  title={card.title}
+                  subtitle={card.description}
+                  countText={formatCountLabel(card.count, card.countLabel)}
+                  actionLabel={card.actionLabel}
+                  testID={card.testID}
+                  style={styles.workCardFill}
+                  onPress={() => {
+                    if (card.count === 0) {
+                      showToast({ variant: "info", message: card.emptyMessage });
+                      return;
+                    }
+                    router.push(card.route as any);
+                  }}
+                />
+              ))}
             </View>
           </>
         ) : error ? null : (
@@ -262,7 +248,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#ef1d2d",
+    backgroundColor: mobileTheme.colors.ink.danger,
   },
   progressCard: {
     ...mobileSurfaceCard,
@@ -271,8 +257,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 14,
     padding: 14,
-    borderColor: "#cfe3ff",
-    backgroundColor: "#f8fbff",
+    borderColor: mobileTheme.colors.border.accent,
   },
   progressIconWrap: {
     width: 58,
@@ -305,7 +290,7 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 999,
     overflow: "hidden",
-    backgroundColor: "#e8edf5",
+    backgroundColor: mobileTheme.colors.surface.tertiary,
   },
   progressFill: {
     height: "100%",
@@ -321,64 +306,8 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 10,
   },
-  workCard: {
-    ...mobileSurfaceCard,
+  workCardFill: {
     flex: 1,
-    minHeight: 106,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    padding: 13,
-    borderLeftWidth: 4,
-  },
-  workIconWrap: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  workBody: {
-    flex: 1,
-    minWidth: 0,
-    gap: 5,
-  },
-  workTitle: {
-    color: mobileTheme.colors.ink.primary,
-    fontSize: 18,
-    fontWeight: "900",
-  },
-  workDescription: {
-    color: mobileTheme.colors.ink.secondary,
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  countPill: {
-    alignSelf: "flex-start",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  countPillText: {
-    fontSize: 13,
-    fontWeight: "800",
-  },
-  workAction: {
-    alignItems: "flex-end",
-    gap: 16,
-  },
-  actionButton: {
-    minWidth: 86,
-    minHeight: 34,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 10,
-  },
-  actionButtonText: {
-    fontSize: 13,
-    fontWeight: "800",
   },
   loadingCard: {
     ...mobileSurfaceCard,

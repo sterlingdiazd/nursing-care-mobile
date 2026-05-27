@@ -71,13 +71,14 @@ function ActionItemCard({ item }: { item: AdminActionItemDto }) {
     <View
       style={[
         styles.card,
-        { borderLeftColor: tone.border, borderLeftWidth: 4 },
+        // rail uses tone.color (-600, AA >=3:1); tone.border (-300) is a decorative hairline only.
+        { borderLeftColor: tone.color, borderLeftWidth: 4 },
       ]}
     >
       <View style={styles.cardHeaderRow}>
         <Text style={styles.cardEyebrow}>{entityLabel}</Text>
         <View style={[styles.statePill, { backgroundColor: tone.soft }]}>
-          <Text style={[styles.statePillText, { color: tone.color }]}>{stateLabel}</Text>
+          <Text style={[styles.statePillText, { color: tone.text }]}>{stateLabel}</Text>
         </View>
       </View>
       <Text style={styles.cardTitle} numberOfLines={3}>{item.summary}</Text>

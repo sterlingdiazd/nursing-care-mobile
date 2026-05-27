@@ -7,6 +7,8 @@ import { router } from "expo-router";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
+import type { PaletteHue } from "@/src/design-system/tokens";
+import { ModuleTile } from "@/src/components/shared/ModuleTile";
 import { navigationTestIds, adminTestIds } from "@/src/testing/testIds";
 import { automationProps } from "@/src/utils/adminOperationalUx";
 import { hapticFeedback } from "@/src/utils/haptics";
@@ -16,40 +18,43 @@ type MenuItem = {
   label: string;
   path: string;
   icon: ComponentProps<typeof FontAwesome>["name"];
+  hue: PaletteHue;
 };
 
+// Per-module semantic colors: people read cool (blue/teal/purple), services mix
+// operational hues, money is green/teal, alerts are red, system config is muted.
 const menuGroups: Array<{ title: string; items: MenuItem[] }> = [
   {
     title: "Personas",
     items: [
-      { key: "users", label: "Usuarios", path: "/admin/users", icon: "users" },
-      { key: "clients", label: "Clientes", path: "/admin/clients", icon: "address-book" },
-      { key: "nurses", label: "Enfermeras", path: "/admin/nurse-profiles", icon: "user-md" },
+      { key: "users", label: "Usuarios", path: "/admin/users", icon: "users", hue: "blue" },
+      { key: "clients", label: "Clientes", path: "/admin/clients", icon: "address-book", hue: "teal" },
+      { key: "nurses", label: "Enfermeras", path: "/admin/nurse-profiles", icon: "user-md", hue: "purple" },
     ],
   },
   {
     title: "Servicios",
     items: [
-      { key: "requests", label: "Solicitudes", path: "/admin/care-requests", icon: "list" },
-      { key: "shifts", label: "Calendario", path: "/admin/shifts", icon: "calendar" },
-      { key: "actions", label: "Acciones", path: "/admin/action-items", icon: "check-square-o" },
+      { key: "requests", label: "Solicitudes", path: "/admin/care-requests", icon: "list", hue: "indigo" },
+      { key: "shifts", label: "Calendario", path: "/admin/shifts", icon: "calendar", hue: "orange" },
+      { key: "actions", label: "Acciones", path: "/admin/action-items", icon: "check-square-o", hue: "green" },
     ],
   },
   {
     title: "Operación",
     items: [
-      { key: "finance", label: "Finanzas", path: "/admin/finance", icon: "line-chart" },
-      { key: "payroll", label: "Nómina", path: "/admin/payroll", icon: "money" },
-      { key: "reports", label: "Reportes", path: "/admin/reports", icon: "bar-chart" },
-      { key: "audit", label: "Auditoría", path: "/admin/audit-logs", icon: "history" },
+      { key: "finance", label: "Finanzas", path: "/admin/finance", icon: "line-chart", hue: "green" },
+      { key: "payroll", label: "Nómina", path: "/admin/payroll", icon: "money", hue: "teal" },
+      { key: "reports", label: "Reportes", path: "/admin/reports", icon: "bar-chart", hue: "purple" },
+      { key: "audit", label: "Auditoría", path: "/admin/audit-logs", icon: "history", hue: "neutral" },
     ],
   },
   {
     title: "Sistema",
     items: [
-      { key: "catalog", label: "Catálogo", path: "/admin/catalog", icon: "book" },
-      { key: "settings", label: "Ajustes", path: "/admin/settings", icon: "cog" },
-      { key: "notifications", label: "Notificaciones", path: "/admin/notifications", icon: "bell" },
+      { key: "catalog", label: "Catálogo", path: "/admin/catalog", icon: "book", hue: "amber" },
+      { key: "settings", label: "Ajustes", path: "/admin/settings", icon: "cog", hue: "neutral" },
+      { key: "notifications", label: "Notificaciones", path: "/admin/notifications", icon: "bell", hue: "red" },
     ],
   },
 ];
@@ -192,24 +197,17 @@ export default function AdminMenuTab() {
               <Text style={styles.groupTitle}>{group.title}</Text>
               <View style={styles.grid}>
                 {group.items.map((item) => (
-                  <Pressable
+                  <ModuleTile
                     key={item.key}
-                    {...automationProps(adminTestIds.menu.item(item.key))}
-                    accessibilityRole="button"
-                    accessibilityLabel={item.label}
+                    icon={item.icon}
+                    hue={item.hue}
+                    label={item.label}
+                    testID={adminTestIds.menu.item(item.key)}
                     onPress={() => {
                       hapticFeedback.selection();
                       router.push(item.path as any);
                     }}
-                    style={({ pressed }) => [styles.menuItem, pressed && styles.pressed]}
-                  >
-                    <View style={styles.iconWrap}>
-                      <FontAwesome name={item.icon} size={22} color={mobileTheme.colors.ink.accent} />
-                    </View>
-                    <Text style={styles.itemLabel} numberOfLines={1}>
-                      {item.label}
-                    </Text>
-                  </Pressable>
+                  />
                 ))}
               </View>
             </View>
@@ -308,29 +306,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
-  },
-  menuItem: {
-    ...mobileSurfaceCard,
-    width: "31%",
-    minHeight: 92,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 9,
-    padding: 10,
-  },
-  iconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: mobileTheme.colors.surface.secondary,
-  },
-  itemLabel: {
-    color: mobileTheme.colors.ink.secondary,
-    fontSize: 12,
-    fontWeight: "800",
-    textAlign: "center",
   },
   pressed: {
     opacity: 0.78,
