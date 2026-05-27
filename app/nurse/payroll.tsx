@@ -21,6 +21,7 @@ import { useToast } from "@/src/components/shared/ToastProvider";
 import { formatDateES } from "@/src/utils/spanishTextValidator";
 import { quincenaLabel } from "@/src/utils/payrollPeriods";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
+import { IconBadge } from "@/src/components/shared/IconBadge";
 import { hapticFeedback } from "@/src/utils/haptics";
 
 export default function NursePayrollScreen() {
@@ -162,7 +163,10 @@ export default function NursePayrollScreen() {
         {summary?.currentPeriodId ? (
           <View style={styles.heroCard}>
             <View style={styles.heroTopRow}>
-              <Text style={styles.heroEyebrow}>Período actual</Text>
+              <View style={styles.heroEyebrowRow}>
+                <IconBadge icon="money" hue="green" size={30} iconSize={15} />
+                <Text style={styles.heroEyebrow}>Período actual</Text>
+              </View>
               <StatusBadge label={currentPeriodOpen ? "Abierto" : "Cerrado"} tone={currentPeriodOpen ? "success" : "neutral"} />
             </View>
             <Text style={styles.heroAmount}>
@@ -176,13 +180,19 @@ export default function NursePayrollScreen() {
           </View>
         ) : (
           <View style={styles.heroCard}>
-            <Text style={styles.heroEyebrow}>Período actual</Text>
+            <View style={styles.heroEyebrowRow}>
+              <IconBadge icon="money" hue="green" size={30} iconSize={15} />
+              <Text style={styles.heroEyebrow}>Período actual</Text>
+            </View>
             <Text style={styles.emptyText}>No hay período de nómina activo.</Text>
           </View>
         )}
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Historial de pagos</Text>
+          <View style={styles.sectionHeaderRow}>
+            <IconBadge icon="history" hue="blue" size={30} iconSize={15} />
+            <Text style={styles.sectionTitle}>Historial de pagos</Text>
+          </View>
 
           {history.length === 0 ? (
             <Text style={styles.emptyHint}>No hay historial de pagos.</Text>
@@ -345,6 +355,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
+  heroEyebrowRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   heroEyebrow: {
     fontSize: 12,
     fontWeight: "700",
@@ -367,6 +382,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "800",
     color: designTokens.color.ink.primary,
+  },
+  sectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
     marginBottom: designTokens.spacing.md,
   },
   emptyText: { fontSize: 14, color: designTokens.color.ink.muted },

@@ -1,8 +1,11 @@
+import type { ComponentProps } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Redirect, router } from "expo-router";
-import { designTokens } from "@/src/design-system/tokens";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { designTokens, type PaletteHue } from "@/src/design-system/tokens";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { IconBadge } from "@/src/components/shared/IconBadge";
 import AdminDashboardScreen from "@/src/screens/AdminDashboardScreen";
 import { useAuth } from "@/src/context/AuthContext";
 import { logClientEvent } from "@/src/logging/clientLogger";
@@ -15,104 +18,42 @@ import {
 import { hapticFeedback } from "@/src/utils/haptics";
 import { clientTestIds } from "@/src/testing/testIds";
 
-const adminQuickSections = [
-  {
-    title: "Panel admin",
-    body: "Indicadores y accesos administrativos.",
-    path: "/admin",
-  },
-  {
-    title: "Solicitudes",
-    body: "Cola activa y seguimiento.",
-    path: "/care-requests",
-  },
-  {
-    title: "Nueva solicitud",
-    body: "Registrar un nuevo servicio.",
-    path: "/create-care-request",
-  },
-  {
-    title: "Cuenta",
-    body: "Sesion, acceso y perfil.",
-    path: "/account",
-  },
-  {
-    title: "Diagnostico",
-    body: "Estado tecnico y errores.",
-    path: "/admin/diagnostics",
-  },
-  {
-    title: "Herramientas",
-    body: "Utilidades avanzadas.",
-    path: "/admin/tools",
-  },
+type QuickSection = {
+  title: string;
+  body: string;
+  path: string;
+  icon: ComponentProps<typeof FontAwesome>["name"];
+  hue: PaletteHue;
+  key?: string;
+  priority?: string;
+};
+
+const adminQuickSections: QuickSection[] = [
+  { title: "Panel admin", body: "Indicadores y accesos administrativos.", path: "/admin", icon: "th-large", hue: "blue" },
+  { title: "Solicitudes", body: "Cola activa y seguimiento.", path: "/care-requests", icon: "list", hue: "indigo" },
+  { title: "Nueva solicitud", body: "Registrar un nuevo servicio.", path: "/create-care-request", icon: "plus-circle", hue: "green" },
+  { title: "Cuenta", body: "Sesion, acceso y perfil.", path: "/account", icon: "user", hue: "purple" },
+  { title: "Diagnostico", body: "Estado tecnico y errores.", path: "/admin/diagnostics", icon: "heartbeat", hue: "neutral" },
+  { title: "Herramientas", body: "Utilidades avanzadas.", path: "/admin/tools", icon: "wrench", hue: "neutral" },
 ];
 
-const clientQuickSections = [
-  {
-    title: "Necesito cuidado",
-    body: "Crea una nueva solicitud de cuidado.",
-    path: "/create-care-request",
-    key: "crear",
-    priority: "Ahora",
-  },
-  {
-    title: "Ver mis servicios",
-    body: "Estado, fechas y pago de tus solicitudes.",
-    path: "/care-requests",
-    key: "servicios",
-    priority: "Seguimiento",
-  },
-  {
-    title: "Avisos importantes",
-    body: "Cambios recientes de tus solicitudes.",
-    path: "/client-notifications",
-    key: "avisos",
-    priority: "Pendiente",
-  },
-  {
-    title: "Mis datos",
-    body: "Perfil y contacto de emergencia.",
-    path: "/client-profile",
-    key: "perfil",
-    priority: "Cuenta",
-  },
+const clientQuickSections: QuickSection[] = [
+  { title: "Necesito cuidado", body: "Crea una nueva solicitud de cuidado.", path: "/create-care-request", key: "crear", priority: "Ahora", icon: "plus-circle", hue: "green" },
+  { title: "Ver mis servicios", body: "Estado, fechas y pago de tus solicitudes.", path: "/care-requests", key: "servicios", priority: "Seguimiento", icon: "list", hue: "blue" },
+  { title: "Avisos importantes", body: "Cambios recientes de tus solicitudes.", path: "/client-notifications", key: "avisos", priority: "Pendiente", icon: "bell", hue: "amber" },
+  { title: "Mis datos", body: "Perfil y contacto de emergencia.", path: "/client-profile", key: "perfil", priority: "Cuenta", icon: "user", hue: "purple" },
 ];
 
-const nurseQuickSections = [
-  {
-    title: "Mi Nomina",
-    body: "Resumen de compensaciones y historial de pagos.",
-    path: "/nurse/payroll",
-  },
-  {
-    title: "Solicitudes",
-    body: "Servicios asignados y seguimiento.",
-    path: "/care-requests",
-  },
-  {
-    title: "Diagnostico",
-    body: "Estado tecnico y errores.",
-    path: "/admin/diagnostics",
-  },
-  {
-    title: "Herramientas",
-    body: "Utilidades avanzadas.",
-    path: "/admin/tools",
-  },
+const nurseQuickSections: QuickSection[] = [
+  { title: "Mi Nomina", body: "Resumen de compensaciones y historial de pagos.", path: "/nurse/payroll", icon: "money", hue: "green" },
+  { title: "Solicitudes", body: "Servicios asignados y seguimiento.", path: "/care-requests", icon: "list", hue: "blue" },
+  { title: "Diagnostico", body: "Estado tecnico y errores.", path: "/admin/diagnostics", icon: "heartbeat", hue: "neutral" },
+  { title: "Herramientas", body: "Utilidades avanzadas.", path: "/admin/tools", icon: "wrench", hue: "neutral" },
 ];
 
-const publicQuickSections = [
-  {
-    title: "Iniciar sesion",
-    body: "Entrar con tu cuenta.",
-    path: "/login",
-  },
-  {
-    title: "Registrar",
-    body: "Crear una cuenta nueva.",
-    path: "/register",
-  },
+const publicQuickSections: QuickSection[] = [
+  { title: "Iniciar sesion", body: "Entrar con tu cuenta.", path: "/login", icon: "sign-in", hue: "blue" },
+  { title: "Registrar", body: "Crear una cuenta nueva.", path: "/register", icon: "user-plus", hue: "green" },
 ];
 
 export default function HomeScreen() {
@@ -321,7 +262,8 @@ export default function HomeScreen() {
             ]}
           >
             <View style={styles.cardContent}>
-              <View>
+              <IconBadge icon={section.icon} hue={section.hue} size={42} iconSize={21} />
+              <View style={styles.cardTextBlock}>
                 {clientSection.priority ? (
                   <Text style={styles.cardPriority}>{clientSection.priority}</Text>
                 ) : null}
@@ -356,7 +298,10 @@ elevation: 2,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 16,
+    gap: 12,
+  },
+  cardTextBlock: {
+    flex: 1,
   },
   cardTitleSmall: {
     fontSize: 15,
