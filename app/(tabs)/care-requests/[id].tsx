@@ -29,6 +29,7 @@ import {
 } from "@/src/services/careRequestService";
 import { getCareRequestOptions } from "@/src/services/catalogOptionsService";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
+import { IconBadge } from "@/src/components/shared/IconBadge";
 import { careRequestTestIds } from "@/src/testing/testIds";
 import { CareRequestDto, CareRequestTransitionAction } from "@/src/types/careRequest";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
@@ -422,7 +423,10 @@ export default function CareRequestDetailScreen() {
             nativeID={careRequestTestIds.detail.statusChip}
           >
             <View style={styles.cardHeaderRow}>
-              <Text style={styles.cardEyebrow}>Estado</Text>
+              <View style={styles.sectionHeaderRow}>
+                <IconBadge icon="info-circle" hue="blue" size={30} iconSize={15} />
+                <Text style={styles.cardEyebrow}>Estado</Text>
+              </View>
               <View style={[styles.countPill, { backgroundColor: statusPalette.bg }]}>
                 <Text style={[styles.countPillText, { color: statusPalette.fg }]}>{statusLabel}</Text>
               </View>
@@ -436,7 +440,10 @@ export default function CareRequestDetailScreen() {
           {/* Servicio (combinado con precios) */}
           <View style={styles.card}>
             <View style={styles.cardHeaderRow}>
-              <Text style={styles.cardEyebrow}>Servicio</Text>
+              <View style={styles.sectionHeaderRow}>
+                <IconBadge icon="briefcase" hue="teal" size={30} iconSize={15} />
+                <Text style={styles.cardEyebrow}>Servicio</Text>
+              </View>
               <Pressable
                 onPress={() => {
                   hapticFeedback.selection();
@@ -488,7 +495,10 @@ export default function CareRequestDetailScreen() {
             ]}
           >
             <View style={styles.cardHeaderRow}>
-              <Text style={styles.cardEyebrow}>Asignación</Text>
+              <View style={styles.sectionHeaderRow}>
+                <IconBadge icon="user-md" hue="orange" size={30} iconSize={15} />
+                <Text style={styles.cardEyebrow}>Asignación</Text>
+              </View>
               {isAdmin ? (
                 <Pressable
                   onPress={() => {
@@ -1146,6 +1156,7 @@ const styles = StyleSheet.create({
   cardHeaderRow: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8,
   },
+  sectionHeaderRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   cardEyebrow: {
     color: mobileTheme.colors.ink.muted,
     fontSize: 11, fontWeight: "900", textTransform: "uppercase", letterSpacing: 0.6,

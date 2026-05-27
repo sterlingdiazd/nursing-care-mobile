@@ -1,11 +1,12 @@
-import { type ReactNode } from "react";
+import { type ComponentProps, type ReactNode } from "react";
 import { Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import { LineChart, PieChart } from "react-native-gifted-charts";
 import type { CategoryMargin, ClientRevenueRow, TrendPoint } from "@/src/services/financeService";
 import { financeTheme as t, fmtMoneyCompact } from "./financeTheme";
 import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
-import { designTokens } from "@/src/design-system/tokens";
+import { designTokens, type PaletteHue } from "@/src/design-system/tokens";
+import { IconBadge } from "@/src/components/shared/IconBadge";
 import { withHapticFeedback } from "@/src/utils/haptics";
 
 const W = Dimensions.get("window").width;
@@ -25,11 +26,15 @@ export function SectionCard({
   subtitle,
   children,
   onPress,
+  icon,
+  hue,
 }: {
   title: string;
   subtitle?: string;
   children: ReactNode;
   onPress?: () => void;
+  icon?: ComponentProps<typeof FontAwesome>["name"];
+  hue?: PaletteHue;
 }) {
   const Wrapper: any = onPress ? Pressable : View;
   return (
@@ -39,7 +44,10 @@ export function SectionCard({
       accessibilityRole={onPress ? "button" : undefined}
     >
       <View style={styles.sectionTitleRow}>
-        <Text style={styles.sectionTitle}>{title}</Text>
+        <View style={styles.sectionTitleLeft}>
+          {icon && hue ? <IconBadge icon={icon} hue={hue} size={28} iconSize={15} /> : null}
+          <Text style={styles.sectionTitle}>{title}</Text>
+        </View>
         {onPress ? <FontAwesome name="chevron-right" size={12} color={t.textMuted} /> : null}
       </View>
       {subtitle ? <Text style={styles.sectionSub}>{subtitle}</Text> : null}
@@ -157,6 +165,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   sectionTitleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  sectionTitleLeft: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
   sectionTitle: { color: t.text, fontSize: 16, fontWeight: "800" },
   sectionSub: { color: t.textMuted, fontSize: 12 },
   sectionBody: { marginTop: 10 },

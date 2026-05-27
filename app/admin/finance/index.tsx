@@ -174,11 +174,13 @@ function Ingresos({ data }: { data: FinanceOverview }) {
         title="Ingresos por categoría"
         subtitle={best ? `${best.serviceLine} es tu línea más rentable (${pct(best.marginPercent)})` : "Dónde se generan tus ingresos"}
         onPress={() => goDetail(data, "category", "Por categoría")}
+        icon="money"
+        hue="green"
       >
         <RevenueDonut data={data.byCategory} />
       </SectionCard>
       {data.topClients.length > 0 ? (
-        <SectionCard title="Top clientes" subtitle="Quién aporta más facturación" onPress={() => goDetail(data, "clients", "Por cliente")}>
+        <SectionCard title="Top clientes" subtitle="Quién aporta más facturación" onPress={() => goDetail(data, "clients", "Por cliente")} icon="users" hue="teal">
           <TopClientsBars data={data.topClients} />
         </SectionCard>
       ) : null}
@@ -210,11 +212,11 @@ function Equipo({ data }: { data: FinanceOverview }) {
   const maxLoan = Math.max(...loans.map((l) => l.outstandingBalance), 1);
   return (
     <View style={{ gap: 12 }}>
-      <SectionCard title="Participación por enfermera" subtitle="Quién genera más ingreso" onPress={() => goDetail(data, "nurses", "Participación por enfermera")}>
+      <SectionCard title="Participación por enfermera" subtitle="Quién genera más ingreso" onPress={() => goDetail(data, "nurses", "Participación por enfermera")} icon="user-md" hue="orange">
         <BarList items={nurses.map((n) => ({ name: n.nurseName, valueLabel: fmtMoneyCompact(n.revenueGenerated), sub: `${n.servicesCount} serv · pago ${fmtMoneyCompact(n.netPay)}`, fraction: n.revenueGenerated / maxRev }))} />
       </SectionCard>
       {loans.length > 0 ? (
-        <SectionCard title="Préstamos a enfermeras" subtitle={`Exposición total: ${fmtMoney(data.totalLoansOutstanding)}`} onPress={() => goDetail(data, "loans", "Préstamos a enfermeras")}>
+        <SectionCard title="Préstamos a enfermeras" subtitle={`Exposición total: ${fmtMoney(data.totalLoansOutstanding)}`} onPress={() => goDetail(data, "loans", "Préstamos a enfermeras")} icon="credit-card" hue="red">
           <BarList items={loans.map((l) => ({ name: l.nurseName, valueLabel: fmtMoney(l.outstandingBalance), fraction: l.outstandingBalance / maxLoan }))} />
         </SectionCard>
       ) : null}
@@ -228,7 +230,7 @@ function Tendencia({ data }: { data: FinanceOverview }) {
   const dColor = (dp: number | null) => (dp == null ? t.textMuted : dp >= 0 ? t.green : t.red);
   return (
     <View style={{ gap: 12 }}>
-      <SectionCard title="Tendencia (6 meses)" subtitle="Ingresos y margen en el tiempo">
+      <SectionCard title="Tendencia (6 meses)" subtitle="Ingresos y margen en el tiempo" icon="line-chart" hue="blue">
         <TrendArea data={data.monthlyTrend} />
       </SectionCard>
       <View style={styles.deltaRow}>

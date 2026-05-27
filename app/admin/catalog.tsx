@@ -59,10 +59,13 @@ import { FormPanel } from "@/src/components/shared/FormPanel";
 import { ListRow } from "@/src/components/shared/ListRow";
 import { Pagination } from "@/src/components/shared/Pagination";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
+import { IconBadge } from "@/src/components/shared/IconBadge";
 import { useClientPaging } from "@/src/hooks/usePagedList";
 import { SwipePager } from "@/src/components/shared/SwipePager";
-import { designTokens } from "@/src/design-system/tokens";
+import { designTokens, type PaletteHue } from "@/src/design-system/tokens";
 import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
+import type { ComponentProps } from "react";
+import type FontAwesome from "@expo/vector-icons/FontAwesome";
 
 type TabKey =
   | "categories"
@@ -92,6 +95,19 @@ const TABS: TabConfig[] = [
 
 // Map TABS to FilterChip options (no counts — would require N extra requests).
 const TAB_FILTER_OPTIONS = TABS.map((t) => ({ key: t.key, label: t.label }));
+
+// Per-tab vivid accent: a hue + icon that reflects the active catalog section.
+type FontAwesomeIcon = ComponentProps<typeof FontAwesome>["name"];
+const TAB_BADGE: Record<TabKey, { hue: PaletteHue; icon: FontAwesomeIcon }> = {
+  categories: { hue: "indigo", icon: "sitemap" },
+  types: { hue: "teal", icon: "th-list" },
+  units: { hue: "green", icon: "cube" },
+  distance: { hue: "amber", icon: "map-marker" },
+  complexity: { hue: "orange", icon: "tasks" },
+  volume: { hue: "purple", icon: "percent" },
+  specialties: { hue: "pink", icon: "certificate" },
+  nurseCategories: { hue: "blue", icon: "user-md" },
+};
 
 type CatalogItem = CareRequestCategoryListItemDto | CareRequestTypeListItemDto | UnitTypeListItemDto | DistanceFactorListItemDto | ComplexityLevelListItemDto | VolumeDiscountRuleListItemDto | NurseSpecialtyListItemDto | NurseCategoryListItemDto;
 
@@ -587,6 +603,19 @@ export default function AdminCatalogScreen() {
             </FormPanel>
           )}
 
+          {/* Section header — vivid per-tab accent reflecting the active catalog section. */}
+          <View style={styles.sectionHeaderRow}>
+            <IconBadge
+              icon={TAB_BADGE[activeTab].icon}
+              hue={TAB_BADGE[activeTab].hue}
+              size={30}
+              iconSize={15}
+            />
+            <Text style={styles.sectionHeaderLabel}>
+              {TABS.find((t) => t.key === activeTab)?.label ?? ""}
+            </Text>
+          </View>
+
           <SwipePager page={page} pageCount={pageCount} onPageChange={setPage}>
           <View
             style={styles.cardsContainer}
@@ -722,6 +751,14 @@ const styles = StyleSheet.create({
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: 40 },
   loadingText: { marginTop: 12, fontSize: 16, color: designTokens.color.ink.secondary },
   editActions: { flexDirection: "row", gap: 8 },
+  sectionHeaderRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  sectionHeaderLabel: {
+    color: designTokens.color.ink.muted,
+    fontSize: 11,
+    fontWeight: "900",
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
   cardsContainer: { gap: 10 },
   cardActions: { flexDirection: "row", alignItems: "center", gap: 8 },
   cardChevron: { color: designTokens.color.ink.muted, fontSize: 18, lineHeight: 24 },

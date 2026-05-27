@@ -14,6 +14,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { router, useLocalSearchParams } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { IconBadge } from "@/src/components/shared/IconBadge";
 import { type FooterAction } from "@/src/components/navigation/AppFooter";
 import { useAuth } from "@/src/context/AuthContext";
 import {
@@ -413,7 +414,10 @@ export default function AdminCareRequestDetailScreen() {
             {/* Estado */}
             <View style={[styles.card, railColor && { borderLeftWidth: 4, borderLeftColor: railColor }]}>
               <View style={styles.cardHeaderRow}>
-                <Text style={styles.cardEyebrow}>Estado</Text>
+                <View style={styles.sectionHeaderRow}>
+                  <IconBadge icon="info-circle" hue="blue" size={30} iconSize={15} />
+                  <Text style={styles.cardEyebrow}>Estado</Text>
+                </View>
                 {statusPalette ? (
                   <View style={[styles.statusPill, { backgroundColor: statusPalette.bg }]}>
                     <Text
@@ -462,7 +466,10 @@ export default function AdminCareRequestDetailScreen() {
             {/* Cliente */}
             <View style={styles.card}>
               <View style={styles.cardHeaderRow}>
-                <Text style={styles.cardEyebrow}>Cliente</Text>
+                <View style={styles.sectionHeaderRow}>
+                  <IconBadge icon="user" hue="green" size={30} iconSize={15} />
+                  <Text style={styles.cardEyebrow}>Cliente</Text>
+                </View>
                 <Pressable
                   accessibilityRole="link"
                   accessibilityLabel={`Ver perfil de ${detail.clientDisplayName}`}
@@ -490,7 +497,10 @@ export default function AdminCareRequestDetailScreen() {
               ]}
             >
               <View style={styles.cardHeaderRow}>
-                <Text style={styles.cardEyebrow}>Asignación</Text>
+                <View style={styles.sectionHeaderRow}>
+                  <IconBadge icon="user-md" hue="orange" size={30} iconSize={15} />
+                  <Text style={styles.cardEyebrow}>Asignación</Text>
+                </View>
                 {detail.assignedNurseUserId ? (
                   <Pressable
                     accessibilityRole="link"
@@ -519,7 +529,10 @@ export default function AdminCareRequestDetailScreen() {
             {/* Servicio (compact) */}
             <View style={styles.card}>
               <View style={styles.cardHeaderRow}>
-                <Text style={styles.cardEyebrow}>Servicio</Text>
+                <View style={styles.sectionHeaderRow}>
+                  <IconBadge icon="briefcase" hue="teal" size={30} iconSize={15} />
+                  <Text style={styles.cardEyebrow}>Servicio</Text>
+                </View>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Ver desglose de precios"
@@ -554,7 +567,10 @@ export default function AdminCareRequestDetailScreen() {
             {/* Facturación (compact, solo si hay datos) */}
             {(detail.invoiceNumber || detail.bankReference || detail.voidReason || detail.receiptNumber) ? (
               <View style={styles.card} testID="billing-info-card" nativeID="billing-info-card">
-                <Text style={styles.cardEyebrow}>Facturación</Text>
+                <View style={styles.sectionHeaderRow}>
+                  <IconBadge icon="file-text-o" hue="purple" size={30} iconSize={15} />
+                  <Text style={styles.cardEyebrow}>Facturación</Text>
+                </View>
                 {detail.invoiceNumber ? (
                   <Text testID="invoice-details-section" nativeID="invoice-details-section" style={styles.billingValue} numberOfLines={1}>
                     Factura #{detail.invoiceNumber} · {formatTimestamp(detail.invoicedAtUtc)}
@@ -589,9 +605,12 @@ export default function AdminCareRequestDetailScreen() {
                 }}
                 style={({ pressed }) => [styles.historyTrigger, pressed && styles.pressed]}
               >
-                <Text style={styles.historyTriggerText}>
-                  Ver historial · {detail.timeline?.length ?? 0} evento{(detail.timeline?.length ?? 0) === 1 ? "" : "s"}
-                </Text>
+                <View style={styles.sectionHeaderRow}>
+                  <IconBadge icon="history" hue="neutral" size={30} iconSize={15} />
+                  <Text style={styles.historyTriggerText}>
+                    Ver historial · {detail.timeline?.length ?? 0} evento{(detail.timeline?.length ?? 0) === 1 ? "" : "s"}
+                  </Text>
+                </View>
                 <Text style={styles.historyTriggerChevron}>›</Text>
               </Pressable>
             ) : null}
@@ -1036,6 +1055,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   cardHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  sectionHeaderRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   cardEyebrow: {
     color: mobileTheme.colors.ink.muted,
     fontSize: 11, fontWeight: "900", textTransform: "uppercase", letterSpacing: 0.6,

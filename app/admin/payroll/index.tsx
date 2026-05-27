@@ -6,7 +6,8 @@ import { router } from "expo-router";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
-import { designTokens } from "@/src/design-system/tokens";
+import { designTokens, type PaletteHue } from "@/src/design-system/tokens";
+import { IconBadge } from "@/src/components/shared/IconBadge";
 import { MetricCard } from "@/src/components/shared/MetricCard";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { hapticFeedback } from "@/src/utils/haptics";
@@ -24,6 +25,7 @@ type SectionCard = {
   label: string;
   helper: string;
   icon: React.ComponentProps<typeof FontAwesome>["name"];
+  hue: PaletteHue;
   path: string;
   testID: string;
 };
@@ -34,6 +36,7 @@ const SECTION_CARDS: SectionCard[] = [
     label: "Períodos",
     helper: "Crear, cerrar y recalcular",
     icon: "calendar",
+    hue: "blue",
     path: "/admin/payroll/periods",
     testID: "payroll-hub-card-periods",
   },
@@ -42,6 +45,7 @@ const SECTION_CARDS: SectionCard[] = [
     label: "Deducciones únicas",
     helper: "Una vez en un período (ej. multa, anticipo)",
     icon: "minus-circle",
+    hue: "red",
     path: "/admin/payroll/deductions",
     testID: "payroll-hub-card-deductions",
   },
@@ -50,6 +54,7 @@ const SECTION_CARDS: SectionCard[] = [
     label: "Descuentos fijos",
     helper: "Préstamo recurrente en cuotas",
     icon: "repeat",
+    hue: "purple",
     path: "/admin/payroll/scheduled",
     testID: "payroll-hub-card-scheduled",
   },
@@ -58,6 +63,7 @@ const SECTION_CARDS: SectionCard[] = [
     label: "Ajustes",
     helper: "Por servicio: bono (+) o corrección (−)",
     icon: "pencil-square-o",
+    hue: "amber",
     path: "/admin/payroll/adjustments",
     testID: "payroll-hub-card-adjustments",
   },
@@ -106,16 +112,19 @@ export default function PayrollHubScreen() {
           <MetricCard
             label="Nómina del período"
             value={dash ?? (summary ? formatCurrency(summary.totalCompensationCurrentPeriod) : "—")}
+            color={designTokens.color.palette.blue.color}
             testID="payroll-hub-metric-compensation"
           />
           <MetricCard
             label="Períodos abiertos"
             value={dash ?? String(summary?.openPeriodsCount ?? "—")}
+            color={designTokens.color.palette.amber.color}
             testID="payroll-hub-metric-open-periods"
           />
           <MetricCard
             label="Enfermeras activas"
             value={dash ?? String(summary?.activeNursesCount ?? "—")}
+            color={designTokens.color.palette.green.color}
             testID="payroll-hub-metric-nurses"
           />
         </View>
@@ -133,11 +142,13 @@ export default function PayrollHubScreen() {
                 hapticFeedback.selection();
                 router.push(card.path as any);
               }}
-              style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+              style={({ pressed }) => [
+                styles.card,
+                { borderLeftColor: designTokens.color.palette[card.hue].color },
+                pressed && styles.cardPressed,
+              ]}
             >
-              <View style={styles.iconWrap}>
-                <FontAwesome name={card.icon} size={22} color={mobileTheme.colors.ink.accent} />
-              </View>
+              <IconBadge icon={card.icon} hue={card.hue} size={42} iconSize={22} />
               <View style={styles.cardText}>
                 <Text style={styles.cardLabel}>{card.label}</Text>
                 <Text style={styles.cardHelper} numberOfLines={2}>{card.helper}</Text>
@@ -170,18 +181,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 14,
     padding: 16,
+    borderLeftWidth: 4,
   },
   cardPressed: {
     opacity: 0.78,
-  },
-  iconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: designTokens.radius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: mobileTheme.colors.surface.secondary,
-    flexShrink: 0,
   },
   cardText: {
     flex: 1,
