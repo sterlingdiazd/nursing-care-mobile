@@ -5,7 +5,6 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   useWindowDimensions,
@@ -25,6 +24,9 @@ import { usePaginatedList } from "@/src/hooks/usePaginatedList";
 import { designTokens } from "@/src/design-system/tokens";
 import { navigationTestIds } from "@/src/testing/testIds/navigationTestIds";
 import { hapticFeedback } from "@/src/utils/haptics";
+import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+import { OfflineSnapshotBanner } from "@/src/components/shared/OfflineSnapshotBanner";
+import { SnapshotBuckets } from "@/src/services/apiSnapshotCache";
 
 type StatusFilter = "Active" | "Pending" | "Approved" | "Completed" | "Rejected" | "Cancelled" | "All";
 
@@ -180,7 +182,13 @@ export default function CareRequestsScreen() {
     [isAuthenticated, canOpenCareRequests],
   );
 
-  const { data, isLoading, isRefreshing, refresh, error } = usePaginatedList(fetchFn);
+  // Cache bucket includes the user's primary role so each role keeps its own
+  // snapshot of the care-requests list — an admin's queue is not interchangeable
+  // with a nurse's assigned requests or a client's own requests.
+  const primaryRole = roles.includes("ADMIN") ? "admin" : roles.includes("NURSE") ? "nurse" : "client";
+  const { data, isLoading, isRefreshing, refresh, error, isStale, staleCapturedAtUtc } = usePaginatedList(fetchFn, {
+    cacheBucket: SnapshotBuckets.careRequestsList(primaryRole),
+  });
 
   useEffect(() => {
     if (!isReady) return;
@@ -262,6 +270,9 @@ export default function CareRequestsScreen() {
   return (
     <MobileWorkspaceShell
       title="Solicitudes"
+      primaryReturnPlacement="header"
+      primaryReturnLabel="Volver al inicio"
+      onPrimaryReturn={() => goBackOrReplace(router, mobileNavigationEscapes.clientHome)}
       systemActions={
         roles.includes("CLIENT") || roles.includes("ADMIN")
           ? [
@@ -275,12 +286,19 @@ export default function CareRequestsScreen() {
       }
       disableScroll
     >
+      {isStale ? (
+        <View style={styles.staleBannerWrap}>
+          <OfflineSnapshotBanner
+            capturedAtUtc={staleCapturedAtUtc ?? undefined}
+            onRetry={refresh}
+            retrying={isRefreshing}
+            testID="care-requests-offline-banner"
+          />
+        </View>
+      ) : null}
+
       <View style={styles.filterStrip}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterContent}
-        >
+        <View style={styles.filterContent}>
           {FILTERS.map((f) => {
             const active = filter === f.key;
             const count = counts[f.key];
@@ -295,6 +313,7 @@ export default function CareRequestsScreen() {
                   setFilter(f.key);
                 }}
                 accessibilityRole="button"
+                accessibilityLabel={`Filtrar solicitudes por ${f.label}`}
                 accessibilityState={{ selected: active }}
                 style={({ pressed }) => [
                   styles.filterChip,
@@ -311,7 +330,7 @@ export default function CareRequestsScreen() {
               </Pressable>
             );
           })}
-        </ScrollView>
+        </View>
       </View>
 
       {isLoading && filtered.length === 0 ? (
@@ -417,7 +436,9 @@ export default function CareRequestsScreen() {
 
 const styles = StyleSheet.create({
   filterStrip: { paddingBottom: 12 },
-  filterContent: { flexDirection: "row", gap: 8, paddingRight: 8 },
+  staleBannerWrap: { paddingBottom: 8 },
+  // Wrap onto as many rows as needed so every status filter is visible at once (no horizontal scroll).
+  filterContent: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   filterChip: {
     flexDirection: "row", alignItems: "center", gap: 6,
     borderRadius: 999, borderWidth: 1,

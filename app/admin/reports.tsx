@@ -36,6 +36,8 @@ import {
 } from "@/src/services/adminPortalService";
 import { formatDOP } from "@/src/utils/currency";
 import { getCachedAuthSession } from "@/src/services/authSession";
+import { getCareRequestOptions } from "@/src/services/catalogOptionsService";
+import { buildServiceTypeNameMap, labelForServiceType, type ServiceTypeNameMap } from "@/src/utils/serviceTypeLabel";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { hapticFeedback } from "@/src/utils/haptics";
 import { MetricCard } from "@/src/components/shared/MetricCard";
@@ -118,6 +120,7 @@ export default function AdminReportsScreen() {
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showReportPicker, setShowReportPicker] = useState(false);
+  const [serviceNameMap, setServiceNameMap] = useState<ServiceTypeNameMap>({});
 
   // For mobile, default to last 30 days if empty
   const [from, setFrom] = useState("");
@@ -156,6 +159,19 @@ export default function AdminReportsScreen() {
     if (!isReady || !isAuthenticated) return;
     void loadReportData();
   }, [isReady, isAuthenticated, selectedReportKey]);
+
+  // Load the care-request catalog once so reports show friendly service-type names instead of raw
+  // codes (the catalog is the source of truth; falls back to the raw code if it can't be loaded).
+  useEffect(() => {
+    if (!isReady || !isAuthenticated) return;
+    const token = getCachedAuthSession()?.token;
+    if (!token) return;
+    let cancelled = false;
+    void getCareRequestOptions(token)
+      .then((options) => { if (!cancelled) setServiceNameMap(buildServiceTypeNameMap(options)); })
+      .catch(() => { /* keep raw-code fallback */ });
+    return () => { cancelled = true; };
+  }, [isReady, isAuthenticated]);
 
   const handleExport = async () => {
     if (isExporting) return;
@@ -246,7 +262,7 @@ export default function AdminReportsScreen() {
               <Text style={styles.loaderText}>Cargando datos...</Text>
             </View>
           ) : data ? (
-            <ReportVisualizer reportKey={selectedReportKey} data={data} />
+            <ReportVisualizer reportKey={selectedReportKey} data={data} nameMap={serviceNameMap} />
           ) : (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>No hay datos para mostrar.</Text>
@@ -272,7 +288,7 @@ export default function AdminReportsScreen() {
   );
 }
 
-function ReportVisualizer({ reportKey, data }: { reportKey: string; data: AdminReportResponseDto }) {
+function ReportVisualizer({ reportKey, data, nameMap }: { reportKey: string; data: AdminReportResponseDto; nameMap: ServiceTypeNameMap }) {
   switch (reportKey) {
     case "care-request-pipeline":
       return <PipelineVisualizer data={data as CareRequestPipelineReportDto} />;
@@ -287,13 +303,13 @@ function ReportVisualizer({ reportKey, data }: { reportKey: string; data: AdminR
     case "care-request-completion":
       return <CompletionVisualizer data={data as CareRequestCompletionReportDto} />;
     case "price-usage-summary":
-      return <PriceVisualizer data={data as PriceUsageSummaryReportDto} />;
+      return <PriceVisualizer data={data as PriceUsageSummaryReportDto} nameMap={nameMap} />;
     case "notification-volume":
       return <NotificationsVisualizer data={data as NotificationVolumeReportDto} />;
     case "nurse-payments-daily":
       return <NursePaymentsDailyVisualizer data={data as NursePaymentsDailyReportDto} />;
     case "nurse-payments-by-type":
-      return <NursePaymentsByTypeVisualizer data={data as NursePaymentsByTypeReportDto} />;
+      return <NursePaymentsByTypeVisualizer data={data as NursePaymentsByTypeReportDto} nameMap={nameMap} />;
     case "nurse-payments-by-period":
       return <NursePaymentsByPeriodVisualizer data={data as NursePaymentsByPeriodReportDto} />;
     case "nurse-payments-ranking":
@@ -457,14 +473,14 @@ function CompletionVisualizer({ data }: { data: CareRequestCompletionReportDto }
   );
 }
 
-function PriceVisualizer({ data }: { data: PriceUsageSummaryReportDto }) {
+function PriceVisualizer({ data, nameMap }: { data: PriceUsageSummaryReportDto; nameMap: ServiceTypeNameMap }) {
   return (
     <View style={styles.stack}>
       <Text style={styles.subTitle}>Ingresos por tipo de servicio</Text>
       <View style={styles.table}>
         {(data.topRequestTypes ?? []).map((row) => (
           <View key={row.requestType} style={styles.tableRow}>
-            <Text style={[styles.tableCell, { flex: 2 }]} numberOfLines={1}>{row.requestType}</Text>
+            <Text style={[styles.tableCell, { flex: 2 }]} numberOfLines={1}>{labelForServiceType(nameMap, row.requestType)}</Text>
             <Text style={[styles.tableCell, { flex: 1, textAlign: "right", fontWeight: "700" }]}>
               ${((row.totalRevenue ?? 0) / 1000).toFixed(1)}k
             </Text>
@@ -539,13 +555,13 @@ function NursePaymentsDailyVisualizer({ data }: { data: NursePaymentsDailyReport
   );
 }
 
-function NursePaymentsByTypeVisualizer({ data }: { data: NursePaymentsByTypeReportDto }) {
+function NursePaymentsByTypeVisualizer({ data, nameMap }: { data: NursePaymentsByTypeReportDto; nameMap: ServiceTypeNameMap }) {
   const rows = data.rows ?? [];
   const topRow = rows.length > 0
     ? rows.reduce((best, r) => ((r.amount ?? 0) > (best.amount ?? 0) ? r : best), rows[0])
     : null;
   const insightText = topRow
-    ? `El tipo con mayor pago es "${topRow.serviceType}" con ${formatDOP(topRow.amount ?? 0)}.`
+    ? `El tipo con mayor pago es "${labelForServiceType(nameMap, topRow.serviceType)}" con ${formatDOP(topRow.amount ?? 0)}.`
     : "Sin datos de pago por tipo en este período.";
   const tone: InsightTone = topRow ? "info" : "warning";
   return (
@@ -559,7 +575,7 @@ function NursePaymentsByTypeVisualizer({ data }: { data: NursePaymentsByTypeRepo
         </View>
         {rows.map((row, idx) => (
           <View key={`${row.serviceType}-${idx}`} style={styles.tableRow}>
-            <Text style={[styles.tableCell, { flex: 3 }]} numberOfLines={1}>{row.serviceType}</Text>
+            <Text style={[styles.tableCell, { flex: 3 }]} numberOfLines={1}>{labelForServiceType(nameMap, row.serviceType)}</Text>
             <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>{row.serviceCount ?? 0}</Text>
             <Text style={[styles.tableCell, { flex: 2, textAlign: "right", fontWeight: "700" }]}>{formatDOP(row.amount ?? 0)}</Text>
           </View>

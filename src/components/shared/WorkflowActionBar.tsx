@@ -28,6 +28,8 @@ export default function WorkflowActionBar({ actions }: WorkflowActionBarProps) {
           nativeID={action.testID}
           disabled={action.disabled}
           onPress={withHapticFeedback(action.onPress, action.variant === "secondary" ? "selection" : "light")}
+          accessibilityRole="button"
+          accessibilityLabel={action.label}
           style={({ pressed }) => [
             styles.button,
             action.variant === "primary" && styles.primaryButton,

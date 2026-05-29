@@ -57,22 +57,58 @@ describe("client mobile services", () => {
 
     await getClientNotifications();
     await markClientNotificationRead("note-1");
-    await markAllClientNotificationsRead();
+    await markAllClientNotificationsRead(["note-2", "note-3"]);
 
     expect(requestJson).toHaveBeenCalledWith({
-      path: "/api/client/notifications",
+      path: "/api/client/notifications?status=Active&pageSize=50",
       method: "GET",
       auth: true,
     });
     expect(requestVoid).toHaveBeenCalledWith({
       path: "/api/client/notifications/note-1/read",
-      method: "PUT",
+      method: "POST",
       auth: true,
     });
     expect(requestVoid).toHaveBeenCalledWith({
-      path: "/api/client/notifications/read-all",
-      method: "PUT",
+      path: "/api/client/notifications/note-2/read",
+      method: "POST",
       auth: true,
     });
+    expect(requestVoid).toHaveBeenCalledWith({
+      path: "/api/client/notifications/note-3/read",
+      method: "POST",
+      auth: true,
+    });
+  });
+
+  it("normalizes paged client notification responses", async () => {
+    const notification = {
+      id: "note-1",
+      category: "care_request_approved",
+      severity: "Medium",
+      title: "Solicitud aprobada",
+      body: "Tu solicitud fue aprobada.",
+      entityType: "CareRequest",
+      entityId: "request-1",
+      createdAtUtc: "2026-05-26T12:00:00Z",
+      readAtUtc: null,
+    };
+
+    vi.mocked(requestJson).mockResolvedValueOnce({
+      items: [notification],
+      totalCount: 1,
+      page: 1,
+      pageSize: 50,
+    });
+
+    await expect(getClientNotifications()).resolves.toEqual([notification]);
+
+    vi.mocked(requestJson).mockResolvedValueOnce({
+      data: {
+        items: [notification],
+      },
+    });
+
+    await expect(getClientNotifications()).resolves.toEqual([notification]);
   });
 });

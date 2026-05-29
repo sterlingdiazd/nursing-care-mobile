@@ -65,6 +65,8 @@ function FooterButton({
       {...webProps}
       disabled={disabled}
       onPress={handlePress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
       style={({ pressed }) => [
         styles.button,
         variant === "primary" && styles.primaryButton,

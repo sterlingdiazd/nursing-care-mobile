@@ -101,6 +101,8 @@ export default function AdminClientDetailScreen() {
               hapticFeedback.light();
               void load();
             }}
+            accessibilityRole="button"
+            accessibilityLabel="Actualizar ficha del cliente"
           >
             <Text style={styles.buttonSecondaryText}>Actualizar</Text>
           </Pressable>
@@ -112,6 +114,8 @@ export default function AdminClientDetailScreen() {
             }}
             testID={adminTestIds.clients.detailPrimaryAction}
             nativeID={adminTestIds.clients.detailPrimaryAction}
+            accessibilityRole="button"
+            accessibilityLabel="Editar cliente"
           >
             <Text style={styles.buttonPrimaryText}>Editar</Text>
           </Pressable>
@@ -200,6 +204,8 @@ export default function AdminClientDetailScreen() {
                 void handleToggleActiveState();
               }}
               disabled={toggling}
+              accessibilityRole="button"
+              accessibilityLabel={detail.isActive ? "Desactivar cliente" : "Activar cliente"}
             >
               <Text style={styles.buttonToggleText}>
                 {toggling ? "Actualizando..." : detail.isActive ? "Desactivar cliente" : "Activar cliente"}
@@ -213,6 +219,8 @@ export default function AdminClientDetailScreen() {
                   hapticFeedback.selection();
                   router.push(`/admin/care-requests/create?clientUserId=${detail.userId}` as never);
                 }}
+                accessibilityRole="button"
+                accessibilityLabel="Crear solicitud para este cliente"
               >
                 <Text style={styles.buttonPrimaryText}>Crear solicitud</Text>
               </Pressable>
@@ -233,6 +241,8 @@ export default function AdminClientDetailScreen() {
                     hapticFeedback.selection();
                     router.push(`/admin/care-requests/${item.careRequestId}` as never);
                   }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Abrir solicitud ${item.careRequestDescription}`}
                 >
                   <View style={styles.historyHeader}>
                     <Text style={styles.historyTitle}>{item.careRequestDescription}</Text>

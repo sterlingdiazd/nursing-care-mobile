@@ -9,6 +9,7 @@ import { Pagination } from "@/src/components/shared/Pagination";
 import { SwipePager } from "@/src/components/shared/SwipePager";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { hapticFeedback } from "@/src/utils/haptics";
+import { designTokens } from "@/src/design-system/tokens";
 
 const PAGE_SIZE = 10;
 
@@ -75,6 +76,8 @@ export default function FinanceDetailScreen() {
               void load();
             }}
             style={styles.retry}
+            accessibilityRole="button"
+            accessibilityLabel="Reintentar cargar el detalle financiero"
           >
             <Text style={styles.retryText}>Reintentar</Text>
           </Pressable>
@@ -183,5 +186,5 @@ const styles = StyleSheet.create({
   errorBox: { backgroundColor: t.card, borderRadius: t.radius, borderWidth: 1, borderColor: t.cardBorder, padding: 20, gap: 14, alignItems: "center" },
   errorText: { color: t.textMuted, fontSize: 14, textAlign: "center" },
   retry: { backgroundColor: t.accent, borderRadius: 999, paddingHorizontal: 22, paddingVertical: 10 },
-  retryText: { color: "#ffffff", fontWeight: "800" },
+  retryText: { color: designTokens.color.ink.inverse, fontWeight: "800" },
 });

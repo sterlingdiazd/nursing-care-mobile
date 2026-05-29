@@ -55,6 +55,7 @@ const menuGroups: Array<{ title: string; items: MenuItem[] }> = [
       { key: "catalog", label: "Catálogo", path: "/admin/catalog", icon: "book", hue: "amber" },
       { key: "settings", label: "Ajustes", path: "/admin/settings", icon: "cog", hue: "neutral" },
       { key: "notifications", label: "Notificaciones", path: "/admin/notifications", icon: "bell", hue: "red" },
+      { key: "diagnostics", label: "Diagnóstico", path: "/admin/diagnostics", icon: "wrench", hue: "blue" },
     ],
   },
 ];

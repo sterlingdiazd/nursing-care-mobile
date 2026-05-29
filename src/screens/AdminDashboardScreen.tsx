@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ComponentProps } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
@@ -14,6 +14,9 @@ import { getAdminDashboard, type AdminDashboardSnapshotDto } from "@/src/service
 import { adminTestIds } from "@/src/testing/testIds";
 import { automationProps } from "@/src/utils/adminOperationalUx";
 import { useToast } from "@/src/components/shared/ToastProvider";
+import { isConnectivityError } from "@/src/services/httpClient";
+import { readSnapshot, SnapshotBuckets } from "@/src/services/apiSnapshotCache";
+import { OfflineSnapshotBanner } from "@/src/components/shared/OfflineSnapshotBanner";
 
 // Bridges the work-card "tone" vocabulary to the unified palette hues used by ActionCard.
 const TONE_TO_HUE: Record<WorkCardTone, PaletteHue> = {
@@ -109,6 +112,40 @@ export default function AdminDashboardScreen() {
   const { showToast } = useToast();
   const [snapshot, setSnapshot] = useState<AdminDashboardSnapshotDto | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // When true, `snapshot` is the cached fallback rendered while the API is
+  // unreachable. The OfflineSnapshotBanner is shown above the cards; tapping
+  // Reintentar re-fetches and swaps in live data when it succeeds.
+  const [isStale, setIsStale] = useState(false);
+  const [staleCapturedAtUtc, setStaleCapturedAtUtc] = useState<string | undefined>(undefined);
+  const [isRetrying, setIsRetrying] = useState(false);
+
+  const loadDashboard = useCallback(async () => {
+    try {
+      const fresh = await getAdminDashboard();
+      setSnapshot(fresh);
+      setError(null);
+      setIsStale(false);
+      setStaleCapturedAtUtc(undefined);
+      return true;
+    } catch (nextError) {
+      const message = nextError instanceof Error ? nextError.message : "No fue posible cargar el panel administrativo.";
+      // Connectivity errors are the silent demo-killer. Instead of leaving the
+      // screen blank with a red toast, fall back to the last cached snapshot
+      // so the admin sees real data + a banner explaining the situation.
+      if (isConnectivityError(nextError)) {
+        const cached = await readSnapshot<AdminDashboardSnapshotDto>(SnapshotBuckets.adminDashboard);
+        if (cached) {
+          setSnapshot(cached.data);
+          setIsStale(true);
+          setStaleCapturedAtUtc(cached.capturedAtUtc);
+          setError(null);
+          return false;
+        }
+      }
+      setError(message);
+      return false;
+    }
+  }, []);
 
   const fetchedRef = useRef(false);
   useEffect(() => {
@@ -128,12 +165,18 @@ export default function AdminDashboardScreen() {
 
     if (fetchedRef.current) return;
     fetchedRef.current = true;
-    void getAdminDashboard()
-      .then(setSnapshot)
-      .catch((nextError) => {
-        setError(nextError instanceof Error ? nextError.message : "No fue posible cargar el panel administrativo.");
-      });
-  }, [isReady, isAuthenticated, requiresProfileCompletion, roles]);
+    void loadDashboard();
+  }, [isReady, isAuthenticated, requiresProfileCompletion, roles, loadDashboard]);
+
+  const onRetry = useCallback(async () => {
+    if (isRetrying) return;
+    setIsRetrying(true);
+    const ok = await loadDashboard();
+    setIsRetrying(false);
+    if (!ok && isStale) {
+      showToast({ variant: "warning", message: "El API sigue sin responder. Mostrando últimos datos guardados." });
+    }
+  }, [isRetrying, isStale, loadDashboard, showToast]);
 
   const pendingTasks = snapshot?.pendingDashboardTasksCount ?? 0;
   const completedTasks = snapshot?.completedDashboardTasksTodayCount ?? 0;
@@ -160,6 +203,15 @@ export default function AdminDashboardScreen() {
       }
     >
       <View {...automationProps(adminTestIds.dashboard.screen)} style={styles.screenRoot}>
+        {isStale ? (
+          <OfflineSnapshotBanner
+            capturedAtUtc={staleCapturedAtUtc}
+            onRetry={onRetry}
+            retrying={isRetrying}
+            testID="admin-dashboard-offline-banner"
+          />
+        ) : null}
+
         {error ? (
           <Text {...automationProps(adminTestIds.dashboard.errorBanner)} style={styles.error}>
             {error}

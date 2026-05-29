@@ -32,8 +32,8 @@ const adminQuickSections: QuickSection[] = [
   { title: "Panel admin", body: "Indicadores y accesos administrativos.", path: "/admin", icon: "th-large", hue: "blue" },
   { title: "Solicitudes", body: "Cola activa y seguimiento.", path: "/care-requests", icon: "list", hue: "indigo" },
   { title: "Nueva solicitud", body: "Registrar un nuevo servicio.", path: "/create-care-request", icon: "plus-circle", hue: "green" },
-  { title: "Cuenta", body: "Sesion, acceso y perfil.", path: "/account", icon: "user", hue: "purple" },
-  { title: "Diagnostico", body: "Estado tecnico y errores.", path: "/admin/diagnostics", icon: "heartbeat", hue: "neutral" },
+  { title: "Cuenta", body: "Sesión, acceso y perfil.", path: "/account", icon: "user", hue: "purple" },
+  { title: "Diagnóstico", body: "Estado técnico y errores.", path: "/admin/diagnostics", icon: "heartbeat", hue: "neutral" },
   { title: "Herramientas", body: "Utilidades avanzadas.", path: "/admin/tools", icon: "wrench", hue: "neutral" },
 ];
 
@@ -45,14 +45,14 @@ const clientQuickSections: QuickSection[] = [
 ];
 
 const nurseQuickSections: QuickSection[] = [
-  { title: "Mi Nomina", body: "Resumen de compensaciones y historial de pagos.", path: "/nurse/payroll", icon: "money", hue: "green" },
+  { title: "Mi Nómina", body: "Resumen de compensaciones y historial de pagos.", path: "/nurse/payroll", icon: "money", hue: "green" },
   { title: "Solicitudes", body: "Servicios asignados y seguimiento.", path: "/care-requests", icon: "list", hue: "blue" },
-  { title: "Diagnostico", body: "Estado tecnico y errores.", path: "/admin/diagnostics", icon: "heartbeat", hue: "neutral" },
+  { title: "Diagnóstico", body: "Estado técnico y errores.", path: "/admin/diagnostics", icon: "heartbeat", hue: "neutral" },
   { title: "Herramientas", body: "Utilidades avanzadas.", path: "/admin/tools", icon: "wrench", hue: "neutral" },
 ];
 
 const publicQuickSections: QuickSection[] = [
-  { title: "Iniciar sesion", body: "Entrar con tu cuenta.", path: "/login", icon: "sign-in", hue: "blue" },
+  { title: "Iniciar sesión", body: "Entrar con tu cuenta.", path: "/login", icon: "sign-in", hue: "blue" },
   { title: "Registrar", body: "Crear una cuenta nueva.", path: "/register", icon: "user-plus", hue: "green" },
 ];
 
@@ -116,7 +116,7 @@ export default function HomeScreen() {
       : "Estado de cuenta";
   const heroTitle = hasOperationalAccess
     ? isAdmin
-      ? "Control rapido de la operacion."
+      ? "Control rápido de la operación."
       : isClient
         ? "Solicitudes y seguimiento"
         : "Revisa tus servicios desde un solo lugar."
@@ -124,18 +124,18 @@ export default function HomeScreen() {
       ? "Cuidado profesional en pocos pasos."
       : canOpenSupportTools
         ? "Tu cuenta tiene acceso restringido."
-        : "Tu cuenta aun no puede operar.";
+        : "Tu cuenta aún no puede operar.";
   const heroDescription = hasOperationalAccess
     ? isAdmin
-      ? "Accede a panel, solicitudes y herramientas segun tus permisos."
+      ? "Accede a panel, solicitudes y herramientas según tus permisos."
       : isClient
-        ? "Crea solicitudes, revisa su estado y administra tu cuenta."
+        ? "Servicios, avisos y datos de cuenta."
         : "Consulta servicios asignados y estado de tu cuenta."
     : isAnonymous
-      ? "Inicia sesion o crea tu cuenta para solicitar servicios y dar seguimiento."
+      ? "Inicia sesión o crea tu cuenta para solicitar servicios y dar seguimiento."
       : canOpenSupportTools
-        ? "Mientras termina la revision administrativa, solo veras accesos permitidos para tu perfil."
-        : "Mientras termina la revision administrativa, no veras funciones operativas.";
+        ? "Mientras termina la revisión administrativa, solo verás accesos permitidos para tu perfil."
+        : "Mientras termina la revisión administrativa, no verás funciones operativas.";
   return (
     <MobileWorkspaceShell
       testID={isClient ? clientTestIds.home.screen : undefined}
@@ -189,7 +189,7 @@ export default function HomeScreen() {
             <>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Iniciar sesion"
+                accessibilityLabel="Iniciar sesión"
                 onPress={() => {
                   hapticFeedback.selection();
                   logClientEvent("mobile.ui", "Home hero opened login");
@@ -224,6 +224,7 @@ export default function HomeScreen() {
               accessibilityRole="button"
               accessibilityLabel="Abrir cuenta"
               onPress={() => {
+                hapticFeedback.selection();
                 logClientEvent("mobile.ui", "Home hero opened account");
                 router.push("/account");
               }}

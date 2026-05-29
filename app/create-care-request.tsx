@@ -10,7 +10,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
@@ -34,6 +34,13 @@ import { CreateCareRequestDto } from "@/src/types/careRequest";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { estimateCareRequestPricingFromCatalog } from "@/src/utils/pricingFromCatalogOptions";
 import { hapticFeedback } from "@/src/utils/haptics";
+import {
+  applyClientIntentDefaultsToForm,
+  buildClientIntentDefaults,
+  CLIENT_CARE_REQUEST_INTENTS,
+  getClientCareRequestIntent,
+  type ClientCareRequestIntentKey,
+} from "@/src/utils/clientCareRequestIntent";
 
 // Category labels + order — keep in sync with the admin create page so the
 // two surfaces look the same. The list shown to the user is built by
@@ -44,29 +51,11 @@ const CATEGORY_LABELS: Record<string, string> = {
   medicos: "Médicos",
 };
 const CATEGORY_ORDER = ["hogar", "domicilio", "medicos"];
-const CLIENT_INTENTS = [
-  {
-    key: "hoy",
-    title: "Necesito ayuda hoy",
-    body: "Para cuidado cercano o acompañamiento urgente.",
-    description: "Necesito cuidado lo antes posible. ",
-  },
-  {
-    key: "programar",
-    title: "Quiero programar una visita",
-    body: "Para elegir fecha y detalles con calma.",
-    description: "Quiero programar una visita de cuidado. ",
-  },
-  {
-    key: "medico",
-    title: "Necesito apoyo médico",
-    body: "Para curas, medicamentos o seguimiento clínico.",
-    description: "Necesito apoyo médico en casa. ",
-  },
-] as const;
 type WizardStep = "intent" | "details" | "review";
 
 export default function CreateCareRequestScreen() {
+  const searchParams = useLocalSearchParams<{ intent?: string | string[] }>();
+  const requestedIntentParam = Array.isArray(searchParams.intent) ? searchParams.intent[0] : searchParams.intent;
   const { isAuthenticated, isReady, token, userId, roles } = useAuth();
   const isAdminCaller = roles.includes("ADMIN");
   const canCreateRequest = roles.includes("CLIENT") || isAdminCaller;
@@ -99,6 +88,7 @@ export default function CreateCareRequestScreen() {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [activeCategoryCode, setActiveCategoryCode] = useState<string>("hogar");
   const [wizardStep, setWizardStep] = useState<WizardStep>("intent");
+  const [selectedIntentKey, setSelectedIntentKey] = useState<ClientCareRequestIntentKey | null>(null);
 
   // Client selector (admin-only). When ADMIN creates a care request, the form
   // requires picking a real CLIENT user. The selected client's userId is sent
@@ -126,17 +116,61 @@ export default function CreateCareRequestScreen() {
     !!selectedClient ||
     clientSearchTerm.trim().length > 0;
 
-  const selectedIntentTitle =
-    CLIENT_INTENTS.find((intent) => form.careRequestDescription.startsWith(intent.description))?.title ??
-    "Solicitud personalizada";
+  const selectedIntent = selectedIntentKey ? getClientCareRequestIntent(selectedIntentKey) : null;
+  const selectedIntentTitle = selectedIntent?.title ?? "Solicitud personalizada";
+
+  const applyIntent = (
+    intentKey: ClientCareRequestIntentKey,
+    options?: { advance?: boolean; catalog?: CatalogOptionsResponse | null },
+  ) => {
+    const defaults = buildClientIntentDefaults(intentKey, options?.catalog ?? catalogOptions);
+    setSelectedIntentKey(intentKey);
+    setActiveCategoryCode(defaults.activeCategoryCode);
+    setForm((prev) => applyClientIntentDefaultsToForm(prev, defaults));
+    setFormError(null);
+    if (options?.advance) {
+      setWizardStep("details");
+    }
+  };
+
+  useEffect(() => {
+    const requestedIntent = getClientCareRequestIntent(requestedIntentParam);
+    if (!requestedIntent || selectedIntentKey === requestedIntent.key) {
+      return;
+    }
+
+    applyIntent(requestedIntent.key, { advance: true });
+    // The function reads the latest form/catalog state; rerun only when the URL intent changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestedIntentParam]);
+
+  useEffect(() => {
+    if (!catalogOptions || !selectedIntentKey) {
+      return;
+    }
+
+    const defaults = buildClientIntentDefaults(selectedIntentKey, catalogOptions);
+    setActiveCategoryCode(defaults.activeCategoryCode);
+    setForm((prev) => applyClientIntentDefaultsToForm(prev, defaults));
+  }, [catalogOptions, selectedIntentKey]);
 
   const goToNextStep = () => {
     hapticFeedback.selection();
     if (wizardStep === "intent") {
+      if (!selectedIntentKey) {
+        setFormError("Elige una opción para preparar la solicitud.");
+        hapticFeedback.error();
+        return;
+      }
       setWizardStep("details");
       return;
     }
     if (wizardStep === "details") {
+      if (!form.careRequestType) {
+        setFormError("Elige el servicio específico antes de continuar.");
+        hapticFeedback.error();
+        return;
+      }
       setWizardStep("review");
     }
   };
@@ -145,10 +179,12 @@ export default function CreateCareRequestScreen() {
     hapticFeedback.selection();
     if (wizardStep === "review") {
       setWizardStep("details");
+      setFormError(null);
       return;
     }
     if (wizardStep === "details") {
       setWizardStep("intent");
+      setFormError(null);
     }
   };
 
@@ -159,8 +195,13 @@ export default function CreateCareRequestScreen() {
   };
 
   const handleBackPress = () => {
-    hapticFeedback.selection();
+    if (wizardStep !== "intent") {
+      goToPreviousStep();
+      return;
+    }
+
     if (isDirty && !isLoading) {
+      hapticFeedback.selection();
       setShowLeaveConfirm(true);
     } else {
       exitToList();
@@ -334,6 +375,8 @@ export default function CreateCareRequestScreen() {
     setClientSearchTerm("");
     setShowClientOptions(false);
     setDraftCareRequestType(firstType);
+    setSelectedIntentKey(null);
+    setWizardStep("intent");
     setSuccessMessage(null);
     setFormError(null);
   };
@@ -641,7 +684,7 @@ export default function CreateCareRequestScreen() {
               label: "Continuar",
               onPress: goToNextStep,
               variant: "primary",
-              disabled: isLoading || !canCreateRequest,
+              disabled: isLoading || !canCreateRequest || (wizardStep === "intent" && !selectedIntentKey),
               testID: careRequestTestIds.create.nextButton,
             },
       ]}
@@ -696,8 +739,8 @@ export default function CreateCareRequestScreen() {
                 </Text>
               </View>
               <View style={styles.intentList}>
-                {CLIENT_INTENTS.map((intent) => {
-                  const selected = form.careRequestDescription.startsWith(intent.description);
+                {CLIENT_CARE_REQUEST_INTENTS.map((intent) => {
+                  const selected = selectedIntentKey === intent.key;
                   return (
                     <Pressable
                       key={intent.key}
@@ -708,13 +751,7 @@ export default function CreateCareRequestScreen() {
                       accessibilityState={{ selected }}
                       onPress={() => {
                         hapticFeedback.selection();
-                        setForm((prev) => ({
-                          ...prev,
-                          careRequestDescription: prev.careRequestDescription.trim().length === 0 ||
-                            CLIENT_INTENTS.some((item) => prev.careRequestDescription.startsWith(item.description))
-                            ? intent.description
-                            : prev.careRequestDescription,
-                        }));
+                        applyIntent(intent.key, { advance: true });
                       }}
                       style={({ pressed }) => [
                         styles.intentOption,
@@ -725,9 +762,10 @@ export default function CreateCareRequestScreen() {
                       <View style={styles.intentText}>
                         <Text style={styles.intentTitle}>{intent.title}</Text>
                         <Text style={styles.intentBody}>{intent.body}</Text>
+                        <Text style={styles.intentDefaults}>{intent.defaultsLabel}</Text>
                       </View>
                       <Text style={[styles.intentCheck, selected && styles.intentCheckSelected]}>
-                        {selected ? "Listo" : "Elegir"}
+                        {selected ? "Preparado" : "Elegir"}
                       </Text>
                     </Pressable>
                   );
@@ -840,6 +878,8 @@ export default function CreateCareRequestScreen() {
                               styles.autocompleteOption,
                               pressed && styles.buttonPressed,
                             ]}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Seleccionar cliente ${client.displayName}`}
                           >
                             <Text style={styles.autocompletePrimaryText}>{client.displayName}</Text>
                             {meta ? <Text style={styles.autocompleteSecondaryText}>{meta}</Text> : null}
@@ -862,6 +902,16 @@ export default function CreateCareRequestScreen() {
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Datos de la Solicitud</Text>
             </View>
+
+            {selectedIntent ? (
+              <View style={styles.intentAppliedBanner}>
+                <Text style={styles.intentAppliedEyebrow}>Opción elegida</Text>
+                <Text style={styles.intentAppliedTitle}>{selectedIntent.title}</Text>
+                <Text style={styles.intentAppliedBody}>
+                  Dejamos lista la categoría, la fecha y la cantidad. Puedes cambiar cualquier dato antes de enviar.
+                </Text>
+              </View>
+            ) : null}
 
             {catalogError ? (
               <View style={styles.warningBox}>
@@ -955,6 +1005,8 @@ export default function CreateCareRequestScreen() {
                   isLoading && styles.inputDisabled,
                   pressed && !isLoading && styles.buttonPressed,
                 ]}
+                accessibilityRole="button"
+                accessibilityLabel="Seleccionar fecha del servicio"
               >
                 <Text style={form.careRequestDate ? styles.dateValue : styles.datePlaceholder}>
                   {form.careRequestDate ?? "Selecciona una fecha"}
@@ -972,6 +1024,8 @@ export default function CreateCareRequestScreen() {
                     isLoading && styles.buttonDisabled,
                     pressed && !isLoading && styles.buttonPressed,
                   ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Elegir fecha del servicio"
                 >
                   <Text style={styles.datePrimaryActionText}>Elegir fecha</Text>
                 </Pressable>
@@ -985,6 +1039,8 @@ export default function CreateCareRequestScreen() {
                   (isLoading || !form.careRequestDate) && styles.buttonDisabled,
                   pressed && !isLoading && styles.buttonPressed,
                 ]}
+                accessibilityRole="button"
+                accessibilityLabel="Limpiar fecha del servicio"
               >
                 <Text style={styles.dateSecondaryActionText}>Limpiar fecha</Text>
               </Pressable>
@@ -1151,6 +1207,8 @@ export default function CreateCareRequestScreen() {
                             ]}
                             testID={`create-care-request-suggested-nurse-option-${nurse.userId}`}
                             nativeID={`create-care-request-suggested-nurse-option-${nurse.userId}`}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Seleccionar enfermera ${displayName}`}
                           >
                             <Text style={styles.autocompletePrimaryText}>{displayName}</Text>
                             {meta ? <Text style={styles.autocompleteSecondaryText}>{meta}</Text> : null}
@@ -1214,10 +1272,20 @@ export default function CreateCareRequestScreen() {
                   onChange={handleNativeDateChange}
                 />
                 <View style={styles.dateModalActions}>
-                  <Pressable style={styles.dateModalCancelButton} onPress={closeDatePicker}>
+                  <Pressable
+                    style={styles.dateModalCancelButton}
+                    onPress={closeDatePicker}
+                    accessibilityRole="button"
+                    accessibilityLabel="Cancelar selección de fecha"
+                  >
                     <Text style={styles.dateModalCancelText}>Cancelar</Text>
                   </Pressable>
-                  <Pressable style={styles.dateModalConfirmButton} onPress={confirmDateSelection}>
+                  <Pressable
+                    style={styles.dateModalConfirmButton}
+                    onPress={confirmDateSelection}
+                    accessibilityRole="button"
+                    accessibilityLabel="Guardar fecha seleccionada"
+                  >
                     <Text style={styles.dateModalConfirmText}>Guardar</Text>
                   </Pressable>
                 </View>
@@ -1409,6 +1477,13 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     marginTop: 4,
   },
+  intentDefaults: {
+    color: designTokens.color.ink.accentStrong,
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: "800",
+    marginTop: 6,
+  },
   intentCheck: {
     color: designTokens.color.ink.muted,
     fontSize: 13,
@@ -1488,6 +1563,32 @@ const styles = StyleSheet.create({
   },
   selectedTypeLabel: { color: designTokens.color.status.successText, fontSize: 12, fontWeight: "700" },
   selectedTypeValue: { color: designTokens.color.ink.primary, fontSize: 13, fontWeight: "600" },
+  intentAppliedBanner: {
+    backgroundColor: designTokens.color.surface.accent,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.accent,
+    padding: 12,
+    marginBottom: 18,
+    gap: 4,
+  },
+  intentAppliedEyebrow: {
+    color: designTokens.color.ink.accentStrong,
+    fontSize: 11,
+    fontWeight: "900",
+    textTransform: "uppercase",
+  },
+  intentAppliedTitle: {
+    color: designTokens.color.ink.primary,
+    fontSize: 16,
+    lineHeight: 21,
+    fontWeight: "900",
+  },
+  intentAppliedBody: {
+    color: designTokens.color.ink.secondary,
+    fontSize: 13,
+    lineHeight: 19,
+  },
 
   estimateCard: {
     backgroundColor: designTokens.color.surface.primary,
