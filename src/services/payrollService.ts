@@ -28,6 +28,8 @@ import type {
   CreateScheduledDeductionRequest,
   RescheduleScheduledDeductionRequest,
   ConfirmNursePaymentResult,
+  DeliverPeriodVouchersResult,
+  NursePaymentStateResult,
 } from "./payrollTypes";
 
 export async function getNursePayrollSummary(_userId: string): Promise<NursePayrollSummaryDto> {
@@ -138,6 +140,51 @@ export async function confirmNursePeriodPayment(
     path: `/api/admin/payroll/periods/${periodId}/nurses/${nurseUserId}/confirm-payment`,
     method: "POST",
     body: { bankReference: bankReference ?? null },
+    auth: true,
+  });
+}
+
+/**
+ * Batch: confirm the period's bank transfer for EVERY nurse with lines and deliver each her
+ * comprobante in one call. A single (optional) batch bank reference is applied to all nurses.
+ * Email is sent automatically per nurse; the response carries one wa.me link per nurse to tap.
+ */
+export async function deliverPeriodVouchers(
+  periodId: string,
+  bankReference?: string | null,
+): Promise<DeliverPeriodVouchersResult> {
+  return requestJson<DeliverPeriodVouchersResult>({
+    path: `/api/admin/payroll/periods/${periodId}/deliver-vouchers`,
+    method: "POST",
+    body: { bankReference: bankReference ?? null },
+    auth: true,
+  });
+}
+
+/** Mark a confirmed/sent nurse payment as failed at the bank (with a reason). Remediation: re-confirm. */
+export async function markNursePaymentFailed(
+  periodId: string,
+  nurseUserId: string,
+  reason: string,
+): Promise<NursePaymentStateResult> {
+  return requestJson<NursePaymentStateResult>({
+    path: `/api/admin/payroll/periods/${periodId}/nurses/${nurseUserId}/mark-failed`,
+    method: "POST",
+    body: { reason },
+    auth: true,
+  });
+}
+
+/** Reverse a previously confirmed nurse payment (with a reason). The nurse is notified. */
+export async function reverseNursePayment(
+  periodId: string,
+  nurseUserId: string,
+  reason: string,
+): Promise<NursePaymentStateResult> {
+  return requestJson<NursePaymentStateResult>({
+    path: `/api/admin/payroll/periods/${periodId}/nurses/${nurseUserId}/reverse`,
+    method: "POST",
+    body: { reason },
     auth: true,
   });
 }
@@ -409,4 +456,6 @@ export type {
   CreateScheduledDeductionRequest,
   RescheduleScheduledDeductionRequest,
   ConfirmNursePaymentResult,
+  DeliverPeriodVouchersResult,
+  NursePaymentStateResult,
 } from "./payrollTypes";

@@ -9,7 +9,7 @@ import {
   createNurseProfileForAdmin,
   type CreateNurseProfileRequest,
 } from "@/src/services/adminPortalService";
-import { FormInput } from "@/src/components/form";
+import { FormInput, FormSwitch } from "@/src/components/form";
 import { FormButton } from "@/src/components/form/FormButton";
 import { adminTestIds } from "@/src/testing/testIds";
 import { getAdminNurseCreateProgress } from "@/src/utils/adminCreationUx";
@@ -40,11 +40,14 @@ export default function AdminCreateNurseProfileScreen() {
     licenseId: "",
     bankName: "",
     accountNumber: "",
+    accountType: "",
+    accountHolderName: "",
     category: CATEGORIES[0],
     isOperationallyActive: true,
     visitDailyRate: 0,
     homeCareMonthlyRate: 0,
     homeCareMonthlyExpectedDays: DR_WORKING_DAYS_PER_MONTH,
+    optInWhatsApp: false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -213,6 +216,14 @@ export default function AdminCreateNurseProfileScreen() {
             keyboardType="email-address"
             autoCapitalize="none"
             errorMessage={errors.email}
+          />
+
+          <FormSwitch
+            testID="admin-create-nurse-whatsapp-opt-in"
+            label="Recibir comprobantes por WhatsApp"
+            description="La enfermera consiente recibir sus comprobantes de pago por WhatsApp."
+            value={form.optInWhatsApp ?? false}
+            onValueChange={(val) => setForm({ ...form, optInWhatsApp: val })}
           />
 
           <View style={{ flexDirection: "row", gap: 12 }}>
@@ -428,6 +439,22 @@ export default function AdminCreateNurseProfileScreen() {
                 value={form.accountNumber ?? ""}
                 onChangeText={(text) => setForm({ ...form, accountNumber: text })}
                 keyboardType="numeric"
+              />
+              <FormInput
+                testID="nurse-create-account-type-input"
+                label="Tipo de cuenta (ahorro / corriente)"
+                accessibilityLabel="Tipo de cuenta"
+                placeholder="ahorro o corriente"
+                value={form.accountType ?? ""}
+                onChangeText={(text) => setForm({ ...form, accountType: text })}
+              />
+              <FormInput
+                testID="nurse-create-account-holder-input"
+                label="Titular de la cuenta"
+                accessibilityLabel="Nombre del titular de la cuenta"
+                placeholder="Nombre del titular (si difiere de la enfermera)"
+                value={form.accountHolderName ?? ""}
+                onChangeText={(text) => setForm({ ...form, accountHolderName: text })}
               />
             </View>
           )}

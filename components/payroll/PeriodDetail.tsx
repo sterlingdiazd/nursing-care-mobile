@@ -14,6 +14,7 @@ import {
   Platform,
   Linking,
 } from "react-native";
+import { router } from "expo-router";
 import { useToast } from "@/src/components/shared/ToastProvider";
 import { Pagination } from "@/src/components/shared/Pagination";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
@@ -21,7 +22,11 @@ import type { FooterAction } from "@/src/components/navigation/AppFooter";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { designTokens } from "@/src/design-system/tokens";
-import type { AdminPayrollPeriodDetail, AdminPayrollLineItem } from "@/src/services/payrollService";
+import type {
+  AdminPayrollPeriodDetail,
+  AdminPayrollLineItem,
+  DeliverPeriodVouchersResult,
+} from "@/src/services/payrollService";
 import { adminTestIds } from "@/src/testing/testIds/adminTestIds";
 import {
   getPayrollPeriodExportUrl,
@@ -33,6 +38,9 @@ import {
   getAdminPayrollBulkVouchersUrl,
   getPeriodCloseWarnings,
   confirmNursePeriodPayment,
+  deliverPeriodVouchers,
+  markNursePaymentFailed,
+  reverseNursePayment,
 } from "@/src/services/payrollService";
 import { getCachedAuthSession } from "@/src/services/authSession";
 import { formatDateES, formatDateTimeES } from "@/src/utils/spanishTextValidator";
@@ -80,6 +88,8 @@ const formatServiceLabel = (description: string) => {
 interface PeriodDetailProps {
   period: AdminPayrollPeriodDetail;
   onClose: () => Promise<void>;
+  /** Reopen a closed period for correction (audited). Requires a reason. */
+  onReopen?: (reason: string) => Promise<void>;
   onBack: () => void;
   onPrepareRecalculate?: () => void;
   /**
@@ -119,9 +129,35 @@ async function downloadAndShare(
   }
 }
 
-export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, onSetActions, onEdit, onDelete }: PeriodDetailProps) {
+// Voucher delivery status (separate axis from payment status): did the comprobante
+// actually reach the nurse, and through which channel.
+function deliveryStatusLabel(status?: string | null): string {
+  switch (status) {
+    case "Sent": return "Comprobante enviado";
+    case "Failed": return "Error en envío";
+    case "Skipped": return "Envío omitido";
+    case "Pending": return "Envío pendiente";
+    default: return "Pendiente";
+  }
+}
+
+function deliveryStatusStyle(status?: string | null) {
+  switch (status) {
+    case "Sent": return styles.statusSent;
+    case "Failed": return styles.statusFailed;
+    case "Skipped": return styles.statusSkipped;
+    default: return styles.statusPending;
+  }
+}
+
+export function PeriodDetail({ period, onClose, onReopen, onBack, onPrepareRecalculate, onSetActions, onEdit, onDelete }: PeriodDetailProps) {
   const { showToast } = useToast();
   const isOpen = period.status === "Open";
+
+  // Reopen-a-closed-period modal state.
+  const [reopenModalVisible, setReopenModalVisible] = useState(false);
+  const [reopenReason, setReopenReason] = useState("");
+  const [reopenSubmitting, setReopenSubmitting] = useState(false);
 
   // CSV export state
   const [exporting, setExporting] = useState<string | null>(null);
@@ -145,6 +181,21 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
   // email/number; nurses are not messaged yet — see the next-initiative brief).
   const [confirmingNurseId, setConfirmingNurseId] = useState<string | null>(null);
   const [confirmedNurseIds, setConfirmedNurseIds] = useState<Set<string>>(new Set());
+
+  // Payment remediation (mark-failed / reverse) — reason-required, so it uses a modal (Alert.prompt
+  // is unreliable on web). Holds the target nurse + mode while the reason modal is open.
+  const [paymentAction, setPaymentAction] = useState<
+    { nurseUserId: string; nurseDisplayName: string; mode: "fail" | "reverse" } | null
+  >(null);
+  const [paymentActionReason, setPaymentActionReason] = useState("");
+  const [paymentActionSubmitting, setPaymentActionSubmitting] = useState(false);
+  // Local override of the persisted paymentStatus after a remediation action (until reload).
+  const [paymentStatusOverride, setPaymentStatusOverride] = useState<Record<string, string>>({});
+
+  // Batch: confirm + deliver comprobantes to every nurse in the period at once.
+  const [deliveringAll, setDeliveringAll] = useState(false);
+  const [deliverResult, setDeliverResult] = useState<DeliverPeriodVouchersResult | null>(null);
+  const [deliverModalVisible, setDeliverModalVisible] = useState(false);
 
   // Per-list pagination — both the staff summary and the payroll lines can
   // run long on a busy period. Reset to page 1 when the period changes.
@@ -302,10 +353,6 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
         next.add(nurseUserId);
         return next;
       });
-      if (result.whatsappUrl) {
-        const canOpen = await Linking.canOpenURL(result.whatsappUrl).catch(() => false);
-        if (canOpen) await Linking.openURL(result.whatsappUrl);
-      }
       // The backend runs a financial-validation gate before sending. If the comprobante
       // is blocked, `voucherDeliveryDetail` carries the specific reason — surface it so
       // the admin knows what to fix and retry. On success it confirms the send.
@@ -315,6 +362,29 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
           variant: "success",
           message: (detail || `Comprobante enviado por correo. ${result.recipientLabel}`).trim(),
         });
+
+        // Delivery convenience — ONLY once the validation gate passed and the backend
+        // actually sent the comprobante. We never open WhatsApp or share a PDF for a
+        // blocked/invalid voucher (that path takes the error branch below).
+        if (result.whatsappUrl) {
+          const canOpen = await Linking.canOpenURL(result.whatsappUrl).catch(() => false);
+          if (canOpen) await Linking.openURL(result.whatsappUrl);
+        }
+        const confirmedStaff = period.staffSummary.find((s) => s.nurseUserId === nurseUserId);
+        const safeName = (confirmedStaff?.nurseDisplayName ?? "enfermera")
+          .replace(/\s+/g, "_")
+          .replace(/[^a-zA-Z0-9_]/g, "");
+        setTimeout(async () => {
+          try {
+            await downloadAndShare(
+              getAdminPayrollVoucherUrl(period.id, nurseUserId),
+              `comprobante-${safeName}-${period.id}.pdf`,
+            );
+          } catch (downloadErr) {
+            // Secondary share step — stay silent to avoid a second error toast.
+            console.warn("Auto-share voucher failed:", downloadErr);
+          }
+        }, 1500);
       } else {
         showToast({
           variant: "error",
@@ -381,7 +451,119 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
     }
   };
 
+  // --- Bulk confirm + deliver comprobantes to ALL nurses in the period ---
+  // The backend confirms the transfer and emails each nurse her comprobante (validated), applying
+  // one shared batch bank reference, and returns a wa.me link per nurse (wa.me cannot bulk-send).
+  const runDeliverAllVouchers = async (bankReference: string | null) => {
+    if (deliveringAll) return;
+    hapticFeedback.light();
+    setDeliveringAll(true);
+    try {
+      const result = await deliverPeriodVouchers(period.id, bankReference);
+      setDeliverResult(result);
+      setDeliverModalVisible(true);
+      setConfirmedNurseIds((prev) => {
+        const next = new Set(prev);
+        for (const item of result.items) next.add(item.nurseUserId);
+        return next;
+      });
+      showToast({
+        variant: result.failedCount === 0 ? "success" : "info",
+        message: `${result.deliveredCount} de ${result.totalNurses} comprobantes enviados por correo.`,
+      });
+    } catch (e) {
+      showToast({
+        variant: "error",
+        message: e instanceof Error ? e.message : "No fue posible enviar los comprobantes.",
+      });
+    } finally {
+      setDeliveringAll(false);
+    }
+  };
+
+  const handleDeliverAll = () => {
+    if (deliveringAll) return;
+    hapticFeedback.light();
+    const nurseCount = period.staffSummary.length;
+    if (Platform.OS === "ios") {
+      Alert.prompt(
+        "Enviar comprobantes a todas",
+        `Confirma el pago y envía su comprobante a las ${nurseCount} enfermeras del período. Puedes anotar la referencia del lote bancario (opcional).`,
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Enviar",
+            onPress: (ref?: string) =>
+              void runDeliverAllVouchers(ref && ref.trim() ? ref.trim() : null),
+          },
+        ],
+        "plain-text",
+        "",
+      );
+    } else {
+      Alert.alert(
+        "Enviar comprobantes a todas",
+        `¿Confirmar el pago y enviar el comprobante a las ${nurseCount} enfermeras del período? (modo demo: al administrador).`,
+        [
+          { text: "Cancelar", style: "cancel" },
+          { text: "Enviar", onPress: () => void runDeliverAllVouchers(null) },
+        ],
+      );
+    }
+  };
+
+  const openWhatsappLink = async (url: string) => {
+    if (!url) return;
+    const canOpen = await Linking.canOpenURL(url).catch(() => false);
+    if (canOpen) await Linking.openURL(url);
+  };
+
   // --- Nurse drilldown ---
+  // Effective payment status for a nurse row: a same-session remediation override wins, then an
+  // in-session confirm, then the persisted backend status.
+  const resolvePaymentStatus = (nurseUserId: string, persisted?: string | null): string | null =>
+    paymentStatusOverride[nurseUserId] ??
+    (confirmedNurseIds.has(nurseUserId) ? "Confirmed" : persisted ?? null);
+
+  const paymentBadge = (
+    status: string | null,
+  ): { label: string; tone: "success" | "neutral" | "warning" | "danger" | "info" } | null => {
+    switch (status) {
+      case "Confirmed": return { label: "Pagado", tone: "success" };
+      case "SentToBank": return { label: "Enviado al banco", tone: "info" };
+      case "Failed": return { label: "Fallido", tone: "danger" };
+      case "Reversed": return { label: "Revertido", tone: "danger" };
+      case "Pending": return { label: "Pendiente", tone: "warning" };
+      default: return null;
+    }
+  };
+
+  const runPaymentAction = async () => {
+    if (!paymentAction || !paymentActionReason.trim() || paymentActionSubmitting) return;
+    hapticFeedback.light();
+    setPaymentActionSubmitting(true);
+    try {
+      const fn = paymentAction.mode === "reverse" ? reverseNursePayment : markNursePaymentFailed;
+      const result = await fn(period.id, paymentAction.nurseUserId, paymentActionReason.trim());
+      setPaymentStatusOverride((prev) => ({ ...prev, [paymentAction.nurseUserId]: result.paymentStatus }));
+      setConfirmedNurseIds((prev) => {
+        const next = new Set(prev);
+        next.delete(paymentAction.nurseUserId); // no longer confirmed
+        return next;
+      });
+      showToast({
+        variant: "success",
+        message: paymentAction.mode === "reverse" ? "Pago revertido." : "Pago marcado como fallido.",
+      });
+      setPaymentAction(null);
+      setPaymentActionReason("");
+    } catch (e) {
+      showToast({ variant: "error", message: e instanceof Error ? e.message : "No fue posible actualizar el pago." });
+    } finally {
+      setPaymentActionSubmitting(false);
+    }
+  };
+
   const handleNursePress = (nurseUserId: string, nurseDisplayName: string) => {
     hapticFeedback.selection();
     setSelectedNurseId(nurseUserId);
@@ -428,6 +610,27 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
         },
       ]
     );
+  };
+
+  // --- Reopen a closed period (opens a reason modal; submit is audited server-side) ---
+  const handleSubmitReopen = async () => {
+    if (!onReopen) return;
+    const reason = reopenReason.trim();
+    if (!reason) {
+      showToast({ variant: "error", message: "Indica una razón para reabrir el período." });
+      return;
+    }
+    hapticFeedback.light();
+    setReopenSubmitting(true);
+    try {
+      await onReopen(reason);
+      setReopenModalVisible(false);
+      setReopenReason("");
+    } catch (e) {
+      showToast({ variant: "error", message: e instanceof Error ? e.message : "No fue posible reabrir el período." });
+    } finally {
+      setReopenSubmitting(false);
+    }
   };
 
   // --- Period delete (destructive confirmation, mirrors close) ---
@@ -502,6 +705,15 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
         disabled: downloadingBulk,
         testID: "admin-period-bulk-vouchers-button",
       });
+      if (period.staffSummary.length > 0) {
+        actions.push({
+          label: deliveringAll ? "Enviando…" : "Enviar a todas",
+          onPress: handleDeliverAll,
+          variant: "primary",
+          disabled: deliveringAll,
+          testID: "admin-period-deliver-all-button",
+        });
+      }
     }
     if (isOpen && !canManage) {
       actions.push({
@@ -510,12 +722,24 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
         variant: "danger",
       });
     }
+    if (!isOpen && onReopen) {
+      actions.push({
+        label: "Reabrir",
+        onPress: () => {
+          hapticFeedback.selection();
+          setReopenReason("");
+          setReopenModalVisible(true);
+        },
+        variant: "secondary",
+        testID: "admin-period-reopen-button",
+      });
+    }
     onSetActions(actions);
     return () => {
       onSetActions([]);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, exporting, downloadingBulk, period.id, period.canModify, onEdit, onDelete]);
+  }, [isOpen, exporting, downloadingBulk, deliveringAll, period.id, period.canModify, period.staffSummary.length, onEdit, onDelete, onReopen]);
 
   const totalGross = period.staffSummary.reduce((sum, s) => sum + s.grossCompensation, 0);
   const totalNet = period.staffSummary.reduce((sum, s) => sum + s.netCompensation, 0);
@@ -598,6 +822,16 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
 
           <Text style={styles.overviewDescription}>{statusDescription}</Text>
 
+          {period.reopenedAtUtc && (
+            <View style={styles.reopenNotice} testID="payroll-period-reopen-notice">
+              <Text style={styles.reopenNoticeText}>
+                Reabierto el {formatDateTimeES(period.reopenedAtUtc)}
+                {period.reopenCount > 1 ? ` (${period.reopenCount} veces)` : ""}
+                {period.reopenReason ? ` — ${period.reopenReason}` : ""}
+              </Text>
+            </View>
+          )}
+
           <View style={styles.netPanel}>
             <Text style={styles.netLabel}>Total neto a pagar</Text>
             <Text style={styles.netValue} numberOfLines={1} adjustsFontSizeToFit>
@@ -607,6 +841,29 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
               Bruto {formatCurrency(totalGross)} • {lineCountLabel} • {nurseCountLabel}
             </Text>
           </View>
+
+          {period.totalCollected != null || period.totalBilled != null ? (
+            <View style={styles.reconPanel} testID="period-reconciliation">
+              <Text style={styles.reconTitle}>Conciliación cliente → nómina</Text>
+              <View style={styles.reconRow}>
+                <Text style={styles.reconLabel}>Cobrado de clientes</Text>
+                <Text style={styles.reconValue}>{formatCurrency(period.totalCollected ?? 0)}</Text>
+              </View>
+              <View style={styles.reconRow}>
+                <Text style={styles.reconLabel}>Facturado a clientes</Text>
+                <Text style={styles.reconValue}>{formatCurrency(period.totalBilled ?? 0)}</Text>
+              </View>
+              <View style={styles.reconRow}>
+                <Text style={styles.reconLabel}>A pagar a enfermeras</Text>
+                <Text style={styles.reconValue}>{formatCurrency(period.totalNetPayout ?? totalNet)}</Text>
+              </View>
+              {(period.totalCollected ?? 0) < (period.totalNetPayout ?? totalNet) ? (
+                <Text style={styles.reconWarning} testID="period-reconciliation-warning">
+                  Cobrado menor que lo que pagarás a enfermeras — verifica los pagos de clientes.
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
 
           <View style={styles.timelineGrid}>
             <View style={styles.timelineItem}>
@@ -674,6 +931,35 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
                     Bruto: {formatCurrency(staff.grossCompensation)}
                   </Text>
                 </View>
+                {staff.bankReference ? (
+                  <Text style={styles.staffSourceText}>
+                    Fuente de pago: referencia bancaria {staff.bankReference}
+                  </Text>
+                ) : (
+                  <Text style={styles.staffSourceText}>
+                    Fuente: líneas de nómina del período
+                  </Text>
+                )}
+                {(() => {
+                  const badge = paymentBadge(resolvePaymentStatus(staff.nurseUserId, staff.paymentStatus));
+                  return badge ? (
+                    <View style={styles.staffBadgeRow}>
+                      <StatusBadge
+                        label={badge.label}
+                        tone={badge.tone}
+                        testID={`admin-staff-payment-status-${staff.nurseUserId}`}
+                      />
+                    </View>
+                  ) : null;
+                })()}
+                {(staff.paymentConfirmedAtUtc || confirmedNurseIds.has(staff.nurseUserId)) && staff.deliveryStatus ? (
+                  <View style={styles.deliveryBadge} testID={`delivery-status-${staff.nurseUserId}`}>
+                    <Text style={[styles.deliveryStatusText, deliveryStatusStyle(staff.deliveryStatus)]}>
+                      • {deliveryStatusLabel(staff.deliveryStatus)}
+                      {staff.deliveryChannel ? ` (${staff.deliveryChannel})` : ""}
+                    </Text>
+                  </View>
+                ) : null}
                 <View style={styles.staffActions}>
                   <Pressable
                     style={[
@@ -697,28 +983,72 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
                   <Pressable
                     style={[
                       styles.confirmTransferButton,
-                      (confirmingNurseId === staff.nurseUserId || confirmedNurseIds.has(staff.nurseUserId)) &&
+                      (confirmingNurseId === staff.nurseUserId ||
+                        Boolean(staff.paymentConfirmedAtUtc) ||
+                        confirmedNurseIds.has(staff.nurseUserId)) &&
                         styles.buttonDisabled,
                     ]}
                     onPress={() => handleConfirmTransfer(staff.nurseUserId, staff.nurseDisplayName)}
-                    disabled={confirmingNurseId === staff.nurseUserId || confirmedNurseIds.has(staff.nurseUserId)}
+                    disabled={
+                      confirmingNurseId === staff.nurseUserId ||
+                      Boolean(staff.paymentConfirmedAtUtc) ||
+                      confirmedNurseIds.has(staff.nurseUserId)
+                    }
                     testID={`admin-staff-confirm-transfer-${staff.nurseUserId}`}
                     nativeID={`admin-staff-confirm-transfer-${staff.nurseUserId}`}
                     accessibilityRole="button"
                     accessibilityLabel={`Confirmar transferencia de ${staff.nurseDisplayName}`}
                     accessibilityState={{
                       busy: confirmingNurseId === staff.nurseUserId,
-                      disabled: confirmedNurseIds.has(staff.nurseUserId),
+                      disabled: Boolean(staff.paymentConfirmedAtUtc) || confirmedNurseIds.has(staff.nurseUserId),
                     }}
                   >
                     {confirmingNurseId === staff.nurseUserId ? (
                       <ActivityIndicator color={designTokens.color.surface.primary} size="small" accessibilityLabel="Confirmando..." />
                     ) : (
                       <Text style={styles.confirmTransferButtonText}>
-                        {confirmedNurseIds.has(staff.nurseUserId) ? "Transferencia confirmada" : "Confirmar transferencia"}
+                        {staff.paymentConfirmedAtUtc || confirmedNurseIds.has(staff.nurseUserId) ? "Transferencia confirmada" : "Confirmar transferencia"}
                       </Text>
                     )}
                   </Pressable>
+                  {(() => {
+                    const st = resolvePaymentStatus(staff.nurseUserId, staff.paymentStatus);
+                    if (st !== "Confirmed" && st !== "SentToBank") return null;
+                    return (
+                      <View style={styles.remediationRow}>
+                        {st === "Confirmed" ? (
+                          <Pressable
+                            style={styles.remediationButton}
+                            onPress={() => {
+                              hapticFeedback.selection();
+                              setPaymentActionReason("");
+                              setPaymentAction({ nurseUserId: staff.nurseUserId, nurseDisplayName: staff.nurseDisplayName, mode: "reverse" });
+                            }}
+                            testID={`admin-staff-reverse-${staff.nurseUserId}`}
+                            nativeID={`admin-staff-reverse-${staff.nurseUserId}`}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Revertir pago de ${staff.nurseDisplayName}`}
+                          >
+                            <Text style={styles.remediationButtonText}>Revertir</Text>
+                          </Pressable>
+                        ) : null}
+                        <Pressable
+                          style={styles.remediationButton}
+                          onPress={() => {
+                            hapticFeedback.selection();
+                            setPaymentActionReason("");
+                            setPaymentAction({ nurseUserId: staff.nurseUserId, nurseDisplayName: staff.nurseDisplayName, mode: "fail" });
+                          }}
+                          testID={`admin-staff-mark-failed-${staff.nurseUserId}`}
+                          nativeID={`admin-staff-mark-failed-${staff.nurseUserId}`}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Marcar como fallido el pago de ${staff.nurseDisplayName}`}
+                        >
+                          <Text style={styles.remediationButtonText}>Marcar fallido</Text>
+                        </Pressable>
+                      </View>
+                    );
+                  })()}
                 </View>
               </View>
             ))
@@ -749,6 +1079,7 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
             {visibleLines.map((line) => {
               const lineFacts = getLineFacts(line);
               const serviceLabel = formatServiceLabel(line.description);
+              const sourceCareRequestId = line.careRequestId;
               return (
               <View
                 key={line.id}
@@ -772,6 +1103,24 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
                   >
                     {serviceLabel}
                   </Text>
+                  <Text style={styles.sourceText}>
+                    Fuente: {sourceCareRequestId ? "solicitud de cuidado" : "ejecución de servicio"}
+                  </Text>
+                  {sourceCareRequestId ? (
+                    <Pressable
+                      onPress={() => {
+                        hapticFeedback.selection();
+                        router.push(`/admin/care-requests/${sourceCareRequestId}` as never);
+                      }}
+                      style={({ pressed }) => [styles.sourceLinkButton, pressed && styles.pressed]}
+                      accessibilityRole="button"
+                      accessibilityLabel="Abrir solicitud que originó esta línea"
+                      testID={`payroll-line-source-${line.id}`}
+                      nativeID={`payroll-line-source-${line.id}`}
+                    >
+                      <Text style={styles.sourceLinkButtonText}>Abrir solicitud fuente</Text>
+                    </Pressable>
+                  ) : null}
                 </View>
                 <View style={styles.lineFactsGrid}>
                   {lineFacts.map((fact) => (
@@ -1019,6 +1368,221 @@ export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, on
           </View>
         </View>
       </Modal>
+
+      {/* Bulk delivery result modal */}
+      <Modal
+        visible={deliverModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDeliverModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View
+            style={[styles.modalCard, styles.nurseDetailModal]}
+            testID="admin-deliver-all-panel"
+            nativeID="admin-deliver-all-panel"
+            accessibilityViewIsModal
+          >
+            <View style={styles.nurseDetailHeader}>
+              <Text style={styles.modalTitle}>Comprobantes enviados</Text>
+              <Pressable
+                onPress={() => {
+                  hapticFeedback.selection();
+                  setDeliverModalVisible(false);
+                }}
+                testID="admin-deliver-all-close-button"
+                nativeID="admin-deliver-all-close-button"
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar resultado de envío"
+              >
+                <Text style={styles.closeX}>Cerrar</Text>
+              </Pressable>
+            </View>
+
+            {deliverResult ? (
+              <>
+                <Text style={styles.deliverSummary}>
+                  {deliverResult.deliveredCount} de {deliverResult.totalNurses} enviados por correo
+                  {deliverResult.failedCount > 0 ? ` · ${deliverResult.failedCount} con problema` : ""}
+                </Text>
+                <Text style={styles.deliverHint}>
+                  Toca “WhatsApp” para avisar a cada enfermera (no se puede enviar en lote).
+                </Text>
+                <ScrollView style={styles.nurseDetailScroll}>
+                  {deliverResult.items.map((item) => (
+                    <View key={item.nurseUserId} style={styles.deliverRow}>
+                      <View style={styles.deliverRowInfo}>
+                        <Text style={styles.deliverNurseName} numberOfLines={1}>
+                          {item.nurseDisplayName}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.deliverStatus,
+                            item.voucherEmailSent ? styles.summaryValueGreen : styles.summaryValueNegative,
+                          ]}
+                          numberOfLines={2}
+                        >
+                          {item.voucherEmailSent ? "Correo enviado" : item.voucherDeliveryDetail || "No enviado"}
+                        </Text>
+                      </View>
+                      {item.whatsappUrl ? (
+                        <Pressable
+                          onPress={() => void openWhatsappLink(item.whatsappUrl)}
+                          style={styles.whatsappPill}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Enviar WhatsApp a ${item.nurseDisplayName}`}
+                        >
+                          <Text style={styles.whatsappPillText}>WhatsApp</Text>
+                        </Pressable>
+                      ) : null}
+                    </View>
+                  ))}
+                </ScrollView>
+              </>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Reopen reason modal */}
+      <Modal
+        visible={reopenModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setReopenModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View
+            style={styles.modalCard}
+            testID="admin-period-reopen-modal"
+            nativeID="admin-period-reopen-modal"
+            accessibilityViewIsModal
+          >
+            <Text style={styles.modalTitle}>Reabrir período</Text>
+            <Text style={styles.modalSubtitle} numberOfLines={2}>
+              {periodLabel} — el período volverá a estado Abierto para correcciones.
+            </Text>
+
+            <Text style={styles.inputLabel}>Razón de la reapertura</Text>
+            <TextInput
+              style={[styles.input, styles.inputMultiline]}
+              multiline
+              value={reopenReason}
+              onChangeText={setReopenReason}
+              placeholder="Describe por qué se reabre el período..."
+              testID="admin-period-reopen-reason-input"
+              nativeID="admin-period-reopen-reason-input"
+              accessibilityLabel="Razón de la reapertura"
+            />
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={() => {
+                  hapticFeedback.selection();
+                  setReopenModalVisible(false);
+                }}
+                disabled={reopenSubmitting}
+                accessibilityRole="button"
+                accessibilityLabel="Cancelar reapertura"
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonTextSecondary]}>
+                  Cancelar
+                </Text>
+              </TouchableOpacity>
+              <Pressable
+                style={[styles.modalButton, reopenSubmitting && styles.buttonDisabled]}
+                onPress={handleSubmitReopen}
+                disabled={reopenSubmitting}
+                testID="admin-period-reopen-submit-button"
+                nativeID="admin-period-reopen-submit-button"
+                accessibilityRole="button"
+                accessibilityLabel={reopenSubmitting ? "Reabriendo período" : "Confirmar reapertura"}
+                accessibilityState={{ busy: reopenSubmitting }}
+              >
+                {reopenSubmitting ? (
+                  <ActivityIndicator color={designTokens.color.ink.inverse} size="small" accessibilityLabel="Cargando..." />
+                ) : (
+                  <Text style={styles.modalButtonText}>Reabrir</Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      <Modal
+        visible={paymentAction !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setPaymentAction(null)}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View
+            style={styles.modalCard}
+            testID="admin-payment-action-modal"
+            nativeID="admin-payment-action-modal"
+            accessibilityViewIsModal
+          >
+            <Text style={styles.modalTitle}>
+              {paymentAction?.mode === "reverse" ? "Revertir pago" : "Marcar pago como fallido"}
+            </Text>
+            <Text style={styles.modalSubtitle} numberOfLines={2}>
+              {(paymentAction?.nurseDisplayName ?? "") + " — " + (paymentAction?.mode === "reverse"
+                ? "el pago volverá a Pendiente y se le avisará a la enfermera."
+                : "el pago quedará marcado como no realizado.")}
+            </Text>
+
+            <Text style={styles.inputLabel}>Motivo</Text>
+            <TextInput
+              style={[styles.input, styles.inputMultiline]}
+              multiline
+              value={paymentActionReason}
+              onChangeText={setPaymentActionReason}
+              placeholder="Describe el motivo..."
+              testID="admin-payment-action-reason-input"
+              nativeID="admin-payment-action-reason-input"
+              accessibilityLabel="Motivo de la acción de pago"
+            />
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={() => { hapticFeedback.selection(); setPaymentAction(null); }}
+                disabled={paymentActionSubmitting}
+                accessibilityRole="button"
+                accessibilityLabel="Cancelar"
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonTextSecondary]}>Cancelar</Text>
+              </TouchableOpacity>
+              <Pressable
+                style={[styles.modalButton, (paymentActionSubmitting || !paymentActionReason.trim()) && styles.buttonDisabled]}
+                onPress={runPaymentAction}
+                disabled={paymentActionSubmitting || !paymentActionReason.trim()}
+                testID="admin-payment-action-submit-button"
+                nativeID="admin-payment-action-submit-button"
+                accessibilityRole="button"
+                accessibilityLabel="Confirmar acción de pago"
+                accessibilityState={{ busy: paymentActionSubmitting }}
+              >
+                {paymentActionSubmitting ? (
+                  <ActivityIndicator color={designTokens.color.ink.inverse} size="small" accessibilityLabel="Cargando..." />
+                ) : (
+                  <Text style={styles.modalButtonText}>
+                    {paymentAction?.mode === "reverse" ? "Revertir" : "Marcar fallido"}
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </>
   );
 }
@@ -1028,6 +1592,40 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: designTokens.color.surface.primary,
   },
+  deliverSummary: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: designTokens.color.ink.primary,
+    marginBottom: 4,
+  },
+  deliverHint: {
+    fontSize: 12,
+    color: designTokens.color.ink.muted,
+    marginBottom: 8,
+  },
+  deliverRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: designTokens.color.border.subtle,
+  },
+  deliverRowInfo: { flex: 1 },
+  deliverNurseName: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: designTokens.color.ink.primary,
+  },
+  deliverStatus: { fontSize: 12, marginTop: 2 },
+  whatsappPill: {
+    backgroundColor: "#25D366",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  whatsappPillText: { color: "#FFFFFF", fontSize: 12, fontWeight: "800" },
   scrollContent: {
     paddingBottom: 112,
   },
@@ -1096,6 +1694,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
   },
+  reopenNotice: {
+    marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: designTokens.color.surface.warning,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.warning,
+  },
+  reopenNoticeText: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: designTokens.color.status.warningText,
+    fontWeight: "600",
+  },
   netPanel: {
     marginTop: 14,
     padding: 14,
@@ -1122,6 +1735,30 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     color: designTokens.color.ink.secondary,
   },
+  reconPanel: {
+    marginTop: 12,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: designTokens.color.surface.secondary,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.strong,
+  },
+  reconTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: designTokens.color.ink.secondary,
+    marginBottom: 8,
+    letterSpacing: 0.3,
+  },
+  reconRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  reconLabel: { fontSize: 13, color: designTokens.color.ink.secondary },
+  reconValue: { fontSize: 14, fontWeight: "700", color: designTokens.color.ink.primary },
+  reconWarning: { marginTop: 8, fontSize: 12, fontWeight: "700", color: "#8b1a1a" },
   timelineGrid: {
     marginTop: 12,
     flexDirection: "row",
@@ -1268,11 +1905,42 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: designTokens.color.ink.muted,
   },
+  staffSourceText: {
+    fontSize: 12,
+    color: designTokens.color.ink.accentStrong,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
   staffActions: {
     flexDirection: "row",
     justifyContent: "flex-end",
     flexWrap: "wrap",
     gap: 8,
+  },
+  staffBadgeRow: {
+    flexDirection: "row",
+    marginTop: 6,
+  },
+  remediationRow: {
+    flexDirection: "row",
+    gap: 8,
+    width: "100%",
+    justifyContent: "flex-end",
+    marginTop: 2,
+  },
+  remediationButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: designTokens.color.status.dangerText,
+    backgroundColor: designTokens.color.surface.primary,
+    alignItems: "center",
+  },
+  remediationButtonText: {
+    color: designTokens.color.status.dangerText,
+    fontSize: 12,
+    fontWeight: "700",
   },
   voucherButton: {
     paddingVertical: 8,
@@ -1360,6 +2028,27 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     fontWeight: "800",
     color: designTokens.color.ink.primary,
+  },
+  sourceText: {
+    color: designTokens.color.ink.accentStrong,
+    fontSize: 12,
+    fontWeight: "700",
+    marginTop: 4,
+  },
+  sourceLinkButton: {
+    alignSelf: "flex-start",
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.accent,
+    borderRadius: designTokens.radius.sm,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    backgroundColor: designTokens.color.surface.accent,
+  },
+  sourceLinkButtonText: {
+    color: designTokens.color.ink.accentStrong,
+    fontSize: 12,
+    fontWeight: "800",
   },
   lineFactsGrid: {
     flexDirection: "row",
@@ -1584,4 +2273,20 @@ const styles = StyleSheet.create({
   summaryValueNegative: {
     color: designTokens.color.ink.danger,
   },
+  pressed: { opacity: 0.78 },
+  deliveryBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+    gap: 4,
+  },
+  deliveryStatusText: {
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: "700",
+  },
+  statusPending: { color: designTokens.color.ink.muted },
+  statusSent: { color: designTokens.color.status.successText },
+  statusFailed: { color: designTokens.color.status.dangerText },
+  statusSkipped: { color: designTokens.color.ink.secondary },
 });

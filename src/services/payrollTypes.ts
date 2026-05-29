@@ -11,11 +11,13 @@ export interface NursePayrollSummaryDto {
 }
 
 export interface PayrollPeriodListItemDto {
-  id: string;
+  periodId?: string | null;
+  id?: string | null;
   startDate: string;
   endDate: string;
   status: string;
-  totalNurses: number;
+  serviceCount?: number | null;
+  totalNurses?: number | null;
   totalCompensation: number;
 }
 
@@ -66,6 +68,7 @@ export interface AdminPayrollLineItem {
   nurseUserId: string;
   nurseDisplayName: string;
   serviceExecutionId: string;
+  careRequestId?: string | null;
   description: string;
   baseCompensation: number;
   transportIncentive: number;
@@ -88,6 +91,18 @@ export interface AdminPayrollStaffSummary {
   adjustmentsTotal: number;
   deductionsTotal: number;
   netCompensation: number;
+  /** Real payment state: "Pending"|"SentToBank"|"Confirmed"|"Failed"|"Reversed", or null if unpaid. */
+  paymentStatus?: string | null;
+  bankReference?: string | null;
+  /**
+   * Status of the per-period payment confirmation.
+   * Phase 2 initiative: tracks if the transfer was done and if the voucher was sent.
+   */
+  paymentConfirmedAtUtc?: string | null;
+  deliveryStatus?: "Pending" | "Sent" | "Failed" | "Skipped" | null;
+  deliveryChannel?: "Email" | "WhatsApp" | null;
+  deliveredAtUtc?: string | null;
+  deliveryError?: string | null;
 }
 
 export interface AdminPayrollPeriodDetail {
@@ -107,6 +122,11 @@ export interface AdminPayrollPeriodDetail {
   reopenedAtUtc?: string | null;
   reopenReason?: string | null;
   reopenCount: number;
+  /** Period-level reconciliation (T1.3): money OUT to nurses vs the client invoices that funded it.
+   *  Optional/defensive — present when the backend supplies them. TotalCollected is NET of credit notes. */
+  totalNetPayout?: number | null;
+  totalBilled?: number | null;
+  totalCollected?: number | null;
 }
 
 export interface CreatePayrollPeriodRequest {
@@ -181,11 +201,15 @@ export interface RecalculatePayrollResult {
 
 export interface NursePayrollServiceLineDto {
   serviceExecutionId: string;
+  careRequestId?: string;
   serviceDate: string;
-  description: string;
+  description?: string;
   baseCompensation: number;
   transportIncentive: number;
   complexityBonus: number;
+  medicalSuppliesCompensation?: number;
+  adjustmentsTotal?: number;
+  deductionsTotal?: number;
   netCompensation: number;
 }
 
@@ -287,4 +311,38 @@ export interface ConfirmNursePaymentResult {
    * on success it is a short confirmation note. May be null on older responses.
    */
   voucherDeliveryDetail?: string | null;
+  /**
+   * Real payment state: "Pending" | "SentToBank" | "Confirmed" | "Failed" | "Reversed".
+   * Separate from voucher delivery. A confirm sets it to "Confirmed". Optional on older responses.
+   */
+  paymentStatus?: string | null;
+}
+
+/** Result of a nurse-payment state change (mark-failed / reverse). */
+export interface NursePaymentStateResult {
+  periodId: string;
+  nurseUserId: string;
+  paymentStatus: string;
+  reason?: string | null;
+}
+
+/** Per-nurse outcome inside a batch comprobante delivery. */
+export interface DeliverPeriodVoucherItem {
+  nurseUserId: string;
+  nurseDisplayName: string;
+  voucherEmailSent: boolean;
+  /** wa.me link to open WhatsApp prefilled for this nurse; empty string when no usable number. */
+  whatsappUrl: string;
+  recipientLabel: string;
+  voucherDeliveryDetail?: string | null;
+}
+
+/** Result of confirming + delivering comprobantes to every nurse in a period at once. */
+export interface DeliverPeriodVouchersResult {
+  periodId: string;
+  confirmedAtUtc: string;
+  totalNurses: number;
+  deliveredCount: number;
+  failedCount: number;
+  items: DeliverPeriodVoucherItem[];
 }

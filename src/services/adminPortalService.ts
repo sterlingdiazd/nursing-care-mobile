@@ -1,6 +1,7 @@
 import { requestList } from "@/src/services/apiShape";
 import { requestJson } from "@/src/services/httpClient";
 import { API_BASE_URL } from "@/src/config/api";
+import { SnapshotBuckets, writeSnapshot } from "@/src/services/apiSnapshotCache";
 
 export interface AdminDashboardAlertDto {
   id: string;
@@ -65,11 +66,15 @@ export interface AdminNotificationSummaryDto {
 }
 
 export async function getAdminDashboard() {
-  return requestJson<AdminDashboardSnapshotDto>({
+  const snapshot = await requestJson<AdminDashboardSnapshotDto>({
     path: "/api/admin/dashboard",
     method: "GET",
     auth: true,
   });
+  // Persist a snapshot for offline fallback. Fire-and-forget so a storage
+  // hiccup never blocks the dashboard load.
+  void writeSnapshot(SnapshotBuckets.adminDashboard, snapshot);
+  return snapshot;
 }
 
 export interface GetAdminActionItemsParams {
@@ -518,11 +523,27 @@ export async function invoiceCareRequest(id: string, invoiceNumber: string): Pro
   });
 }
 
-export async function payCareRequest(id: string, bankReference: string): Promise<PaidResponse> {
+export interface PayCareRequestMetadata {
+  bankReference: string;
+  paymentProofAttachmentUrl?: string;
+  ocrValidationStatus?: "Pending" | "Verified" | "Mismatch" | "Failed";
+  ocrConfidenceScore?: number;
+  extractedBankReference?: string;
+  extractedAmount?: number;
+  validationError?: string;
+}
+
+export interface PaidResponse {
+  id: string;
+  status: "Paid" | "AwaitingAdminConfirmation" | "UnderInvestigation";
+  paymentMetadata?: PayCareRequestMetadata;
+}
+
+export async function payCareRequest(id: string, metadata: PayCareRequestMetadata): Promise<PaidResponse> {
   return requestJson<PaidResponse>({
     path: `/api/admin/care-requests/${id}/pay`,
     method: "POST",
-    body: { bankReference },
+    body: metadata,
     auth: true,
   });
 }
@@ -532,6 +553,30 @@ export async function voidCareRequest(id: string, voidReason: string): Promise<V
     path: `/api/admin/care-requests/${id}/void`,
     method: "POST",
     body: { voidReason },
+    auth: true,
+  });
+}
+
+export interface IssueCreditNoteResponse {
+  id: string;
+  careRequestId: string;
+  amount: number;
+  reason: string;
+  reference: string | null;
+  issuedAtUtc: string;
+  totalCredited: number;
+}
+
+// T1.4: record a refund/credit against a Paid request (the request stays Paid; the backend caps
+// cumulative credits at the amount paid and audits).
+export async function issueCreditNote(
+  id: string,
+  payload: { amount: number; reason: string; reference?: string },
+): Promise<IssueCreditNoteResponse> {
+  return requestJson<IssueCreditNoteResponse>({
+    path: `/api/admin/care-requests/${id}/credit-note`,
+    method: "POST",
+    body: payload,
     auth: true,
   });
 }
@@ -555,6 +600,40 @@ export async function getReceipt(id: string): Promise<GetReceiptResponse | null>
     if (err instanceof Error && err.message.includes("404")) return null;
     throw err;
   }
+}
+
+export interface PaymentClaimReview {
+  hasProof: boolean;
+  claimedBankReference: string | null;
+  claimedAmount: number | null;
+  claimedPaymentDate: string | null;
+  payingBank: string | null;
+  note: string | null;
+  uploadedAtUtc: string | null;
+  invoiceTotal: number;
+  amountReported: boolean;
+  amountMatches: boolean;
+  reusedReference: boolean;
+  ocrDraftSentence: string | null;
+  ocrExtractedBankReference: string | null;
+  ocrExtractedAmount: number | null;
+  ocrExtractedPaymentDate: string | null;
+  ocrExtractedBank: string | null;
+  ocrConfidence: number | null;
+  ocrWarningsJson: string | null;
+  ocrProvider: string | null;
+  ocrAssessedAtUtc: string | null;
+  ocrClientEdited: boolean;
+}
+
+// Anti-fraud: the structured payment claim + reuse/amount-mismatch flags for the admin to review
+// before confirming a reported payment.
+export async function getPaymentClaim(id: string): Promise<PaymentClaimReview> {
+  return requestJson<PaymentClaimReview>({
+    path: `/api/admin/care-requests/${id}/payment-claim`,
+    method: "GET",
+    auth: true,
+  });
 }
 
 // Admin lifecycle action functions (non-billing)
@@ -662,10 +741,13 @@ export interface NurseProfileAdminRecordDto {
   licenseId: string | null;
   bankName: string | null;
   accountNumber: string | null;
+  accountType?: string | null;
+  accountHolderName?: string | null;
   category: string | null;
   visitDailyRate?: number;
   homeCareMonthlyRate?: number;
   homeCareMonthlyExpectedDays?: number;
+  optInWhatsApp?: boolean;
   workload?: NurseWorkloadSummaryDto;
 }
 
@@ -680,10 +762,14 @@ export interface NurseProfileIdentityRequest {
   licenseId?: string | null;
   bankName: string;
   accountNumber?: string | null;
+  // DR bank-transfer details (T2.3) — optional. Account type (ahorro/corriente) + holder name.
+  accountType?: string | null;
+  accountHolderName?: string | null;
   category: string;
   visitDailyRate?: number;
   homeCareMonthlyRate?: number;
   homeCareMonthlyExpectedDays?: number;
+  optInWhatsApp?: boolean;
 }
 
 export interface CreateNurseProfileRequest extends NurseProfileIdentityRequest {

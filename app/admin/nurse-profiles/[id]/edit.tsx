@@ -7,7 +7,7 @@ import { type FooterAction } from "@/src/components/navigation/AppFooter";
 import { useAuth } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
 import { mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
-import { FormInput } from "@/src/components/form/FormInput";
+import { FormInput, FormSwitch } from "@/src/components/form";
 import {
   getNurseProfileForAdmin,
   updateNurseProfileForAdmin,
@@ -31,10 +31,13 @@ const EMPTY_FORM: UpdateNurseProfileRequest = {
   licenseId: "",
   bankName: "",
   accountNumber: "",
+  accountType: "",
+  accountHolderName: "",
   category: "",
   visitDailyRate: 0,
   homeCareMonthlyRate: 0,
   homeCareMonthlyExpectedDays: 23.83,
+  optInWhatsApp: false,
 };
 
 function dtoToForm(d: NurseProfileAdminRecordDto): UpdateNurseProfileRequest {
@@ -49,18 +52,21 @@ function dtoToForm(d: NurseProfileAdminRecordDto): UpdateNurseProfileRequest {
     licenseId: d.licenseId || "",
     bankName: d.bankName || "",
     accountNumber: d.accountNumber || "",
+    accountType: d.accountType || "",
+    accountHolderName: d.accountHolderName || "",
     category: d.category || "",
     visitDailyRate: d.visitDailyRate ?? 0,
     homeCareMonthlyRate: d.homeCareMonthlyRate ?? 0,
     homeCareMonthlyExpectedDays: d.homeCareMonthlyExpectedDays ?? 23.83,
+    optInWhatsApp: d.optInWhatsApp ?? false,
   };
 }
 
 function formsEqual(a: UpdateNurseProfileRequest, b: UpdateNurseProfileRequest) {
   const keys: (keyof UpdateNurseProfileRequest)[] = [
     "name", "lastName", "identificationNumber", "phone", "email",
-    "hireDate", "specialty", "licenseId", "bankName", "accountNumber", "category",
-    "visitDailyRate", "homeCareMonthlyRate", "homeCareMonthlyExpectedDays",
+    "hireDate", "specialty", "licenseId", "bankName", "accountNumber", "accountType", "accountHolderName", "category",
+    "visitDailyRate", "homeCareMonthlyRate", "homeCareMonthlyExpectedDays", "optInWhatsApp",
   ];
   return keys.every((k) => (a[k] ?? "") === (b[k] ?? ""));
 }
@@ -214,9 +220,9 @@ export default function AdminEditNurseProfileScreen() {
 
   if (!isReady || !isAuthenticated || !roles.includes("ADMIN")) return null;
 
-  const updateField = (key: keyof UpdateNurseProfileRequest, value: string) => {
+  const updateField = (key: keyof UpdateNurseProfileRequest, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [key]: value }));
-    if (errors[key]) {
+    if (typeof value === "string" && errors[key]) {
       setErrors((prev) => {
         const next = { ...prev };
         delete next[key];
@@ -341,6 +347,13 @@ export default function AdminEditNurseProfileScreen() {
                 autoCapitalize="none"
                 accessibilityLabel="Correo"
               />
+              <FormSwitch
+                testID="admin-edit-nurse-whatsapp-opt-in"
+                label="Recibir comprobantes por WhatsApp"
+                description="La enfermera consiente recibir sus comprobantes de pago por WhatsApp."
+                value={form.optInWhatsApp ?? false}
+                onValueChange={(v) => updateField("optInWhatsApp", v)}
+              />
             </View>
           ) : null}
 
@@ -424,6 +437,20 @@ export default function AdminEditNurseProfileScreen() {
                 onChangeText={(v) => updateField("accountNumber", v)}
                 keyboardType="numeric"
                 accessibilityLabel="Número de cuenta"
+              />
+              <FormInput
+                testID="admin-edit-nurse-account-type-input"
+                label="Tipo de cuenta (ahorro / corriente)"
+                value={form.accountType ?? ""}
+                onChangeText={(v) => updateField("accountType", v)}
+                accessibilityLabel="Tipo de cuenta"
+              />
+              <FormInput
+                testID="admin-edit-nurse-account-holder-input"
+                label="Titular de la cuenta"
+                value={form.accountHolderName ?? ""}
+                onChangeText={(v) => updateField("accountHolderName", v)}
+                accessibilityLabel="Titular de la cuenta"
               />
             </View>
           ) : null}
