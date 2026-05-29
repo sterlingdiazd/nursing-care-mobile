@@ -6,6 +6,7 @@ type BackCapableRouter<TPath> = {
 
 export const mobileNavigationEscapes = {
   createCareRequest: "/care-requests" as const,
+  clientHome: "/" as const,
   forgotPassword: "/login" as const,
   resetPassword: "/forgot-password" as const,
   adminCareRequests: "/admin/care-requests" as const,

@@ -21,10 +21,19 @@ export interface UpdateClientProfileDto {
 
 export interface ClientNotificationDto {
   id: string;
+  category?: string | null;
   title: string;
   body: string;
   createdAtUtc: string;
   readAtUtc?: string | null;
   careRequestId?: string | null;
+  entityType?: string | null;
+  entityId?: string | null;
+  deepLinkPath?: string | null;
+  source?: string | null;
+  requiresAction?: boolean;
+  isDismissed?: boolean;
+  archivedAtUtc?: string | null;
+  createdBySystem?: boolean;
   severity?: "info" | "success" | "warning" | "danger" | string | null;
 }

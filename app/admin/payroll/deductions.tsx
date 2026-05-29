@@ -245,7 +245,10 @@ export default function DeductionsScreen() {
                   key={deduction.id}
                   title={deduction.label}
                   subtitle={deduction.nurseDisplayName}
-                  metaLines={[deductionTypeLabel(deduction.deductionType)]}
+                  metaLines={[
+                    deductionTypeLabel(deduction.deductionType),
+                    deduction.payrollPeriodId ? "Fuente: período de nómina asignado" : "Fuente: deducción única de enfermera",
+                  ]}
                   rightText={formatCurrency(deduction.amount)}
                   onPress={() => handleDeductionPress(deduction)}
                   testID={`deduction-item-${deduction.id}`}

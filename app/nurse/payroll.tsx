@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, View, Text, StyleSheet } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 
+import { NurseEarningsDashboard } from "@/src/components/payroll/NurseEarningsDashboard";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { getCachedAuthSession } from "@/src/services/authSession";
@@ -23,6 +24,22 @@ import { quincenaLabel } from "@/src/utils/payrollPeriods";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
 import { IconBadge } from "@/src/components/shared/IconBadge";
 import { hapticFeedback } from "@/src/utils/haptics";
+import { isConnectivityError } from "@/src/services/httpClient";
+import { readSnapshot, SnapshotBuckets, writeSnapshot } from "@/src/services/apiSnapshotCache";
+import { OfflineSnapshotBanner } from "@/src/components/shared/OfflineSnapshotBanner";
+
+function resolvePeriodId(period: any): string | null {
+  const pid = period?.periodId ?? period?.id ?? period?.PeriodId ?? period?.Id ?? null;
+  return pid === "undefined" || pid === "null" ? null : pid;
+}
+
+function resolveServiceCount(period: PayrollPeriodListItemDto): number {
+  return period.serviceCount ?? period.totalNurses ?? 0;
+}
+
+function describeServiceLine(line: NursePayrollPeriodDetailDto["services"][number]): string {
+  return line.description?.trim() || "Servicio realizado";
+}
 
 export default function NursePayrollScreen() {
   const { userId: paramUserId } = useLocalSearchParams<{ userId?: string }>();
@@ -33,6 +50,12 @@ export default function NursePayrollScreen() {
   const [history, setHistory] = useState<PayrollPeriodListItemDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Connectivity-resilience: when a real network failure prevents fetching
+  // fresh payroll data, fall back to the last successful snapshot (summary +
+  // history) so the screen renders real numbers behind an offline banner.
+  const [isStale, setIsStale] = useState(false);
+  const [staleCapturedAtUtc, setStaleCapturedAtUtc] = useState<string | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   const [expandedPeriodId, setExpandedPeriodId] = useState<string | null>(null);
   const [periodDetail, setPeriodDetail] = useState<NursePayrollPeriodDetailDto | null>(null);
@@ -40,6 +63,42 @@ export default function NursePayrollScreen() {
   const [detailError, setDetailError] = useState<string | null>(null);
   const [downloadingVoucher, setDownloadingVoucher] = useState(false);
   const fetchedForRef = useRef<string | null>(null);
+
+  const loadPayrollData = useCallback(async (nurseId: string, isRetry: boolean): Promise<boolean> => {
+    if (!isRetry) setLoading(true);
+    try {
+      const [sum, hist] = await Promise.all([
+        getNursePayrollSummary(nurseId),
+        getNursePayrollHistory(nurseId),
+      ]);
+      setSummary(sum);
+      setHistory(hist);
+      setError(null);
+      setIsStale(false);
+      setStaleCapturedAtUtc(null);
+      void writeSnapshot(SnapshotBuckets.nursePayrollSummary, { summary: sum, history: hist });
+      return true;
+    } catch (e: unknown) {
+      if (isConnectivityError(e)) {
+        const cached = await readSnapshot<{
+          summary: NursePayrollSummaryDto;
+          history: PayrollPeriodListItemDto[];
+        }>(SnapshotBuckets.nursePayrollSummary);
+        if (cached) {
+          setSummary(cached.data.summary);
+          setHistory(cached.data.history);
+          setIsStale(true);
+          setStaleCapturedAtUtc(cached.capturedAtUtc);
+          setError(null);
+          return false;
+        }
+      }
+      setError("No fue posible cargar la nómina. Inténtalo de nuevo.");
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!isReady || !isAuthenticated) return;
@@ -53,23 +112,20 @@ export default function NursePayrollScreen() {
     if (fetchedForRef.current === nurseId) return;
     fetchedForRef.current = nurseId;
 
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        const [sum, hist] = await Promise.all([
-          getNursePayrollSummary(nurseId),
-          getNursePayrollHistory(nurseId),
-        ]);
-        setSummary(sum);
-        setHistory(hist);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Error al cargar datos");
-      } finally {
-        setLoading(false);
-      }
-    };
-    void loadData();
-  }, [isReady, isAuthenticated, paramUserId, authUserId]);
+    void loadPayrollData(nurseId, false);
+  }, [isReady, isAuthenticated, paramUserId, authUserId, loadPayrollData]);
+
+  const onRetryPayroll = useCallback(async () => {
+    if (isRetrying) return;
+    const nurseId = paramUserId || authUserId;
+    if (!nurseId) return;
+    setIsRetrying(true);
+    const ok = await loadPayrollData(nurseId, true);
+    setIsRetrying(false);
+    if (!ok && isStale) {
+      showToast({ variant: "warning", message: "El API sigue sin responder. Mostrando últimos datos guardados." });
+    }
+  }, [authUserId, isRetrying, isStale, loadPayrollData, paramUserId, showToast]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("es-DO", {
@@ -97,7 +153,7 @@ export default function NursePayrollScreen() {
       setPeriodDetail(detail);
     } catch (e) {
       console.error(e);
-      setDetailError(e instanceof Error ? e.message : "Error al cargar el detalle del periodo");
+      setDetailError("No fue posible cargar el detalle del período.");
     } finally {
       setDetailLoading(false);
     }
@@ -130,10 +186,16 @@ export default function NursePayrollScreen() {
       }
     } catch (e) {
       console.error(e);
-      showToast({ variant: "error", message: e instanceof Error ? e.message : "Error al descargar el comprobante." });
+      showToast({ variant: "error", message: "No fue posible descargar el comprobante." });
     } finally {
       setDownloadingVoucher(false);
     }
+  };
+
+  const openCareRequestSource = (careRequestId?: string | null) => {
+    if (!careRequestId) return;
+    hapticFeedback.selection();
+    router.push({ pathname: "/(tabs)/care-requests/[id]", params: { id: careRequestId } } as never);
   };
 
   const currentPeriodOpen = summary?.currentPeriodStatus === "Open";
@@ -154,6 +216,17 @@ export default function NursePayrollScreen() {
   return (
     <MobileWorkspaceShell title="Mi Nómina">
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollPad}>
+        {isStale ? (
+          <View style={styles.staleBannerWrap}>
+            <OfflineSnapshotBanner
+              capturedAtUtc={staleCapturedAtUtc ?? undefined}
+              onRetry={onRetryPayroll}
+              retrying={isRetrying}
+              testID="nurse-payroll-offline-banner"
+            />
+          </View>
+        ) : null}
+
         {error && (
           <View style={styles.errorCard}>
             <Text style={styles.errorText}>{error}</Text>
@@ -188,6 +261,15 @@ export default function NursePayrollScreen() {
           </View>
         )}
 
+        <NurseEarningsDashboard
+          data={[
+            { date: "2026-05-01", amount: 1500 },
+            { date: "2026-05-02", amount: 2200 },
+            { date: "2026-05-03", amount: 0 },
+            { date: "2026-05-04", amount: 1800 },
+          ]}
+        />
+
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
             <IconBadge icon="history" hue="blue" size={30} iconSize={15} />
@@ -197,19 +279,24 @@ export default function NursePayrollScreen() {
           {history.length === 0 ? (
             <Text style={styles.emptyHint}>No hay historial de pagos.</Text>
           ) : (
-            history.map((period) => {
+            history.map((period, index) => {
+              const periodId = resolvePeriodId(period);
+              const serviceCount = resolveServiceCount(period);
               const isOpen = period.status === "Open";
-              const isExpanded = expandedPeriodId === period.id;
+              const isExpanded = Boolean(periodId && expandedPeriodId === periodId);
               return (
-                <View key={period.id} style={styles.historyGroup}>
+                <View key={periodId && periodId !== "undefined" ? periodId : `period-${index}`} style={styles.historyGroup}>
                   <Pressable
                     style={[styles.historyItem, isExpanded && styles.historyItemExpanded]}
-                    onPress={() => handlePeriodPress(period.id)}
-                    testID={`nurse-payroll-period-item-${period.id}`}
-                    nativeID={`nurse-payroll-period-item-${period.id}`}
+                    onPress={() => {
+                      if (periodId) void handlePeriodPress(periodId);
+                    }}
+                    disabled={!periodId}
+                    testID={periodId ? `nurse-payroll-period-item-${periodId}` : undefined}
+                    nativeID={periodId ? `nurse-payroll-period-item-${periodId}` : undefined}
                     accessibilityRole="button"
                     accessibilityLabel={`${quincenaLabel(period.startDate, period.endDate)}, ${isOpen ? "abierto" : "cerrado"}`}
-                    accessibilityState={{ expanded: isExpanded }}
+                    accessibilityState={{ disabled: !periodId, expanded: isExpanded }}
                   >
                     <View style={styles.historyTopRow}>
                       <Text style={styles.historyDate}>
@@ -218,7 +305,7 @@ export default function NursePayrollScreen() {
                       <StatusBadge label={isOpen ? "Abierto" : "Cerrado"} tone={isOpen ? "success" : "neutral"} />
                     </View>
                     <View style={styles.historyBottomRow}>
-                      <Text style={styles.historyInfo}>{period.totalNurses} servicios</Text>
+                      <Text style={styles.historyInfo}>{serviceCount} servicios</Text>
                       <Text style={styles.historyAmount}>
                         {formatCurrency(period.totalCompensation)}
                       </Text>
@@ -231,8 +318,8 @@ export default function NursePayrollScreen() {
                   {isExpanded && (
                     <View
                       style={styles.detailContainer}
-                      testID={`nurse-payroll-period-detail-${period.id}`}
-                      nativeID={`nurse-payroll-period-detail-${period.id}`}
+                      testID={periodId ? `nurse-payroll-period-detail-${periodId}` : undefined}
+                      nativeID={periodId ? `nurse-payroll-period-detail-${periodId}` : undefined}
                     >
                       {detailLoading && (
                         <View style={styles.detailLoader}>
@@ -251,7 +338,7 @@ export default function NursePayrollScreen() {
                         </View>
                       )}
 
-                      {periodDetail && !detailLoading && periodDetail.periodId === period.id && (
+                      {periodId && periodDetail && !detailLoading && periodDetail.periodId === periodId && (
                         <>
                           {periodDetail.services.length === 0 ? (
                             <Text style={styles.detailEmptyText}>
@@ -263,48 +350,64 @@ export default function NursePayrollScreen() {
                                 <Text style={[styles.detailHeaderCell, { flex: 2 }]}>Descripción</Text>
                                 <Text style={[styles.detailHeaderCell, { flex: 1, textAlign: "right" }]}>Neto</Text>
                               </View>
-                              {periodDetail.services.map((line) => (
-                                <View
-                                  key={line.serviceExecutionId}
-                                  style={styles.detailRow}
-                                  testID={`nurse-payroll-service-line-${line.serviceExecutionId}`}
-                                  nativeID={`nurse-payroll-service-line-${line.serviceExecutionId}`}
-                                >
-                                  <View style={{ flex: 1 }}>
-                                    <Text style={styles.detailServiceDate}>{formatDateES(line.serviceDate)}</Text>
-                                    <Text style={styles.detailServiceDesc} numberOfLines={2}>
-                                      {line.description}
-                                    </Text>
-                                    <View style={styles.detailAmountsRow}>
-                                      <Text style={styles.detailAmountLabel}>
-                                        Base: {formatCurrency(line.baseCompensation)}
+                              {periodDetail.services.map((line, lineIndex) => {
+                                const sId = line.serviceExecutionId ?? `line-${lineIndex}`;
+                                const canOpenSource = Boolean(line.careRequestId);
+                                return (
+                                  <Pressable
+                                    key={sId}
+                                    style={({ pressed }) => [
+                                      styles.detailRow,
+                                      canOpenSource && styles.detailRowLinked,
+                                      pressed && canOpenSource && styles.pressed,
+                                    ]}
+                                    onPress={() => openCareRequestSource(line.careRequestId)}
+                                    disabled={!canOpenSource}
+                                    testID={`nurse-payroll-service-line-${sId}`}
+                                    nativeID={`nurse-payroll-service-line-${sId}`}
+                                    accessibilityRole={canOpenSource ? "button" : undefined}
+                                    accessibilityLabel={canOpenSource ? "Abrir solicitud que generó este pago" : undefined}
+                                  >
+                                    <View style={{ flex: 1 }}>
+                                      <Text style={styles.detailServiceDate}>{formatDateES(line.serviceDate)}</Text>
+                                      <Text style={styles.detailServiceDesc} numberOfLines={2}>
+                                        {describeServiceLine(line)}
                                       </Text>
-                                      {line.transportIncentive > 0 && (
+                                      <Text style={styles.detailSourceText}>
+                                        Fuente: {canOpenSource ? "solicitud de cuidado" : "servicio registrado"}
+                                      </Text>
+                                      <View style={styles.detailAmountsRow}>
                                         <Text style={styles.detailAmountLabel}>
-                                          Transporte: {formatCurrency(line.transportIncentive)}
+                                          Base: {formatCurrency(line.baseCompensation)}
                                         </Text>
-                                      )}
-                                      {line.complexityBonus > 0 && (
-                                        <Text style={styles.detailAmountLabel}>
-                                          Complejidad: {formatCurrency(line.complexityBonus)}
-                                        </Text>
-                                      )}
+                                        {line.transportIncentive > 0 && (
+                                          <Text style={styles.detailAmountLabel}>
+                                            Transporte: {formatCurrency(line.transportIncentive)}
+                                          </Text>
+                                        )}
+                                        {line.complexityBonus > 0 && (
+                                          <Text style={styles.detailAmountLabel}>
+                                            Complejidad: {formatCurrency(line.complexityBonus)}
+                                          </Text>
+                                        )}
+                                      </View>
                                     </View>
-                                  </View>
-                                  <Text style={styles.detailNetAmount}>
-                                    {formatCurrency(line.netCompensation)}
-                                  </Text>
-                                </View>
-                              ))}
+                                    <Text style={styles.detailNetAmount}>
+                                      {formatCurrency(line.netCompensation)}
+                                    </Text>
+                                    {canOpenSource ? <Text style={styles.detailChevron}>›</Text> : null}
+                                  </Pressable>
+                                );
+                              })}
                             </>
                           )}
 
                           <Pressable
                             style={[styles.voucherButton, downloadingVoucher && styles.voucherButtonDisabled]}
-                            onPress={() => handleDownloadVoucher(period.id)}
+                            onPress={() => handleDownloadVoucher(periodId)}
                             disabled={downloadingVoucher}
-                            testID={`nurse-payroll-download-voucher-${period.id}`}
-                            nativeID={`nurse-payroll-download-voucher-${period.id}`}
+                            testID={`nurse-payroll-download-voucher-${periodId}`}
+                            nativeID={`nurse-payroll-download-voucher-${periodId}`}
                             accessibilityRole="button"
                             accessibilityLabel="Descargar comprobante"
                           >
@@ -334,6 +437,7 @@ export default function NursePayrollScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  staleBannerWrap: { marginBottom: 12 },
   scrollPad: { paddingTop: designTokens.spacing.xs, paddingBottom: designTokens.spacing.xl },
   loadingContainer: {
     flex: 1,
@@ -481,8 +585,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: designTokens.color.border.subtle,
   },
+  detailRowLinked: {
+    paddingHorizontal: 6,
+    borderRadius: designTokens.radius.sm,
+  },
   detailServiceDate: { fontSize: 11, color: designTokens.color.ink.muted, marginBottom: 2 },
   detailServiceDesc: { fontSize: 13, color: designTokens.color.ink.primary, fontWeight: "500" },
+  detailSourceText: {
+    fontSize: 11,
+    color: designTokens.color.ink.accentStrong,
+    fontWeight: "700",
+    marginTop: 2,
+  },
   detailAmountsRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 },
   detailAmountLabel: { fontSize: 11, color: designTokens.color.ink.secondary },
   detailNetAmount: {
@@ -492,6 +606,14 @@ const styles = StyleSheet.create({
     minWidth: 80,
     textAlign: "right",
   },
+  detailChevron: {
+    color: designTokens.color.ink.muted,
+    fontSize: 20,
+    fontWeight: "800",
+    marginLeft: 4,
+    marginTop: -1,
+  },
+  pressed: { opacity: 0.76 },
   voucherButton: {
     backgroundColor: designTokens.color.ink.accentStrong,
     paddingVertical: 10,

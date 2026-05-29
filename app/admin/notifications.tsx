@@ -248,6 +248,8 @@ export default function AdminNotificationsScreen() {
                           : markAdminNotificationAsRead(item.id),
                       );
                     }}
+                    accessibilityRole="button"
+                    accessibilityLabel={getNotificationPrimaryActionLabel(item)}
                   >
                     <Text style={[styles.cardButtonText, isLead && styles.cardButtonTextLead]}>
                       {getNotificationPrimaryActionLabel(item)}
@@ -261,6 +263,8 @@ export default function AdminNotificationsScreen() {
                       hapticFeedback.selection();
                       setExpandedId(isExpanded ? null : item.id);
                     }}
+                    accessibilityRole="button"
+                    accessibilityLabel={isExpanded ? "Ocultar acciones adicionales" : "Mostrar más acciones"}
                   >
                     <Text style={styles.secondaryToggleText}>
                       {isExpanded ? "Ocultar más" : "Más acciones"}
@@ -278,6 +282,8 @@ export default function AdminNotificationsScreen() {
                               : markAdminNotificationAsRead(item.id),
                           )
                         }
+                        accessibilityRole="button"
+                        accessibilityLabel={getNotificationSecondaryActionLabel(item)}
                       >
                         <Text style={styles.secondaryActionText}>
                           {getNotificationSecondaryActionLabel(item)}
@@ -286,12 +292,16 @@ export default function AdminNotificationsScreen() {
                       <Pressable
                         style={styles.secondaryAction}
                         onPress={() => void runAction(() => dismissAdminNotification(item.id))}
+                        accessibilityRole="button"
+                        accessibilityLabel="Descartar aviso"
                       >
                         <Text style={styles.secondaryActionText}>Descartar</Text>
                       </Pressable>
                       <Pressable
                         style={styles.secondaryAction}
                         onPress={() => void runAction(() => archiveAdminNotification(item.id))}
+                        accessibilityRole="button"
+                        accessibilityLabel="Archivar aviso"
                       >
                         <Text style={styles.secondaryActionText}>Archivar</Text>
                       </Pressable>

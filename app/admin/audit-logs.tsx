@@ -29,6 +29,12 @@ function formatTimestamp(value: string) {
   return formatDateTimeES(value);
 }
 
+function shortReference(value: string | null | undefined): string {
+  if (!value) return "N/A";
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidPattern.test(value) ? value.slice(0, 8).toUpperCase() : value;
+}
+
 function roleLabel(role: string) {
   if (role === "ADMIN") return "Administrador";
   if (role === "CLIENT") return "Cliente";
@@ -84,6 +90,24 @@ const ENTITY_LABELS: Record<string, string> = {
 };
 function entityLabel(entityType: string): string {
   return ENTITY_LABELS[entityType] ?? humanize(entityType);
+}
+
+function entityRoute(entityType: string, entityId: string | null | undefined): string | null {
+  if (!entityId) return null;
+  switch (entityType) {
+    case "CareRequest":
+      return `/(tabs)/care-requests/${entityId}`;
+    case "Client":
+      return `/admin/clients/${entityId}`;
+    case "NurseProfile":
+      return `/admin/nurse-profiles/${entityId}`;
+    case "User":
+      return `/admin/users/${entityId}`;
+    case "PayrollPeriod":
+      return `/admin/payroll/periods?periodId=${entityId}`;
+    default:
+      return null;
+  }
 }
 
 type AuditTone = "success" | "warning" | "danger" | "info";
@@ -145,6 +169,9 @@ export default function AdminAuditLogsScreen() {
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const selectedDetailReference = selectedDetail ? shortReference(selectedDetail.id) : "";
+  const selectedEntityReference = selectedDetail ? shortReference(selectedDetail.entityId) : "";
+  const selectedEntityRoute = selectedDetail ? entityRoute(selectedDetail.entityType, selectedDetail.entityId) : null;
 
   const load = async (
     page = pageNumber,
@@ -286,7 +313,7 @@ export default function AdminAuditLogsScreen() {
                   tone="accent"
                   testID="admin-audit-log-detail-panel"
                 >
-                  <DetailField label="ID" value={selectedDetail.id} mono />
+                  <DetailField label="Referencia" value={selectedDetailReference} mono />
                   <DetailField label="Fecha y hora" value={formatTimestamp(selectedDetail.createdAtUtc)} />
                   <DetailField
                     label="Actor"
@@ -296,7 +323,27 @@ export default function AdminAuditLogsScreen() {
                   <DetailField label="Rol del actor" value={roleLabel(selectedDetail.actorRole)} />
                   <DetailField label="Acción" value={actionLabel(selectedDetail.action)} />
                   <DetailField label="Tipo de entidad" value={entityLabel(selectedDetail.entityType)} />
-                  <DetailField label="ID de entidad" value={selectedDetail.entityId} mono />
+                  <DetailField label="Referencia de entidad" value={selectedEntityReference} mono />
+                  <DetailField
+                    label="Fuente"
+                    value={selectedEntityRoute ? "Registro relacionado disponible" : "Referencia guardada en auditoría"}
+                    secondary={selectedEntityRoute ? "Abre el detalle para revisar el origen." : undefined}
+                  />
+                  {selectedEntityRoute ? (
+                    <Pressable
+                      onPress={() => {
+                        hapticFeedback.selection();
+                        router.push(selectedEntityRoute as never);
+                      }}
+                      style={({ pressed }) => [styles.sourceButton, pressed && styles.pressed]}
+                      accessibilityRole="button"
+                      accessibilityLabel="Abrir registro relacionado"
+                      testID="admin-audit-open-source"
+                      nativeID="admin-audit-open-source"
+                    >
+                      <Text style={styles.sourceButtonText}>Abrir registro relacionado</Text>
+                    </Pressable>
+                  ) : null}
                   {selectedDetail.notes ? (
                     <DetailField label="Notas" value={selectedDetail.notes} />
                   ) : null}
@@ -367,6 +414,20 @@ const styles = StyleSheet.create({
   detailValue: { color: designTokens.color.ink.primary, fontSize: 15 },
   detailValueSecondary: { color: designTokens.color.ink.secondary, fontSize: 14 },
   detailValueMono: { color: designTokens.color.ink.primary, fontSize: 13, fontFamily: "monospace" },
+  sourceButton: {
+    borderRadius: designTokens.radius.md,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.accent,
+    backgroundColor: designTokens.color.surface.accent,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: "center",
+  },
+  sourceButtonText: {
+    color: designTokens.color.ink.accentStrong,
+    fontWeight: "800",
+  },
   jsonContainer: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 12, padding: 12, marginTop: 4, borderWidth: 1, borderColor: designTokens.color.border.subtle },
   jsonText: { color: designTokens.color.ink.primary, fontSize: 12, fontFamily: "monospace" },
+  pressed: { opacity: 0.78 },
 });

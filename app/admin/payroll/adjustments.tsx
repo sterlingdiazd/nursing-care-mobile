@@ -193,7 +193,10 @@ export default function AdjustmentsScreen() {
                   key={adjustment.id}
                   title={adjustment.label}
                   subtitle={adjustment.nurseDisplayName}
-                  metaLines={[formatDateTimeES(adjustment.createdAtUtc)]}
+                  metaLines={[
+                    formatDateTimeES(adjustment.createdAtUtc),
+                    "Fuente: ejecución de servicio",
+                  ]}
                   rightText={formatCurrencyWithSign(adjustment.amount)}
                   onPress={() => setEditingAdjustment(adjustment)}
                   testID={`adjustment-item-${adjustment.id}`}
