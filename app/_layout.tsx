@@ -11,6 +11,8 @@ import { AuthProvider } from "@/src/context/AuthContext";
 import { ToastProvider } from "@/src/components/shared/ToastProvider";
 import { usePushNotifications } from "@/src/hooks/usePushNotifications";
 import BottomBar from "@/src/components/navigation/BottomBar";
+import { initApiBaseUrl } from "@/src/services/apiBaseUrl";
+import { logClientEvent } from "@/src/logging/clientLogger";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -43,6 +45,26 @@ export default function RootLayout() {
       }, 1500);
     }
   }, [loaded]);
+
+  // Kick off the API base-URL probe as soon as the app mounts. The probe
+  // races a small candidate list (manual override / env / tunnel /
+  // debugger-host / .local hostname / last-known-good) against /api/health
+  // and picks the first that responds, then updates the live binding on
+  // API_BASE_URL so every subsequent request points at a working host.
+  useEffect(() => {
+    void initApiBaseUrl()
+      .then((resolved) => {
+        logClientEvent("mobile.api", "API base URL resolved", resolved);
+      })
+      .catch((error) => {
+        logClientEvent(
+          "mobile.api",
+          "API base URL probe failed",
+          { message: error instanceof Error ? error.message : String(error) },
+          "error",
+        );
+      });
+  }, []);
 
   if (!loaded) {
     return null;

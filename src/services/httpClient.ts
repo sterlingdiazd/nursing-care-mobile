@@ -7,7 +7,34 @@ import {
   loadAuthSession,
   saveAuthSession,
 } from "@/src/services/authSession";
+import {
+  ensureApiBaseUrlReady,
+  getCurrentBase,
+  probeAndResolveDebounced,
+} from "@/src/services/apiBaseUrl";
 import { Platform } from "react-native";
+
+/**
+ * Error subclass thrown when a request never reaches the server (DNS, network
+ * unreachable, TLS, timeout). Lets UI layers distinguish "API is down or
+ * mis-pointed" from "API returned 4xx/5xx" so they can fall back to a cached
+ * snapshot and show an offline banner instead of a hard error toast.
+ */
+export class ApiConnectivityError extends Error {
+  public readonly isConnectivity = true;
+  public readonly url: string;
+  public readonly source: string;
+  constructor(message: string, url: string, source: string) {
+    super(message);
+    this.name = "ApiConnectivityError";
+    this.url = url;
+    this.source = source;
+  }
+}
+
+export function isConnectivityError(error: unknown): error is ApiConnectivityError {
+  return error instanceof Error && (error as any).isConnectivity === true;
+}
 
 interface JsonRequestOptions {
   path: string;
@@ -18,6 +45,42 @@ interface JsonRequestOptions {
   auth?: boolean;
   skipAuthRefresh?: boolean;
   onMeta?: (meta: { correlationId: string; status: number; url: string }) => void;
+  /**
+   * Internal flag: set by the http client itself when a network failure
+   * triggers a one-shot probe-and-retry. Prevents infinite retry loops if
+   * the probe-selected URL is also dead.
+   */
+  _retriedAfterProbe?: boolean;
+}
+
+/**
+ * Awaits the resolver's initial probe (or up to 3 s, whichever is sooner)
+ * before the very first request fires. After init has resolved this is a
+ * microtask no-op, so subsequent requests pay no cost.
+ */
+async function ensureReady(): Promise<void> {
+  try {
+    await ensureApiBaseUrlReady();
+  } catch {
+    /* never block a request on a resolver failure */
+  }
+}
+
+/**
+ * Runs after a network failure inside a request. Awaits a probe (coalesced
+ * across concurrent failing requests), then returns the freshly-resolved
+ * base URL. The caller compares against the URL it just tried and decides
+ * whether retrying is worthwhile.
+ */
+async function probeForRecovery(failedUrl: string): Promise<string | null> {
+  try {
+    const before = failedUrl;
+    await probeAndResolveDebounced();
+    const after = getCurrentBase().url;
+    return after !== before ? after : null;
+  } catch {
+    return null;
+  }
 }
 
 let refreshPromise: Promise<string | null> | null = null;
@@ -84,17 +147,30 @@ export function getDisplayErrorMessage(responseText: string, status: number) {
   }
 }
 
-export async function requestVoid({
-  path,
-  method,
-  body,
-  correlationId: providedCorrelationId,
-  token,
-  auth,
-  skipAuthRefresh,
-  onMeta,
-}: JsonRequestOptions): Promise<void> {
+function triggerSelfHealProbe(reason: string) {
+  // Fire-and-forget. The probe coalesces concurrent calls and updates the
+  // resolver state asynchronously; the next request will pick up any new URL
+  // via the ES module live binding on API_BASE_URL.
+  void probeAndResolveDebounced().catch(() => {
+    /* probe failures are surfaced via diagnostics; never block a request */
+  });
+  logClientEvent("mobile.http", "Self-heal probe triggered", { reason }, "info");
+}
+
+export async function requestVoid(options: JsonRequestOptions): Promise<void> {
+  const {
+    path,
+    method,
+    body,
+    correlationId: providedCorrelationId,
+    token,
+    auth,
+    skipAuthRefresh,
+    onMeta,
+    _retriedAfterProbe,
+  } = options;
   const correlationId = providedCorrelationId ?? createCorrelationId();
+  await ensureReady();
   const url = `${API_BASE_URL}${path}`;
   const shouldUseAuth = auth || Boolean(token);
   const session = shouldUseAuth ? getCachedAuthSession() ?? (await loadAuthSession()) : null;
@@ -128,39 +204,44 @@ export async function requestVoid({
 
     clearTimeout(timeoutId);
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      const message = `La solicitud tardó demasiado tiempo en responder. Verifica tu conexión a internet y que el servidor esté funcionando. URL: ${url}`;
-
-      logClientEvent(
-        "mobile.http",
-        "Request timeout",
-        {
-          correlationId,
-          method,
-          url,
-          timeoutMs: 30000,
-        },
-        "error",
-      );
-
-      throw new Error(message);
-    }
-
-    const message = getNetworkErrorMessage(url, error);
+    const isTimeout = error instanceof Error && error.name === 'AbortError';
+    const baseMessage = isTimeout
+      ? `La solicitud tardó demasiado tiempo en responder. Verifica tu conexión a internet y que el servidor esté funcionando. URL: ${url}`
+      : getNetworkErrorMessage(url, error);
 
     logClientEvent(
       "mobile.http",
-      "Request failed before reaching the server",
+      isTimeout ? "Request timeout" : "Request failed before reaching the server",
       {
         correlationId,
         method,
         url,
-        message,
+        message: baseMessage,
+        ...(isTimeout ? { timeoutMs: 30000 } : {}),
       },
       "error",
     );
 
-    throw new Error(message);
+    // Auto-recovery: probe candidates synchronously and, if a different URL
+    // now responds, retry the request once. The user sees a successful
+    // request instead of a connectivity error toast.
+    if (!_retriedAfterProbe) {
+      const recoveredUrl = await probeForRecovery(url);
+      if (recoveredUrl) {
+        logClientEvent("mobile.http", "Auto-recovery probe found new URL", {
+          correlationId,
+          previousUrl: url,
+          recoveredUrl,
+        });
+        return requestVoid({ ...options, _retriedAfterProbe: true });
+      }
+    }
+
+    // No working candidate found, or we already retried. Surface a
+    // typed connectivity error so the caller can fall back to a cached
+    // snapshot + offline banner.
+    const base = getCurrentBase();
+    throw new ApiConnectivityError(baseMessage, url, base.source);
   }
 
   const responseText = await response.text();
@@ -273,7 +354,9 @@ export async function requestJson<T>({
         "error",
       );
 
-      throw new Error(message);
+      triggerSelfHealProbe("timeout");
+      const base = getCurrentBase();
+      throw new ApiConnectivityError(message, url, base.source);
     }
 
     const message = getNetworkErrorMessage(url, error);
@@ -290,7 +373,9 @@ export async function requestJson<T>({
       "error",
     );
 
-    throw new Error(message);
+    triggerSelfHealProbe("network");
+    const base = getCurrentBase();
+    throw new ApiConnectivityError(message, url, base.source);
   }
 
   const responseText = await response.text();

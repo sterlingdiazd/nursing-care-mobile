@@ -287,6 +287,7 @@ export default function LoginScreen() {
                 router.push("/register");
               }}
               accessibilityRole="link"
+              accessibilityLabel="Registrar cuenta"
             >
               <Text style={styles.registerLink}>Registrar</Text>
             </TouchableOpacity>

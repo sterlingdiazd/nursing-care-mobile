@@ -39,3 +39,8 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# demo tunnel runtime state (written by scripts/start-demo.sh)
+.demo-tunnel.pid
+.demo-tunnel.log
+.demo-tunnel.url
