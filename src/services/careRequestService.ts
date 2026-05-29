@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import { requestList } from "@/src/services/apiShape";
 import { requestJson } from "@/src/services/httpClient";
 import { API_BASE_URL } from "@/src/config/api";
@@ -23,18 +24,141 @@ async function currentAuthToken(): Promise<string> {
  * Uploads a payment-proof image (invoice photo / transfer screenshot) and reports the payment.
  * Uses raw fetch with FormData (requestJson forces application/json which breaks multipart).
  */
+/** Structured payment claim (anti-fraud): what the client says they paid, for the admin to match
+ *  against the bank. All optional — the image alone still works. */
+export interface PaymentClaimInput {
+  bankReference?: string;
+  amount?: number;
+  paymentDate?: string; // yyyy-MM-dd
+  payingBank?: string;
+  ocrAssessment?: PaymentOcrAssessment;
+  ocrClientEdited?: boolean;
+}
+
+export interface PaymentOcrAssessment {
+  draftSentence: string;
+  extractedBankReference?: string | null;
+  extractedAmount?: number | null;
+  extractedPaymentDate?: string | null;
+  extractedBank?: string | null;
+  confidence: number;
+  warnings: string[];
+  provider: string;
+  assessedAtUtc: string;
+}
+
+async function appendPaymentProofFile(form: FormData, imageUri: string, mimeType: string) {
+  const ext = (mimeType.split("/")[1] || "jpg").replace("jpeg", "jpg");
+
+  if (Platform.OS === "web" || imageUri.startsWith("data:") || imageUri.startsWith("blob:")) {
+    try {
+      const blobRes = await fetch(imageUri);
+      const blob = await blobRes.blob();
+      form.append("proof", blob, `comprobante-${Date.now()}.${ext}`);
+    } catch (e) {
+      console.error("Failed to convert image URI to blob, falling back to pseudo-blob", e);
+      form.append("proof", { uri: imageUri, type: mimeType, name: `comprobante-${Date.now()}.${ext}` } as unknown as Blob);
+    }
+  } else {
+    form.append("proof", { uri: imageUri, type: mimeType, name: `comprobante-${Date.now()}.${ext}` } as unknown as Blob);
+  }
+}
+
+// Hard ceiling for the OCR round-trip. The backend tries a chain of providers
+// (Azure -> Google Vision -> OCR.space), each bounded to a few seconds, so even
+// when a fallback runs the call finishes well inside this window. This guard is
+// only a last-resort net for a dead network / unreachable server: it aborts the
+// fetch instead of leaving the "Leyendo comprobante..." spinner (and the
+// disabled submit button) hung forever. It is set above the server's worst-case
+// chain time so it never cuts off a fallback that is still working.
+const OCR_REQUEST_TIMEOUT_MS = 30000;
+
+export async function assessPaymentProofOcr(
+  id: string,
+  imageUri: string,
+  mimeType: string,
+): Promise<PaymentOcrAssessment> {
+  const token = await currentAuthToken();
+  const form = new FormData();
+  await appendPaymentProofFile(form, imageUri, mimeType);
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), OCR_REQUEST_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/api/care-requests/${id}/payment-proof/ocr`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    // Diagnostic-only: the caller logs this and continues with manual entry.
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error(`OCR request timed out after ${OCR_REQUEST_TIMEOUT_MS}ms`);
+    }
+    throw new Error("OCR request failed before reaching the server");
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  const text = await response.text();
+  if (!response.ok) {
+    let message = "No se pudo leer el comprobante automáticamente.";
+    try {
+      const problem = JSON.parse(text);
+      message = problem.detail || problem.title || message;
+    } catch {
+      /* keep default */
+    }
+    throw new Error(message);
+  }
+  return JSON.parse(text) as PaymentOcrAssessment;
+}
+
 export async function reportPayment(
   id: string,
   imageUri: string,
   mimeType: string,
   note?: string,
+  claim?: PaymentClaimInput,
 ): Promise<CareRequestDto> {
   const token = await currentAuthToken();
   const form = new FormData();
-  const ext = (mimeType.split("/")[1] || "jpg").replace("jpeg", "jpg");
-  form.append("proof", { uri: imageUri, type: mimeType, name: `comprobante-${Date.now()}.${ext}` } as unknown as Blob);
+  await appendPaymentProofFile(form, imageUri, mimeType);
+
   if (note && note.trim()) {
     form.append("note", note.trim());
+  }
+
+  // Structured claim (bound to the backend ReportPaymentForm; field names are case-insensitive).
+  if (claim?.bankReference && claim.bankReference.trim()) {
+    form.append("claimedBankReference", claim.bankReference.trim());
+  }
+  if (claim?.amount != null && Number.isFinite(claim.amount)) {
+    form.append("claimedAmount", String(claim.amount));
+  }
+  if (claim?.paymentDate && claim.paymentDate.trim()) {
+    form.append("claimedPaymentDate", claim.paymentDate.trim());
+  }
+  if (claim?.payingBank && claim.payingBank.trim()) {
+    form.append("payingBank", claim.payingBank.trim());
+  }
+  if (claim?.ocrAssessment) {
+    const ocr = claim.ocrAssessment;
+    form.append("ocrDraftSentence", ocr.draftSentence);
+    if (ocr.extractedBankReference) form.append("ocrExtractedBankReference", ocr.extractedBankReference);
+    if (ocr.extractedAmount != null && Number.isFinite(ocr.extractedAmount)) {
+      form.append("ocrExtractedAmount", String(ocr.extractedAmount));
+    }
+    if (ocr.extractedPaymentDate) form.append("ocrExtractedPaymentDate", ocr.extractedPaymentDate);
+    if (ocr.extractedBank) form.append("ocrExtractedBank", ocr.extractedBank);
+    form.append("ocrConfidence", String(ocr.confidence));
+    form.append("ocrWarningsJson", JSON.stringify(ocr.warnings ?? []));
+    form.append("ocrProvider", ocr.provider);
+    form.append("ocrAssessedAtUtc", ocr.assessedAtUtc);
+    form.append("ocrClientEdited", claim.ocrClientEdited ? "true" : "false");
   }
 
   const response = await fetch(`${API_BASE_URL}/api/care-requests/${id}/report-payment`, {

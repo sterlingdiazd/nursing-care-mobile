@@ -102,14 +102,14 @@ describe("route-first billing task contract", () => {
     expect(isBillingTaskAllowed("PaymentReported", "pay")).toBe(true);
   });
 
-  it("exposes receipt and void as tasks for paid requests", () => {
+  it("exposes receipt and credit-note as tasks for paid requests (void is blocked after Paid)", () => {
     const actions = getBillingTaskActions("req-123", "Paid");
 
     expect(actions).toHaveLength(2);
-    expect(actions.map((action) => action.action)).toEqual(["receipt", "void"]);
+    expect(actions.map((action) => action.action)).toEqual(["receipt", "credit-note"]);
     expect(actions.map((action) => action.route)).toEqual([
       "/admin/care-requests/req-123/receipt",
-      "/admin/care-requests/req-123/void",
+      "/admin/care-requests/req-123/credit-note",
     ]);
   });
 

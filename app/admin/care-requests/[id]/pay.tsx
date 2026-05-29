@@ -1,15 +1,19 @@
+import { useState } from "react";
 import AdminCareRequestBillingTaskScreen from "@/src/components/shared/AdminCareRequestBillingTaskScreen";
 import PaymentProofPreview from "@/src/components/shared/PaymentProofPreview";
-import { payCareRequest } from "@/src/services/adminPortalService";
+import PaymentClaimReview from "@/src/components/shared/PaymentClaimReview";
+import { payCareRequest, type PayCareRequestMetadata } from "@/src/services/adminPortalService";
 import { adminTestIds } from "@/src/testing/testIds/adminTestIds";
 
 export default function AdminCareRequestPayScreen() {
+  const [bankReference, setBankReference] = useState("");
+
   return (
     <AdminCareRequestBillingTaskScreen
       action="pay"
       eyebrow="Cobro administrativo"
-      title="Confirmar pago recibido"
-      description="Revisa el comprobante enviado por el cliente, verifica el dinero en el banco y captura la referencia bancaria para confirmar la recepción del pago."
+      title="Verificar pago"
+      description="Revisa el comprobante y el borrador OCR. Confirma solo después de verificar el ingreso en el banco."
       submitLabel="Confirmar pago recibido"
       submitLoadingLabel="Confirmando..."
       successMessage="Pago confirmado correctamente."
@@ -21,9 +25,17 @@ export default function AdminCareRequestPayScreen() {
       inputLabel="Referencia bancaria"
       inputPlaceholder="Ej. REF-849302"
       renderBeforeInput={(detail) =>
-        detail.status === "PaymentReported" ? <PaymentProofPreview careRequestId={detail.id} /> : null
+        detail.status === "PaymentReported" ? (
+          <>
+            <PaymentClaimReview careRequestId={detail.id} />
+            <PaymentProofPreview careRequestId={detail.id} />
+          </>
+        ) : null
       }
-      execute={(id, inputValue) => payCareRequest(id, inputValue).then(() => undefined)}
+      execute={async (id, inputValue) => {
+        const metadata: PayCareRequestMetadata = { bankReference: inputValue };
+        await payCareRequest(id, metadata);
+      }}
     />
   );
 }

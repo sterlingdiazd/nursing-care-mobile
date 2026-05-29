@@ -19,6 +19,7 @@ import { mobileTheme } from "@/src/design-system/mobileStyles";
 import { designTokens } from "@/src/design-system/tokens";
 import { logClientEvent } from "@/src/logging/clientLogger";
 import {
+  assessPaymentProofOcr,
   assignCareRequestNurse,
   downloadAndShareCareRequestReceipt,
   getActiveNurseProfiles,
@@ -26,6 +27,8 @@ import {
   reportPayment,
   transitionCareRequest,
   type ActiveNurseProfileSummary,
+  type PaymentClaimInput,
+  type PaymentOcrAssessment,
 } from "@/src/services/careRequestService";
 import { getCareRequestOptions } from "@/src/services/catalogOptionsService";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
@@ -167,13 +170,18 @@ export default function CareRequestDetailScreen() {
     return () => { cancelled = true; };
   }, [token]);
 
-  const runReportPayment = async (imageUri: string, mimeType: string, note: string) => {
+  const runReportPayment = async (
+    imageUri: string,
+    mimeType: string,
+    note: string,
+    claim?: PaymentClaimInput,
+  ) => {
     if (!id) return;
     setIsActing(true);
     setError(null);
     setSuccessMessage(null);
     try {
-      await reportPayment(id, imageUri, mimeType, note);
+      await reportPayment(id, imageUri, mimeType, note, claim);
       setPaymentSheetVisible(false);
       setSuccessMessage("Pago reportado. La administración verificará el comprobante y confirmará la recepción.");
       await loadCareRequest();
@@ -590,6 +598,7 @@ export default function CareRequestDetailScreen() {
 
       <PaymentProofSheet
         visible={paymentSheetVisible}
+        careRequestId={careRequest.id}
         submitting={isActing}
         onClose={() => {
           hapticFeedback.selection();
@@ -612,6 +621,7 @@ function getPaymentStatusTone(paymentStatus: string | null | undefined): "neutra
   switch (paymentStatus) {
     case "Anulado": return "danger";
     case "Pagado": return "success";
+    case "Pago reportado": return "warning";
     case "Facturado": return "info";
     default: return "neutral";
   }
@@ -704,7 +714,13 @@ function PaymentStatusCard({
         </View>
       ) : null}
 
-      {careRequest.status === "Invoiced" || careRequest.status === "PaymentReported" || careRequest.status === "Paid" ? (
+      {careRequest.status === "PaymentReported" ? (
+        <Text style={styles.cardMeta}>
+          Fuente: comprobante enviado por ti. Sol y Luna lo verificará en el banco antes de marcarlo como pagado.
+        </Text>
+      ) : null}
+
+      {careRequest.status === "Paid" ? (
         <Pressable
           testID={careRequestTestIds.detail.receiptDownloadButton}
           nativeID={careRequestTestIds.detail.receiptDownloadButton}
@@ -729,18 +745,26 @@ function PaymentStatusCard({
 
 function PaymentProofSheet({
   visible,
+  careRequestId,
   submitting,
   onClose,
   onSubmit,
 }: {
   visible: boolean;
+  careRequestId: string;
   submitting: boolean;
   onClose: () => void;
-  onSubmit: (imageUri: string, mimeType: string, note: string) => void;
+  onSubmit: (imageUri: string, mimeType: string, note: string, claim?: PaymentClaimInput) => void;
 }) {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [mimeType, setMimeType] = useState<string>("image/jpeg");
   const [note, setNote] = useState("");
+  const [bankReference, setBankReference] = useState("");
+  const [amount, setAmount] = useState("");
+  const [paymentDate, setPaymentDate] = useState("");
+  const [payingBank, setPayingBank] = useState("");
+  const [ocrAssessment, setOcrAssessment] = useState<PaymentOcrAssessment | null>(null);
+  const [ocrLoading, setOcrLoading] = useState(false);
   const [pickError, setPickError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -748,9 +772,46 @@ function PaymentProofSheet({
       setImageUri(null);
       setMimeType("image/jpeg");
       setNote("");
+      setBankReference("");
+      setAmount("");
+      setPaymentDate("");
+      setPayingBank("");
+      setOcrAssessment(null);
+      setOcrLoading(false);
       setPickError(null);
     }
   }, [visible]);
+
+  const applyOcrAssessment = (assessment: PaymentOcrAssessment) => {
+    setOcrAssessment(assessment);
+    if (!bankReference.trim() && assessment.extractedBankReference) {
+      setBankReference(assessment.extractedBankReference);
+    }
+    if (!amount.trim() && assessment.extractedAmount != null) {
+      setAmount(String(assessment.extractedAmount));
+    }
+    if (!paymentDate.trim() && assessment.extractedPaymentDate) {
+      setPaymentDate(assessment.extractedPaymentDate);
+    }
+    if (!payingBank.trim() && assessment.extractedBank) {
+      setPayingBank(assessment.extractedBank);
+    }
+  };
+
+  const didEditOcr = (parsedAmount?: number) => {
+    if (!ocrAssessment) return false;
+    const normalize = (value?: string | null) => (value ?? "").trim().toLocaleLowerCase();
+    const amountChanged =
+      ocrAssessment.extractedAmount != null &&
+      parsedAmount != null &&
+      Math.abs(parsedAmount - ocrAssessment.extractedAmount) > 0.009;
+    return (
+      normalize(bankReference) !== normalize(ocrAssessment.extractedBankReference) ||
+      amountChanged ||
+      normalize(paymentDate) !== normalize(ocrAssessment.extractedPaymentDate) ||
+      normalize(payingBank) !== normalize(ocrAssessment.extractedBank)
+    );
+  };
 
   const pickImage = async () => {
     hapticFeedback.selection();
@@ -766,8 +827,28 @@ function PaymentProofSheet({
     });
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
+      const nextMimeType = asset.mimeType ?? "image/jpeg";
       setImageUri(asset.uri);
-      setMimeType(asset.mimeType ?? "image/jpeg");
+      setMimeType(nextMimeType);
+      setOcrAssessment(null);
+      setOcrLoading(true);
+      try {
+        const assessment = await assessPaymentProofOcr(careRequestId, asset.uri, nextMimeType);
+        applyOcrAssessment(assessment);
+      } catch (nextError: any) {
+        // OCR is best-effort: the server already tries a chain of providers, so
+        // a miss here is rare and never blocks the report. Stay silent (just log)
+        // and let the user fill the fields - a real connectivity problem will
+        // surface when they submit, not as an alarming OCR error.
+        logClientEvent(
+          "mobile.ocr",
+          "Payment-proof OCR unavailable; continuing with manual entry",
+          { careRequestId, message: nextError?.message ?? "unknown" },
+          "info",
+        );
+      } finally {
+        setOcrLoading(false);
+      }
     }
   };
 
@@ -803,12 +884,67 @@ function PaymentProofSheet({
             <Image source={{ uri: imageUri }} style={styles.proofPreview} resizeMode="contain" />
           ) : null}
 
+          {ocrLoading ? (
+            <View style={styles.ocrCard}>
+              <ActivityIndicator color={designTokens.color.ink.accentStrong} accessibilityLabel="Cargando..." />
+              <Text style={styles.ocrCardText}>Leyendo comprobante...</Text>
+            </View>
+          ) : null}
+
+          {ocrAssessment ? (
+            <View
+              style={styles.ocrCard}
+              testID="report-payment-ocr-draft"
+              nativeID="report-payment-ocr-draft"
+            >
+              <Text style={styles.ocrCardLabel}>Borrador de validación</Text>
+              <Text style={styles.ocrCardText}>{ocrAssessment.draftSentence}</Text>
+              {ocrAssessment.warnings.map((warning, index) => (
+                <Text key={`${warning}-${index}`} style={styles.ocrWarning}>• {warning}</Text>
+              ))}
+            </View>
+          ) : null}
+
           {pickError ? <Text style={styles.errorBanner}>{pickError}</Text> : null}
 
           <TextInput
+            value={bankReference}
+            onChangeText={setBankReference}
+            placeholder="Referencia de la transferencia"
+            placeholderTextColor={designTokens.color.ink.muted}
+            style={styles.proofNoteInput}
+            autoCapitalize="characters"
+            testID="report-payment-bank-reference"
+          />
+          <TextInput
+            value={amount}
+            onChangeText={setAmount}
+            placeholder="Monto pagado (RD$)"
+            placeholderTextColor={designTokens.color.ink.muted}
+            style={styles.proofNoteInput}
+            keyboardType="decimal-pad"
+            testID="report-payment-amount"
+          />
+          <TextInput
+            value={paymentDate}
+            onChangeText={setPaymentDate}
+            placeholder="Fecha del pago (AAAA-MM-DD)"
+            placeholderTextColor={designTokens.color.ink.muted}
+            style={styles.proofNoteInput}
+            testID="report-payment-date"
+          />
+          <TextInput
+            value={payingBank}
+            onChangeText={setPayingBank}
+            placeholder="Banco desde el que pagaste"
+            placeholderTextColor={designTokens.color.ink.muted}
+            style={styles.proofNoteInput}
+            testID="report-payment-bank"
+          />
+          <TextInput
             value={note}
             onChangeText={setNote}
-            placeholder="Nota (referencia bancaria, banco, etc.)"
+            placeholder="Nota adicional (opcional)"
             placeholderTextColor={designTokens.color.ink.muted}
             style={styles.proofNoteInput}
             multiline
@@ -818,13 +954,24 @@ function PaymentProofSheet({
           <Pressable
             onPress={() => {
               hapticFeedback.light();
-              if (imageUri) onSubmit(imageUri, mimeType, note);
+              if (imageUri) {
+                const parsedAmount = parseFloat(amount.replace(",", "."));
+                const amountValue = Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : undefined;
+                onSubmit(imageUri, mimeType, note, {
+                  bankReference,
+                  amount: amountValue,
+                  payingBank,
+                  paymentDate: paymentDate.trim() || new Date().toISOString().slice(0, 10),
+                  ocrAssessment: ocrAssessment ?? undefined,
+                  ocrClientEdited: didEditOcr(amountValue),
+                });
+              }
             }}
-            disabled={!imageUri || submitting}
+            disabled={!imageUri || submitting || ocrLoading}
             style={({ pressed }) => [
               styles.proofSubmitButton,
-              (!imageUri || submitting) && styles.proofSubmitButtonDisabled,
-              pressed && imageUri && !submitting && { opacity: 0.85 },
+              (!imageUri || submitting || ocrLoading) && styles.proofSubmitButtonDisabled,
+              pressed && imageUri && !submitting && !ocrLoading && { opacity: 0.85 },
             ]}
             accessibilityRole="button"
             accessibilityLabel="Enviar reporte de pago"
@@ -1119,6 +1266,33 @@ const styles = StyleSheet.create({
     borderRadius: designTokens.radius.md,
     backgroundColor: designTokens.color.surface.secondary,
     marginBottom: 12,
+  },
+  ocrCard: {
+    borderWidth: 1,
+    borderColor: designTokens.color.border.accent,
+    borderRadius: designTokens.radius.md,
+    backgroundColor: designTokens.color.surface.accent,
+    padding: 12,
+    marginBottom: 12,
+    gap: 6,
+  },
+  ocrCardLabel: {
+    color: designTokens.color.ink.accentStrong,
+    fontSize: 12,
+    fontWeight: "800",
+    textTransform: "uppercase",
+  },
+  ocrCardText: {
+    color: designTokens.color.ink.primary,
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: "600",
+  },
+  ocrWarning: {
+    color: designTokens.color.status.warningText,
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: "700",
   },
   proofNoteInput: {
     borderWidth: 1,

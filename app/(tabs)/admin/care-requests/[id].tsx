@@ -109,6 +109,7 @@ const BILLING_TEST_IDS: Record<string, string> = {
   pay: adminTestIds.careRequests.detail.payButton,
   void: adminTestIds.careRequests.detail.voidButton,
   receipt: adminTestIds.careRequests.detail.receiptButton,
+  "credit-note": "admin-care-request-credit-note-button",
 };
 
 const BILLING_LABELS: Record<string, string> = {
@@ -116,6 +117,7 @@ const BILLING_LABELS: Record<string, string> = {
   pay: "Registrar pago",
   void: "Anular",
   receipt: "Generar recibo",
+  "credit-note": "Nota de crédito",
 };
 
 const LIFECYCLE_TEST_IDS: Record<string, string> = {

@@ -1,7 +1,7 @@
 import type { AdminCareRequestStatus } from "@/src/services/adminPortalService";
 import { designTokens } from "@/src/design-system/tokens";
 
-export type AdminCareRequestBillingAction = "invoice" | "pay" | "void" | "receipt";
+export type AdminCareRequestBillingAction = "invoice" | "pay" | "void" | "receipt" | "credit-note";
 export type AdminCareRequestLifecycleAction = "assign" | "approve" | "reject" | "complete";
 
 export interface BillingTaskActionDefinition {
@@ -38,6 +38,12 @@ const billingActionMeta: Record<
     action: "receipt",
     label: "Generar Recibo",
     description: "Generar comprobante de pago ",
+    variant: "secondary",
+  },
+  "credit-note": {
+    action: "credit-note",
+    label: "Nota de crédito",
+    description: "Registrar un reembolso o crédito contra el pago",
     variant: "secondary",
   },
 };
@@ -116,14 +122,16 @@ export function getBillingTaskActions(
   }
 
   if (status === "Paid") {
+    // Void is blocked after Paid (collected revenue cannot silently disappear) — reversing a paid
+    // request is done with a credit note / refund (T1.4), not a void.
     return [
       {
         ...billingActionMeta.receipt,
         route: buildAdminCareRequestBillingRoute(id, "receipt"),
       },
       {
-        ...billingActionMeta.void,
-        route: buildAdminCareRequestBillingRoute(id, "void"),
+        ...billingActionMeta["credit-note"],
+        route: buildAdminCareRequestBillingRoute(id, "credit-note"),
       },
     ];
   }

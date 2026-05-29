@@ -56,7 +56,7 @@ describe("Billing service functions", () => {
       };
       vi.mocked(requestJson).mockResolvedValue(mockResponse);
 
-      const result = await payCareRequest("abc-123", "REF-789");
+      const result = await payCareRequest("abc-123", { bankReference: "REF-789" });
 
       expect(requestJson).toHaveBeenCalledWith({
         path: "/api/admin/care-requests/abc-123/pay",
