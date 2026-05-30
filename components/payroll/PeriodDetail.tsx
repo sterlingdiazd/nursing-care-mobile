@@ -88,8 +88,6 @@ const formatServiceLabel = (description: string) => {
 interface PeriodDetailProps {
   period: AdminPayrollPeriodDetail;
   onClose: () => Promise<void>;
-  /** Reopen a closed period for correction (audited). Requires a reason. */
-  onReopen?: (reason: string) => Promise<void>;
   onBack: () => void;
   onPrepareRecalculate?: () => void;
   /**
@@ -150,14 +148,9 @@ function deliveryStatusStyle(status?: string | null) {
   }
 }
 
-export function PeriodDetail({ period, onClose, onReopen, onBack, onPrepareRecalculate, onSetActions, onEdit, onDelete }: PeriodDetailProps) {
+export function PeriodDetail({ period, onClose, onBack, onPrepareRecalculate, onSetActions, onEdit, onDelete }: PeriodDetailProps) {
   const { showToast } = useToast();
   const isOpen = period.status === "Open";
-
-  // Reopen-a-closed-period modal state.
-  const [reopenModalVisible, setReopenModalVisible] = useState(false);
-  const [reopenReason, setReopenReason] = useState("");
-  const [reopenSubmitting, setReopenSubmitting] = useState(false);
 
   // CSV export state
   const [exporting, setExporting] = useState<string | null>(null);
@@ -612,27 +605,6 @@ export function PeriodDetail({ period, onClose, onReopen, onBack, onPrepareRecal
     );
   };
 
-  // --- Reopen a closed period (opens a reason modal; submit is audited server-side) ---
-  const handleSubmitReopen = async () => {
-    if (!onReopen) return;
-    const reason = reopenReason.trim();
-    if (!reason) {
-      showToast({ variant: "error", message: "Indica una razón para reabrir el período." });
-      return;
-    }
-    hapticFeedback.light();
-    setReopenSubmitting(true);
-    try {
-      await onReopen(reason);
-      setReopenModalVisible(false);
-      setReopenReason("");
-    } catch (e) {
-      showToast({ variant: "error", message: e instanceof Error ? e.message : "No fue posible reabrir el período." });
-    } finally {
-      setReopenSubmitting(false);
-    }
-  };
-
   // --- Period delete (destructive confirmation, mirrors close) ---
   const handleDeletePeriodConfirm = () => {
     hapticFeedback.selection();
@@ -722,24 +694,12 @@ export function PeriodDetail({ period, onClose, onReopen, onBack, onPrepareRecal
         variant: "danger",
       });
     }
-    if (!isOpen && onReopen) {
-      actions.push({
-        label: "Reabrir",
-        onPress: () => {
-          hapticFeedback.selection();
-          setReopenReason("");
-          setReopenModalVisible(true);
-        },
-        variant: "secondary",
-        testID: "admin-period-reopen-button",
-      });
-    }
     onSetActions(actions);
     return () => {
       onSetActions([]);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, exporting, downloadingBulk, deliveringAll, period.id, period.canModify, period.staffSummary.length, onEdit, onDelete, onReopen]);
+  }, [isOpen, exporting, downloadingBulk, deliveringAll, period.id, period.canModify, period.staffSummary.length, onEdit, onDelete]);
 
   const totalGross = period.staffSummary.reduce((sum, s) => sum + s.grossCompensation, 0);
   const totalNet = period.staffSummary.reduce((sum, s) => sum + s.netCompensation, 0);
@@ -1444,75 +1404,6 @@ export function PeriodDetail({ period, onClose, onReopen, onBack, onPrepareRecal
         </View>
       </Modal>
 
-      {/* Reopen reason modal */}
-      <Modal
-        visible={reopenModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setReopenModalVisible(false)}
-      >
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-        >
-          <View
-            style={styles.modalCard}
-            testID="admin-period-reopen-modal"
-            nativeID="admin-period-reopen-modal"
-            accessibilityViewIsModal
-          >
-            <Text style={styles.modalTitle}>Reabrir período</Text>
-            <Text style={styles.modalSubtitle} numberOfLines={2}>
-              {periodLabel} — el período volverá a estado Abierto para correcciones.
-            </Text>
-
-            <Text style={styles.inputLabel}>Razón de la reapertura</Text>
-            <TextInput
-              style={[styles.input, styles.inputMultiline]}
-              multiline
-              value={reopenReason}
-              onChangeText={setReopenReason}
-              placeholder="Describe por qué se reabre el período..."
-              testID="admin-period-reopen-reason-input"
-              nativeID="admin-period-reopen-reason-input"
-              accessibilityLabel="Razón de la reapertura"
-            />
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonSecondary]}
-                onPress={() => {
-                  hapticFeedback.selection();
-                  setReopenModalVisible(false);
-                }}
-                disabled={reopenSubmitting}
-                accessibilityRole="button"
-                accessibilityLabel="Cancelar reapertura"
-              >
-                <Text style={[styles.modalButtonText, styles.modalButtonTextSecondary]}>
-                  Cancelar
-                </Text>
-              </TouchableOpacity>
-              <Pressable
-                style={[styles.modalButton, reopenSubmitting && styles.buttonDisabled]}
-                onPress={handleSubmitReopen}
-                disabled={reopenSubmitting}
-                testID="admin-period-reopen-submit-button"
-                nativeID="admin-period-reopen-submit-button"
-                accessibilityRole="button"
-                accessibilityLabel={reopenSubmitting ? "Reabriendo período" : "Confirmar reapertura"}
-                accessibilityState={{ busy: reopenSubmitting }}
-              >
-                {reopenSubmitting ? (
-                  <ActivityIndicator color={designTokens.color.ink.inverse} size="small" accessibilityLabel="Cargando..." />
-                ) : (
-                  <Text style={styles.modalButtonText}>Reabrir</Text>
-                )}
-              </Pressable>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
 
       <Modal
         visible={paymentAction !== null}
