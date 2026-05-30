@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { getFinanceOverview, type FinanceOverview, type HealthIndicator } from "@/src/services/financeService";
 import { financeTheme as t, fmtMoney, fmtMoneyCompact, statusColor } from "@/components/finance/financeTheme";
 import { SegmentedTabs } from "@/components/finance/SegmentedTabs";
+import { PeriodSelector, rangeFor, shiftAnchor, type Granularity } from "@/components/finance/PeriodSelector";
 import { GananciaHero, HealthRow, FocusCard } from "@/components/finance/SummaryWidgets";
 import { RevenueDonut, SectionCard, TopClientsBars, TrendArea } from "@/components/finance/FinanceCharts";
 import { DashboardSkeleton } from "@/components/finance/DashboardSkeleton";
@@ -30,18 +31,22 @@ export default function AdminFinanceDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState("resumen");
+  const [granularity, setGranularity] = useState<Granularity>("month");
+  const [anchor, setAnchor] = useState<Date>(() => new Date());
+
+  const range = useMemo(() => rangeFor(granularity, anchor), [granularity, anchor]);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      setData(await getFinanceOverview());
+      setData(await getFinanceOverview({ from: range.from, to: range.to }));
     } catch (e: any) {
       setError(e?.message ?? "No se pudo cargar el panel financiero.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [range.from, range.to]);
 
   useEffect(() => {
     void load();
@@ -74,6 +79,12 @@ export default function AdminFinanceDashboard() {
       nativeID="finance-dashboard-screen"
       disableScroll={false}
     >
+      <PeriodSelector
+        granularity={granularity}
+        anchor={anchor}
+        onChangeGranularity={setGranularity}
+        onStep={(dir) => setAnchor((a) => shiftAnchor(granularity, a, dir))}
+      />
       {loading ? (
         <DashboardSkeleton />
       ) : error ? (
