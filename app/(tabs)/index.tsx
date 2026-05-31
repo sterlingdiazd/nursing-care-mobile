@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Redirect, router } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { designTokens, type PaletteHue } from "@/src/design-system/tokens";
+import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { IconBadge } from "@/src/components/shared/IconBadge";
@@ -281,71 +282,63 @@ export default function HomeScreen() {
   );
 }
 
+const T = designTokens;
 const styles = StyleSheet.create({
   grid: {
-    gap: 14,
+    gap: T.spacing.lg,
   },
   card: {
-    backgroundColor: designTokens.color.ink.inverse,
-    borderRadius: 18,
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-    borderWidth: 1,
-    borderColor: designTokens.color.border.subtle,
-    boxShadow: "0px 6px 12px rgba(18, 48, 68, 0.06)",
-elevation: 2,
+    ...mobileSurfaceCard,
+    paddingHorizontal: T.spacing.lg,
+    paddingVertical: T.spacing.lg,
   },
   cardContent: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 12,
+    gap: T.spacing.md,
   },
   cardTextBlock: {
     flex: 1,
   },
   cardTitleSmall: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: designTokens.color.ink.primary,
-    marginBottom: 4,
+    ...T.text.bodyStrong,
+    marginBottom: T.spacing.xs,
   },
   cardPriority: {
-    color: designTokens.color.ink.accentStrong,
-    fontSize: 12,
+    ...T.typography.caption,
+    color: T.color.ink.accentStrong,
     fontWeight: "900",
-    marginBottom: 5,
+    marginBottom: T.spacing.xs,
   },
   cardBodySmall: {
-    fontSize: 13,
-    color: designTokens.color.ink.muted,
+    ...T.text.caption,
   },
   primaryButton: {
-    backgroundColor: designTokens.color.ink.accent,
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    backgroundColor: T.color.ink.accent,
+    borderRadius: T.radius.lg,
+    paddingVertical: T.spacing.lg,
+    paddingHorizontal: T.spacing.xl,
     alignItems: "center",
     boxShadow: "0px 6px 12px rgba(18, 48, 68, 0.06)",
-},
+  },
   secondaryButton: {
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    borderRadius: T.radius.lg,
+    paddingVertical: T.spacing.lg,
+    paddingHorizontal: T.spacing.xl,
     alignItems: "center",
-    backgroundColor: designTokens.color.ink.inverse,
+    backgroundColor: T.color.ink.inverse,
     borderWidth: 1,
-    borderColor: designTokens.color.border.strong,
+    borderColor: T.color.border.strong,
   },
   primaryButtonText: {
-    color: designTokens.color.ink.inverse,
-    fontSize: 16,
+    ...T.text.bodyStrong,
+    color: T.color.ink.inverse,
     fontWeight: "800",
   },
   secondaryButtonText: {
-    color: designTokens.color.ink.accent,
-    fontSize: 15,
-    fontWeight: "700",
+    ...T.text.bodyStrong,
+    color: T.color.ink.accent,
   },
   buttonPressed: {
     opacity: 0.9,
@@ -355,9 +348,8 @@ elevation: 2,
     opacity: 0.4,
   },
   cardChevron: {
-    fontSize: 24,
-    lineHeight: 24,
-    color: designTokens.color.ink.muted,
+    ...T.text.title,
+    color: T.color.ink.muted,
     fontWeight: "400",
   },
 });

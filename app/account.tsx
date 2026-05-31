@@ -230,19 +230,16 @@ const styles = StyleSheet.create({
     borderTopColor: designTokens.color.border.subtle,
   },
   linkTitle: {
-    color: designTokens.color.ink.primary,
-    fontSize: 16,
-    fontWeight: "900",
+    ...designTokens.text.bodyStrong,
   },
   linkBody: {
-    color: designTokens.color.ink.secondary,
-    fontSize: 13,
-    marginTop: 3,
+    ...designTokens.text.caption,
+    marginTop: designTokens.spacing.xs,
   },
   chevron: {
+    ...designTokens.text.title,
     color: designTokens.color.ink.muted,
-    fontSize: 26,
-    lineHeight: 26,
+    fontWeight: "400",
   },
   pressed: {
     opacity: 0.75,
