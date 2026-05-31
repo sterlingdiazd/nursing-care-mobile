@@ -6,7 +6,7 @@ import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
-import { mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
+import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import type { PaletteHue } from "@/src/design-system/tokens";
 import { ModuleTile } from "@/src/components/shared/ModuleTile";
 import { navigationTestIds, adminTestIds } from "@/src/testing/testIds";
@@ -190,7 +190,7 @@ export default function AdminMenuTab() {
               importantForAccessibility="no"
               style={styles.editIconButton}
             >
-              <FontAwesome name="pencil" size={18} color={mobileTheme.colors.ink.accent} />
+              <FontAwesome name="pencil" size={18} color={designTokens.color.ink.accent} />
             </View>
           </Pressable>
 
@@ -223,7 +223,7 @@ export default function AdminMenuTab() {
             disabled={isLoggingOut}
             style={({ pressed }) => [styles.logoutButton, pressed && styles.pressed, isLoggingOut && styles.disabled]}
           >
-            <FontAwesome name="sign-out" size={18} color={mobileTheme.colors.ink.danger} />
+            <FontAwesome name="sign-out" size={18} color={designTokens.color.ink.danger} />
             <Text style={styles.logoutText}>{isLoggingOut ? "Cerrando sesión…" : "Cerrar sesión"}</Text>
           </Pressable>
         </View>
@@ -253,10 +253,10 @@ const styles = StyleSheet.create({
     borderRadius: designTokens.radius.xxl,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: mobileTheme.colors.surface.secondary,
+    backgroundColor: designTokens.color.surface.secondary,
   },
   avatarText: {
-    color: mobileTheme.colors.ink.accent,
+    color: designTokens.color.ink.accent,
     fontSize: designTokens.typography.section.fontSize,
     fontWeight: "900",
   },
@@ -265,25 +265,25 @@ const styles = StyleSheet.create({
     gap: designTokens.spacing.xs,
   },
   profileName: {
-    color: mobileTheme.colors.ink.primary,
+    color: designTokens.color.ink.primary,
     fontSize: designTokens.typography.body.fontSize,
     fontWeight: "900",
   },
   profileEmail: {
-    color: mobileTheme.colors.ink.secondary,
+    color: designTokens.color.ink.secondary,
     fontSize: designTokens.typography.label.fontSize,
     fontWeight: "500",
   },
   roleBadge: {
     alignSelf: "flex-start",
-    backgroundColor: mobileTheme.colors.surface.secondary,
+    backgroundColor: designTokens.color.surface.secondary,
     borderRadius: designTokens.radius.sm,
     paddingHorizontal: designTokens.spacing.sm,
     paddingVertical: designTokens.spacing.xs,
     marginTop: designTokens.spacing.xs,
   },
   roleBadgeText: {
-    color: mobileTheme.colors.ink.accent,
+    color: designTokens.color.ink.accent,
     fontSize: designTokens.typography.caption.fontSize,
     fontWeight: "800",
     textTransform: "uppercase",
@@ -294,13 +294,13 @@ const styles = StyleSheet.create({
     borderRadius: designTokens.radius.lg,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: mobileTheme.colors.surface.secondary,
+    backgroundColor: designTokens.color.surface.secondary,
   },
   group: {
     gap: designTokens.spacing.md,
   },
   groupTitle: {
-    color: mobileTheme.colors.ink.primary,
+    color: designTokens.color.ink.primary,
     fontSize: designTokens.typography.body.fontSize,
     fontWeight: "900",
   },
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
     marginTop: designTokens.spacing.xs,
   },
   logoutText: {
-    color: mobileTheme.colors.ink.danger,
+    color: designTokens.color.ink.danger,
     fontSize: designTokens.typography.body.fontSize,
     fontWeight: "800",
   },

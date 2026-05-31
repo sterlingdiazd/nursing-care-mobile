@@ -15,7 +15,6 @@ import { FilterChips } from "@/src/components/shared/FilterChips";
 import { ListRow } from "@/src/components/shared/ListRow";
 import { Pagination } from "@/src/components/shared/Pagination";
 import { Banner } from "@/src/components/shared/Banner";
-import { mobileTheme } from "@/src/design-system/mobileStyles";
 import { designTokens } from "@/src/design-system/tokens";
 import { toneStyles, type WorkCardTone } from "@/src/design-system/tones";
 import { useAuth } from "@/src/context/AuthContext";
@@ -206,10 +205,10 @@ const styles = StyleSheet.create({
   emptyText: { color: designTokens.color.ink.muted, fontSize: designTokens.typography.body.fontSize },
 
   card: {
-    backgroundColor: mobileTheme.colors.surface.primary,
-    borderRadius: mobileTheme.radius.xl,
+    backgroundColor: designTokens.color.surface.primary,
+    borderRadius: designTokens.radius.xl,
     borderWidth: 1,
-    borderColor: mobileTheme.colors.border.subtle,
+    borderColor: designTokens.color.border.subtle,
     boxShadow: "0px 4px 10px rgba(18, 48, 68, 0.04)",
     elevation: 1,
     padding: designTokens.spacing.lg,
@@ -217,22 +216,22 @@ const styles = StyleSheet.create({
   },
   cardHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: designTokens.spacing.sm },
   cardEyebrow: {
-    color: mobileTheme.colors.ink.muted,
+    color: designTokens.color.ink.muted,
     fontSize: designTokens.typography.caption.fontSize, fontWeight: "900", textTransform: "uppercase", letterSpacing: 0.6,
   },
   statePill: { borderRadius: designTokens.radius.sm, paddingHorizontal: designTokens.spacing.md, paddingVertical: designTokens.spacing.xs },
   statePillText: { fontSize: designTokens.typography.caption.fontSize, fontWeight: "800" },
-  cardTitle: { color: mobileTheme.colors.ink.primary, fontSize: designTokens.typography.section.fontSize, lineHeight: 22, fontWeight: "900" },
-  cardMeta: { color: mobileTheme.colors.ink.secondary, fontSize: designTokens.typography.caption.fontSize, fontWeight: "600" },
+  cardTitle: { color: designTokens.color.ink.primary, fontSize: designTokens.typography.section.fontSize, lineHeight: 22, fontWeight: "900" },
+  cardMeta: { color: designTokens.color.ink.secondary, fontSize: designTokens.typography.caption.fontSize, fontWeight: "600" },
   cardCta: {
     alignSelf: "flex-end",
     marginTop: designTokens.spacing.xs,
     borderRadius: designTokens.radius.sm,
     paddingHorizontal: designTokens.spacing.lg,
     paddingVertical: designTokens.spacing.sm,
-    backgroundColor: mobileTheme.colors.surface.secondary,
+    backgroundColor: designTokens.color.surface.secondary,
   },
-  cardCtaText: { color: mobileTheme.colors.ink.accent, fontSize: designTokens.typography.label.fontSize, fontWeight: "900" },
+  cardCtaText: { color: designTokens.color.ink.accent, fontSize: designTokens.typography.label.fontSize, fontWeight: "900" },
 
   pressed: { opacity: 0.78 },
 });

@@ -15,7 +15,6 @@ import * as ImagePicker from "expo-image-picker";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import type { FooterAction } from "@/src/components/navigation/AppFooter";
 import { useAuth } from "@/src/context/AuthContext";
-import { mobileTheme } from "@/src/design-system/mobileStyles";
 import { designTokens } from "@/src/design-system/tokens";
 import { logClientEvent } from "@/src/logging/clientLogger";
 import {
@@ -1337,10 +1336,10 @@ const styles = StyleSheet.create({
     fontSize: designTokens.typography.body.fontSize,
   },
   card: {
-    backgroundColor: mobileTheme.colors.surface.primary,
-    borderRadius: mobileTheme.radius.xl,
+    backgroundColor: designTokens.color.surface.primary,
+    borderRadius: designTokens.radius.xl,
     borderWidth: 1,
-    borderColor: mobileTheme.colors.border.subtle,
+    borderColor: designTokens.color.border.subtle,
     boxShadow: "0px 4px 10px rgba(18, 48, 68, 0.04)",
     elevation: 1,
     padding: designTokens.spacing.lg, gap: designTokens.spacing.sm,
@@ -1350,14 +1349,14 @@ const styles = StyleSheet.create({
   },
   sectionHeaderRow: { flexDirection: "row", alignItems: "center", gap: designTokens.spacing.sm },
   cardEyebrow: {
-    color: mobileTheme.colors.ink.muted,
+    color: designTokens.color.ink.muted,
     fontSize: designTokens.typography.caption.fontSize, fontWeight: "900", textTransform: "uppercase", letterSpacing: 0.6,
   },
   cardTitle: {
-    color: mobileTheme.colors.ink.primary, fontSize: designTokens.typography.section.fontSize, lineHeight: 22, fontWeight: "900",
+    color: designTokens.color.ink.primary, fontSize: designTokens.typography.section.fontSize, lineHeight: 22, fontWeight: "900",
   },
   cardMeta: {
-    color: mobileTheme.colors.ink.secondary, fontSize: designTokens.typography.caption.fontSize, fontWeight: "600",
+    color: designTokens.color.ink.secondary, fontSize: designTokens.typography.caption.fontSize, fontWeight: "600",
   },
   countPill: {
     borderRadius: designTokens.radius.sm, paddingHorizontal: designTokens.spacing.md, paddingVertical: designTokens.spacing.xs,
@@ -1370,31 +1369,31 @@ const styles = StyleSheet.create({
   },
   servicioCol: { flex: 1, minWidth: 0 },
   servicioLabel: {
-    color: mobileTheme.colors.ink.muted, fontSize: designTokens.typography.caption.fontSize, fontWeight: "800", textTransform: "uppercase",
+    color: designTokens.color.ink.muted, fontSize: designTokens.typography.caption.fontSize, fontWeight: "800", textTransform: "uppercase",
   },
   servicioValue: {
-    color: mobileTheme.colors.ink.primary, fontSize: designTokens.typography.body.fontSize, fontWeight: "800", marginTop: designTokens.spacing.xs,
+    color: designTokens.color.ink.primary, fontSize: designTokens.typography.body.fontSize, fontWeight: "800", marginTop: designTokens.spacing.xs,
   },
   totalRow: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
     marginTop: designTokens.spacing.sm, paddingTop: designTokens.spacing.md,
-    borderTopWidth: 1, borderTopColor: mobileTheme.colors.border.subtle,
+    borderTopWidth: 1, borderTopColor: designTokens.color.border.subtle,
   },
   totalLabel: {
-    color: mobileTheme.colors.ink.secondary, fontSize: designTokens.typography.label.fontSize, fontWeight: "800",
+    color: designTokens.color.ink.secondary, fontSize: designTokens.typography.label.fontSize, fontWeight: "800",
   },
   totalValue: {
-    color: mobileTheme.colors.ink.accent, fontSize: designTokens.typography.title.fontSize, fontWeight: "900",
+    color: designTokens.color.ink.accent, fontSize: designTokens.typography.title.fontSize, fontWeight: "900",
   },
   billingRow: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
     paddingTop: designTokens.spacing.sm, gap: designTokens.spacing.md,
   },
   billingLabel: {
-    color: mobileTheme.colors.ink.muted, fontSize: designTokens.typography.label.fontSize, fontWeight: "700", flex: 1,
+    color: designTokens.color.ink.muted, fontSize: designTokens.typography.label.fontSize, fontWeight: "700", flex: 1,
   },
   billingValue: {
-    color: mobileTheme.colors.ink.primary, fontSize: designTokens.typography.label.fontSize, fontWeight: "800", textAlign: "right", flex: 1,
+    color: designTokens.color.ink.primary, fontSize: designTokens.typography.label.fontSize, fontWeight: "800", textAlign: "right", flex: 1,
   },
   receiptButton: {
     minHeight: 48,
@@ -1411,10 +1410,10 @@ const styles = StyleSheet.create({
   },
   linkButton: {
     borderRadius: designTokens.radius.sm, paddingHorizontal: designTokens.spacing.md, paddingVertical: designTokens.spacing.sm,
-    backgroundColor: mobileTheme.colors.surface.secondary,
+    backgroundColor: designTokens.color.surface.secondary,
   },
   linkButtonText: {
-    color: mobileTheme.colors.ink.accent, fontSize: designTokens.typography.label.fontSize, fontWeight: "900",
+    color: designTokens.color.ink.accent, fontSize: designTokens.typography.label.fontSize, fontWeight: "900",
   },
   assignmentWarning: {
     color: designTokens.color.status.warningText, fontSize: designTokens.typography.caption.fontSize, fontWeight: "700", marginTop: designTokens.spacing.xs,
@@ -1422,10 +1421,10 @@ const styles = StyleSheet.create({
   overflowButton: {
     width: 40, height: 40, borderRadius: designTokens.radius.md,
     alignItems: "center", justifyContent: "center",
-    backgroundColor: mobileTheme.colors.surface.secondary,
+    backgroundColor: designTokens.color.surface.secondary,
   },
   overflowGlyph: {
-    fontSize: designTokens.typography.title.fontSize, fontWeight: "900", color: mobileTheme.colors.ink.primary, lineHeight: 22,
+    fontSize: designTokens.typography.title.fontSize, fontWeight: "900", color: designTokens.color.ink.primary, lineHeight: 22,
   },
   pressed: { opacity: 0.78 },
   disabled: { opacity: 0.45 },

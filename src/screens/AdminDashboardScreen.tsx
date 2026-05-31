@@ -5,7 +5,7 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
-import { mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
+import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import { toneStyles, type WorkCardTone } from "@/src/design-system/tones";
 import type { PaletteHue } from "@/src/design-system/tokens";
 import { ActionCard } from "@/src/components/shared/ActionCard";
@@ -17,6 +17,7 @@ import { useToast } from "@/src/components/shared/ToastProvider";
 import { isConnectivityError } from "@/src/services/httpClient";
 import { readSnapshot, SnapshotBuckets } from "@/src/services/apiSnapshotCache";
 import { OfflineSnapshotBanner } from "@/src/components/shared/OfflineSnapshotBanner";
+import { designTokens } from "@/src/design-system/tokens";
 
 // Bridges the work-card "tone" vocabulary to the unified palette hues used by ActionCard.
 const TONE_TO_HUE: Record<WorkCardTone, PaletteHue> = {
@@ -197,7 +198,7 @@ export default function AdminDashboardScreen() {
           onPress={() => router.push("/admin/notifications" as any)}
           style={({ pressed }) => [styles.bellButton, pressed && styles.pressed]}
         >
-          <FontAwesome name="bell-o" size={22} color={mobileTheme.colors.ink.primary} />
+          <FontAwesome name="bell-o" size={22} color={designTokens.color.ink.primary} />
           {hasUnreadNotifications ? <View style={styles.unreadDot} /> : null}
         </Pressable>
       }
@@ -288,10 +289,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: mobileTheme.colors.surface.primary,
+    backgroundColor: designTokens.color.surface.primary,
     borderWidth: 1,
-    borderColor: mobileTheme.colors.border.subtle,
-    ...mobileTheme.shadows.raised,
+    borderColor: designTokens.color.border.subtle,
+    ...designTokens.shadow.raised,
   },
   unreadDot: {
     position: "absolute",
@@ -300,7 +301,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: mobileTheme.colors.ink.danger,
+    backgroundColor: designTokens.color.ink.danger,
   },
   progressCard: {
     ...mobileSurfaceCard,
@@ -309,7 +310,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 14,
     padding: 14,
-    borderColor: mobileTheme.colors.border.accent,
+    borderColor: designTokens.color.border.accent,
   },
   progressIconWrap: {
     width: 58,
@@ -325,12 +326,12 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   progressTitle: {
-    color: mobileTheme.colors.ink.primary,
+    color: designTokens.color.ink.primary,
     fontSize: 18,
     fontWeight: "900",
   },
   progressPending: {
-    color: mobileTheme.colors.ink.secondary,
+    color: designTokens.color.ink.secondary,
     fontSize: 14,
     fontWeight: "600",
   },
@@ -342,7 +343,7 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 999,
     overflow: "hidden",
-    backgroundColor: mobileTheme.colors.surface.tertiary,
+    backgroundColor: designTokens.color.surface.tertiary,
   },
   progressFill: {
     height: "100%",
@@ -350,7 +351,7 @@ const styles = StyleSheet.create({
     backgroundColor: toneStyles.info.color,
   },
   progressMeta: {
-    color: mobileTheme.colors.ink.secondary,
+    color: designTokens.color.ink.secondary,
     fontSize: 13,
     fontWeight: "600",
   },
@@ -366,15 +367,15 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   loadingText: {
-    color: mobileTheme.colors.ink.secondary,
+    color: designTokens.color.ink.secondary,
     fontWeight: "700",
   },
   error: {
-    backgroundColor: mobileTheme.colors.status.dangerBg,
+    backgroundColor: designTokens.color.status.dangerBg,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: mobileTheme.colors.border.danger,
-    color: mobileTheme.colors.status.dangerText,
+    borderColor: designTokens.color.border.danger,
+    color: designTokens.color.status.dangerText,
     padding: 12,
     fontWeight: "700",
   },

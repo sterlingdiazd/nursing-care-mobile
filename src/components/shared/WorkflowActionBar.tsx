@@ -1,5 +1,5 @@
 import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
-import { mobilePrimaryButton, mobileSecondaryButton, mobileTheme } from "@/src/design-system/mobileStyles";
+import { mobilePrimaryButton, mobileSecondaryButton } from "@/src/design-system/mobileStyles";
 import { withHapticFeedback } from "@/src/utils/haptics";
 import { designTokens } from "@/src/design-system/tokens";
 
@@ -60,12 +60,12 @@ export default function WorkflowActionBar({ actions }: WorkflowActionBarProps) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
-    gap: mobileTheme.spacing.sm,
+    gap: designTokens.spacing.sm,
     paddingHorizontal: designTokens.spacing.xs,
     paddingVertical: designTokens.spacing.xs,
   },
   button: {
-    borderRadius: mobileTheme.radius.lg,
+    borderRadius: designTokens.radius.lg,
     paddingVertical: designTokens.spacing.md,
     paddingHorizontal: designTokens.spacing.lg,
     alignItems: "center",
@@ -77,9 +77,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: designTokens.spacing.lg,
   },
   dangerButton: {
-    backgroundColor: mobileTheme.colors.surface.danger,
+    backgroundColor: designTokens.color.surface.danger,
     borderWidth: 1,
-    borderColor: mobileTheme.colors.border.danger,
+    borderColor: designTokens.color.border.danger,
   },
   secondaryButton: {
     ...mobileSecondaryButton,
@@ -96,15 +96,15 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   primaryButtonText: {
-    color: mobileTheme.colors.ink.inverse,
+    color: designTokens.color.ink.inverse,
   },
   dangerButtonText: {
-    color: mobileTheme.colors.status.dangerText,
+    color: designTokens.color.status.dangerText,
   },
   secondaryButtonText: {
-    color: mobileTheme.colors.ink.accentStrong,
+    color: designTokens.color.ink.accentStrong,
   },
   disabledButtonText: {
-    color: mobileTheme.colors.ink.muted,
+    color: designTokens.color.ink.muted,
   },
 });

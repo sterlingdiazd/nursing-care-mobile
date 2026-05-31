@@ -5,7 +5,7 @@
 
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { mobilePrimaryButton, mobileSecondarySurface, mobileTheme } from "@/src/design-system/mobileStyles";
+import { mobilePrimaryButton, mobileSecondarySurface } from "@/src/design-system/mobileStyles";
 import { hapticFeedback } from "@/src/utils/haptics";
 import { designTokens } from "@/src/design-system/tokens";
 
@@ -42,7 +42,7 @@ export default function SearchFilterBar({
         <TextInput
           style={styles.input}
           placeholder={searchPlaceholder}
-          placeholderTextColor={mobileTheme.colors.ink.muted}
+          placeholderTextColor={designTokens.color.ink.muted}
           value={searchValue}
           onChangeText={onSearchChange}
           onSubmitEditing={handleSearch}
@@ -80,34 +80,34 @@ export default function SearchFilterBar({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: mobileTheme.colors.surface.primary,
+    backgroundColor: designTokens.color.surface.primary,
     borderWidth: 1,
-    borderColor: mobileTheme.colors.border.subtle,
-    borderRadius: mobileTheme.radius.xl,
-    padding: mobileTheme.spacing.lg,
-    marginBottom: mobileTheme.spacing.lg,
+    borderColor: designTokens.color.border.subtle,
+    borderRadius: designTokens.radius.xl,
+    padding: designTokens.spacing.lg,
+    marginBottom: designTokens.spacing.lg,
   },
   inputRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: mobileTheme.spacing.sm,
+    gap: designTokens.spacing.sm,
   },
   input: {
     flex: 1,
     ...mobileSecondarySurface,
     paddingHorizontal: designTokens.spacing.lg,
     paddingVertical: designTokens.spacing.md,
-    color: mobileTheme.colors.ink.primary,
+    color: designTokens.color.ink.primary,
     fontSize: designTokens.typography.body.fontSize,
   },
   clearButton: {
-    backgroundColor: mobileTheme.colors.surface.tertiary,
-    borderRadius: mobileTheme.radius.md,
+    backgroundColor: designTokens.color.surface.tertiary,
+    borderRadius: designTokens.radius.md,
     paddingHorizontal: designTokens.spacing.md,
     paddingVertical: designTokens.spacing.md,
   },
   clearButtonText: {
-    color: mobileTheme.colors.ink.secondary,
+    color: designTokens.color.ink.secondary,
     fontWeight: "700",
     fontSize: designTokens.typography.label.fontSize,
   },
@@ -117,14 +117,14 @@ const styles = StyleSheet.create({
     paddingVertical: designTokens.spacing.md,
   },
   searchButtonText: {
-    color: mobileTheme.colors.ink.inverse,
+    color: designTokens.color.ink.inverse,
     fontWeight: "700",
     fontSize: designTokens.typography.body.fontSize,
   },
   filtersRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: mobileTheme.spacing.sm,
+    gap: designTokens.spacing.sm,
     marginTop: designTokens.spacing.md,
   },
 });

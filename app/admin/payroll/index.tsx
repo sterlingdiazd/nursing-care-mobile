@@ -5,7 +5,7 @@ import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
-import { mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
+import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import { designTokens, type PaletteHue } from "@/src/design-system/tokens";
 import { IconBadge } from "@/src/components/shared/IconBadge";
 import { MetricCard } from "@/src/components/shared/MetricCard";
@@ -153,7 +153,7 @@ export default function PayrollHubScreen() {
                 <Text style={styles.cardLabel}>{card.label}</Text>
                 <Text style={styles.cardHelper} numberOfLines={2}>{card.helper}</Text>
               </View>
-              <FontAwesome name="chevron-right" size={14} color={mobileTheme.colors.ink.muted} />
+              <FontAwesome name="chevron-right" size={14} color={designTokens.color.ink.muted} />
             </Pressable>
           ))}
         </View>
@@ -191,12 +191,12 @@ const styles = StyleSheet.create({
     gap: designTokens.spacing.xs,
   },
   cardLabel: {
-    color: mobileTheme.colors.ink.primary,
+    color: designTokens.color.ink.primary,
     fontSize: designTokens.typography.body.fontSize,
     fontWeight: "800",
   },
   cardHelper: {
-    color: mobileTheme.colors.ink.muted,
+    color: designTokens.color.ink.muted,
     fontSize: designTokens.typography.caption.fontSize,
     fontWeight: "500",
   },

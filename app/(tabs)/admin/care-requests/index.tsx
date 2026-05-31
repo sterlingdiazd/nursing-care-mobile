@@ -15,7 +15,6 @@ import { ListRow } from "@/src/components/shared/ListRow";
 import { Pagination } from "@/src/components/shared/Pagination";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
 import { Banner } from "@/src/components/shared/Banner";
-import { mobileTheme } from "@/src/design-system/mobileStyles";
 import { designTokens } from "@/src/design-system/tokens";
 import { useAuth } from "@/src/context/AuthContext";
 import { usePagedList } from "@/src/hooks/usePagedList";

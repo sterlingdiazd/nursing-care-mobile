@@ -6,7 +6,7 @@ import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { type FooterAction } from "@/src/components/navigation/AppFooter";
 import { useAuth } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
-import { mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
+import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import {
   getAdminUserDetail,
   updateAdminUserActiveState,
@@ -605,7 +605,7 @@ const styles = StyleSheet.create({
     backgroundColor: designTokens.color.surface.secondary,
   },
   modalButtonPrimary: {
-    backgroundColor: mobileTheme.colors.ink.accent,
+    backgroundColor: designTokens.color.ink.accent,
   },
   modalButtonText: {
     fontSize: designTokens.typography.body.fontSize,
@@ -630,13 +630,13 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: designTokens.radius.sm,
     borderWidth: 2,
-    borderColor: mobileTheme.colors.border.accent,
+    borderColor: designTokens.color.border.accent,
     marginRight: designTokens.spacing.md,
     alignItems: "center",
     justifyContent: "center",
   },
   checkboxSelected: {
-    backgroundColor: mobileTheme.colors.ink.accent,
+    backgroundColor: designTokens.color.ink.accent,
   },
   checkboxCheck: {
     color: designTokens.color.ink.inverse,

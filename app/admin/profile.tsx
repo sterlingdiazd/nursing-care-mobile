@@ -7,7 +7,7 @@ import { Banner } from "@/src/components/shared/Banner";
 import { FormInput } from "@/src/components/form";
 import { FormPanel } from "@/src/components/shared/FormPanel";
 import { useAuth } from "@/src/context/AuthContext";
-import { mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
+import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import {
   AdminUserDetailDto,
   getAdminUserDetail,
@@ -208,7 +208,7 @@ export default function AdminProfileScreen() {
         <View style={styles.loaderWrap}>
           <ActivityIndicator
             {...automationProps(adminTestIds.profile.loadingIndicator)}
-            color={mobileTheme.colors.ink.accent}
+            color={designTokens.color.ink.accent}
           />
         </View>
       ) : (
@@ -316,11 +316,11 @@ const styles = StyleSheet.create({
     gap: designTokens.spacing.xs,
   },
   metaLine: {
-    color: mobileTheme.colors.ink.secondary,
+    color: designTokens.color.ink.secondary,
     fontSize: designTokens.typography.label.fontSize,
   },
   metaValue: {
-    color: mobileTheme.colors.ink.primary,
+    color: designTokens.color.ink.primary,
     fontWeight: "800",
   },
 });

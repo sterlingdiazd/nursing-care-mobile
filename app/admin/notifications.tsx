@@ -17,8 +17,7 @@ import { SwipePager } from "@/src/components/shared/SwipePager";
 import {
   mobileSecondaryButton,
   mobileSurfaceCard,
-  mobileTheme,
-} from "@/src/design-system/mobileStyles";
+  } from "@/src/design-system/mobileStyles";
 import { useAuth } from "@/src/context/AuthContext";
 import {
   archiveAdminNotification,
@@ -154,7 +153,7 @@ export default function AdminNotificationsScreen() {
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={() => void load(status, page, "refresh")}
-              tintColor={mobileTheme.colors.ink.accent}
+              tintColor={designTokens.color.ink.accent}
             />
           }
         >
@@ -195,7 +194,7 @@ export default function AdminNotificationsScreen() {
 
         {isFetching && items.length === 0 ? (
           <View style={styles.loadingWrap}>
-            <ActivityIndicator color={mobileTheme.colors.ink.accent} />
+            <ActivityIndicator color={designTokens.color.ink.accent} />
           </View>
         ) : items.length === 0 ? (
           <View style={styles.emptyWrap}>
@@ -330,7 +329,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: designTokens.spacing.xs,
   },
   summaryText: {
-    color: mobileTheme.colors.ink.secondary,
+    color: designTokens.color.ink.secondary,
     fontSize: designTokens.typography.caption.fontSize,
     fontWeight: "700",
   },
@@ -344,12 +343,12 @@ const styles = StyleSheet.create({
     gap: designTokens.spacing.sm,
   },
   emptyTitle: {
-    color: mobileTheme.colors.ink.primary,
+    color: designTokens.color.ink.primary,
     fontSize: designTokens.typography.body.fontSize,
     fontWeight: "800",
   },
   emptyHint: {
-    color: mobileTheme.colors.ink.secondary,
+    color: designTokens.color.ink.secondary,
     fontSize: designTokens.typography.label.fontSize,
   },
   list: {
@@ -375,54 +374,54 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   stateChip: {
-    color: mobileTheme.colors.ink.secondary,
+    color: designTokens.color.ink.secondary,
     fontWeight: "800",
     fontSize: designTokens.typography.caption.fontSize,
     textTransform: "uppercase",
     letterSpacing: 0.4,
   },
   source: {
-    color: mobileTheme.colors.ink.secondary,
+    color: designTokens.color.ink.secondary,
     fontSize: designTokens.typography.caption.fontSize,
     fontWeight: "700",
   },
   title: {
-    color: mobileTheme.colors.ink.primary,
+    color: designTokens.color.ink.primary,
     fontWeight: "900",
     fontSize: designTokens.typography.body.fontSize,
   },
   body: {
-    color: mobileTheme.colors.ink.secondary,
+    color: designTokens.color.ink.secondary,
     fontSize: designTokens.typography.body.fontSize,
     lineHeight: 20,
   },
   meta: {
-    color: mobileTheme.colors.ink.muted,
+    color: designTokens.color.ink.muted,
     fontSize: designTokens.typography.caption.fontSize,
   },
   cardButton: {
     ...mobileSecondaryButton,
-    backgroundColor: mobileTheme.colors.surface.primary,
+    backgroundColor: designTokens.color.surface.primary,
     alignSelf: "stretch",
     paddingHorizontal: designTokens.spacing.xl,
   },
   cardButtonLead: {
-    backgroundColor: mobileTheme.colors.ink.accent,
-    borderColor: mobileTheme.colors.ink.accentStrong,
+    backgroundColor: designTokens.color.ink.accent,
+    borderColor: designTokens.color.ink.accentStrong,
   },
   cardButtonText: {
-    color: mobileTheme.colors.ink.accentStrong,
+    color: designTokens.color.ink.accentStrong,
     fontWeight: "800",
   },
   cardButtonTextLead: {
-    color: mobileTheme.colors.ink.inverse,
+    color: designTokens.color.ink.inverse,
   },
   secondaryToggle: {
     alignSelf: "flex-start",
     paddingVertical: designTokens.spacing.xs,
   },
   secondaryToggleText: {
-    color: mobileTheme.colors.ink.accent,
+    color: designTokens.color.ink.accent,
     fontWeight: "800",
     fontSize: designTokens.typography.caption.fontSize,
   },
@@ -436,18 +435,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: designTokens.spacing.lg,
   },
   secondaryActionText: {
-    color: mobileTheme.colors.ink.accentStrong,
+    color: designTokens.color.ink.accentStrong,
     fontWeight: "800",
   },
   errorBanner: {
-    backgroundColor: mobileTheme.colors.surface.danger,
-    borderColor: mobileTheme.colors.border.danger,
+    backgroundColor: designTokens.color.surface.danger,
+    borderColor: designTokens.color.border.danger,
     borderWidth: 1,
     borderRadius: designTokens.radius.md,
     padding: designTokens.spacing.md,
   },
   errorText: {
-    color: mobileTheme.colors.status.dangerText,
+    color: designTokens.color.status.dangerText,
     fontSize: designTokens.typography.label.fontSize,
     fontWeight: "700",
   },

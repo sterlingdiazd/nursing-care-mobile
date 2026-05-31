@@ -61,7 +61,9 @@ function checkNoRawHexColors(): RuleResult {
     const colonIdx = line.indexOf(':', line.indexOf(':') + 1); // second colon (after line number)
     const rawContent = colonIdx >= 0 ? line.slice(colonIdx + 1) : line;
     // Ignore hex mentioned inside comments (docs often reference a token's hex).
-    const content = rawContent.replace(/\/\/.*$/, '').replace(/\/\*[\s\S]*?\*\//g, '');
+    // The (?<!:) guard avoids treating a URL's "://" as a comment start, so a real
+    // hex after a URL on the same line is still scanned.
+    const content = rawContent.replace(/(?<!:)\/\/.*$/, '').replace(/\/\*[\s\S]*?\*\//g, '');
 
     // Allow shadowColor "#000" — extract only the hex value context
     // A line is allowed if ALL hex occurrences in it are #000 used as shadowColor

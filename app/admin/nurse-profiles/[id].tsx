@@ -6,7 +6,7 @@ import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { type FooterAction } from "@/src/components/navigation/AppFooter";
 import { useAuth } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
-import { mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
+import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import {
   getNurseProfileForAdmin,
   setNurseOperationalAccessForAdmin,
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   workloadValue: {
-    color: mobileTheme.colors.ink.accent,
+    color: designTokens.color.ink.accent,
     fontSize: designTokens.typography.title.fontSize,
     fontWeight: "900",
   },

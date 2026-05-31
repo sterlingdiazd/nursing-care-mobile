@@ -13,7 +13,6 @@ import {
   useClientLogs,
 } from "@/src/logging/clientLogger";
 import { checkBackendHealth, HealthResponse } from "@/src/services/authService";
-import { mobileTheme } from "@/src/design-system/mobileStyles";
 import {
   clearManualOverride,
   getDiagnostics,
@@ -429,8 +428,8 @@ const styles = StyleSheet.create({
     color: designTokens.color.ink.primary,
   },
   emptyText: {
-    ...mobileTheme.typography.body,
-    color: mobileTheme.colors.ink.secondary,
+    ...designTokens.typography.body,
+    color: designTokens.color.ink.secondary,
   },
   logEntry: {
     borderTopWidth: 1,

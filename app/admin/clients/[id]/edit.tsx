@@ -6,7 +6,7 @@ import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { type FooterAction } from "@/src/components/navigation/AppFooter";
 import { FormInput } from "@/src/components/form";
 import { useAuth } from "@/src/context/AuthContext";
-import { mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
+import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import {
   AdminClientDetailDto,
   getAdminClientDetail,
@@ -200,7 +200,7 @@ export default function AdminClientEditScreen() {
     >
       {isFetching ? (
         <View style={styles.loaderWrap}>
-          <ActivityIndicator color={mobileTheme.colors.ink.accent} />
+          <ActivityIndicator color={designTokens.color.ink.accent} />
         </View>
       ) : (
         <View style={styles.container}>
@@ -282,26 +282,26 @@ const styles = StyleSheet.create({
     paddingBottom: designTokens.spacing.xxl,
   },
   banner: {
-    borderRadius: mobileTheme.radius.lg,
+    borderRadius: designTokens.radius.lg,
     padding: designTokens.spacing.md,
   },
   errorBanner: {
-    backgroundColor: mobileTheme.colors.surface.danger,
+    backgroundColor: designTokens.color.surface.danger,
     borderWidth: 1,
-    borderColor: mobileTheme.colors.border.danger,
+    borderColor: designTokens.color.border.danger,
   },
   successBanner: {
-    backgroundColor: mobileTheme.colors.surface.success,
+    backgroundColor: designTokens.color.surface.success,
     borderWidth: 1,
-    borderColor: mobileTheme.colors.border.success,
+    borderColor: designTokens.color.border.success,
   },
   errorText: {
-    color: mobileTheme.colors.ink.danger,
+    color: designTokens.color.ink.danger,
     fontSize: designTokens.typography.label.fontSize,
     fontWeight: "700",
   },
   successText: {
-    color: mobileTheme.colors.status.successText,
+    color: designTokens.color.status.successText,
     fontSize: designTokens.typography.label.fontSize,
     fontWeight: "700",
   },

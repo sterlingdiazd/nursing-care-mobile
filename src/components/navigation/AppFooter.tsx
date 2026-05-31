@@ -10,8 +10,7 @@ import {
 import {
   mobilePrimaryButton,
   mobileSecondaryButton,
-  mobileTheme,
-} from "@/src/design-system/mobileStyles";
+  } from "@/src/design-system/mobileStyles";
 import { designTokens } from "@/src/design-system/tokens";
 import { navigationTestIds } from "@/src/testing/testIds/navigationTestIds";
 import { hapticFeedback } from "@/src/utils/haptics";
@@ -192,7 +191,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   button: {
-    borderRadius: mobileTheme.radius.lg,
+    borderRadius: designTokens.radius.lg,
     paddingHorizontal: designTokens.spacing.lg,
     minHeight: 48,
     alignItems: "center",
@@ -208,9 +207,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: designTokens.spacing.lg,
   },
   dangerButton: {
-    backgroundColor: mobileTheme.colors.status.dangerBg,
+    backgroundColor: designTokens.color.status.dangerBg,
     borderWidth: 1,
-    borderColor: mobileTheme.colors.border.danger,
+    borderColor: designTokens.color.border.danger,
     paddingHorizontal: designTokens.spacing.lg,
   },
   disabledButton: {
@@ -224,15 +223,15 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   primaryButtonText: {
-    color: mobileTheme.colors.ink.inverse,
+    color: designTokens.color.ink.inverse,
   },
   secondaryButtonText: {
-    color: mobileTheme.colors.ink.accentStrong,
+    color: designTokens.color.ink.accentStrong,
   },
   dangerButtonText: {
-    color: mobileTheme.colors.status.dangerText,
+    color: designTokens.color.status.dangerText,
   },
   disabledButtonText: {
-    color: mobileTheme.colors.ink.muted,
+    color: designTokens.color.ink.muted,
   },
 });

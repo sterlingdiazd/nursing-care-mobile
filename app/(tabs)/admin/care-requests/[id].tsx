@@ -27,7 +27,6 @@ import {
   type AdminCareRequestStatus,
 } from "@/src/services/adminPortalService";
 import { getActiveNurseProfiles, type ActiveNurseProfileSummary } from "@/src/services/careRequestService";
-import { mobileTheme } from "@/src/design-system/mobileStyles";
 import { designTokens } from "@/src/design-system/tokens";
 import { adminTestIds } from "@/src/testing/testIds/adminTestIds";
 import {
@@ -407,7 +406,7 @@ export default function AdminCareRequestDetailScreen() {
 
         {loading && !detail ? (
           <View style={styles.loadingState}>
-            <ActivityIndicator color={mobileTheme.colors.ink.accentStrong} accessibilityLabel="Cargando..." />
+            <ActivityIndicator color={designTokens.color.ink.accentStrong} accessibilityLabel="Cargando..." />
           </View>
         ) : null}
 
@@ -1020,15 +1019,15 @@ const styles = StyleSheet.create({
   historyTrigger: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: designTokens.spacing.lg, paddingVertical: designTokens.spacing.md,
-    borderRadius: mobileTheme.radius.lg,
-    backgroundColor: mobileTheme.colors.surface.secondary,
-    borderWidth: 1, borderColor: mobileTheme.colors.border.subtle,
+    borderRadius: designTokens.radius.lg,
+    backgroundColor: designTokens.color.surface.secondary,
+    borderWidth: 1, borderColor: designTokens.color.border.subtle,
   },
   historyTriggerText: {
-    color: mobileTheme.colors.ink.accent, fontSize: designTokens.typography.label.fontSize, fontWeight: "900",
+    color: designTokens.color.ink.accent, fontSize: designTokens.typography.label.fontSize, fontWeight: "900",
   },
   historyTriggerChevron: {
-    color: mobileTheme.colors.ink.muted, fontSize: designTokens.typography.section.fontSize, fontWeight: "800", lineHeight: 20,
+    color: designTokens.color.ink.muted, fontSize: designTokens.typography.section.fontSize, fontWeight: "800", lineHeight: 20,
   },
   errorBanner: {
     backgroundColor: designTokens.color.status.dangerBg,
@@ -1040,17 +1039,17 @@ const styles = StyleSheet.create({
   loadingState: { paddingVertical: designTokens.spacing.huge, alignItems: "center" },
 
   guidanceLine: {
-    color: mobileTheme.colors.ink.secondary,
+    color: designTokens.color.ink.secondary,
     fontSize: designTokens.typography.caption.fontSize, fontWeight: "700",
     marginTop: designTokens.spacing.sm,
     fontStyle: "italic",
   },
 
   card: {
-    backgroundColor: mobileTheme.colors.surface.primary,
-    borderRadius: mobileTheme.radius.xl,
+    backgroundColor: designTokens.color.surface.primary,
+    borderRadius: designTokens.radius.xl,
     borderWidth: 1,
-    borderColor: mobileTheme.colors.border.subtle,
+    borderColor: designTokens.color.border.subtle,
     boxShadow: "0px 4px 10px rgba(18, 48, 68, 0.04)",
     elevation: 1,
     padding: designTokens.spacing.lg,
@@ -1059,11 +1058,11 @@ const styles = StyleSheet.create({
   cardHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: designTokens.spacing.sm },
   sectionHeaderRow: { flexDirection: "row", alignItems: "center", gap: designTokens.spacing.sm },
   cardEyebrow: {
-    color: mobileTheme.colors.ink.muted,
+    color: designTokens.color.ink.muted,
     fontSize: designTokens.typography.caption.fontSize, fontWeight: "900", textTransform: "uppercase", letterSpacing: 0.6,
   },
-  cardTitle: { color: mobileTheme.colors.ink.primary, fontSize: designTokens.typography.section.fontSize, lineHeight: 22, fontWeight: "900" },
-  cardMeta: { color: mobileTheme.colors.ink.secondary, fontSize: designTokens.typography.caption.fontSize, fontWeight: "600" },
+  cardTitle: { color: designTokens.color.ink.primary, fontSize: designTokens.typography.section.fontSize, lineHeight: 22, fontWeight: "900" },
+  cardMeta: { color: designTokens.color.ink.secondary, fontSize: designTokens.typography.caption.fontSize, fontWeight: "600" },
 
   statusPill: { borderRadius: designTokens.radius.sm, paddingHorizontal: designTokens.spacing.md, paddingVertical: designTokens.spacing.xs },
   statusPillText: { fontSize: designTokens.typography.caption.fontSize, fontWeight: "800" },
@@ -1074,47 +1073,47 @@ const styles = StyleSheet.create({
 
   linkButton: {
     borderRadius: designTokens.radius.sm, paddingHorizontal: designTokens.spacing.md, paddingVertical: designTokens.spacing.sm,
-    backgroundColor: mobileTheme.colors.surface.secondary,
+    backgroundColor: designTokens.color.surface.secondary,
   },
-  linkButtonText: { color: mobileTheme.colors.ink.accent, fontSize: designTokens.typography.label.fontSize, fontWeight: "900" },
+  linkButtonText: { color: designTokens.color.ink.accent, fontSize: designTokens.typography.label.fontSize, fontWeight: "900" },
 
   servicioGrid: { flexDirection: "row", gap: designTokens.spacing.lg, marginTop: designTokens.spacing.xs },
   servicioCol: { flex: 1, minWidth: 0 },
   servicioLabel: {
-    color: mobileTheme.colors.ink.muted, fontSize: designTokens.typography.caption.fontSize, fontWeight: "800", textTransform: "uppercase",
+    color: designTokens.color.ink.muted, fontSize: designTokens.typography.caption.fontSize, fontWeight: "800", textTransform: "uppercase",
   },
   servicioValue: {
-    color: mobileTheme.colors.ink.primary, fontSize: designTokens.typography.body.fontSize, fontWeight: "800", marginTop: designTokens.spacing.xs,
+    color: designTokens.color.ink.primary, fontSize: designTokens.typography.body.fontSize, fontWeight: "800", marginTop: designTokens.spacing.xs,
   },
   totalRow: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
     marginTop: designTokens.spacing.sm, paddingTop: designTokens.spacing.md,
-    borderTopWidth: 1, borderTopColor: mobileTheme.colors.border.subtle,
+    borderTopWidth: 1, borderTopColor: designTokens.color.border.subtle,
   },
-  totalLabel: { color: mobileTheme.colors.ink.secondary, fontSize: designTokens.typography.label.fontSize, fontWeight: "800" },
-  totalValue: { color: mobileTheme.colors.ink.accent, fontSize: designTokens.typography.title.fontSize, fontWeight: "900" },
+  totalLabel: { color: designTokens.color.ink.secondary, fontSize: designTokens.typography.label.fontSize, fontWeight: "800" },
+  totalValue: { color: designTokens.color.ink.accent, fontSize: designTokens.typography.title.fontSize, fontWeight: "900" },
 
   billingBlock: { gap: designTokens.spacing.xs, paddingVertical: designTokens.spacing.xs },
   billingLabel: {
-    color: mobileTheme.colors.ink.muted, fontSize: designTokens.typography.caption.fontSize, fontWeight: "800", textTransform: "uppercase",
+    color: designTokens.color.ink.muted, fontSize: designTokens.typography.caption.fontSize, fontWeight: "800", textTransform: "uppercase",
   },
-  billingValue: { color: mobileTheme.colors.ink.primary, fontSize: designTokens.typography.label.fontSize, fontWeight: "700" },
+  billingValue: { color: designTokens.color.ink.primary, fontSize: designTokens.typography.label.fontSize, fontWeight: "700" },
 
   timelineRow: {
     paddingVertical: designTokens.spacing.sm, gap: designTokens.spacing.xs,
-    borderBottomWidth: 1, borderBottomColor: mobileTheme.colors.border.subtle,
+    borderBottomWidth: 1, borderBottomColor: designTokens.color.border.subtle,
   },
-  timelineWhen: { color: mobileTheme.colors.ink.muted, fontSize: designTokens.typography.caption.fontSize, fontWeight: "700" },
-  timelineTitle: { color: mobileTheme.colors.ink.primary, fontSize: designTokens.typography.label.fontSize, fontWeight: "800" },
-  timelineBody: { color: mobileTheme.colors.ink.secondary, fontSize: designTokens.typography.caption.fontSize },
+  timelineWhen: { color: designTokens.color.ink.muted, fontSize: designTokens.typography.caption.fontSize, fontWeight: "700" },
+  timelineTitle: { color: designTokens.color.ink.primary, fontSize: designTokens.typography.label.fontSize, fontWeight: "800" },
+  timelineBody: { color: designTokens.color.ink.secondary, fontSize: designTokens.typography.caption.fontSize },
 
   overflowButton: {
     width: 40, height: 40, borderRadius: designTokens.radius.md,
     alignItems: "center", justifyContent: "center",
-    backgroundColor: mobileTheme.colors.surface.secondary,
+    backgroundColor: designTokens.color.surface.secondary,
   },
   overflowGlyph: {
-    fontSize: designTokens.typography.title.fontSize, fontWeight: "900", color: mobileTheme.colors.ink.primary, lineHeight: 22,
+    fontSize: designTokens.typography.title.fontSize, fontWeight: "900", color: designTokens.color.ink.primary, lineHeight: 22,
   },
 
   sheetBackdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.32)" },

@@ -6,7 +6,7 @@ import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { type FooterAction } from "@/src/components/navigation/AppFooter";
 import { useAuth } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
-import { mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
+import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import { FormInput, FormSwitch } from "@/src/components/form";
 import {
   getNurseProfileForAdmin,
@@ -600,7 +600,7 @@ const styles = StyleSheet.create({
     backgroundColor: designTokens.color.surface.secondary,
   },
   modalButtonDanger: {
-    backgroundColor: mobileTheme.colors.ink.danger,
+    backgroundColor: designTokens.color.ink.danger,
   },
   modalButtonText: {
     color: designTokens.color.ink.primary,

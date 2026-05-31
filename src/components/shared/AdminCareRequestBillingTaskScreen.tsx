@@ -20,8 +20,7 @@ import {
 import {
   mobileSecondarySurface,
   mobileSurfaceCard,
-  mobileTheme,
-} from "@/src/design-system/mobileStyles";
+  } from "@/src/design-system/mobileStyles";
 import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
 import { designTokens } from "@/src/design-system/tokens";
 
@@ -273,7 +272,7 @@ export default function AdminCareRequestBillingTaskScreen({
                     value={value}
                     onChangeText={setValue}
                     placeholder={inputPlaceholder}
-                    placeholderTextColor={mobileTheme.colors.ink.muted}
+                    placeholderTextColor={designTokens.color.ink.muted}
                     multiline={inputMultiline}
                     numberOfLines={inputMultiline ? 4 : 1}
                     editable={!submitting}
@@ -324,92 +323,92 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   error: {
-    backgroundColor: mobileTheme.colors.surface.danger,
-    color: mobileTheme.colors.status.dangerText,
-    padding: mobileTheme.spacing.lg,
-    borderRadius: mobileTheme.radius.lg,
+    backgroundColor: designTokens.color.surface.danger,
+    color: designTokens.color.status.dangerText,
+    padding: designTokens.spacing.lg,
+    borderRadius: designTokens.radius.lg,
     borderWidth: 1,
-    borderColor: mobileTheme.colors.border.danger,
-    marginBottom: mobileTheme.spacing.lg,
+    borderColor: designTokens.color.border.danger,
+    marginBottom: designTokens.spacing.lg,
   },
   successCard: {
-    backgroundColor: mobileTheme.colors.surface.success,
-    borderRadius: mobileTheme.radius.lg,
-    padding: mobileTheme.spacing.lg,
+    backgroundColor: designTokens.color.surface.success,
+    borderRadius: designTokens.radius.lg,
+    padding: designTokens.spacing.lg,
     borderWidth: 1,
-    borderColor: mobileTheme.colors.border.success,
-    marginBottom: mobileTheme.spacing.lg,
+    borderColor: designTokens.color.border.success,
+    marginBottom: designTokens.spacing.lg,
   },
   successTitle: {
-    color: mobileTheme.colors.status.successText,
+    color: designTokens.color.status.successText,
     fontSize: designTokens.typography.body.fontSize,
     fontWeight: "800",
-    marginBottom: mobileTheme.spacing.xs,
+    marginBottom: designTokens.spacing.xs,
   },
   successText: {
-    color: mobileTheme.colors.ink.primary,
+    color: designTokens.color.ink.primary,
     lineHeight: 22,
   },
   successHint: {
-    color: mobileTheme.colors.ink.secondary,
+    color: designTokens.color.ink.secondary,
     lineHeight: 21,
-    marginTop: mobileTheme.spacing.sm,
+    marginTop: designTokens.spacing.sm,
   },
   loading: {
-    color: mobileTheme.colors.ink.secondary,
+    color: designTokens.color.ink.secondary,
     fontSize: designTokens.typography.body.fontSize,
     textAlign: "center",
-    paddingVertical: mobileTheme.spacing.xxl,
+    paddingVertical: designTokens.spacing.xxl,
   },
   summaryCard: {
     ...mobileSurfaceCard,
-    padding: mobileTheme.spacing.xl,
-    marginBottom: mobileTheme.spacing.lg,
+    padding: designTokens.spacing.xl,
+    marginBottom: designTokens.spacing.lg,
   },
   taskCard: {
     ...mobileSurfaceCard,
-    padding: mobileTheme.spacing.xl,
-    marginBottom: mobileTheme.spacing.xl,
+    padding: designTokens.spacing.xl,
+    marginBottom: designTokens.spacing.xl,
   },
   cardTitle: {
-    ...mobileTheme.typography.sectionTitle,
-    color: mobileTheme.colors.ink.primary,
-    marginBottom: mobileTheme.spacing.lg,
+    ...designTokens.typography.sectionTitle,
+    color: designTokens.color.ink.primary,
+    marginBottom: designTokens.spacing.lg,
   },
   detailRow: {
-    marginBottom: mobileTheme.spacing.md,
+    marginBottom: designTokens.spacing.md,
   },
   detailLabel: {
-    ...mobileTheme.typography.eyebrow,
-    color: mobileTheme.colors.ink.muted,
-    marginBottom: mobileTheme.spacing.xs,
+    ...designTokens.typography.eyebrow,
+    color: designTokens.color.ink.muted,
+    marginBottom: designTokens.spacing.xs,
   },
   detailValue: {
-    ...mobileTheme.typography.body,
-    color: mobileTheme.colors.ink.primary,
+    ...designTokens.typography.body,
+    color: designTokens.color.ink.primary,
   },
   statusValue: {
-    ...mobileTheme.typography.body,
+    ...designTokens.typography.body,
     fontWeight: "800",
   },
   taskDescription: {
-    ...mobileTheme.typography.body,
-    color: mobileTheme.colors.ink.secondary,
-    marginBottom: mobileTheme.spacing.xl,
+    ...designTokens.typography.body,
+    color: designTokens.color.ink.secondary,
+    marginBottom: designTokens.spacing.xl,
   },
   inputGroup: {
-    marginBottom: mobileTheme.spacing.xl,
+    marginBottom: designTokens.spacing.xl,
   },
   inputLabel: {
-    ...mobileTheme.typography.eyebrow,
-    color: mobileTheme.colors.ink.muted,
-    marginBottom: mobileTheme.spacing.sm,
+    ...designTokens.typography.eyebrow,
+    color: designTokens.color.ink.muted,
+    marginBottom: designTokens.spacing.sm,
   },
   input: {
     ...mobileSecondarySurface,
-    paddingHorizontal: mobileTheme.spacing.lg,
+    paddingHorizontal: designTokens.spacing.lg,
     paddingVertical: designTokens.spacing.lg,
-    color: mobileTheme.colors.ink.primary,
+    color: designTokens.color.ink.primary,
     fontSize: designTokens.typography.body.fontSize,
   },
   textArea: {
@@ -417,37 +416,37 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
   },
   noticeCard: {
-    backgroundColor: mobileTheme.colors.surface.warning,
-    borderRadius: mobileTheme.radius.lg,
-    padding: mobileTheme.spacing.lg,
+    backgroundColor: designTokens.color.surface.warning,
+    borderRadius: designTokens.radius.lg,
+    padding: designTokens.spacing.lg,
     borderWidth: 1,
-    borderColor: mobileTheme.colors.border.warning,
+    borderColor: designTokens.color.border.warning,
   },
   noticeTitle: {
-    color: mobileTheme.colors.status.warningText,
+    color: designTokens.color.status.warningText,
     fontWeight: "800",
-    marginBottom: mobileTheme.spacing.xs,
+    marginBottom: designTokens.spacing.xs,
   },
   noticeText: {
-    color: mobileTheme.colors.status.warningText,
+    color: designTokens.color.status.warningText,
     lineHeight: 22,
   },
   snapshotCard: {
-    marginTop: mobileTheme.spacing.lg,
-    backgroundColor: mobileTheme.colors.surface.secondary,
-    borderRadius: mobileTheme.radius.lg,
-    padding: mobileTheme.spacing.lg,
+    marginTop: designTokens.spacing.lg,
+    backgroundColor: designTokens.color.surface.secondary,
+    borderRadius: designTokens.radius.lg,
+    padding: designTokens.spacing.lg,
     borderWidth: 1,
-    borderColor: mobileTheme.colors.border.subtle,
-    gap: mobileTheme.spacing.sm,
+    borderColor: designTokens.color.border.subtle,
+    gap: designTokens.spacing.sm,
   },
   snapshotTitle: {
-    color: mobileTheme.colors.ink.primary,
+    color: designTokens.color.ink.primary,
     fontSize: designTokens.typography.body.fontSize,
     fontWeight: "800",
   },
   snapshotText: {
-    color: mobileTheme.colors.ink.secondary,
+    color: designTokens.color.ink.secondary,
     lineHeight: 21,
   },
 });
