@@ -20,6 +20,7 @@ import { authTestIds } from "@/src/testing/authTestIds";
 import { FormButton, FormInput } from "@/src/components/form";
 import { designTokens } from "@/src/design-system/tokens";
 import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
+import { Banner } from "@/src/components/shared/Banner";
 import { testProps } from "@/src/testing/testIds";
 import { useToast } from "@/src/components/shared/ToastProvider";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
@@ -125,8 +126,8 @@ export default function ResetPasswordScreen() {
 
           <View style={styles.card}>
             {generalError ? (
-              <View style={styles.errorBanner}>
-                <Text style={styles.errorBannerText}>{generalError}</Text>
+              <View style={styles.bannerSlot}>
+                <Banner tone="error" message={generalError} />
               </View>
             ) : null}
 
@@ -236,7 +237,7 @@ const styles = StyleSheet.create({
   },
   helperText: {
     ...designTokens.typography.body,
-    fontSize: 13,
+    fontSize: designTokens.typography.label.fontSize,
     color: designTokens.color.ink.muted,
     marginBottom: designTokens.spacing.xl,
     lineHeight: 20,
@@ -245,19 +246,8 @@ const styles = StyleSheet.create({
     borderRadius: designTokens.radius.md,
     overflow: "hidden",
   },
-  errorBanner: {
-    backgroundColor: designTokens.color.status.dangerBg,
-    padding: designTokens.spacing.md,
-    borderRadius: designTokens.radius.md,
+  bannerSlot: {
     marginBottom: designTokens.spacing.lg,
-    borderWidth: 1,
-    borderColor: designTokens.color.border.danger,
-  },
-  errorBannerText: {
-    ...designTokens.typography.body,
-    color: designTokens.color.status.dangerText,
-    fontWeight: "600",
-    textAlign: "center",
   },
   submitButton: {
     marginTop: designTokens.spacing.md,

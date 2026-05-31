@@ -24,6 +24,7 @@ import { authTestIds } from "@/src/testing/authTestIds";
 import { FormButton, FormInput } from "@/src/components/form";
 import { designTokens } from "@/src/design-system/tokens";
 import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
+import { Banner } from "@/src/components/shared/Banner";
 import { testProps } from "@/src/testing/testIds";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
@@ -107,8 +108,8 @@ export default function ForgotPasswordScreen() {
 
           <View style={styles.card}>
             {requestError ? (
-              <View style={styles.errorBanner}>
-                <Text style={styles.errorBannerText}>{requestError}</Text>
+              <View style={styles.bannerSlot}>
+                <Banner tone="error" message={requestError} />
               </View>
             ) : null}
 
@@ -244,19 +245,8 @@ const styles = StyleSheet.create({
     ...mobileSurfaceCard,
     padding: designTokens.spacing.xl,
   },
-  errorBanner: {
-    backgroundColor: designTokens.color.status.dangerBg,
-    padding: designTokens.spacing.md,
-    borderRadius: designTokens.radius.md,
+  bannerSlot: {
     marginBottom: designTokens.spacing.lg,
-    borderWidth: 1,
-    borderColor: designTokens.color.border.danger,
-  },
-  errorBannerText: {
-    ...designTokens.typography.body,
-    color: designTokens.color.status.dangerText,
-    fontWeight: "600",
-    textAlign: "center",
   },
   successHeader: {
     backgroundColor: designTokens.color.status.successBg,
@@ -277,7 +267,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     ...designTokens.typography.body,
-    fontSize: 13,
+    fontSize: designTokens.typography.label.fontSize,
     color: designTokens.color.ink.secondary,
     marginBottom: designTokens.spacing.xl,
   },
@@ -285,8 +275,7 @@ const styles = StyleSheet.create({
     marginBottom: designTokens.spacing.md,
   },
   resendInfo: {
-    ...designTokens.typography.body,
-    fontSize: 12,
+    ...designTokens.typography.caption,
     color: designTokens.color.ink.muted,
     textAlign: "center",
     marginTop: designTokens.spacing.sm,

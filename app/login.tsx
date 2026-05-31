@@ -21,6 +21,7 @@ import { authTestIds } from "@/src/testing/authTestIds";
 import { FormButton, FormInput } from "@/src/components/form";
 import { designTokens } from "@/src/design-system/tokens";
 import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
+import { Banner } from "@/src/components/shared/Banner";
 import { testProps } from "@/src/testing/testIds";
 import {
   getGoogleOAuthStartUrl,
@@ -200,11 +201,7 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.card}>
-            {error ? (
-              <View style={styles.errorBanner}>
-                <Text style={styles.errorBannerText}>{error}</Text>
-              </View>
-            ) : null}
+            {error ? <View style={styles.bannerSlot}><Banner tone="error" message={error} /></View> : null}
 
             <FormInput
               testID={authTestIds.login.emailInput}
@@ -336,19 +333,8 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 400,
   },
-  errorBanner: {
-    backgroundColor: designTokens.color.status.dangerBg,
-    padding: designTokens.spacing.md,
-    borderRadius: designTokens.radius.md,
+  bannerSlot: {
     marginBottom: designTokens.spacing.lg,
-    borderWidth: 1,
-    borderColor: designTokens.color.border.danger,
-  },
-  errorBannerText: {
-    ...designTokens.typography.body,
-    color: designTokens.color.status.dangerText,
-    fontWeight: "600",
-    textAlign: "center",
   },
   forgotPassword: {
     alignSelf: "flex-end",

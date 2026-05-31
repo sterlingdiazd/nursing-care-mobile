@@ -28,6 +28,7 @@ import { authTestIds } from "@/src/testing/authTestIds";
 import { FormButton, FormInput } from "@/src/components/form";
 import { designTokens } from "@/src/design-system/tokens";
 import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
+import { Banner } from "@/src/components/shared/Banner";
 import { testProps } from "@/src/testing/testIds";
 
 const clientProfileCopy =
@@ -492,8 +493,8 @@ export default function RegisterScreen() {
           </View>
 
           {generalError ? (
-            <View style={styles.errorBanner}>
-              <Text style={styles.errorBannerText}>{generalError}</Text>
+            <View style={styles.bannerSlot}>
+              <Banner tone="error" message={generalError} />
             </View>
           ) : null}
 
@@ -610,8 +611,7 @@ const styles = StyleSheet.create({
     marginBottom: designTokens.spacing.sm,
   },
   roleCardTitle: {
-    ...designTokens.typography.label,
-    fontSize: 16,
+    ...designTokens.typography.bodyStrong,
     color: designTokens.color.ink.primary,
   },
   roleCardText: {
@@ -621,7 +621,7 @@ const styles = StyleSheet.create({
   radioCircle: {
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: designTokens.radius.pill,
     borderWidth: 2,
     borderColor: designTokens.color.border.strong,
   },
@@ -654,19 +654,8 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     marginLeft: designTokens.spacing.xs,
   },
-  errorBanner: {
-    backgroundColor: designTokens.color.status.dangerBg,
-    padding: designTokens.spacing.md,
-    borderRadius: designTokens.radius.md,
+  bannerSlot: {
     marginBottom: designTokens.spacing.lg,
-    borderWidth: 1,
-    borderColor: designTokens.color.border.danger,
-  },
-  errorBannerText: {
-    ...designTokens.typography.body,
-    color: designTokens.color.status.dangerText,
-    fontWeight: "600",
-    textAlign: "center",
   },
   fieldGroup: {
     marginBottom: designTokens.spacing.lg,
@@ -702,8 +691,7 @@ const styles = StyleSheet.create({
     color: designTokens.color.ink.inverse,
   },
   fieldError: {
-    ...designTokens.typography.body,
-    fontSize: 12,
+    ...designTokens.typography.caption,
     color: designTokens.color.ink.danger,
     marginTop: designTokens.spacing.xs,
     fontWeight: "600",
