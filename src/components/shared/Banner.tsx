@@ -29,8 +29,9 @@ const styles = StyleSheet.create({
   banner: {
     borderWidth: 1,
     borderRadius: designTokens.radius.md,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.md,
   },
-  text: { fontSize: 13, fontWeight: "700", lineHeight: 18 },
+  // color is overridden inline per tone (c.fg).
+  text: { ...designTokens.text.label },
 });

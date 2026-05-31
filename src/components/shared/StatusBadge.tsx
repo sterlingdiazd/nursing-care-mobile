@@ -36,6 +36,12 @@ export function StatusBadge({
 }
 
 const styles = StyleSheet.create({
-  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, alignSelf: "flex-start" },
-  text: { fontSize: 12, fontWeight: "700" },
+  badge: {
+    paddingHorizontal: designTokens.spacing.sm,
+    paddingVertical: designTokens.spacing.xs,
+    borderRadius: designTokens.radius.sm,
+    alignSelf: "flex-start",
+  },
+  // color is overridden inline per tone (c.fg).
+  text: { ...designTokens.text.caption },
 });

@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
-import { StyleSheet, Text, View } from "react-native";
-import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
-import { designTokens } from "@/src/design-system/tokens";
+
+import { SectionCard } from "@/src/components/shared/SurfaceCard";
 
 interface FormPanelProps {
   eyebrow?: string;
@@ -15,33 +14,16 @@ interface FormPanelProps {
 }
 
 /**
- * Inline edit / detail panel surface. Unifies the `settingCard` / `editPanel` /
- * `detailPanel` blocks that settings, catalog and audit-logs each re-implemented.
+ * Inline edit / detail panel surface. Thin wrapper over the canonical
+ * {@link SectionCard} so the `settingCard` / `editPanel` / `detailPanel` blocks
+ * that settings, catalog and audit-logs each re-implemented all share one
+ * surface, one density, one header treatment. Kept as a named export for the
+ * existing call sites.
  */
 export function FormPanel({ eyebrow, title, tone = "default", children, footer, testID }: FormPanelProps) {
   return (
-    <View style={[styles.panel, tone === "accent" && styles.panelAccent]} testID={testID} nativeID={testID}>
-      {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
-      {title ? <Text style={styles.title}>{title}</Text> : null}
-      <View style={styles.body}>{children}</View>
-      {footer ? <View style={styles.footer}>{footer}</View> : null}
-    </View>
+    <SectionCard eyebrow={eyebrow} title={title} tone={tone} footer={footer} testID={testID}>
+      {children}
+    </SectionCard>
   );
 }
-
-const T = designTokens;
-const styles = StyleSheet.create({
-  panel: {
-    ...mobileSurfaceCard,
-    padding: 16,
-    gap: 10,
-  },
-  panelAccent: {
-    backgroundColor: T.color.surface.accent,
-    borderColor: T.color.border.accent,
-  },
-  eyebrow: { ...T.typography.eyebrow, color: T.color.ink.accentStrong },
-  title: { fontSize: 16, fontWeight: "800", color: T.color.ink.primary },
-  body: { gap: 10 },
-  footer: { gap: 8, marginTop: 2 },
-});

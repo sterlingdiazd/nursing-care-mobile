@@ -3,7 +3,7 @@ import type { StyleProp, ViewStyle } from "react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 
-import { mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
+import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import { designTokens, type PaletteHue } from "@/src/design-system/tokens";
 import { automationProps } from "@/src/utils/adminOperationalUx";
 import { IconBadge } from "@/src/components/shared/IconBadge";
@@ -84,57 +84,53 @@ export function ActionCard({
   );
 }
 
+const T = designTokens;
 const styles = StyleSheet.create({
   card: {
     ...mobileSurfaceCard,
     minHeight: 106,
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    padding: 13,
+    gap: T.spacing.md,
+    padding: T.spacing.md,
     borderLeftWidth: 4,
   },
   body: {
     flex: 1,
     minWidth: 0,
-    gap: 5,
+    gap: T.spacing.xs,
   },
   title: {
-    color: mobileTheme.colors.ink.primary,
-    fontSize: 18,
-    fontWeight: "900",
+    ...T.text.section,
   },
   subtitle: {
-    color: mobileTheme.colors.ink.secondary,
-    fontSize: 13,
-    fontWeight: "600",
+    ...T.text.label,
   },
   countPill: {
     alignSelf: "flex-start",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    borderRadius: T.radius.sm,
+    paddingHorizontal: T.spacing.md,
+    paddingVertical: T.spacing.xs,
   },
+  // color is overridden inline to the hue's `text` grade (AA on the soft tint).
   countPillText: {
-    fontSize: 13,
-    fontWeight: "800",
+    ...T.text.label,
   },
   action: {
     alignItems: "flex-end",
-    gap: 16,
+    gap: T.spacing.lg,
   },
   actionButton: {
     minWidth: 86,
     minHeight: 34,
-    borderRadius: 8,
+    borderRadius: T.radius.sm,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 10,
+    paddingHorizontal: T.spacing.md,
   },
   actionButtonText: {
-    fontSize: 13,
-    fontWeight: "800",
+    ...T.text.label,
   },
   pressed: {
     opacity: 0.78,

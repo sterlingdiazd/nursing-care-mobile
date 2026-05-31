@@ -3,8 +3,8 @@ import type { DimensionValue } from "react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 
-import { mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
-import type { PaletteHue } from "@/src/design-system/tokens";
+import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
+import { designTokens, type PaletteHue } from "@/src/design-system/tokens";
 import { automationProps } from "@/src/utils/adminOperationalUx";
 import { IconBadge } from "@/src/components/shared/IconBadge";
 
@@ -40,19 +40,20 @@ export function ModuleTile({ icon, hue, label, onPress, testID, width = "31%" }:
   );
 }
 
+const T = designTokens;
 const styles = StyleSheet.create({
   tile: {
     ...mobileSurfaceCard,
     minHeight: 92,
     alignItems: "center",
     justifyContent: "center",
-    gap: 9,
-    padding: 10,
+    gap: T.spacing.sm,
+    padding: T.spacing.md,
   },
   label: {
-    color: mobileTheme.colors.ink.secondary,
-    fontSize: 12,
-    fontWeight: "800",
+    ...T.text.caption,
+    // Nav affordance — keep the tile label bold so the grid reads as tappable.
+    fontWeight: "700",
     textAlign: "center",
   },
   pressed: {

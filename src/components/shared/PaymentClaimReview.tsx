@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   ocrMeta: { fontSize: 12, color: designTokens.color.ink.secondary, fontWeight: "700", marginTop: 4 },
-  warning: { fontSize: 13, fontWeight: "700", color: "#8a5a00", marginTop: 8 },
-  danger: { fontSize: 13, fontWeight: "700", color: "#8b1a1a", marginTop: 8 },
+  warning: { fontSize: 13, fontWeight: "700", color: designTokens.color.status.warningText, marginTop: 8 },
+  danger: { fontSize: 13, fontWeight: "700", color: designTokens.color.status.dangerText, marginTop: 8 },
   hint: { fontSize: 12, color: designTokens.color.ink.muted, marginTop: 10 },
 });

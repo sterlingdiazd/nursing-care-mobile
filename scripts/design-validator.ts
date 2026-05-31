@@ -9,6 +9,8 @@ interface RuleResult {
   rule: string;
   passed: boolean;
   violations: string[];
+  /** Advisory rules report a burn-down count but do NOT fail the build (yet). */
+  advisory?: boolean;
 }
 
 function run(cmd: string): string {
@@ -266,6 +268,62 @@ function checkHardcodedSpanishStrings(): RuleResult {
 }
 
 // ---------------------------------------------------------------------------
+// Rule 7: Off-token numeric style values (design-harmonization burn-down)
+// A screen must reference the spacing/radius scale and the type ramp, never a
+// raw number. ADVISORY during the screen-by-screen migration (reports the
+// remaining count); flip `advisory` off in Phase 3 to make drift fail the build.
+// Targets only style PROPERTIES (not icon `size={}` props, widths, flex, etc.).
+// Allows 0 and 1 (hairline borders / flex). Excludes the design system + tests.
+// ---------------------------------------------------------------------------
+const SCALE_PROPS = [
+  "fontSize",
+  "borderRadius",
+  "borderTopLeftRadius", "borderTopRightRadius", "borderBottomLeftRadius", "borderBottomRightRadius",
+  "gap", "rowGap", "columnGap",
+  "padding", "paddingHorizontal", "paddingVertical",
+  "paddingTop", "paddingBottom", "paddingLeft", "paddingRight", "paddingStart", "paddingEnd",
+  "margin", "marginHorizontal", "marginVertical",
+  "marginTop", "marginBottom", "marginLeft", "marginRight", "marginStart", "marginEnd",
+];
+
+function checkOffTokenNumericValues(): RuleResult {
+  const props = SCALE_PROPS.join("|");
+  const raw = run(
+    `grep -rnE --include="*.tsx" --include="*.ts" '(${props})[[:space:]]*:[[:space:]]*[0-9]+' ${ROOT}/app ${ROOT}/components ${ROOT}/src/components 2>/dev/null || true`
+  );
+
+  const violations: string[] = [];
+  const valueRe = new RegExp(`(?:${props})\\s*:\\s*([0-9]+)`, "g");
+
+  for (const line of raw.split("\n")) {
+    if (!line.trim()) continue;
+    if (line.includes("/design-system/") || line.includes("__tests__") || line.includes(".test.")) continue;
+
+    const colonIdx = line.indexOf(":", line.indexOf(":") + 1);
+    const content = colonIdx >= 0 ? line.slice(colonIdx + 1) : line;
+
+    let m: RegExpExecArray | null;
+    let offScale = false;
+    valueRe.lastIndex = 0;
+    while ((m = valueRe.exec(content)) !== null) {
+      const num = Number(m[1]);
+      if (num !== 0 && num !== 1) {
+        offScale = true;
+        break;
+      }
+    }
+    if (offScale) violations.push(line.trim());
+  }
+
+  return {
+    rule: "Off-token numeric style values — use designTokens.spacing/radius and the type ramp",
+    passed: violations.length === 0,
+    violations,
+    advisory: true,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 function main(): void {
@@ -278,16 +336,19 @@ function main(): void {
     checkTimestampFormat(),
     checkBackNavigation(),
     checkHardcodedSpanishStrings(),
+    checkOffTokenNumericValues(),
   ];
 
   let anyFailed = false;
 
   for (const r of results) {
-    const status = r.passed ? 'PASS' : 'FAIL';
+    const status = r.passed ? 'PASS' : r.advisory ? 'BURN-DOWN' : 'FAIL';
     console.log(`[${status}] ${r.rule}`);
     if (!r.passed) {
-      anyFailed = true;
-      console.log(`       ${r.violations.length} violation(s):`);
+      // Advisory rules report progress but never fail the build (Phase 1-2);
+      // Phase 3 flips them to gating by dropping the `advisory` flag.
+      if (!r.advisory) anyFailed = true;
+      console.log(`       ${r.violations.length} ${r.advisory ? 'remaining' : 'violation(s)'}:`);
       for (const v of r.violations.slice(0, 20)) {
         console.log(`         - ${v}`);
       }
@@ -298,9 +359,14 @@ function main(): void {
     console.log();
   }
 
-  const passed = results.filter(r => r.passed).length;
-  const failed = results.filter(r => !r.passed).length;
-  console.log(`Summary: ${passed} passed, ${failed} failed`);
+  const gating = results.filter(r => !r.advisory);
+  const passed = gating.filter(r => r.passed).length;
+  const failed = gating.filter(r => !r.passed).length;
+  const advisoryRemaining = results
+    .filter(r => r.advisory && !r.passed)
+    .reduce((n, r) => n + r.violations.length, 0);
+  console.log(`Summary: ${passed} passed, ${failed} failed` +
+    (advisoryRemaining ? `, ${advisoryRemaining} burn-down item(s) remaining` : ''));
 
   process.exit(anyFailed ? 1 : 0);
 }

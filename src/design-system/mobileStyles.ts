@@ -57,7 +57,7 @@ export const mobileAdminActionButton = {
 export const mobileAdminActionButtonText = {
   color: mobileTheme.colors.ink.secondary,
   fontWeight: "700" as const,
-  fontSize: 14,
+  fontSize: mobileTheme.typography.label.fontSize,
   textAlign: "center" as const,
 } as const;
 

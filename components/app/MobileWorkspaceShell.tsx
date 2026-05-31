@@ -13,7 +13,8 @@ import { router, type Href } from "expo-router";
 
 import AppFooter, { type FooterAction } from "@/src/components/navigation/AppFooter";
 import { mobileTheme } from "@/src/design-system/mobileStyles";
-import { designTokens } from "@/src/design-system/tokens";
+import { designTokens, type SpacingToken } from "@/src/design-system/tokens";
+import { Stack } from "@/src/design-system/primitives";
 import { navigationTestIds } from "@/src/testing/testIds";
 import { hapticFeedback } from "@/src/utils/haptics";
 import { goBackOrReplace } from "@/src/utils/navigationEscapes";
@@ -40,6 +41,12 @@ interface MobileWorkspaceShellProps {
   nativeID?: string;
   /** When true, skip the internal vertical ScrollView so children (e.g. FlatList) own scrolling. */
   disableScroll?: boolean;
+  /**
+   * Default vertical rhythm between the scroll body's direct children. One value
+   * for the whole app so every screen breathes identically (kills per-screen
+   * gap drift). Dense list screens may opt to a tighter token.
+   */
+  bodyGap?: SpacingToken;
 }
 
 export default function MobileWorkspaceShell({
@@ -59,6 +66,7 @@ export default function MobileWorkspaceShell({
   testID,
   nativeID,
   disableScroll = false,
+  bodyGap = "lg",
 }: MobileWorkspaceShellProps) {
   const shouldRenderPrimaryReturn = Boolean(primaryReturnPath || onPrimaryReturn);
   const shouldRenderActions = shouldRenderPrimaryReturn || Boolean(actions);
@@ -127,7 +135,7 @@ export default function MobileWorkspaceShell({
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
               >
-                <View style={styles.body}>{children}</View>
+                <Stack gap={bodyGap} style={styles.body}>{children}</Stack>
               </ScrollView>
             )}
           </View>
@@ -174,24 +182,20 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 18,
-    paddingTop: 8,
-    paddingBottom: 16,
+    gap: designTokens.spacing.sm,
+    paddingHorizontal: designTokens.layout.screenPaddingX,
+    paddingTop: designTokens.spacing.sm,
+    paddingBottom: designTokens.spacing.lg,
   },
   headerTitleWrap: {
     flex: 1,
+    gap: designTokens.spacing.xs,
   },
   headerTitle: {
-    color: mobileTheme.colors.ink.primary,
-    fontSize: 22,
-    fontWeight: "800",
+    ...designTokens.text.title,
   },
   headerDescription: {
-    color: mobileTheme.colors.ink.secondary,
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 2,
+    ...designTokens.text.label,
   },
   headerAccessory: {
     flexShrink: 0,
@@ -199,7 +203,8 @@ const styles = StyleSheet.create({
   backButton: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    // Round button: pill radius keeps it circular regardless of the card scale.
+    borderRadius: designTokens.radius.pill,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: mobileTheme.colors.surface.secondary,
@@ -222,19 +227,19 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   scrollContent: {
-    paddingHorizontal: 18,
-    paddingBottom: 24,
+    paddingHorizontal: designTokens.layout.screenPaddingX,
+    paddingBottom: designTokens.spacing.xxl,
   },
   contentFrame: {
     flex: 1,
     minHeight: 0,
-    paddingHorizontal: 18,
+    paddingHorizontal: designTokens.layout.screenPaddingX,
   },
   actionBar: {
     paddingHorizontal: designTokens.spacing.md,
-    paddingTop: 8,
-    paddingBottom: 8,
-    gap: 8,
+    paddingTop: designTokens.spacing.sm,
+    paddingBottom: designTokens.spacing.sm,
+    gap: designTokens.spacing.sm,
     borderTopWidth: 1,
     borderTopColor: mobileTheme.colors.border.subtle,
     backgroundColor: mobileTheme.colors.surface.primary,

@@ -30,13 +30,13 @@ export function StatStrip({ items }: { items: { label: string; value: string | n
 
 const T = designTokens;
 const styles = StyleSheet.create({
-  card: { backgroundColor: T.color.surface.primary, borderRadius: 16, padding: 16, flex: 1, minWidth: "45%", borderWidth: 1, borderColor: T.color.border.subtle },
-  label: { fontSize: 11, fontWeight: "700", color: T.color.ink.muted, textTransform: "uppercase", marginBottom: 4 },
-  value: { fontSize: 24, fontWeight: "800", color: T.color.ink.primary },
-  strip: { flexDirection: "row", alignItems: "center", paddingVertical: 12, paddingHorizontal: 14, borderRadius: T.radius.xl, backgroundColor: T.color.surface.secondary, borderWidth: 1, borderColor: T.color.border.subtle },
+  card: { backgroundColor: T.role.surface.raised, borderRadius: T.radius.lg, padding: T.spacing.lg, flex: 1, minWidth: "45%", borderWidth: 1, borderColor: T.role.border.default },
+  label: { ...T.text.caption, textTransform: "uppercase", marginBottom: T.spacing.xs },
+  value: { ...T.text.title },
+  strip: { flexDirection: "row", alignItems: "center", paddingVertical: T.spacing.md, paddingHorizontal: T.spacing.lg, borderRadius: T.radius.xl, backgroundColor: T.role.surface.sunken, borderWidth: 1, borderColor: T.role.border.default },
   cellRow: { flex: 1, flexDirection: "row", alignItems: "center" },
-  cell: { flex: 1, alignItems: "center", gap: 2 },
-  divider: { width: 1, alignSelf: "stretch", backgroundColor: T.color.border.subtle, marginHorizontal: 6 },
-  statLabel: { fontSize: 10, fontWeight: "700", color: T.color.ink.muted, textTransform: "uppercase", letterSpacing: 0.3, textAlign: "center" },
-  statValue: { fontSize: 16, fontWeight: "800", color: T.color.ink.primary, textAlign: "center" },
+  cell: { flex: 1, alignItems: "center", gap: T.spacing.xs },
+  divider: { width: 1, alignSelf: "stretch", backgroundColor: T.role.border.default, marginHorizontal: T.spacing.sm },
+  statLabel: { ...T.text.caption, textTransform: "uppercase", letterSpacing: 0.3, textAlign: "center" },
+  statValue: { ...T.text.bodyStrong, textAlign: "center" },
 });
