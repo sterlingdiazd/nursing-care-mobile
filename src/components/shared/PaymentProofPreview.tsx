@@ -41,12 +41,12 @@ export default function PaymentProofPreview({ careRequestId }: { careRequestId: 
 }
 
 const styles = StyleSheet.create({
-  container: { marginBottom: 16 },
+  container: { marginBottom: designTokens.spacing.lg },
   label: {
-    fontSize: 13,
+    fontSize: designTokens.typography.label.fontSize,
     fontWeight: "700",
     color: designTokens.color.ink.secondary,
-    marginBottom: 8,
+    marginBottom: designTokens.spacing.sm,
   },
   image: {
     width: "100%",
@@ -54,5 +54,5 @@ const styles = StyleSheet.create({
     borderRadius: designTokens.radius.md,
     backgroundColor: designTokens.color.surface.secondary,
   },
-  error: { color: designTokens.color.ink.muted, fontSize: 13 },
+  error: { color: designTokens.color.ink.muted, fontSize: designTokens.typography.label.fontSize },
 });

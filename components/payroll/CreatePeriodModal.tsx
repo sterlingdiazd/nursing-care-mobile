@@ -155,20 +155,20 @@ export function CreatePeriodModal({ visible, onClose, onSubmit, period, existing
 }
 
 const styles = StyleSheet.create({
-  quincenaBar: { flexDirection: "row", gap: 8, marginBottom: 14 },
-  quincenaBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: designTokens.color.border.subtle, backgroundColor: designTokens.color.surface.primary, alignItems: "center" },
-  quincenaBtnText: { fontSize: 13, fontWeight: "700", color: designTokens.color.ink.accentStrong },
+  quincenaBar: { flexDirection: "row", gap: designTokens.spacing.sm, marginBottom: designTokens.spacing.lg },
+  quincenaBtn: { flex: 1, paddingVertical: designTokens.spacing.md, borderRadius: designTokens.radius.md, borderWidth: 1, borderColor: designTokens.color.border.subtle, backgroundColor: designTokens.color.surface.primary, alignItems: "center" },
+  quincenaBtnText: { fontSize: designTokens.typography.label.fontSize, fontWeight: "700", color: designTokens.color.ink.accentStrong },
   hygieneCard: {
-    marginBottom: 14,
-    padding: 12,
-    borderRadius: 12,
+    marginBottom: designTokens.spacing.lg,
+    padding: designTokens.spacing.md,
+    borderRadius: designTokens.radius.md,
     backgroundColor: designTokens.color.surface.warning,
     borderWidth: 1,
     borderColor: designTokens.color.border.warning,
-    gap: 4,
+    gap: designTokens.spacing.xs,
   },
   hygieneText: {
-    fontSize: 12,
+    fontSize: designTokens.typography.caption.fontSize,
     lineHeight: 17,
     color: designTokens.color.status.warningText,
     fontWeight: "600",

@@ -19,11 +19,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 32,
+    padding: designTokens.spacing.xxxl,
   },
   message: {
-    fontSize: 15,
+    fontSize: designTokens.typography.body.fontSize,
     color: designTokens.color.ink.muted,
-    marginTop: 16,
+    marginTop: designTokens.spacing.lg,
   },
 });

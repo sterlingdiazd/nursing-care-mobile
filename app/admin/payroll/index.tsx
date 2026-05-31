@@ -165,22 +165,22 @@ export default function PayrollHubScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    gap: 16,
+    gap: designTokens.spacing.lg,
   },
   metricsRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
+    gap: designTokens.spacing.md,
   },
   grid: {
-    gap: 10,
+    gap: designTokens.spacing.md,
   },
   card: {
     ...mobileSurfaceCard,
     flexDirection: "row",
     alignItems: "center",
-    gap: 14,
-    padding: 16,
+    gap: designTokens.spacing.lg,
+    padding: designTokens.spacing.lg,
     borderLeftWidth: 4,
   },
   cardPressed: {
@@ -188,16 +188,16 @@ const styles = StyleSheet.create({
   },
   cardText: {
     flex: 1,
-    gap: 2,
+    gap: designTokens.spacing.xs,
   },
   cardLabel: {
     color: mobileTheme.colors.ink.primary,
-    fontSize: 15,
+    fontSize: designTokens.typography.body.fontSize,
     fontWeight: "800",
   },
   cardHelper: {
     color: mobileTheme.colors.ink.muted,
-    fontSize: 12,
+    fontSize: designTokens.typography.caption.fontSize,
     fontWeight: "500",
   },
 });

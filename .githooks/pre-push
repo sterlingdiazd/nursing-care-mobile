@@ -7,3 +7,4 @@ cd "$ROOT_DIR"
 
 npm test
 npm run typecheck
+npm run validate-design

@@ -40,6 +40,7 @@ import {
 } from "@/src/utils/adminOperationalUx";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { hapticFeedback } from "@/src/utils/haptics";
+import { designTokens } from "@/src/design-system/tokens";
 
 const PAGE_SIZE = 10;
 
@@ -322,88 +323,88 @@ export default function AdminNotificationsScreen() {
 
 const styles = StyleSheet.create({
   scroll: {
-    gap: 12,
-    paddingBottom: 24,
+    gap: designTokens.spacing.md,
+    paddingBottom: designTokens.spacing.xxl,
   },
   summaryRow: {
-    paddingHorizontal: 4,
+    paddingHorizontal: designTokens.spacing.xs,
   },
   summaryText: {
     color: mobileTheme.colors.ink.secondary,
-    fontSize: 12,
+    fontSize: designTokens.typography.caption.fontSize,
     fontWeight: "700",
   },
   loadingWrap: {
-    paddingVertical: 48,
+    paddingVertical: designTokens.spacing.huge,
     alignItems: "center",
   },
   emptyWrap: {
-    paddingVertical: 48,
+    paddingVertical: designTokens.spacing.huge,
     alignItems: "center",
-    gap: 6,
+    gap: designTokens.spacing.sm,
   },
   emptyTitle: {
     color: mobileTheme.colors.ink.primary,
-    fontSize: 15,
+    fontSize: designTokens.typography.body.fontSize,
     fontWeight: "800",
   },
   emptyHint: {
     color: mobileTheme.colors.ink.secondary,
-    fontSize: 13,
+    fontSize: designTokens.typography.label.fontSize,
   },
   list: {
-    gap: 12,
+    gap: designTokens.spacing.md,
   },
   card: {
     ...mobileSurfaceCard,
-    padding: 14,
-    gap: 8,
+    padding: designTokens.spacing.lg,
+    gap: designTokens.spacing.sm,
   },
   cardHeader: {
-    gap: 4,
+    gap: designTokens.spacing.xs,
   },
   chipsRow: {
     flexDirection: "row",
-    gap: 8,
+    gap: designTokens.spacing.sm,
     flexWrap: "wrap",
   },
   severityChip: {
     fontWeight: "800",
-    fontSize: 11,
+    fontSize: designTokens.typography.caption.fontSize,
     textTransform: "uppercase",
     letterSpacing: 0.4,
   },
   stateChip: {
     color: mobileTheme.colors.ink.secondary,
     fontWeight: "800",
-    fontSize: 11,
+    fontSize: designTokens.typography.caption.fontSize,
     textTransform: "uppercase",
     letterSpacing: 0.4,
   },
   source: {
     color: mobileTheme.colors.ink.secondary,
-    fontSize: 12,
+    fontSize: designTokens.typography.caption.fontSize,
     fontWeight: "700",
   },
   title: {
     color: mobileTheme.colors.ink.primary,
     fontWeight: "900",
-    fontSize: 16,
+    fontSize: designTokens.typography.body.fontSize,
   },
   body: {
     color: mobileTheme.colors.ink.secondary,
-    fontSize: 14,
+    fontSize: designTokens.typography.body.fontSize,
     lineHeight: 20,
   },
   meta: {
     color: mobileTheme.colors.ink.muted,
-    fontSize: 12,
+    fontSize: designTokens.typography.caption.fontSize,
   },
   cardButton: {
     ...mobileSecondaryButton,
     backgroundColor: mobileTheme.colors.surface.primary,
     alignSelf: "stretch",
-    paddingHorizontal: 18,
+    paddingHorizontal: designTokens.spacing.xl,
   },
   cardButtonLead: {
     backgroundColor: mobileTheme.colors.ink.accent,
@@ -418,21 +419,21 @@ const styles = StyleSheet.create({
   },
   secondaryToggle: {
     alignSelf: "flex-start",
-    paddingVertical: 4,
+    paddingVertical: designTokens.spacing.xs,
   },
   secondaryToggleText: {
     color: mobileTheme.colors.ink.accent,
     fontWeight: "800",
-    fontSize: 12,
+    fontSize: designTokens.typography.caption.fontSize,
   },
   secondaryActions: {
-    gap: 8,
-    paddingTop: 4,
+    gap: designTokens.spacing.sm,
+    paddingTop: designTokens.spacing.xs,
   },
   secondaryAction: {
     ...mobileSecondaryButton,
     alignSelf: "stretch",
-    paddingHorizontal: 16,
+    paddingHorizontal: designTokens.spacing.lg,
   },
   secondaryActionText: {
     color: mobileTheme.colors.ink.accentStrong,
@@ -442,12 +443,12 @@ const styles = StyleSheet.create({
     backgroundColor: mobileTheme.colors.surface.danger,
     borderColor: mobileTheme.colors.border.danger,
     borderWidth: 1,
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: designTokens.radius.md,
+    padding: designTokens.spacing.md,
   },
   errorText: {
     color: mobileTheme.colors.status.dangerText,
-    fontSize: 13,
+    fontSize: designTokens.typography.label.fontSize,
     fontWeight: "700",
   },
 });

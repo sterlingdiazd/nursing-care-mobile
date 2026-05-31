@@ -33,9 +33,9 @@ export function StateView({
 }
 
 const styles = StyleSheet.create({
-  wrap: { alignItems: "center", justifyContent: "center", paddingVertical: 40, gap: 14 },
-  message: { fontSize: 14, color: designTokens.color.ink.muted, textAlign: "center", paddingHorizontal: 24 },
+  wrap: { alignItems: "center", justifyContent: "center", paddingVertical: designTokens.spacing.huge, gap: designTokens.spacing.lg },
+  message: { fontSize: designTokens.typography.body.fontSize, color: designTokens.color.ink.muted, textAlign: "center", paddingHorizontal: designTokens.spacing.xxl },
   errorText: { color: designTokens.color.status.dangerText },
-  retry: { backgroundColor: designTokens.color.ink.accent, borderRadius: 999, paddingHorizontal: 22, paddingVertical: 10 },
+  retry: { backgroundColor: designTokens.color.ink.accent, borderRadius: designTokens.radius.pill, paddingHorizontal: designTokens.spacing.xxl, paddingVertical: designTokens.spacing.md },
   retryText: { color: designTokens.color.ink.inverse, fontWeight: "800" },
 });

@@ -231,18 +231,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollPad: {
-    paddingBottom: 16,
-    gap: 8,
+    paddingBottom: designTokens.spacing.lg,
+    gap: designTokens.spacing.sm,
   },
   list: {
-    paddingTop: 4,
-    gap: 8,
+    paddingTop: designTokens.spacing.xs,
+    gap: designTokens.spacing.sm,
   },
   emptyHint: {
     color: designTokens.color.ink.secondary,
-    fontSize: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 18,
+    fontSize: designTokens.typography.body.fontSize,
+    paddingHorizontal: designTokens.spacing.lg,
+    paddingVertical: designTokens.spacing.xl,
     textAlign: "center",
   },
 });

@@ -249,8 +249,8 @@ export default function AdminCareRequestsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, gap: 8 },
+  container: { flex: 1, gap: designTokens.spacing.sm },
   list: { flex: 1 },
-  loadingState: { flex: 1, paddingVertical: 48, alignItems: "center", justifyContent: "center" },
-  emptyText: { color: designTokens.color.ink.muted, fontSize: 14 },
+  loadingState: { flex: 1, paddingVertical: designTokens.spacing.huge, alignItems: "center", justifyContent: "center" },
+  emptyText: { color: designTokens.color.ink.muted, fontSize: designTokens.typography.body.fontSize },
 });

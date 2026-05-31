@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     ...designTokens.typography.body,
-    fontSize: 12,
+    fontSize: designTokens.typography.caption.fontSize,
     color: designTokens.color.ink.danger,
     marginTop: designTokens.spacing.xs,
     fontWeight: "600",

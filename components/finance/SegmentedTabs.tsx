@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { financeTheme as t } from "./financeTheme";
 import { hapticFeedback } from "@/src/utils/haptics";
+import { designTokens } from "@/src/design-system/tokens";
 
 export function SegmentedTabs({
   tabs,
@@ -39,17 +40,17 @@ const styles = StyleSheet.create({
   bar: {
     flexDirection: "row",
     backgroundColor: t.bgElevated,
-    borderRadius: 999,
+    borderRadius: designTokens.radius.pill,
     borderWidth: 1,
     borderColor: t.cardBorder,
-    padding: 4,
-    gap: 4,
+    padding: designTokens.spacing.xs,
+    gap: designTokens.spacing.xs,
   },
-  tab: { flex: 1, paddingVertical: 9, borderRadius: 999, alignItems: "center", justifyContent: "center" },
+  tab: { flex: 1, paddingVertical: designTokens.spacing.md, borderRadius: designTokens.radius.pill, alignItems: "center", justifyContent: "center" },
   // Active pill: teal accent fill
   tabActive: { backgroundColor: t.accent },
   // Inactive: muted label on light bg
-  label: { color: t.textMuted, fontSize: 12.5, fontWeight: "700" },
+  label: { color: t.textMuted, fontSize: designTokens.typography.label.fontSize, fontWeight: "700" },
   // Active: white label on teal pill
   labelActive: { color: "#ffffff", fontWeight: "800" },
 });

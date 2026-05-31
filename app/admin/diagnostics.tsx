@@ -340,11 +340,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: designTokens.color.border.accent,
     borderRadius: designTokens.radius.md,
-    padding: 12,
-    gap: 4,
+    padding: designTokens.spacing.md,
+    gap: designTokens.spacing.xs,
   },
   summaryRow: {
-    fontSize: 13,
+    fontSize: designTokens.typography.label.fontSize,
     lineHeight: 20,
   },
   summaryLabel: {
@@ -363,14 +363,14 @@ const styles = StyleSheet.create({
   actionsRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: designTokens.spacing.sm,
   },
   candidatesBox: {
-    gap: 8,
-    marginTop: 8,
+    gap: designTokens.spacing.sm,
+    marginTop: designTokens.spacing.sm,
   },
   candidatesHeader: {
-    fontSize: 12,
+    fontSize: designTokens.typography.caption.fontSize,
     fontWeight: "800",
     color: designTokens.color.ink.secondary,
     textTransform: "uppercase",
@@ -378,8 +378,8 @@ const styles = StyleSheet.create({
   candidateRow: {
     borderWidth: 1,
     borderRadius: designTokens.radius.md,
-    padding: 10,
-    gap: 2,
+    padding: designTokens.spacing.md,
+    gap: designTokens.spacing.xs,
   },
   candidateOk: {
     backgroundColor: designTokens.color.surface.success,
@@ -391,16 +391,16 @@ const styles = StyleSheet.create({
   },
   candidateSource: {
     fontWeight: "800",
-    fontSize: 13,
+    fontSize: designTokens.typography.label.fontSize,
     color: designTokens.color.ink.primary,
   },
   candidateUrl: {
-    fontSize: 12,
+    fontSize: designTokens.typography.caption.fontSize,
     color: designTokens.color.ink.accentStrong,
     fontFamily: "monospace",
   },
   candidateMeta: {
-    fontSize: 12,
+    fontSize: designTokens.typography.caption.fontSize,
     color: designTokens.color.ink.secondary,
   },
   healthCard: {
@@ -408,17 +408,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: designTokens.color.border.success,
     borderRadius: designTokens.radius.md,
-    padding: 12,
-    gap: 4,
+    padding: designTokens.spacing.md,
+    gap: designTokens.spacing.xs,
   },
   healthTitle: {
-    fontSize: 14,
+    fontSize: designTokens.typography.body.fontSize,
     fontWeight: "800",
     color: designTokens.color.status.successText,
-    marginBottom: 6,
+    marginBottom: designTokens.spacing.sm,
   },
   healthRow: {
-    fontSize: 13,
+    fontSize: designTokens.typography.label.fontSize,
     lineHeight: 20,
   },
   healthLabel: {
@@ -435,27 +435,27 @@ const styles = StyleSheet.create({
   logEntry: {
     borderTopWidth: 1,
     borderTopColor: designTokens.color.border.subtle,
-    paddingTop: 12,
-    marginTop: 12,
+    paddingTop: designTokens.spacing.md,
+    marginTop: designTokens.spacing.md,
   },
   logMeta: {
-    fontSize: 11,
+    fontSize: designTokens.typography.caption.fontSize,
     color: designTokens.color.ink.muted,
-    marginBottom: 4,
+    marginBottom: designTokens.spacing.xs,
   },
   logCorrelation: {
-    fontSize: 12,
+    fontSize: designTokens.typography.caption.fontSize,
     color: designTokens.color.ink.accent,
-    marginBottom: 4,
+    marginBottom: designTokens.spacing.xs,
   },
   logMessage: {
-    fontSize: 14,
+    fontSize: designTokens.typography.body.fontSize,
     fontWeight: "600",
     color: designTokens.color.ink.primary,
-    marginBottom: 4,
+    marginBottom: designTokens.spacing.xs,
   },
   logData: {
-    fontSize: 12,
+    fontSize: designTokens.typography.caption.fontSize,
     lineHeight: 18,
     color: designTokens.color.ink.secondary,
   },

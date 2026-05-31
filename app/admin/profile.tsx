@@ -18,6 +18,7 @@ import { automationProps } from "@/src/utils/adminOperationalUx";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { formatRoleLabels } from "@/src/utils/roleLabels";
 import { formatDateES } from "@/src/utils/spanishTextValidator";
+import { designTokens } from "@/src/design-system/tokens";
 
 type FormState = {
   name: string;
@@ -301,22 +302,22 @@ export default function AdminProfileScreen() {
 
 const styles = StyleSheet.create({
   loaderWrap: {
-    paddingVertical: 32,
+    paddingVertical: designTokens.spacing.xxxl,
     alignItems: "center",
     justifyContent: "center",
   },
   container: {
-    gap: 14,
-    paddingBottom: 24,
+    gap: designTokens.spacing.lg,
+    paddingBottom: designTokens.spacing.xxl,
   },
   metaCard: {
     ...mobileSurfaceCard,
-    padding: 12,
-    gap: 4,
+    padding: designTokens.spacing.md,
+    gap: designTokens.spacing.xs,
   },
   metaLine: {
     color: mobileTheme.colors.ink.secondary,
-    fontSize: 13,
+    fontSize: designTokens.typography.label.fontSize,
   },
   metaValue: {
     color: mobileTheme.colors.ink.primary,

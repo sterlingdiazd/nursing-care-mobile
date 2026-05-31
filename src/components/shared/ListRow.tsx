@@ -118,5 +118,5 @@ const styles = StyleSheet.create({
   subtitle: { ...T.text.label },
   meta: { ...T.text.caption },
   rightText: { ...T.text.bodyStrong },
-  chevron: { color: T.role.text.muted, fontSize: 24, fontWeight: "700", marginLeft: T.spacing.xs },
+  chevron: { color: T.role.text.muted, fontSize: designTokens.typography.display.fontSize, fontWeight: "700", marginLeft: T.spacing.xs },
 });

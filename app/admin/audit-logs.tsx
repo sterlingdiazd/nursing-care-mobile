@@ -260,7 +260,7 @@ export default function AdminAuditLogsScreen() {
         testIDPrefix="admin-audit-logs-action-filter"
       />
 
-      <Text style={[styles.filterLabel, { marginTop: 10 }]}>Entidad</Text>
+      <Text style={[styles.filterLabel, { marginTop: designTokens.spacing.md }]}>Entidad</Text>
       <FilterChips
         options={ENTITY_FILTER_OPTIONS}
         value={entityTypeFilter}
@@ -386,48 +386,48 @@ function DetailField({ label, value, secondary, mono }: { label: string; value: 
 }
 
 const styles = StyleSheet.create({
-  error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: 12, borderRadius: 12, marginBottom: 12 },
-  filterLabel: { fontSize: 11, fontWeight: "800", color: designTokens.color.ink.muted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 },
-  summary: { flexDirection: "row", justifyContent: "flex-end", marginTop: 12, marginBottom: 8, paddingHorizontal: 2 },
-  summaryText: { color: designTokens.color.ink.muted, fontSize: 13, fontWeight: "600" },
-  emptyText: { color: designTokens.color.ink.muted, fontSize: 14, textAlign: "center", paddingVertical: 32 },
-  list: { gap: 8 },
+  error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: designTokens.spacing.md, borderRadius: designTokens.radius.md, marginBottom: designTokens.spacing.md },
+  filterLabel: { fontSize: designTokens.typography.caption.fontSize, fontWeight: "800", color: designTokens.color.ink.muted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: designTokens.spacing.sm },
+  summary: { flexDirection: "row", justifyContent: "flex-end", marginTop: designTokens.spacing.md, marginBottom: designTokens.spacing.sm, paddingHorizontal: designTokens.spacing.xs },
+  summaryText: { color: designTokens.color.ink.muted, fontSize: designTokens.typography.label.fontSize, fontWeight: "600" },
+  emptyText: { color: designTokens.color.ink.muted, fontSize: designTokens.typography.body.fontSize, textAlign: "center", paddingVertical: designTokens.spacing.xxxl },
+  list: { gap: designTokens.spacing.sm },
   row: {
     ...mobileSurfaceCard,
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 11,
-    paddingRight: 12,
+    paddingVertical: designTokens.spacing.md,
+    paddingRight: designTokens.spacing.md,
     overflow: "hidden",
   },
   rowExpanded: { borderColor: designTokens.color.border.accent },
-  rail: { width: 4, alignSelf: "stretch", borderRadius: 2, marginRight: 12 },
-  rowBody: { flex: 1, gap: 2 },
-  rowTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
-  action: { color: designTokens.color.ink.primary, fontWeight: "800", fontSize: 15, flex: 1 },
-  time: { color: designTokens.color.ink.muted, fontSize: 11, fontWeight: "600" },
-  notes: { color: designTokens.color.ink.secondary, fontSize: 13 },
-  meta: { color: designTokens.color.ink.muted, fontSize: 12 },
-  chevron: { color: designTokens.color.ink.muted, fontSize: 18, fontWeight: "700", marginLeft: 8 },
-  detailField: { gap: 4 },
-  detailLabel: { color: designTokens.color.ink.muted, fontSize: 12, fontWeight: "800", textTransform: "uppercase" },
-  detailValue: { color: designTokens.color.ink.primary, fontSize: 15 },
-  detailValueSecondary: { color: designTokens.color.ink.secondary, fontSize: 14 },
-  detailValueMono: { color: designTokens.color.ink.primary, fontSize: 13, fontFamily: "monospace" },
+  rail: { width: 4, alignSelf: "stretch", borderRadius: designTokens.radius.sm, marginRight: designTokens.spacing.md },
+  rowBody: { flex: 1, gap: designTokens.spacing.xs },
+  rowTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: designTokens.spacing.sm },
+  action: { color: designTokens.color.ink.primary, fontWeight: "800", fontSize: designTokens.typography.body.fontSize, flex: 1 },
+  time: { color: designTokens.color.ink.muted, fontSize: designTokens.typography.caption.fontSize, fontWeight: "600" },
+  notes: { color: designTokens.color.ink.secondary, fontSize: designTokens.typography.label.fontSize },
+  meta: { color: designTokens.color.ink.muted, fontSize: designTokens.typography.caption.fontSize },
+  chevron: { color: designTokens.color.ink.muted, fontSize: designTokens.typography.section.fontSize, fontWeight: "700", marginLeft: designTokens.spacing.sm },
+  detailField: { gap: designTokens.spacing.xs },
+  detailLabel: { color: designTokens.color.ink.muted, fontSize: designTokens.typography.caption.fontSize, fontWeight: "800", textTransform: "uppercase" },
+  detailValue: { color: designTokens.color.ink.primary, fontSize: designTokens.typography.body.fontSize },
+  detailValueSecondary: { color: designTokens.color.ink.secondary, fontSize: designTokens.typography.body.fontSize },
+  detailValueMono: { color: designTokens.color.ink.primary, fontSize: designTokens.typography.label.fontSize, fontFamily: "monospace" },
   sourceButton: {
     borderRadius: designTokens.radius.md,
     borderWidth: 1,
     borderColor: designTokens.color.border.accent,
     backgroundColor: designTokens.color.surface.accent,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: designTokens.spacing.md,
+    paddingHorizontal: designTokens.spacing.md,
     alignItems: "center",
   },
   sourceButtonText: {
     color: designTokens.color.ink.accentStrong,
     fontWeight: "800",
   },
-  jsonContainer: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 12, padding: 12, marginTop: 4, borderWidth: 1, borderColor: designTokens.color.border.subtle },
-  jsonText: { color: designTokens.color.ink.primary, fontSize: 12, fontFamily: "monospace" },
+  jsonContainer: { backgroundColor: designTokens.color.ink.inverse, borderRadius: designTokens.radius.md, padding: designTokens.spacing.md, marginTop: designTokens.spacing.xs, borderWidth: 1, borderColor: designTokens.color.border.subtle },
+  jsonText: { color: designTokens.color.ink.primary, fontSize: designTokens.typography.caption.fontSize, fontFamily: "monospace" },
   pressed: { opacity: 0.78 },
 });

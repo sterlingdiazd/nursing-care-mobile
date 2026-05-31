@@ -50,5 +50,8 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Validate design system (tokens, a11y, no off-scale styles)
+        run: npm run validate-design
+
       - name: Run tests
         run: npm test

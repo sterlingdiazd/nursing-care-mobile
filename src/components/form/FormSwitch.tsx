@@ -69,8 +69,8 @@ const styles = StyleSheet.create({
   },
   description: {
     ...designTokens.typography.body,
-    fontSize: 12,
+    fontSize: designTokens.typography.caption.fontSize,
     color: designTokens.color.ink.secondary,
-    marginTop: 2,
+    marginTop: designTokens.spacing.xs,
   },
 });

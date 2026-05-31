@@ -5,6 +5,7 @@ import { financeTheme as t } from "./financeTheme";
 import { Sparkline } from "./Sparkline";
 import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import { withHapticFeedback } from "@/src/utils/haptics";
+import { designTokens } from "@/src/design-system/tokens";
 
 /** A small donut "gauge" (filled arc vs remainder) with a centered value and a caption. */
 export function RingGauge({
@@ -146,8 +147,8 @@ export function FocusCard({
         pressed && onPress ? { opacity: 0.85 } : null,
       ]}
     >
-      <FontAwesome name="flag" size={16} color={color} style={{ marginTop: 2 }} />
-      <View style={{ flex: 1, gap: 3 }}>
+      <FontAwesome name="flag" size={16} color={color} style={{ marginTop: designTokens.spacing.xs }} />
+      <View style={{ flex: 1, gap: designTokens.spacing.xs }}>
         <View style={styles.focusTop}>
           <Text style={styles.focusTitle}>{title}</Text>
           <Text style={[styles.focusValue, { color }]}>{value}</Text>
@@ -160,37 +161,37 @@ export function FocusCard({
 }
 
 const styles = StyleSheet.create({
-  gauge: { flex: 1, alignItems: "center", gap: 6 },
-  gaugeValue: { fontWeight: "800", fontSize: 14 },
-  gaugeLabel: { color: t.textMuted, fontSize: 11, fontWeight: "700" },
+  gauge: { flex: 1, alignItems: "center", gap: designTokens.spacing.sm },
+  gaugeValue: { fontWeight: "800", fontSize: designTokens.typography.body.fontSize },
+  gaugeLabel: { color: t.textMuted, fontSize: designTokens.typography.caption.fontSize, fontWeight: "700" },
 
   // Hero: white card with soft shadow (mobileSurfaceCard spread)
   hero: {
     ...mobileSurfaceCard,
-    padding: 20,
-    gap: 10,
+    padding: designTokens.spacing.xl,
+    gap: designTokens.spacing.md,
     overflow: "hidden",
   },
-  heroEyebrow: { color: t.textMuted, fontSize: 12, fontWeight: "700", letterSpacing: 0.6, textTransform: "uppercase" },
+  heroEyebrow: { color: t.textMuted, fontSize: designTokens.typography.caption.fontSize, fontWeight: "700", letterSpacing: 0.6, textTransform: "uppercase" },
   // Large navy hero number — full width, one emphasized number per card
-  heroValue: { color: t.text, fontSize: 34, fontWeight: "800" },
+  heroValue: { color: t.text, fontSize: designTokens.typography.display.fontSize, fontWeight: "800" },
   // Tinted status pill (successBg / warningBg / dangerBg)
-  heroBadge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999 },
+  heroBadge: { flexDirection: "row", alignItems: "center", gap: designTokens.spacing.sm, paddingHorizontal: designTokens.spacing.md, paddingVertical: designTokens.spacing.xs, borderRadius: designTokens.radius.pill },
   heroBadgeStandalone: { alignSelf: "flex-start" },
-  heroBadgeText: { fontSize: 12.5, fontWeight: "800" },
-  heroChips: { flexDirection: "row", gap: 10 },
+  heroBadgeText: { fontSize: designTokens.typography.label.fontSize, fontWeight: "800" },
+  heroChips: { flexDirection: "row", gap: designTokens.spacing.md },
   // Sub-tiles: elevated secondary surface with navy text
-  chip: { flex: 1, backgroundColor: t.bgElevated, borderRadius: t.radiusSm, borderWidth: 1, borderColor: t.cardBorder, paddingVertical: 10, paddingHorizontal: 12, gap: 2 },
-  chipLabel: { color: t.textMuted, fontSize: 10.5, fontWeight: "700", textTransform: "uppercase" },
-  chipValue: { color: t.text, fontSize: 15, fontWeight: "800" },
+  chip: { flex: 1, backgroundColor: t.bgElevated, borderRadius: t.radiusSm, borderWidth: 1, borderColor: t.cardBorder, paddingVertical: designTokens.spacing.md, paddingHorizontal: designTokens.spacing.md, gap: designTokens.spacing.xs },
+  chipLabel: { color: t.textMuted, fontSize: designTokens.typography.caption.fontSize, fontWeight: "700", textTransform: "uppercase" },
+  chipValue: { color: t.text, fontSize: designTokens.typography.body.fontSize, fontWeight: "800" },
 
   // Health ring row: white card
-  healthRow: { flexDirection: "row", ...mobileSurfaceCard, padding: 16 },
+  healthRow: { flexDirection: "row", ...mobileSurfaceCard, padding: designTokens.spacing.lg },
 
   // Focus card: light status surface + 4px left rail
-  focus: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: t.radiusSm, borderWidth: 1, borderColor: t.cardBorder, borderLeftWidth: 4, padding: 14 },
-  focusTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
-  focusTitle: { color: t.text, fontSize: 14, fontWeight: "800", flex: 1 },
-  focusValue: { fontSize: 14, fontWeight: "800" },
-  focusDetail: { color: t.textMuted, fontSize: 12.5, lineHeight: 18 },
+  focus: { flexDirection: "row", alignItems: "center", gap: designTokens.spacing.md, borderRadius: t.radiusSm, borderWidth: 1, borderColor: t.cardBorder, borderLeftWidth: 4, padding: designTokens.spacing.lg },
+  focusTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: designTokens.spacing.md },
+  focusTitle: { color: t.text, fontSize: designTokens.typography.body.fontSize, fontWeight: "800", flex: 1 },
+  focusValue: { fontSize: designTokens.typography.body.fontSize, fontWeight: "800" },
+  focusDetail: { color: t.textMuted, fontSize: designTokens.typography.label.fontSize, lineHeight: 18 },
 });

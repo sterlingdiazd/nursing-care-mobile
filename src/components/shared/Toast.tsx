@@ -132,7 +132,7 @@ elevation: 6,
     paddingVertical: designTokens.spacing.md,
   },
   message: {
-    fontSize: 14,
+    fontSize: designTokens.typography.body.fontSize,
     fontWeight: "500",
     lineHeight: 20,
   },

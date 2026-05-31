@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { mobilePrimaryButton, mobileSecondarySurface, mobileTheme } from "@/src/design-system/mobileStyles";
 import { hapticFeedback } from "@/src/utils/haptics";
+import { designTokens } from "@/src/design-system/tokens";
 
 export interface SearchFilterBarProps {
   searchPlaceholder: string;
@@ -94,36 +95,36 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     ...mobileSecondarySurface,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: designTokens.spacing.lg,
+    paddingVertical: designTokens.spacing.md,
     color: mobileTheme.colors.ink.primary,
-    fontSize: 15,
+    fontSize: designTokens.typography.body.fontSize,
   },
   clearButton: {
     backgroundColor: mobileTheme.colors.surface.tertiary,
     borderRadius: mobileTheme.radius.md,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.md,
   },
   clearButtonText: {
     color: mobileTheme.colors.ink.secondary,
     fontWeight: "700",
-    fontSize: 13,
+    fontSize: designTokens.typography.label.fontSize,
   },
   searchButton: {
     ...mobilePrimaryButton,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: designTokens.spacing.lg,
+    paddingVertical: designTokens.spacing.md,
   },
   searchButtonText: {
     color: mobileTheme.colors.ink.inverse,
     fontWeight: "700",
-    fontSize: 14,
+    fontSize: designTokens.typography.body.fontSize,
   },
   filtersRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: mobileTheme.spacing.sm,
-    marginTop: 10,
+    marginTop: designTokens.spacing.md,
   },
 });

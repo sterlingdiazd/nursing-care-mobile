@@ -502,9 +502,9 @@ export default function CreateAdminCareRequestScreen() {
                   boxSizing: "border-box"
                 }
               })}
-              <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+              <View style={{ flexDirection: "row", gap: designTokens.spacing.sm, marginTop: designTokens.spacing.sm }}>
                 <Pressable
-                  style={{ flex: 1, backgroundColor: designTokens.color.surface.secondary, padding: 8, borderRadius: 8, alignItems: "center" }}
+                  style={{ flex: 1, backgroundColor: designTokens.color.surface.secondary, padding: designTokens.spacing.sm, borderRadius: designTokens.radius.sm, alignItems: "center" }}
                   onPress={() => {
                     hapticFeedback.selection();
                     setForm({ ...form, careRequestDate: formatDateToIso(new Date()) });
@@ -512,10 +512,10 @@ export default function CreateAdminCareRequestScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Seleccionar fecha de hoy"
                 >
-                  <Text style={{ fontSize: 13, color: designTokens.color.ink.primary, fontWeight: "600" }}>Hoy</Text>
+                  <Text style={{ fontSize: designTokens.typography.label.fontSize, color: designTokens.color.ink.primary, fontWeight: "600" }}>Hoy</Text>
                 </Pressable>
                 <Pressable
-                  style={{ flex: 1, backgroundColor: designTokens.color.surface.secondary, padding: 8, borderRadius: 8, alignItems: "center" }}
+                  style={{ flex: 1, backgroundColor: designTokens.color.surface.secondary, padding: designTokens.spacing.sm, borderRadius: designTokens.radius.sm, alignItems: "center" }}
                   onPress={() => {
                     hapticFeedback.selection();
                     const d = new Date(); d.setDate(d.getDate() + 1);
@@ -524,7 +524,7 @@ export default function CreateAdminCareRequestScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Seleccionar fecha de mañana"
                 >
-                  <Text style={{ fontSize: 13, color: designTokens.color.ink.primary, fontWeight: "600" }}>Mañana</Text>
+                  <Text style={{ fontSize: designTokens.typography.label.fontSize, color: designTokens.color.ink.primary, fontWeight: "600" }}>Mañana</Text>
                 </Pressable>
               </View>
             </View>
@@ -1008,150 +1008,150 @@ export default function CreateAdminCareRequestScreen() {
 }
 
 const styles = StyleSheet.create({
-  error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: 12, borderRadius: 12, marginBottom: 12 },
-  progressCard: { backgroundColor: designTokens.color.surface.canvas, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 14, marginBottom: 12, gap: 8 },
-  statusChip: { alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 12, fontWeight: "800" },
+  error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: designTokens.spacing.md, borderRadius: designTokens.radius.md, marginBottom: designTokens.spacing.md },
+  progressCard: { backgroundColor: designTokens.color.surface.canvas, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: designTokens.radius.lg, padding: designTokens.spacing.lg, marginBottom: designTokens.spacing.md, gap: designTokens.spacing.sm },
+  statusChip: { alignSelf: "flex-start", borderRadius: designTokens.radius.pill, paddingHorizontal: designTokens.spacing.md, paddingVertical: designTokens.spacing.sm, fontSize: designTokens.typography.caption.fontSize, fontWeight: "800" },
   statusChipWarning: { backgroundColor: designTokens.color.status.warningBg, color: designTokens.color.status.warningText },
   statusChipSuccess: { backgroundColor: designTokens.color.status.successBg, color: designTokens.color.status.successText },
-  progressHelper: { color: designTokens.color.ink.secondary, fontSize: 13, lineHeight: 18 },
+  progressHelper: { color: designTokens.color.ink.secondary, fontSize: designTokens.typography.label.fontSize, lineHeight: 18 },
   formScroll: { flex: 1, minHeight: 0 },
-  scrollContent: { paddingBottom: 24 },
-  card: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 14, marginBottom: 12 },
-  cardTitle: { fontSize: 18, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 12 },
-  cardLabel: { fontSize: 13, fontWeight: "700", color: designTokens.color.ink.primary, marginBottom: 7, marginTop: 4 },
-  subtitle: { fontSize: 13, color: designTokens.color.ink.secondary, marginBottom: 12 },
+  scrollContent: { paddingBottom: designTokens.spacing.xxl },
+  card: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: designTokens.radius.lg, padding: designTokens.spacing.lg, marginBottom: designTokens.spacing.md },
+  cardTitle: { fontSize: designTokens.typography.section.fontSize, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: designTokens.spacing.md },
+  cardLabel: { fontSize: designTokens.typography.label.fontSize, fontWeight: "700", color: designTokens.color.ink.primary, marginBottom: designTokens.spacing.sm, marginTop: designTokens.spacing.xs },
+  subtitle: { fontSize: designTokens.typography.label.fontSize, color: designTokens.color.ink.secondary, marginBottom: designTokens.spacing.md },
   // Retained for the native date-picker Pressable trigger (not a FormInput).
-  input: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.strong, borderRadius: 12, padding: 12, fontSize: 15 },
+  input: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.strong, borderRadius: designTokens.radius.md, padding: designTokens.spacing.md, fontSize: designTokens.typography.body.fontSize },
   inputError: { borderColor: designTokens.color.ink.danger },
-  errorText: { color: designTokens.color.ink.danger, fontSize: 12, marginTop: 4 },
+  errorText: { color: designTokens.color.ink.danger, fontSize: designTokens.typography.caption.fontSize, marginTop: designTokens.spacing.xs },
   textArea: { minHeight: 80, textAlignVertical: "top" },
 
-  chipsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 },
-  chip: { backgroundColor: designTokens.color.surface.secondary, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1, borderColor: designTokens.color.border.subtle },
+  chipsContainer: { flexDirection: "row", flexWrap: "wrap", gap: designTokens.spacing.sm, marginBottom: designTokens.spacing.xs },
+  chip: { backgroundColor: designTokens.color.surface.secondary, paddingVertical: designTokens.spacing.sm, paddingHorizontal: designTokens.spacing.lg, borderRadius: designTokens.radius.xl, borderWidth: 1, borderColor: designTokens.color.border.subtle },
   chipActive: { backgroundColor: designTokens.color.ink.accent, borderColor: designTokens.color.ink.accentStrong },
-  chipText: { color: designTokens.color.ink.secondary, fontWeight: "600", fontSize: 13 },
+  chipText: { color: designTokens.color.ink.secondary, fontWeight: "600", fontSize: designTokens.typography.label.fontSize },
   chipTextActive: { color: designTokens.color.ink.inverse },
 
-  catalogLoading: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8 },
-  catalogLoadingText: { color: designTokens.color.ink.secondary, fontSize: 13 },
-  categoryRow: { flexDirection: "row", gap: 6, marginBottom: 10, padding: 4, backgroundColor: designTokens.color.surface.secondary, borderRadius: 14, borderWidth: 1, borderColor: designTokens.color.border.subtle },
-  categoryTab: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 8, paddingHorizontal: 6, borderRadius: 10, backgroundColor: "transparent" },
+  catalogLoading: { flexDirection: "row", alignItems: "center", gap: designTokens.spacing.sm, paddingVertical: designTokens.spacing.sm },
+  catalogLoadingText: { color: designTokens.color.ink.secondary, fontSize: designTokens.typography.label.fontSize },
+  categoryRow: { flexDirection: "row", gap: designTokens.spacing.sm, marginBottom: designTokens.spacing.md, padding: designTokens.spacing.xs, backgroundColor: designTokens.color.surface.secondary, borderRadius: designTokens.radius.md, borderWidth: 1, borderColor: designTokens.color.border.subtle },
+  categoryTab: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: designTokens.spacing.sm, paddingVertical: designTokens.spacing.sm, paddingHorizontal: designTokens.spacing.sm, borderRadius: designTokens.radius.sm, backgroundColor: "transparent" },
   categoryTabActive: { backgroundColor: designTokens.color.surface.primary, boxShadow: "0px 1px 2px rgba(15, 23, 42, 0.08)", elevation: 1 },
-  categoryTabText: { color: designTokens.color.ink.secondary, fontWeight: "700", fontSize: 13 },
+  categoryTabText: { color: designTokens.color.ink.secondary, fontWeight: "700", fontSize: designTokens.typography.label.fontSize },
   categoryTabTextActive: { color: designTokens.color.ink.primary },
-  categoryTabCount: { color: designTokens.color.ink.muted, fontSize: 11, fontWeight: "700", minWidth: 16, textAlign: "center" },
+  categoryTabCount: { color: designTokens.color.ink.muted, fontSize: designTokens.typography.caption.fontSize, fontWeight: "700", minWidth: 16, textAlign: "center" },
   categoryTabCountActive: { color: designTokens.color.ink.accent },
-  selectedTypeRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 10, backgroundColor: designTokens.color.status.successBg, alignSelf: "flex-start" },
-  selectedTypeLabel: { color: designTokens.color.status.successText, fontSize: 12, fontWeight: "700" },
-  selectedTypeValue: { color: designTokens.color.ink.primary, fontSize: 13, fontWeight: "600" },
+  selectedTypeRow: { flexDirection: "row", alignItems: "center", gap: designTokens.spacing.sm, marginTop: designTokens.spacing.sm, paddingVertical: designTokens.spacing.sm, paddingHorizontal: designTokens.spacing.md, borderRadius: designTokens.radius.sm, backgroundColor: designTokens.color.status.successBg, alignSelf: "flex-start" },
+  selectedTypeLabel: { color: designTokens.color.status.successText, fontSize: designTokens.typography.caption.fontSize, fontWeight: "700" },
+  selectedTypeValue: { color: designTokens.color.ink.primary, fontSize: designTokens.typography.label.fontSize, fontWeight: "600" },
 
-  leaveBackdrop: { flex: 1, backgroundColor: "rgba(15, 23, 42, 0.45)", justifyContent: "center", alignItems: "center", padding: 24 },
-  leaveCard: { backgroundColor: designTokens.color.surface.primary, borderRadius: 18, padding: 20, width: "100%", maxWidth: 360, gap: 8 },
-  leaveTitle: { fontSize: 17, fontWeight: "800", color: designTokens.color.ink.primary },
-  leaveBody: { fontSize: 14, color: designTokens.color.ink.secondary, lineHeight: 20 },
-  leaveActions: { flexDirection: "row", gap: 8, marginTop: 12 },
-  leaveCancelButton: { flex: 1, borderRadius: 12, borderWidth: 1, borderColor: designTokens.color.border.strong, alignItems: "center", paddingVertical: 12 },
+  leaveBackdrop: { flex: 1, backgroundColor: "rgba(15, 23, 42, 0.45)", justifyContent: "center", alignItems: "center", padding: designTokens.spacing.xxl },
+  leaveCard: { backgroundColor: designTokens.color.surface.primary, borderRadius: designTokens.radius.lg, padding: designTokens.spacing.xl, width: "100%", maxWidth: 360, gap: designTokens.spacing.sm },
+  leaveTitle: { fontSize: designTokens.typography.section.fontSize, fontWeight: "800", color: designTokens.color.ink.primary },
+  leaveBody: { fontSize: designTokens.typography.body.fontSize, color: designTokens.color.ink.secondary, lineHeight: 20 },
+  leaveActions: { flexDirection: "row", gap: designTokens.spacing.sm, marginTop: designTokens.spacing.md },
+  leaveCancelButton: { flex: 1, borderRadius: designTokens.radius.md, borderWidth: 1, borderColor: designTokens.color.border.strong, alignItems: "center", paddingVertical: designTokens.spacing.md },
   leaveCancelText: { color: designTokens.color.ink.primary, fontWeight: "700" },
-  leaveConfirmButton: { flex: 1, borderRadius: 12, backgroundColor: designTokens.color.ink.danger, alignItems: "center", paddingVertical: 12 },
+  leaveConfirmButton: { flex: 1, borderRadius: designTokens.radius.md, backgroundColor: designTokens.color.ink.danger, alignItems: "center", paddingVertical: designTokens.spacing.md },
   leaveConfirmText: { color: designTokens.color.ink.inverse, fontWeight: "800" },
 
-  stepperContainer: { flexDirection: "row", alignItems: "center", backgroundColor: designTokens.color.surface.secondary, borderRadius: 12, alignSelf: "flex-start", borderWidth: 1, borderColor: designTokens.color.border.strong },
-  stepperBtn: { paddingHorizontal: 20, paddingVertical: 12 },
-  stepperBtnText: { fontSize: 20, fontWeight: "700", color: designTokens.color.ink.primary },
-  stepperValue: { fontSize: 16, fontWeight: "800", color: designTokens.color.ink.primary, minWidth: 40, textAlign: "center" },
+  stepperContainer: { flexDirection: "row", alignItems: "center", backgroundColor: designTokens.color.surface.secondary, borderRadius: designTokens.radius.md, alignSelf: "flex-start", borderWidth: 1, borderColor: designTokens.color.border.strong },
+  stepperBtn: { paddingHorizontal: designTokens.spacing.xl, paddingVertical: designTokens.spacing.md },
+  stepperBtnText: { fontSize: designTokens.typography.section.fontSize, fontWeight: "700", color: designTokens.color.ink.primary },
+  stepperValue: { fontSize: designTokens.typography.body.fontSize, fontWeight: "800", color: designTokens.color.ink.primary, minWidth: 40, textAlign: "center" },
 
-  accordionWrap: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.strong, borderRadius: 18, overflow: "hidden", marginBottom: 12 },
-  accordionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, backgroundColor: designTokens.color.surface.canvas },
+  accordionWrap: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.strong, borderRadius: designTokens.radius.lg, overflow: "hidden", marginBottom: designTokens.spacing.md },
+  accordionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: designTokens.spacing.lg, backgroundColor: designTokens.color.surface.canvas },
   accordionHeaderDisabled: { opacity: 0.6 },
-  accordionTitle: { fontSize: 15, fontWeight: "700", color: designTokens.color.ink.secondary },
-  accordionIcon: { fontSize: 14, color: designTokens.color.ink.secondary, fontWeight: "700" },
-  accordionContent: { padding: 16, borderTopWidth: 1, borderTopColor: designTokens.color.border.subtle },
-  lockedAccordionNotice: { paddingHorizontal: 16, paddingBottom: 16 },
-  lockedAccordionText: { color: designTokens.color.status.dangerText, fontSize: 13, lineHeight: 18 },
-  reviewCard: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 14, marginBottom: 12 },
-  reviewHelper: { color: designTokens.color.ink.secondary, fontSize: 13, lineHeight: 18, marginBottom: 12 },
-  reviewChecklist: { gap: 8 },
-  reviewChecklistItem: { flexDirection: "row", alignItems: "center", gap: 8 },
-  reviewChecklistDot: { fontSize: 14, fontWeight: "800" },
+  accordionTitle: { fontSize: designTokens.typography.body.fontSize, fontWeight: "700", color: designTokens.color.ink.secondary },
+  accordionIcon: { fontSize: designTokens.typography.body.fontSize, color: designTokens.color.ink.secondary, fontWeight: "700" },
+  accordionContent: { padding: designTokens.spacing.lg, borderTopWidth: 1, borderTopColor: designTokens.color.border.subtle },
+  lockedAccordionNotice: { paddingHorizontal: designTokens.spacing.lg, paddingBottom: designTokens.spacing.lg },
+  lockedAccordionText: { color: designTokens.color.status.dangerText, fontSize: designTokens.typography.label.fontSize, lineHeight: 18 },
+  reviewCard: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: designTokens.radius.lg, padding: designTokens.spacing.lg, marginBottom: designTokens.spacing.md },
+  reviewHelper: { color: designTokens.color.ink.secondary, fontSize: designTokens.typography.label.fontSize, lineHeight: 18, marginBottom: designTokens.spacing.md },
+  reviewChecklist: { gap: designTokens.spacing.sm },
+  reviewChecklistItem: { flexDirection: "row", alignItems: "center", gap: designTokens.spacing.sm },
+  reviewChecklistDot: { fontSize: designTokens.typography.body.fontSize, fontWeight: "800" },
   reviewChecklistDotComplete: { color: designTokens.color.status.successText },
   reviewChecklistDotPending: { color: designTokens.color.status.warningText },
-  reviewChecklistText: { color: designTokens.color.ink.primary, fontSize: 14 },
+  reviewChecklistText: { color: designTokens.color.ink.primary, fontSize: designTokens.typography.body.fontSize },
 
-  selectedClient: { backgroundColor: designTokens.color.surface.secondary, borderRadius: 12, padding: 12, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  selectedClientName: { fontSize: 16, fontWeight: "700", color: designTokens.color.ink.primary },
-  selectedClientEmail: { fontSize: 14, color: designTokens.color.ink.secondary, marginTop: 2 },
-  changeLink: { color: designTokens.color.ink.accent, fontSize: 14, fontWeight: "600" },
-  clientPicker: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.strong, borderRadius: 12, marginTop: 4, maxHeight: 180, overflow: "hidden" },
-  clientOption: { padding: 12, borderBottomWidth: 1, borderBottomColor: designTokens.color.border.subtle },
-  clientOptionName: { fontSize: 15, fontWeight: "700", color: designTokens.color.ink.primary },
-  clientOptionEmail: { fontSize: 13, color: designTokens.color.ink.secondary, marginTop: 2 },
-  autocompleteLoadingRow: { flexDirection: "row", alignItems: "center", gap: 8, padding: 12 },
-  autocompleteHelperText: { fontSize: 13, color: designTokens.color.ink.secondary },
+  selectedClient: { backgroundColor: designTokens.color.surface.secondary, borderRadius: designTokens.radius.md, padding: designTokens.spacing.md, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  selectedClientName: { fontSize: designTokens.typography.body.fontSize, fontWeight: "700", color: designTokens.color.ink.primary },
+  selectedClientEmail: { fontSize: designTokens.typography.body.fontSize, color: designTokens.color.ink.secondary, marginTop: designTokens.spacing.xs },
+  changeLink: { color: designTokens.color.ink.accent, fontSize: designTokens.typography.body.fontSize, fontWeight: "600" },
+  clientPicker: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.strong, borderRadius: designTokens.radius.md, marginTop: designTokens.spacing.xs, maxHeight: 180, overflow: "hidden" },
+  clientOption: { padding: designTokens.spacing.md, borderBottomWidth: 1, borderBottomColor: designTokens.color.border.subtle },
+  clientOptionName: { fontSize: designTokens.typography.body.fontSize, fontWeight: "700", color: designTokens.color.ink.primary },
+  clientOptionEmail: { fontSize: designTokens.typography.label.fontSize, color: designTokens.color.ink.secondary, marginTop: designTokens.spacing.xs },
+  autocompleteLoadingRow: { flexDirection: "row", alignItems: "center", gap: designTokens.spacing.sm, padding: designTokens.spacing.md },
+  autocompleteHelperText: { fontSize: designTokens.typography.label.fontSize, color: designTokens.color.ink.secondary },
 
   datePickerTrigger: { minHeight: 48, justifyContent: "center" },
-  dateValue: { color: designTokens.color.ink.primary, fontSize: 15, fontWeight: "600" },
-  datePlaceholder: { color: designTokens.color.ink.muted, fontSize: 15 },
+  dateValue: { color: designTokens.color.ink.primary, fontSize: designTokens.typography.body.fontSize, fontWeight: "600" },
+  datePlaceholder: { color: designTokens.color.ink.muted, fontSize: designTokens.typography.body.fontSize },
 
   dateModalBackdrop: { flex: 1, backgroundColor: "rgba(15, 23, 42, 0.45)", justifyContent: "flex-end" },
-  dateModalContent: { backgroundColor: designTokens.color.surface.primary, borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 16 },
-  dateModalTitle: { fontSize: 16, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 8 },
-  dateModalActions: { flexDirection: "row", gap: 8, marginTop: 8 },
-  dateModalCancelButton: { flex: 1, borderRadius: 10, borderWidth: 1, borderColor: designTokens.color.border.strong, alignItems: "center", paddingVertical: 12 },
+  dateModalContent: { backgroundColor: designTokens.color.surface.primary, borderTopLeftRadius: designTokens.radius.lg, borderTopRightRadius: designTokens.radius.lg, padding: designTokens.spacing.lg },
+  dateModalTitle: { fontSize: designTokens.typography.body.fontSize, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: designTokens.spacing.sm },
+  dateModalActions: { flexDirection: "row", gap: designTokens.spacing.sm, marginTop: designTokens.spacing.sm },
+  dateModalCancelButton: { flex: 1, borderRadius: designTokens.radius.sm, borderWidth: 1, borderColor: designTokens.color.border.strong, alignItems: "center", paddingVertical: designTokens.spacing.md },
   dateModalCancelText: { color: designTokens.color.ink.primary, fontWeight: "700" },
-  dateModalConfirmButton: { flex: 1, borderRadius: 10, backgroundColor: designTokens.color.ink.accent, alignItems: "center", paddingVertical: 12 },
+  dateModalConfirmButton: { flex: 1, borderRadius: designTokens.radius.sm, backgroundColor: designTokens.color.ink.accent, alignItems: "center", paddingVertical: designTokens.spacing.md },
   dateModalConfirmText: { color: designTokens.color.ink.inverse, fontWeight: "700" },
 
   buttonPressed: { opacity: 0.8 },
 
   // Required nurse picker button
   nurseSelectorButton: {
-    minHeight: 48, borderRadius: 12, borderWidth: 1,
+    minHeight: 48, borderRadius: designTokens.radius.md, borderWidth: 1,
     borderColor: designTokens.color.border.strong,
     backgroundColor: designTokens.color.surface.secondary,
     alignItems: "center", justifyContent: "center",
-    paddingHorizontal: 14,
+    paddingHorizontal: designTokens.spacing.lg,
   },
   nurseSelectorButtonError: { borderColor: designTokens.color.ink.danger },
-  nurseSelectorButtonText: { color: designTokens.color.ink.accent, fontSize: 15, fontWeight: "700" },
+  nurseSelectorButtonText: { color: designTokens.color.ink.accent, fontSize: designTokens.typography.body.fontSize, fontWeight: "700" },
 
   // Assigned nurse picker sheet
   sheetBackdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.32)" },
   sheet: {
     maxHeight: "86%", minHeight: "58%",
     backgroundColor: designTokens.color.surface.primary,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    paddingHorizontal: 18, paddingTop: 16, paddingBottom: 18, gap: 12,
+    borderTopLeftRadius: designTokens.radius.xxl, borderTopRightRadius: designTokens.radius.xxl,
+    paddingHorizontal: designTokens.spacing.xl, paddingTop: designTokens.spacing.lg, paddingBottom: designTokens.spacing.xl, gap: designTokens.spacing.md,
   },
-  sheetHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
-  sheetTitle: { color: designTokens.color.ink.primary, fontSize: 20, fontWeight: "900" },
-  sheetSubtitle: { color: designTokens.color.ink.secondary, fontSize: 13, fontWeight: "700", marginTop: 2 },
+  sheetHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: designTokens.spacing.md },
+  sheetTitle: { color: designTokens.color.ink.primary, fontSize: designTokens.typography.section.fontSize, fontWeight: "900" },
+  sheetSubtitle: { color: designTokens.color.ink.secondary, fontSize: designTokens.typography.label.fontSize, fontWeight: "700", marginTop: designTokens.spacing.xs },
   sheetClose: {
-    minHeight: 38, borderRadius: 12, paddingHorizontal: 14,
+    minHeight: 38, borderRadius: designTokens.radius.md, paddingHorizontal: designTokens.spacing.lg,
     alignItems: "center", justifyContent: "center",
     backgroundColor: designTokens.color.surface.secondary,
   },
   sheetCloseText: { color: designTokens.color.ink.primary, fontWeight: "800" },
   searchInput: {
-    minHeight: 48, borderRadius: 14, borderWidth: 1,
+    minHeight: 48, borderRadius: designTokens.radius.md, borderWidth: 1,
     borderColor: designTokens.color.border.strong,
     backgroundColor: designTokens.color.surface.primary,
-    color: designTokens.color.ink.primary, paddingHorizontal: 14, fontSize: 15,
+    color: designTokens.color.ink.primary, paddingHorizontal: designTokens.spacing.lg, fontSize: designTokens.typography.body.fontSize,
   },
   nurseSheetList: { flex: 1 },
-  nurseSheetListContent: { paddingBottom: 8, gap: 8 },
+  nurseSheetListContent: { paddingBottom: designTokens.spacing.sm, gap: designTokens.spacing.sm },
   nurseSheetRow: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12,
-    borderRadius: 14, borderWidth: 1, borderColor: designTokens.color.border.subtle,
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: designTokens.spacing.md,
+    borderRadius: designTokens.radius.md, borderWidth: 1, borderColor: designTokens.color.border.subtle,
     backgroundColor: designTokens.color.surface.primary,
-    paddingHorizontal: 14, paddingVertical: 12,
+    paddingHorizontal: designTokens.spacing.lg, paddingVertical: designTokens.spacing.md,
   },
   nurseSheetRowSelected: {
     borderColor: designTokens.color.ink.accent,
     backgroundColor: designTokens.color.surface.accent,
   },
   nurseSheetRowText: { flex: 1, minWidth: 0 },
-  nurseSheetName: { color: designTokens.color.ink.primary, fontSize: 15, fontWeight: "900" },
-  nurseSheetMeta: { color: designTokens.color.ink.secondary, fontSize: 12, fontWeight: "600", marginTop: 3 },
-  nurseSheetSelected: { color: designTokens.color.ink.accent, fontSize: 12, fontWeight: "900" },
-  emptyText: { color: designTokens.color.ink.muted, fontSize: 14, textAlign: "center", paddingVertical: 24 },
+  nurseSheetName: { color: designTokens.color.ink.primary, fontSize: designTokens.typography.body.fontSize, fontWeight: "900" },
+  nurseSheetMeta: { color: designTokens.color.ink.secondary, fontSize: designTokens.typography.caption.fontSize, fontWeight: "600", marginTop: designTokens.spacing.xs },
+  nurseSheetSelected: { color: designTokens.color.ink.accent, fontSize: designTokens.typography.caption.fontSize, fontWeight: "900" },
+  emptyText: { color: designTokens.color.ink.muted, fontSize: designTokens.typography.body.fontSize, textAlign: "center", paddingVertical: designTokens.spacing.xxl },
 });

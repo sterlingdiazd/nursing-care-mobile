@@ -63,31 +63,31 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: designTokens.spacing.md,
     backgroundColor: designTokens.color.surface.warning,
     borderWidth: 1,
     borderColor: designTokens.color.border.warning,
     borderRadius: designTokens.radius.md,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: designTokens.spacing.md,
+    paddingHorizontal: designTokens.spacing.md,
   },
   title: {
     color: designTokens.color.status.warningText,
     fontWeight: "800",
-    fontSize: 14,
+    fontSize: designTokens.typography.body.fontSize,
   },
   subtitle: {
     color: designTokens.color.ink.secondary,
-    fontSize: 12,
+    fontSize: designTokens.typography.caption.fontSize,
     fontWeight: "600",
-    marginTop: 2,
+    marginTop: designTokens.spacing.xs,
   },
   retryButton: {
     borderRadius: designTokens.radius.sm,
     borderWidth: 1,
     borderColor: designTokens.color.status.warningText,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.sm,
   },
   retryPressed: {
     opacity: 0.7,
@@ -95,6 +95,6 @@ const styles = StyleSheet.create({
   retryText: {
     color: designTokens.color.status.warningText,
     fontWeight: "800",
-    fontSize: 13,
+    fontSize: designTokens.typography.label.fontSize,
   },
 });

@@ -13,6 +13,7 @@ import {
   updateAdminClient,
 } from "@/src/services/adminPortalService";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+import { designTokens } from "@/src/design-system/tokens";
 
 type FormState = {
   name: string;
@@ -272,17 +273,17 @@ export default function AdminClientEditScreen() {
 
 const styles = StyleSheet.create({
   loaderWrap: {
-    paddingVertical: 32,
+    paddingVertical: designTokens.spacing.xxxl,
     alignItems: "center",
     justifyContent: "center",
   },
   container: {
-    gap: 14,
-    paddingBottom: 24,
+    gap: designTokens.spacing.lg,
+    paddingBottom: designTokens.spacing.xxl,
   },
   banner: {
     borderRadius: mobileTheme.radius.lg,
-    padding: 12,
+    padding: designTokens.spacing.md,
   },
   errorBanner: {
     backgroundColor: mobileTheme.colors.surface.danger,
@@ -296,17 +297,17 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: mobileTheme.colors.ink.danger,
-    fontSize: 13,
+    fontSize: designTokens.typography.label.fontSize,
     fontWeight: "700",
   },
   successText: {
     color: mobileTheme.colors.status.successText,
-    fontSize: 13,
+    fontSize: designTokens.typography.label.fontSize,
     fontWeight: "700",
   },
   formCard: {
     ...mobileSurfaceCard,
-    padding: 14,
-    gap: 12,
+    padding: designTokens.spacing.lg,
+    gap: designTokens.spacing.md,
   },
 });

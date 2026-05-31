@@ -169,9 +169,9 @@ function checkAccessibilityLabels(): RuleResult {
       if (!/<Pressable|<TouchableOpacity/.test(line)) continue;
 
       // Check a larger opening-tag window. Several local components keep
-      // style callbacks before accessibility props, so a 5-line window
-      // creates false positives for otherwise labeled controls.
-      const window = lines.slice(i, Math.min(i + 21, lines.length)).join('\n');
+      // style callbacks and long onPress handlers before accessibility props,
+      // so a small window creates false positives for otherwise labeled controls.
+      const window = lines.slice(i, Math.min(i + 32, lines.length)).join('\n');
       if (!/accessibilityLabel/.test(window)) {
         const relFile = path.relative(ROOT, file);
         violations.push(`${relFile}:${i + 1}: ${line.trim().slice(0, 80)}`);
@@ -319,7 +319,8 @@ function checkOffTokenNumericValues(): RuleResult {
     rule: "Off-token numeric style values — use designTokens.spacing/radius and the type ramp",
     passed: violations.length === 0,
     violations,
-    advisory: true,
+    // GATING (Phase 3): the screen migration reached zero, so a new raw style
+    // number now fails the build instead of accumulating drift.
   };
 }
 

@@ -16,6 +16,7 @@ import {
   getAdminCareRequestStatusColor,
 } from "@/src/utils/adminCareRequestBilling";
 import { mobileSecondarySurface, mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
+import { designTokens } from "@/src/design-system/tokens";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP" }).format(value);
@@ -230,14 +231,14 @@ const styles = StyleSheet.create({
   },
   successTitle: {
     color: mobileTheme.colors.status.successText,
-    fontSize: 15,
+    fontSize: designTokens.typography.body.fontSize,
     fontWeight: "800",
     marginBottom: mobileTheme.spacing.xs,
   },
   successText: { color: mobileTheme.colors.ink.primary, lineHeight: 22 },
   loading: {
     color: mobileTheme.colors.ink.secondary,
-    fontSize: 14,
+    fontSize: designTokens.typography.body.fontSize,
     textAlign: "center",
     paddingVertical: mobileTheme.spacing.xxl,
   },
@@ -260,9 +261,9 @@ const styles = StyleSheet.create({
   input: {
     ...mobileSecondarySurface,
     paddingHorizontal: mobileTheme.spacing.lg,
-    paddingVertical: 14,
+    paddingVertical: designTokens.spacing.lg,
     color: mobileTheme.colors.ink.primary,
-    fontSize: 15,
+    fontSize: designTokens.typography.body.fontSize,
   },
   textArea: { minHeight: 96, textAlignVertical: "top" },
   noticeCard: {

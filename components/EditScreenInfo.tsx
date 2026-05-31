@@ -6,6 +6,7 @@ import { MonoText } from './StyledText';
 import { Text, View } from './Themed';
 
 import Colors from '@/constants/Colors';
+import { designTokens } from "@/src/design-system/tokens";
 
 export default function EditScreenInfo({ path }: { path: string }) {
   return (
@@ -49,27 +50,27 @@ export default function EditScreenInfo({ path }: { path: string }) {
 const styles = StyleSheet.create({
   getStartedContainer: {
     alignItems: 'center',
-    marginHorizontal: 50,
+    marginHorizontal: designTokens.spacing.huge,
   },
   homeScreenFilename: {
-    marginVertical: 7,
+    marginVertical: designTokens.spacing.sm,
   },
   codeHighlightContainer: {
-    borderRadius: 3,
-    paddingHorizontal: 4,
+    borderRadius: designTokens.radius.sm,
+    paddingHorizontal: designTokens.spacing.xs,
   },
   getStartedText: {
-    fontSize: 17,
+    fontSize: designTokens.typography.section.fontSize,
     lineHeight: 24,
     textAlign: 'center',
   },
   helpContainer: {
-    marginTop: 15,
-    marginHorizontal: 20,
+    marginTop: designTokens.spacing.lg,
+    marginHorizontal: designTokens.spacing.xl,
     alignItems: 'center',
   },
   helpLink: {
-    paddingVertical: 15,
+    paddingVertical: designTokens.spacing.lg,
   },
   helpLinkText: {
     textAlign: 'center',

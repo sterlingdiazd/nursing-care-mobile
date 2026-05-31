@@ -151,7 +151,7 @@ export default function AdminCreateClientScreen() {
       <View style={styles.card}>
         <Text style={styles.sectionHeading}>Información personal</Text>
 
-        <View style={{ flexDirection: "row", gap: 12 }}>
+        <View style={{ flexDirection: "row", gap: designTokens.spacing.md }}>
           <FormInput
             testID={adminTestIds.clients.create.nameInput}
             label="Nombre"
@@ -215,7 +215,7 @@ export default function AdminCreateClientScreen() {
           errorMessage={errors.email}
         />
 
-        <View style={{ flexDirection: "row", gap: 12 }}>
+        <View style={{ flexDirection: "row", gap: designTokens.spacing.md }}>
           <FormInput
             testID={adminTestIds.clients.create.passwordInput}
             label="Contraseña"
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
   },
   sectionHeading: {
     ...designTokens.typography.sectionTitle,
-    fontSize: 16,
+    fontSize: designTokens.typography.body.fontSize,
     marginBottom: designTokens.spacing.sm,
   },
 });

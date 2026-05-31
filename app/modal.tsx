@@ -3,6 +3,7 @@ import { Platform, StyleSheet } from 'react-native';
 
 import EditScreenInfo from '@/components/EditScreenInfo';
 import { Text, View } from '@/components/Themed';
+import { designTokens } from "@/src/design-system/tokens";
 
 export default function ModalScreen() {
   return (
@@ -24,11 +25,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
-    fontSize: 20,
+    fontSize: designTokens.typography.section.fontSize,
     fontWeight: 'bold',
   },
   separator: {
-    marginVertical: 30,
+    marginVertical: designTokens.spacing.xxxl,
     height: 1,
     width: '80%',
   },

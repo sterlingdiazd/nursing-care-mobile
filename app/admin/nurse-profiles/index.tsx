@@ -200,24 +200,24 @@ export default function AdminNurseProfilesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, gap: 8 },
+  container: { flex: 1, gap: designTokens.spacing.sm },
   list: { flex: 1 },
   empty: {
     color: designTokens.color.ink.muted,
-    fontSize: 14,
+    fontSize: designTokens.typography.body.fontSize,
     textAlign: "center",
     padding: designTokens.spacing.lg,
   },
   reviewButton: {
     backgroundColor: designTokens.color.ink.accent,
-    borderRadius: 12,
-    paddingVertical: 8,
-    marginTop: 8,
+    borderRadius: designTokens.radius.md,
+    paddingVertical: designTokens.spacing.sm,
+    marginTop: designTokens.spacing.sm,
     alignItems: "center",
   },
   reviewButtonText: {
     color: designTokens.color.ink.inverse,
     fontWeight: "700",
-    fontSize: 13,
+    fontSize: designTokens.typography.label.fontSize,
   },
 });

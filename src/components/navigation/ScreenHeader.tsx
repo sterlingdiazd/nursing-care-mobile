@@ -37,19 +37,19 @@ export function ScreenHeader({ title, showBack = false, onBack }: ScreenHeaderPr
 const styles = StyleSheet.create({
   container: {
     backgroundColor: designTokens.color.surface.canvas,
-    paddingHorizontal: 20,
-    paddingBottom: 12,
+    paddingHorizontal: designTokens.spacing.xl,
+    paddingBottom: designTokens.spacing.md,
     flexDirection: "row",
     alignItems: "center",
     minHeight: 44,
   },
   backButton: {
-    marginRight: 12,
-    paddingVertical: 4,
-    paddingHorizontal: 2,
+    marginRight: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.xs,
+    paddingHorizontal: designTokens.spacing.xs,
   },
   backText: {
-    fontSize: 22,
+    fontSize: designTokens.typography.title.fontSize,
     color: designTokens.color.ink.primary,
     lineHeight: 26,
   },

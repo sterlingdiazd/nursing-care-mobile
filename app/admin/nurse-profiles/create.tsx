@@ -156,7 +156,7 @@ export default function AdminCreateNurseProfileScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Datos Básicos</Text>
 
-          <View style={{ flexDirection: "row", gap: 12 }}>
+          <View style={{ flexDirection: "row", gap: designTokens.spacing.md }}>
             <FormInput
               testID={adminTestIds.nurses.create.nameInput}
               label="Nombre"
@@ -226,7 +226,7 @@ export default function AdminCreateNurseProfileScreen() {
             onValueChange={(val) => setForm({ ...form, optInWhatsApp: val })}
           />
 
-          <View style={{ flexDirection: "row", gap: 12 }}>
+          <View style={{ flexDirection: "row", gap: designTokens.spacing.md }}>
             <FormInput
               testID={adminTestIds.nurses.create.passwordInput}
               label="Contraseña"
@@ -318,7 +318,7 @@ export default function AdminCreateNurseProfileScreen() {
             errorMessage={errors.category}
           />
 
-          <View style={{ flexDirection: "row", gap: 12 }}>
+          <View style={{ flexDirection: "row", gap: designTokens.spacing.md }}>
             <FormInput
               testID={adminTestIds.nurses.create.specialtyInput}
               label="Especialidad"
@@ -381,7 +381,7 @@ export default function AdminCreateNurseProfileScreen() {
             onChangeText={(text) => setForm({ ...form, visitDailyRate: Number(text.replace(/[^0-9.]/g, "")) || 0 })}
           />
 
-          <View style={{ flexDirection: "row", gap: 12 }}>
+          <View style={{ flexDirection: "row", gap: designTokens.spacing.md }}>
             <FormInput
               testID="admin-create-nurse-home-monthly-input"
               label="Monto mensual (casa hogar) RD$"
@@ -466,33 +466,33 @@ export default function AdminCreateNurseProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: 12, borderRadius: 12, marginBottom: 12 },
-  progressPanel: { backgroundColor: designTokens.color.surface.canvas, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 14, marginBottom: 12, gap: 8 },
-  progressChip: { alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, fontSize: 12, fontWeight: "800" },
+  error: { backgroundColor: designTokens.color.surface.danger, color: designTokens.color.ink.danger, padding: designTokens.spacing.md, borderRadius: designTokens.radius.md, marginBottom: designTokens.spacing.md },
+  progressPanel: { backgroundColor: designTokens.color.surface.canvas, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: designTokens.radius.lg, padding: designTokens.spacing.lg, marginBottom: designTokens.spacing.md, gap: designTokens.spacing.sm },
+  progressChip: { alignSelf: "flex-start", borderRadius: designTokens.radius.pill, paddingHorizontal: designTokens.spacing.md, paddingVertical: designTokens.spacing.sm, fontSize: designTokens.typography.caption.fontSize, fontWeight: "800" },
   progressChipWarning: { backgroundColor: designTokens.color.status.warningBg, color: designTokens.color.status.warningText },
   progressChipSuccess: { backgroundColor: designTokens.color.status.successBg, color: designTokens.color.status.successText },
-  progressHelper: { color: designTokens.color.ink.secondary, fontSize: 13, lineHeight: 18 },
+  progressHelper: { color: designTokens.color.ink.secondary, fontSize: designTokens.typography.label.fontSize, lineHeight: 18 },
   formScroll: { flex: 1, minHeight: 0 },
-  scrollContent: { paddingBottom: 24 },
-  card: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, padding: 14, marginBottom: 12 },
-  cardTitle: { fontSize: 18, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: 6 },
-  cardLabel: { fontSize: 13, fontWeight: "700", color: designTokens.color.ink.primary, marginBottom: 7, marginTop: 4 },
-  errorText: { color: designTokens.color.ink.danger, fontSize: 12, marginTop: 4 },
-  helperText: { color: designTokens.color.ink.secondary, fontSize: 12, marginTop: 2, marginBottom: 4 },
+  scrollContent: { paddingBottom: designTokens.spacing.xxl },
+  card: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: designTokens.radius.lg, padding: designTokens.spacing.lg, marginBottom: designTokens.spacing.md },
+  cardTitle: { fontSize: designTokens.typography.section.fontSize, fontWeight: "800", color: designTokens.color.ink.primary, marginBottom: designTokens.spacing.sm },
+  cardLabel: { fontSize: designTokens.typography.label.fontSize, fontWeight: "700", color: designTokens.color.ink.primary, marginBottom: designTokens.spacing.sm, marginTop: designTokens.spacing.xs },
+  errorText: { color: designTokens.color.ink.danger, fontSize: designTokens.typography.caption.fontSize, marginTop: designTokens.spacing.xs },
+  helperText: { color: designTokens.color.ink.secondary, fontSize: designTokens.typography.caption.fontSize, marginTop: designTokens.spacing.xs, marginBottom: designTokens.spacing.xs },
 
-  chipsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 },
-  chip: { backgroundColor: designTokens.color.surface.secondary, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: designTokens.color.border.subtle },
+  chipsContainer: { flexDirection: "row", flexWrap: "wrap", gap: designTokens.spacing.sm, marginBottom: designTokens.spacing.xs },
+  chip: { backgroundColor: designTokens.color.surface.secondary, paddingVertical: designTokens.spacing.md, paddingHorizontal: designTokens.spacing.lg, borderRadius: designTokens.radius.xl, borderWidth: 1, borderColor: designTokens.color.border.subtle },
   chipActive: { backgroundColor: designTokens.color.ink.accent, borderColor: designTokens.color.ink.accentStrong },
   chipSuccess: { backgroundColor: designTokens.color.surface.success, borderColor: designTokens.color.border.subtle },
   chipDanger: { backgroundColor: designTokens.color.surface.danger, borderColor: designTokens.color.ink.danger },
-  chipText: { color: designTokens.color.ink.secondary, fontWeight: "600", fontSize: 14 },
+  chipText: { color: designTokens.color.ink.secondary, fontWeight: "600", fontSize: designTokens.typography.body.fontSize },
   chipTextActive: { color: designTokens.color.ink.inverse },
   chipTextSuccess: { color: designTokens.color.status.successText },
   chipTextDanger: { color: designTokens.color.status.dangerText },
 
-  accordionWrap: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: 18, overflow: "hidden", marginBottom: 12 },
-  accordionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, backgroundColor: designTokens.color.surface.canvas },
-  accordionTitle: { fontSize: 15, fontWeight: "700", color: designTokens.color.ink.secondary },
-  accordionIcon: { fontSize: 14, color: designTokens.color.ink.secondary, fontWeight: "700" },
-  accordionContent: { padding: 16, borderTopWidth: 1, borderTopColor: designTokens.color.border.subtle },
+  accordionWrap: { backgroundColor: designTokens.color.surface.primary, borderWidth: 1, borderColor: designTokens.color.border.subtle, borderRadius: designTokens.radius.lg, overflow: "hidden", marginBottom: designTokens.spacing.md },
+  accordionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: designTokens.spacing.lg, backgroundColor: designTokens.color.surface.canvas },
+  accordionTitle: { fontSize: designTokens.typography.body.fontSize, fontWeight: "700", color: designTokens.color.ink.secondary },
+  accordionIcon: { fontSize: designTokens.typography.body.fontSize, color: designTokens.color.ink.secondary, fontWeight: "700" },
+  accordionContent: { padding: designTokens.spacing.lg, borderTopWidth: 1, borderTopColor: designTokens.color.border.subtle },
 });

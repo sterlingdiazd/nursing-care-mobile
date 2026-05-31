@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   backButtonText: {
-    fontSize: 28,
+    fontSize: designTokens.typography.display.fontSize,
     lineHeight: 28,
     color: mobileTheme.colors.ink.primary,
     fontWeight: "600",

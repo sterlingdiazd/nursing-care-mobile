@@ -158,7 +158,7 @@ function Resumen({ data }: { data: FinanceOverview }) {
     }));
 
   return (
-    <View style={{ gap: 12 }}>
+    <View style={{ gap: designTokens.spacing.md }}>
       <GananciaHero
         ganancia={fmtMoney(s.grossMargin.value)}
         marginPercent={s.marginPercent}
@@ -183,7 +183,7 @@ function Resumen({ data }: { data: FinanceOverview }) {
 function Ingresos({ data }: { data: FinanceOverview }) {
   const best = [...data.byServiceLine].sort((a, b) => b.marginPercent - a.marginPercent)[0];
   return (
-    <View style={{ gap: 12 }}>
+    <View style={{ gap: designTokens.spacing.md }}>
       <SectionCard
         title="Ingresos por categoría"
         subtitle={best ? `${best.serviceLine} es tu línea más rentable (${pct(best.marginPercent)})` : "Dónde se generan tus ingresos"}
@@ -204,9 +204,9 @@ function Ingresos({ data }: { data: FinanceOverview }) {
 
 function BarList({ items }: { items: { name: string; valueLabel: string; sub?: string; fraction: number }[] }) {
   return (
-    <View style={{ gap: 12 }}>
+    <View style={{ gap: designTokens.spacing.md }}>
       {items.map((it, i) => (
-        <View key={`${it.name}-${i}`} style={{ gap: 5 }}>
+        <View key={`${it.name}-${i}`} style={{ gap: designTokens.spacing.sm }}>
           <View style={styles.barHeader}>
             <Text style={styles.barName} numberOfLines={1}>{it.name}</Text>
             <Text style={styles.barValue}>{it.valueLabel}</Text>
@@ -225,7 +225,7 @@ function Equipo({ data }: { data: FinanceOverview }) {
   const loans = data.loans.slice(0, 5);
   const maxLoan = Math.max(...loans.map((l) => l.outstandingBalance), 1);
   return (
-    <View style={{ gap: 12 }}>
+    <View style={{ gap: designTokens.spacing.md }}>
       <SectionCard title="Participación por enfermera" subtitle="Quién genera más ingreso" onPress={() => goDetail(data, "nurses", "Participación por enfermera")} icon="user-md" hue="orange">
         <BarList items={nurses.map((n) => ({ name: n.nurseName, valueLabel: fmtMoneyCompact(n.revenueGenerated), sub: `${n.servicesCount} serv · pago ${fmtMoneyCompact(n.netPay)}`, fraction: n.revenueGenerated / maxRev }))} />
       </SectionCard>
@@ -243,7 +243,7 @@ function Tendencia({ data }: { data: FinanceOverview }) {
   const delta = (dp: number | null) => (dp == null ? "—" : `${dp > 0 ? "+" : dp < 0 ? "−" : ""}${Math.abs(dp).toFixed(1)}%`);
   const dColor = (dp: number | null) => (dp == null ? t.textMuted : dp >= 0 ? t.green : t.red);
   return (
-    <View style={{ gap: 12 }}>
+    <View style={{ gap: designTokens.spacing.md }}>
       <SectionCard title="Tendencia (6 meses)" subtitle="Ingresos y margen en el tiempo" icon="line-chart" hue="blue">
         <TrendArea data={data.monthlyTrend} />
       </SectionCard>
@@ -268,25 +268,25 @@ function DeltaChip({ label, value, color }: { label: string; value: string; colo
 
 const styles = StyleSheet.create({
   // Refresh button: light secondary surface, subtle border
-  iconBtn: { width: 38, height: 38, borderRadius: 999, backgroundColor: t.bgElevated, borderWidth: 1, borderColor: t.cardBorder, alignItems: "center", justifyContent: "center" },
-  refreshGlyph: { color: t.text, fontSize: 18, fontWeight: "800" },
+  iconBtn: { width: 38, height: 38, borderRadius: designTokens.radius.pill, backgroundColor: t.bgElevated, borderWidth: 1, borderColor: t.cardBorder, alignItems: "center", justifyContent: "center" },
+  refreshGlyph: { color: t.text, fontSize: designTokens.typography.section.fontSize, fontWeight: "800" },
   segment: { flex: 1 },
-  barHeader: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
-  barName: { color: t.text, fontSize: 13, fontWeight: "700", flex: 1 },
-  barValue: { color: t.textMuted, fontSize: 12.5, fontWeight: "700" },
-  barSub: { color: t.textMuted, fontSize: 11 },
+  barHeader: { flexDirection: "row", justifyContent: "space-between", gap: designTokens.spacing.sm },
+  barName: { color: t.text, fontSize: designTokens.typography.label.fontSize, fontWeight: "700", flex: 1 },
+  barValue: { color: t.textMuted, fontSize: designTokens.typography.label.fontSize, fontWeight: "700" },
+  barSub: { color: t.textMuted, fontSize: designTokens.typography.caption.fontSize },
   // Bar track: light neutral surface
-  barTrack: { height: 8, borderRadius: 999, backgroundColor: t.cardSoft, overflow: "hidden" },
-  barFill: { height: 8, borderRadius: 999, backgroundColor: t.accent },
-  deltaRow: { flexDirection: "row", gap: 10 },
+  barTrack: { height: 8, borderRadius: designTokens.radius.pill, backgroundColor: t.cardSoft, overflow: "hidden" },
+  barFill: { height: 8, borderRadius: designTokens.radius.pill, backgroundColor: t.accent },
+  deltaRow: { flexDirection: "row", gap: designTokens.spacing.md },
   // Delta chips: white card with subtle border
-  deltaChip: { flex: 1, backgroundColor: t.card, borderRadius: t.radiusSm, borderWidth: 1, borderColor: t.cardBorder, padding: 12, gap: 3 },
-  deltaLabel: { color: t.textMuted, fontSize: 10.5, fontWeight: "700", textTransform: "uppercase" },
-  deltaValue: { fontSize: 17, fontWeight: "800" },
-  deltaSub: { color: t.textMuted, fontSize: 9.5 },
+  deltaChip: { flex: 1, backgroundColor: t.card, borderRadius: t.radiusSm, borderWidth: 1, borderColor: t.cardBorder, padding: designTokens.spacing.md, gap: designTokens.spacing.xs },
+  deltaLabel: { color: t.textMuted, fontSize: designTokens.typography.caption.fontSize, fontWeight: "700", textTransform: "uppercase" },
+  deltaValue: { fontSize: designTokens.typography.section.fontSize, fontWeight: "800" },
+  deltaSub: { color: t.textMuted, fontSize: designTokens.typography.caption.fontSize },
   // Error box: white card
-  errorBox: { backgroundColor: t.card, borderRadius: t.radius, borderWidth: 1, borderColor: t.cardBorder, padding: 20, gap: 14, alignItems: "center" },
-  errorText: { color: t.textMuted, fontSize: 14, textAlign: "center" },
-  retry: { backgroundColor: t.accent, borderRadius: 999, paddingHorizontal: 22, paddingVertical: 10 },
+  errorBox: { backgroundColor: t.card, borderRadius: t.radius, borderWidth: 1, borderColor: t.cardBorder, padding: designTokens.spacing.xl, gap: designTokens.spacing.lg, alignItems: "center" },
+  errorText: { color: t.textMuted, fontSize: designTokens.typography.body.fontSize, textAlign: "center" },
+  retry: { backgroundColor: t.accent, borderRadius: designTokens.radius.pill, paddingHorizontal: designTokens.spacing.xxl, paddingVertical: designTokens.spacing.md },
   retryText: { color: designTokens.color.ink.inverse, fontWeight: "800" },
 });

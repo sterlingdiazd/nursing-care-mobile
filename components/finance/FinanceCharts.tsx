@@ -132,9 +132,9 @@ export function TopClientsBars({ data }: { data: ClientRevenueRow[] }) {
   const top = data.slice(0, 5);
   const max = Math.max(...top.map((d) => d.billed), 1);
   return (
-    <View style={{ gap: 12 }}>
+    <View style={{ gap: designTokens.spacing.md }}>
       {top.map((d, i) => (
-        <View key={`${d.clientName}-${i}`} style={{ gap: 5 }}>
+        <View key={`${d.clientName}-${i}`} style={{ gap: designTokens.spacing.sm }}>
           <View style={styles.barHeader}>
             <Text style={styles.barLabel} numberOfLines={1}>{d.clientName}</Text>
             <Text style={styles.barValue}>{fmtMoneyCompact(d.billed)}</Text>
@@ -161,30 +161,30 @@ const styles = StyleSheet.create({
   // White card with soft shadow
   section: {
     ...mobileSurfaceCard,
-    padding: 16,
-    gap: 4,
+    padding: designTokens.spacing.lg,
+    gap: designTokens.spacing.xs,
   },
-  sectionTitleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
-  sectionTitleLeft: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
-  sectionTitle: { color: t.text, fontSize: 16, fontWeight: "800" },
-  sectionSub: { color: t.textMuted, fontSize: 12 },
-  sectionBody: { marginTop: 10 },
-  donutRow: { flexDirection: "row", alignItems: "center", gap: 16 },
-  donutCenterLabel: { color: t.textMuted, fontSize: 10 },
-  donutCenterValue: { color: t.text, fontSize: 13, fontWeight: "800" },
-  legend: { flex: 1, gap: 9 },
-  legendRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  legendRow2: { flexDirection: "row", alignItems: "center", gap: 6 },
-  legendDot: { width: 10, height: 10, borderRadius: 3 },
-  legendLabel: { color: t.text, fontSize: 13, flex: 1 },
-  legendLabel2: { color: t.textMuted, fontSize: 12, fontWeight: "600" },
-  legendPct: { color: t.textMuted, fontSize: 12, fontWeight: "700" },
-  trendLegend: { flexDirection: "row", gap: 14, marginBottom: 8 },
-  axisText: { color: t.textMuted, fontSize: 10 },
-  barHeader: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
-  barLabel: { color: t.text, fontSize: 13, flex: 1 },
-  barValue: { color: t.textMuted, fontSize: 12, fontWeight: "700" },
+  sectionTitleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: designTokens.spacing.sm },
+  sectionTitleLeft: { flexDirection: "row", alignItems: "center", gap: designTokens.spacing.sm, flex: 1 },
+  sectionTitle: { color: t.text, fontSize: designTokens.typography.body.fontSize, fontWeight: "800" },
+  sectionSub: { color: t.textMuted, fontSize: designTokens.typography.caption.fontSize },
+  sectionBody: { marginTop: designTokens.spacing.md },
+  donutRow: { flexDirection: "row", alignItems: "center", gap: designTokens.spacing.lg },
+  donutCenterLabel: { color: t.textMuted, fontSize: designTokens.typography.caption.fontSize },
+  donutCenterValue: { color: t.text, fontSize: designTokens.typography.label.fontSize, fontWeight: "800" },
+  legend: { flex: 1, gap: designTokens.spacing.md },
+  legendRow: { flexDirection: "row", alignItems: "center", gap: designTokens.spacing.sm },
+  legendRow2: { flexDirection: "row", alignItems: "center", gap: designTokens.spacing.sm },
+  legendDot: { width: 10, height: 10, borderRadius: designTokens.radius.sm },
+  legendLabel: { color: t.text, fontSize: designTokens.typography.label.fontSize, flex: 1 },
+  legendLabel2: { color: t.textMuted, fontSize: designTokens.typography.caption.fontSize, fontWeight: "600" },
+  legendPct: { color: t.textMuted, fontSize: designTokens.typography.caption.fontSize, fontWeight: "700" },
+  trendLegend: { flexDirection: "row", gap: designTokens.spacing.lg, marginBottom: designTokens.spacing.sm },
+  axisText: { color: t.textMuted, fontSize: designTokens.typography.caption.fontSize },
+  barHeader: { flexDirection: "row", justifyContent: "space-between", gap: designTokens.spacing.sm },
+  barLabel: { color: t.text, fontSize: designTokens.typography.label.fontSize, flex: 1 },
+  barValue: { color: t.textMuted, fontSize: designTokens.typography.caption.fontSize, fontWeight: "700" },
   // Bar track: light neutral (#e6f2f4)
-  barTrack: { height: 8, borderRadius: 999, backgroundColor: t.cardSoft, overflow: "hidden" },
-  barFill: { height: 8, borderRadius: 999, backgroundColor: t.accent },
+  barTrack: { height: 8, borderRadius: designTokens.radius.pill, backgroundColor: t.cardSoft, overflow: "hidden" },
+  barFill: { height: 8, borderRadius: designTokens.radius.pill, backgroundColor: t.accent },
 });

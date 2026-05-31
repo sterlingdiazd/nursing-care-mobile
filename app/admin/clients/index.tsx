@@ -160,7 +160,7 @@ export default function AdminClientsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, gap: 8 },
+  container: { flex: 1, gap: designTokens.spacing.sm },
   input: {
     backgroundColor: designTokens.color.surface.primary,
     borderWidth: 1,
@@ -168,12 +168,12 @@ const styles = StyleSheet.create({
     borderRadius: designTokens.radius.md,
     padding: designTokens.spacing.md,
     color: designTokens.color.ink.primary,
-    fontSize: 14,
+    fontSize: designTokens.typography.body.fontSize,
   },
   list: { flex: 1 },
   empty: {
     color: designTokens.color.ink.muted,
-    fontSize: 14,
+    fontSize: designTokens.typography.body.fontSize,
     textAlign: "center",
     padding: designTokens.spacing.lg,
   },

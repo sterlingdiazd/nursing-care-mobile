@@ -23,6 +23,7 @@ import {
   mobileTheme,
 } from "@/src/design-system/mobileStyles";
 import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
+import { designTokens } from "@/src/design-system/tokens";
 
 interface BillingTaskScreenProps {
   action: AdminCareRequestBillingAction;
@@ -341,7 +342,7 @@ const styles = StyleSheet.create({
   },
   successTitle: {
     color: mobileTheme.colors.status.successText,
-    fontSize: 15,
+    fontSize: designTokens.typography.body.fontSize,
     fontWeight: "800",
     marginBottom: mobileTheme.spacing.xs,
   },
@@ -356,7 +357,7 @@ const styles = StyleSheet.create({
   },
   loading: {
     color: mobileTheme.colors.ink.secondary,
-    fontSize: 14,
+    fontSize: designTokens.typography.body.fontSize,
     textAlign: "center",
     paddingVertical: mobileTheme.spacing.xxl,
   },
@@ -407,9 +408,9 @@ const styles = StyleSheet.create({
   input: {
     ...mobileSecondarySurface,
     paddingHorizontal: mobileTheme.spacing.lg,
-    paddingVertical: 14,
+    paddingVertical: designTokens.spacing.lg,
     color: mobileTheme.colors.ink.primary,
-    fontSize: 15,
+    fontSize: designTokens.typography.body.fontSize,
   },
   textArea: {
     minHeight: 120,
@@ -442,7 +443,7 @@ const styles = StyleSheet.create({
   },
   snapshotTitle: {
     color: mobileTheme.colors.ink.primary,
-    fontSize: 15,
+    fontSize: designTokens.typography.body.fontSize,
     fontWeight: "800",
   },
   snapshotText: {

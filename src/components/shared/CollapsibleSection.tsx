@@ -66,13 +66,13 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   title: {
-    fontSize: 14,
+    fontSize: designTokens.typography.body.fontSize,
     fontWeight: "700",
     color: designTokens.color.ink.primary,
     flex: 1,
   },
   chevron: {
-    fontSize: 18,
+    fontSize: designTokens.typography.section.fontSize,
     color: designTokens.color.ink.accent,
     marginLeft: designTokens.spacing.sm,
   },

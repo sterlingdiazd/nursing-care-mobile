@@ -20,8 +20,8 @@ export function CategoryLegend() {
 
 const T = designTokens;
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", flexWrap: "wrap", gap: 14, paddingVertical: 4 },
-  item: { flexDirection: "row", alignItems: "center", gap: 6 },
-  dot: { width: 10, height: 10, borderRadius: 5 },
-  label: { color: T.color.ink.secondary, fontSize: 12, fontWeight: "700" },
+  row: { flexDirection: "row", flexWrap: "wrap", gap: designTokens.spacing.lg, paddingVertical: designTokens.spacing.xs },
+  item: { flexDirection: "row", alignItems: "center", gap: designTokens.spacing.sm },
+  dot: { width: 10, height: 10, borderRadius: designTokens.radius.sm },
+  label: { color: T.color.ink.secondary, fontSize: designTokens.typography.caption.fontSize, fontWeight: "700" },
 });

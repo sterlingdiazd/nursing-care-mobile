@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: ROW_GAP,
     alignItems: "center",
-    paddingHorizontal: 2,
+    paddingHorizontal: designTokens.spacing.xs,
   },
   right: {
     flexDirection: "row",
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   },
   button: {
     borderRadius: mobileTheme.radius.lg,
-    paddingHorizontal: 16,
+    paddingHorizontal: designTokens.spacing.lg,
     minHeight: 48,
     alignItems: "center",
     justifyContent: "center",
@@ -201,17 +201,17 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     ...mobilePrimaryButton,
-    paddingHorizontal: 16,
+    paddingHorizontal: designTokens.spacing.lg,
   },
   secondaryButton: {
     ...mobileSecondaryButton,
-    paddingHorizontal: 16,
+    paddingHorizontal: designTokens.spacing.lg,
   },
   dangerButton: {
     backgroundColor: mobileTheme.colors.status.dangerBg,
     borderWidth: 1,
     borderColor: mobileTheme.colors.border.danger,
-    paddingHorizontal: 16,
+    paddingHorizontal: designTokens.spacing.lg,
   },
   disabledButton: {
     opacity: 0.45,
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   buttonText: {
-    fontSize: 14,
+    fontSize: designTokens.typography.body.fontSize,
     fontWeight: "700",
   },
   primaryButtonText: {

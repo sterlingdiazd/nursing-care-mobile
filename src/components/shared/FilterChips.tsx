@@ -62,13 +62,13 @@ export function FilterChips<K extends string>({ options, value, onChange, testID
 const T = designTokens;
 const styles = StyleSheet.create({
   // Wrapping cluster: all chips visible across as many rows as needed (no scroll).
-  row: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8, paddingVertical: 4 },
+  row: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: designTokens.spacing.sm, paddingVertical: designTokens.spacing.xs },
   chip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    gap: designTokens.spacing.sm,
+    paddingHorizontal: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.sm,
     borderRadius: T.radius.pill,
     backgroundColor: T.color.surface.secondary,
     borderWidth: 1,
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   },
   label: {
     color: T.color.ink.secondary,
-    fontSize: 12,
+    fontSize: designTokens.typography.caption.fontSize,
     fontWeight: "800",
     textTransform: "uppercase",
     letterSpacing: 0.3,
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   labelActive: { color: T.color.ink.inverse },
   count: {
     minWidth: 18,
-    paddingHorizontal: 5,
+    paddingHorizontal: designTokens.spacing.sm,
     paddingVertical: 1,
     borderRadius: T.radius.pill,
     backgroundColor: T.color.surface.tertiary,
@@ -96,6 +96,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   countActive: { backgroundColor: "rgba(255,255,255,0.24)" },
-  countText: { color: T.color.ink.secondary, fontSize: 11, fontWeight: "900" },
+  countText: { color: T.color.ink.secondary, fontSize: designTokens.typography.caption.fontSize, fontWeight: "900" },
   countTextActive: { color: T.color.ink.inverse },
 });

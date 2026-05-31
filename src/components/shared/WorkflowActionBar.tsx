@@ -1,6 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
 import { mobilePrimaryButton, mobileSecondaryButton, mobileTheme } from "@/src/design-system/mobileStyles";
 import { withHapticFeedback } from "@/src/utils/haptics";
+import { designTokens } from "@/src/design-system/tokens";
 
 export interface WorkflowAction {
   label: string;
@@ -60,20 +61,20 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     gap: mobileTheme.spacing.sm,
-    paddingHorizontal: 2,
-    paddingVertical: 4,
+    paddingHorizontal: designTokens.spacing.xs,
+    paddingVertical: designTokens.spacing.xs,
   },
   button: {
     borderRadius: mobileTheme.radius.lg,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    paddingVertical: designTokens.spacing.md,
+    paddingHorizontal: designTokens.spacing.lg,
     alignItems: "center",
     justifyContent: "center",
     minHeight: 48,
   },
   primaryButton: {
     ...mobilePrimaryButton,
-    paddingHorizontal: 14,
+    paddingHorizontal: designTokens.spacing.lg,
   },
   dangerButton: {
     backgroundColor: mobileTheme.colors.surface.danger,
@@ -82,7 +83,7 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     ...mobileSecondaryButton,
-    paddingHorizontal: 14,
+    paddingHorizontal: designTokens.spacing.lg,
   },
   disabledButton: {
     opacity: 0.45,
@@ -91,7 +92,7 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   buttonText: {
-    fontSize: 14,
+    fontSize: designTokens.typography.body.fontSize,
     fontWeight: "700",
   },
   primaryButtonText: {

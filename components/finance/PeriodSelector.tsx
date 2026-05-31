@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { financeTheme as t } from "./financeTheme";
 import { hapticFeedback } from "@/src/utils/haptics";
 import { isAtLatest, labelFor, type Granularity } from "./periodRange";
+import { designTokens } from "@/src/design-system/tokens";
 
 // Re-export the pure range helpers so callers can import everything finance-period
 // related from one place; the math itself lives in ./periodRange (unit-tested).
@@ -90,25 +91,25 @@ export function PeriodSelector({
 }
 
 const styles = StyleSheet.create({
-  wrap: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 12 },
-  nav: { flexDirection: "row", alignItems: "center", flex: 1, gap: 6 },
+  wrap: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: designTokens.spacing.md, marginBottom: designTokens.spacing.md },
+  nav: { flexDirection: "row", alignItems: "center", flex: 1, gap: designTokens.spacing.sm },
   // 40x40 visual + 8pt hitSlop => 56pt effective touch target (>=44 AA).
   arrow: {
-    width: 40, height: 40, borderRadius: 999, alignItems: "center", justifyContent: "center",
+    width: 40, height: 40, borderRadius: designTokens.radius.pill, alignItems: "center", justifyContent: "center",
     backgroundColor: t.bgElevated, borderWidth: 1, borderColor: t.cardBorder,
   },
   // Disabled cue via a subtle filled background (no opacity stack) so the muted glyph
   // (#5B6B7F on #E2E8F0 ~ 4:1) still clears WCAG non-text contrast.
   arrowDisabled: { backgroundColor: t.cardSoft, borderColor: t.cardSoft },
-  arrowGlyph: { color: t.text, fontSize: 20, fontWeight: "800", lineHeight: 22 },
+  arrowGlyph: { color: t.text, fontSize: designTokens.typography.section.fontSize, fontWeight: "800", lineHeight: 22 },
   arrowGlyphDisabled: { color: t.textMuted },
-  label: { flex: 1, textAlign: "center", color: t.text, fontSize: 14.5, fontWeight: "800" },
+  label: { flex: 1, textAlign: "center", color: t.text, fontSize: designTokens.typography.body.fontSize, fontWeight: "800" },
   gran: {
-    flexDirection: "row", backgroundColor: t.bgElevated, borderRadius: 999,
-    borderWidth: 1, borderColor: t.cardBorder, padding: 3, gap: 3,
+    flexDirection: "row", backgroundColor: t.bgElevated, borderRadius: designTokens.radius.pill,
+    borderWidth: 1, borderColor: t.cardBorder, padding: designTokens.spacing.xs, gap: designTokens.spacing.xs,
   },
-  granTab: { paddingVertical: 7, paddingHorizontal: 11, borderRadius: 999, alignItems: "center", justifyContent: "center" },
+  granTab: { paddingVertical: designTokens.spacing.sm, paddingHorizontal: designTokens.spacing.md, borderRadius: designTokens.radius.pill, alignItems: "center", justifyContent: "center" },
   granTabActive: { backgroundColor: t.accent },
-  granLabel: { color: t.textMuted, fontSize: 12, fontWeight: "700" },
+  granLabel: { color: t.textMuted, fontSize: designTokens.typography.caption.fontSize, fontWeight: "700" },
   granLabelActive: { color: "#ffffff", fontWeight: "800" },
 });

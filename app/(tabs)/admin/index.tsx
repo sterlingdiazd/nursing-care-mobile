@@ -12,6 +12,7 @@ import { ModuleTile } from "@/src/components/shared/ModuleTile";
 import { navigationTestIds, adminTestIds } from "@/src/testing/testIds";
 import { automationProps } from "@/src/utils/adminOperationalUx";
 import { hapticFeedback } from "@/src/utils/haptics";
+import { designTokens } from "@/src/design-system/tokens";
 
 type MenuItem = {
   key: string;
@@ -236,77 +237,77 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   screen: {
-    gap: 18,
-    paddingBottom: 8,
+    gap: designTokens.spacing.xl,
+    paddingBottom: designTokens.spacing.sm,
   },
   profileCard: {
     ...mobileSurfaceCard,
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    padding: 14,
+    gap: designTokens.spacing.md,
+    padding: designTokens.spacing.lg,
   },
   avatar: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: designTokens.radius.xxl,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: mobileTheme.colors.surface.secondary,
   },
   avatarText: {
     color: mobileTheme.colors.ink.accent,
-    fontSize: 18,
+    fontSize: designTokens.typography.section.fontSize,
     fontWeight: "900",
   },
   profileTextWrap: {
     flex: 1,
-    gap: 4,
+    gap: designTokens.spacing.xs,
   },
   profileName: {
     color: mobileTheme.colors.ink.primary,
-    fontSize: 16,
+    fontSize: designTokens.typography.body.fontSize,
     fontWeight: "900",
   },
   profileEmail: {
     color: mobileTheme.colors.ink.secondary,
-    fontSize: 13,
+    fontSize: designTokens.typography.label.fontSize,
     fontWeight: "500",
   },
   roleBadge: {
     alignSelf: "flex-start",
     backgroundColor: mobileTheme.colors.surface.secondary,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginTop: 2,
+    borderRadius: designTokens.radius.sm,
+    paddingHorizontal: designTokens.spacing.sm,
+    paddingVertical: designTokens.spacing.xs,
+    marginTop: designTokens.spacing.xs,
   },
   roleBadgeText: {
     color: mobileTheme.colors.ink.accent,
-    fontSize: 11,
+    fontSize: designTokens.typography.caption.fontSize,
     fontWeight: "800",
     textTransform: "uppercase",
   },
   editIconButton: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: designTokens.radius.lg,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: mobileTheme.colors.surface.secondary,
   },
   group: {
-    gap: 10,
+    gap: designTokens.spacing.md,
   },
   groupTitle: {
     color: mobileTheme.colors.ink.primary,
-    fontSize: 16,
+    fontSize: designTokens.typography.body.fontSize,
     fontWeight: "900",
   },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
+    gap: designTokens.spacing.md,
   },
   pressed: {
     opacity: 0.78,
@@ -316,13 +317,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 10,
-    padding: 14,
-    marginTop: 4,
+    gap: designTokens.spacing.md,
+    padding: designTokens.spacing.lg,
+    marginTop: designTokens.spacing.xs,
   },
   logoutText: {
     color: mobileTheme.colors.ink.danger,
-    fontSize: 15,
+    fontSize: designTokens.typography.body.fontSize,
     fontWeight: "800",
   },
   disabled: {

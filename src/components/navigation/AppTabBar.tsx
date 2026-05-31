@@ -151,15 +151,15 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingTop: 8,
-    gap: 3,
+    paddingTop: designTokens.spacing.sm,
+    gap: designTokens.spacing.xs,
   },
   tabPressed: {
     opacity: 0.75,
   },
   label: {
-    fontSize: 11,
+    fontSize: designTokens.typography.caption.fontSize,
     fontWeight: "600",
-    marginTop: 3,
+    marginTop: designTokens.spacing.xs,
   },
 });

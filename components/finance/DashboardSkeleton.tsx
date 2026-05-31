@@ -1,5 +1,6 @@
 import { StyleSheet, View } from "react-native";
 import { financeTheme as t } from "./financeTheme";
+import { designTokens } from "@/src/design-system/tokens";
 
 function Block({ height, width = "100%", radius = t.radiusSm }: { height: number; width?: any; radius?: number }) {
   return <View style={[styles.block, { height, width, borderRadius: radius }]} />;
@@ -24,8 +25,8 @@ export function DashboardSkeleton() {
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: 14 },
-  row: { flexDirection: "row", gap: 10, justifyContent: "space-between" },
+  wrap: { gap: designTokens.spacing.lg },
+  row: { flexDirection: "row", gap: designTokens.spacing.md, justifyContent: "space-between" },
   // Light shimmer: surface.tertiary (#e6f2f4) at reduced opacity
   block: { backgroundColor: t.cardSoft, opacity: 0.7 },
 });

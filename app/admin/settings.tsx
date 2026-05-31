@@ -349,7 +349,7 @@ export default function AdminSettingsScreen() {
 
                     {/* Compliance warning for DGII-sensitive fiscal parameters */}
                     {FISCAL_CAUTION_KEYS.has(editTarget.key) && (
-                      <View style={{ marginTop: 8 }}>
+                      <View style={{ marginTop: designTokens.spacing.sm }}>
                         <Banner
                           tone="warning"
                           message={FISCAL_CAUTION_MESSAGE}
@@ -358,7 +358,7 @@ export default function AdminSettingsScreen() {
                       </View>
                     )}
 
-                    <View style={[styles.detailField, { marginTop: 8 }]}>
+                    <View style={[styles.detailField, { marginTop: designTokens.spacing.sm }]}>
                       <Text style={styles.detailLabel}>Valor</Text>
                       {(() => {
                         // Boolean settings render as a Switch (true/false) instead of free text.
@@ -438,35 +438,35 @@ export default function AdminSettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  button: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1, borderColor: designTokens.color.border.strong },
-  buttonText: { color: designTokens.color.ink.accent, fontWeight: "700", fontSize: 14 },
-  buttonPrimary: { backgroundColor: designTokens.color.ink.accent, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, flex: 1 },
-  buttonPrimaryText: { color: designTokens.color.ink.inverse, fontWeight: "700", fontSize: 15, textAlign: "center" },
+  button: { backgroundColor: designTokens.color.ink.inverse, borderRadius: designTokens.radius.md, paddingHorizontal: designTokens.spacing.lg, paddingVertical: designTokens.spacing.md, borderWidth: 1, borderColor: designTokens.color.border.strong },
+  buttonText: { color: designTokens.color.ink.accent, fontWeight: "700", fontSize: designTokens.typography.body.fontSize },
+  buttonPrimary: { backgroundColor: designTokens.color.ink.accent, borderRadius: designTokens.radius.md, paddingHorizontal: designTokens.spacing.lg, paddingVertical: designTokens.spacing.lg, flex: 1 },
+  buttonPrimaryText: { color: designTokens.color.ink.inverse, fontWeight: "700", fontSize: designTokens.typography.body.fontSize, textAlign: "center" },
   buttonDisabled: { opacity: 0.5 },
-  loadingText: { color: designTokens.color.ink.secondary, fontSize: 14, textAlign: "center", padding: 20 },
-  emptyState: { padding: 40, alignItems: "center" },
-  emptyStateText: { color: designTokens.color.ink.secondary, fontSize: 16 },
-  categorySection: { marginBottom: 20 },
-  categoryTitle: { fontSize: 13, fontWeight: "800", color: designTokens.color.ink.muted, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10, paddingHorizontal: 4 },
-  settingCard: { ...mobileSurfaceCard, padding: 16, marginBottom: 4 },
-  settingCardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
-  settingKey: { color: designTokens.color.ink.primary, fontWeight: "800", fontSize: 15, flex: 1 },
-  settingEditHint: { color: designTokens.color.ink.accent, fontSize: 13, fontWeight: "700" },
-  settingValue: { color: designTokens.color.ink.primary, fontSize: 15, fontWeight: "700", marginBottom: 4 },
+  loadingText: { color: designTokens.color.ink.secondary, fontSize: designTokens.typography.body.fontSize, textAlign: "center", padding: designTokens.spacing.xl },
+  emptyState: { padding: designTokens.spacing.huge, alignItems: "center" },
+  emptyStateText: { color: designTokens.color.ink.secondary, fontSize: designTokens.typography.body.fontSize },
+  categorySection: { marginBottom: designTokens.spacing.xl },
+  categoryTitle: { fontSize: designTokens.typography.label.fontSize, fontWeight: "800", color: designTokens.color.ink.muted, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: designTokens.spacing.md, paddingHorizontal: designTokens.spacing.xs },
+  settingCard: { ...mobileSurfaceCard, padding: designTokens.spacing.lg, marginBottom: designTokens.spacing.xs },
+  settingCardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: designTokens.spacing.sm },
+  settingKey: { color: designTokens.color.ink.primary, fontWeight: "800", fontSize: designTokens.typography.body.fontSize, flex: 1 },
+  settingEditHint: { color: designTokens.color.ink.accent, fontSize: designTokens.typography.label.fontSize, fontWeight: "700" },
+  settingValue: { color: designTokens.color.ink.primary, fontSize: designTokens.typography.body.fontSize, fontWeight: "700", marginBottom: designTokens.spacing.xs },
   settingValueEmpty: { color: designTokens.color.ink.muted, fontWeight: "600", fontStyle: "italic" },
-  settingDescription: { color: designTokens.color.ink.muted, fontSize: 13, marginBottom: 4 },
-  settingModified: { color: designTokens.color.ink.muted, fontSize: 11, marginTop: 2 },
-  editActions: { flexDirection: "row", gap: 8 },
-  detailField: { gap: 4 },
-  detailLabel: { color: designTokens.color.ink.muted, fontSize: 12, fontWeight: "800", textTransform: "uppercase" },
-  detailValue: { color: designTokens.color.ink.primary, fontSize: 15 },
-  detailValueSecondary: { color: designTokens.color.ink.secondary, fontSize: 14 },
-  allowedValuesChips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 },
-  chip: { backgroundColor: designTokens.color.ink.inverse, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: designTokens.color.border.strong },
+  settingDescription: { color: designTokens.color.ink.muted, fontSize: designTokens.typography.label.fontSize, marginBottom: designTokens.spacing.xs },
+  settingModified: { color: designTokens.color.ink.muted, fontSize: designTokens.typography.caption.fontSize, marginTop: designTokens.spacing.xs },
+  editActions: { flexDirection: "row", gap: designTokens.spacing.sm },
+  detailField: { gap: designTokens.spacing.xs },
+  detailLabel: { color: designTokens.color.ink.muted, fontSize: designTokens.typography.caption.fontSize, fontWeight: "800", textTransform: "uppercase" },
+  detailValue: { color: designTokens.color.ink.primary, fontSize: designTokens.typography.body.fontSize },
+  detailValueSecondary: { color: designTokens.color.ink.secondary, fontSize: designTokens.typography.body.fontSize },
+  allowedValuesChips: { flexDirection: "row", flexWrap: "wrap", gap: designTokens.spacing.sm, marginTop: designTokens.spacing.xs },
+  chip: { backgroundColor: designTokens.color.ink.inverse, borderRadius: designTokens.radius.pill, paddingHorizontal: designTokens.spacing.md, paddingVertical: designTokens.spacing.sm, borderWidth: 1, borderColor: designTokens.color.border.strong },
   chipActive: { backgroundColor: designTokens.color.ink.primary, borderColor: designTokens.color.ink.primary },
-  chipText: { color: designTokens.color.ink.primary, fontSize: 12, fontWeight: "600" },
+  chipText: { color: designTokens.color.ink.primary, fontSize: designTokens.typography.caption.fontSize, fontWeight: "600" },
   chipTextActive: { color: designTokens.color.ink.inverse },
-  input: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.strong, borderRadius: 14, padding: 14, color: designTokens.color.ink.primary, fontSize: 14 },
-  switchRow: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 4 },
-  switchLabel: { color: designTokens.color.ink.primary, fontSize: 15, fontWeight: "700" },
+  input: { backgroundColor: designTokens.color.ink.inverse, borderWidth: 1, borderColor: designTokens.color.border.strong, borderRadius: designTokens.radius.md, padding: designTokens.spacing.lg, color: designTokens.color.ink.primary, fontSize: designTokens.typography.body.fontSize },
+  switchRow: { flexDirection: "row", alignItems: "center", gap: designTokens.spacing.md, marginTop: designTokens.spacing.xs },
+  switchLabel: { color: designTokens.color.ink.primary, fontSize: designTokens.typography.body.fontSize, fontWeight: "700" },
 });
