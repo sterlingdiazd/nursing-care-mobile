@@ -1516,9 +1516,11 @@ const styles = StyleSheet.create({
     paddingVertical: designTokens.spacing.sm,
     borderRadius: designTokens.radius.pill,
   },
-  whatsappPillText: { color: "#FFFFFF", fontSize: designTokens.typography.caption.fontSize, fontWeight: "800" },
+  whatsappPillText: { color: designTokens.color.ink.inverse, fontSize: designTokens.typography.caption.fontSize, fontWeight: "800" },
   scrollContent: {
-    paddingBottom: designTokens.spacing.huge,
+    // Clearance for the bubbled-up footer action bar (was 112; the codemod's
+    // spacing scale tops out at huge/40, which clipped the last row).
+    paddingBottom: designTokens.layout.scrollBottomGap,
   },
   hiddenMarker: {
     height: 0,
@@ -1649,7 +1651,7 @@ const styles = StyleSheet.create({
   },
   reconLabel: { fontSize: designTokens.typography.label.fontSize, color: designTokens.color.ink.secondary },
   reconValue: { fontSize: designTokens.typography.body.fontSize, fontWeight: "700", color: designTokens.color.ink.primary },
-  reconWarning: { marginTop: designTokens.spacing.sm, fontSize: designTokens.typography.caption.fontSize, fontWeight: "700", color: "#8b1a1a" },
+  reconWarning: { marginTop: designTokens.spacing.sm, fontSize: designTokens.typography.caption.fontSize, fontWeight: "700", color: designTokens.color.status.dangerText },
   timelineGrid: {
     marginTop: designTokens.spacing.md,
     flexDirection: "row",

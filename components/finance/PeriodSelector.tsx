@@ -111,5 +111,5 @@ const styles = StyleSheet.create({
   granTab: { paddingVertical: designTokens.spacing.sm, paddingHorizontal: designTokens.spacing.md, borderRadius: designTokens.radius.pill, alignItems: "center", justifyContent: "center" },
   granTabActive: { backgroundColor: t.accent },
   granLabel: { color: t.textMuted, fontSize: designTokens.typography.caption.fontSize, fontWeight: "700" },
-  granLabelActive: { color: "#ffffff", fontWeight: "800" },
+  granLabelActive: { color: designTokens.color.ink.inverse, fontWeight: "800" },
 });

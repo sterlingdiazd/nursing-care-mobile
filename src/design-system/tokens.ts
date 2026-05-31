@@ -168,6 +168,9 @@ const typography = {
 // shell and any full-bleed child align to the same left edge.
 const layout = {
   screenPaddingX: 18,
+  // Bottom clearance so the last scroll row clears a footer / floating action bar.
+  // Off the spacing rhythm scale on purpose (a layout constant, not a gap).
+  scrollBottomGap: 112,
 } as const;
 
 // Semantic COLOR roles — one meaning, one role, everywhere. A primary action is

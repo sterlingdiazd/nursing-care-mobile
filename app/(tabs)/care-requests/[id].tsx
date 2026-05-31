@@ -961,6 +961,10 @@ function PaymentProofSheet({
           />
 
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Enviar reporte de pago"
+            testID="report-payment-submit"
+            disabled={!imageUri || submitting || ocrLoading}
             onPress={() => {
               hapticFeedback.light();
               if (imageUri) {
@@ -976,15 +980,11 @@ function PaymentProofSheet({
                 });
               }
             }}
-            disabled={!imageUri || submitting || ocrLoading}
             style={({ pressed }) => [
               styles.proofSubmitButton,
               (!imageUri || submitting || ocrLoading) && styles.proofSubmitButtonDisabled,
               pressed && imageUri && !submitting && !ocrLoading && { opacity: 0.85 },
             ]}
-            accessibilityRole="button"
-            accessibilityLabel="Enviar reporte de pago"
-            testID="report-payment-submit"
           >
             <Text style={styles.proofSubmitButtonText}>
               {submitting ? "Enviando..." : "Enviar reporte de pago"}

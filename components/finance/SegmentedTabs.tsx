@@ -52,5 +52,5 @@ const styles = StyleSheet.create({
   // Inactive: muted label on light bg
   label: { color: t.textMuted, fontSize: designTokens.typography.label.fontSize, fontWeight: "700" },
   // Active: white label on teal pill
-  labelActive: { color: "#ffffff", fontWeight: "800" },
+  labelActive: { color: designTokens.color.ink.inverse, fontWeight: "800" },
 });

@@ -32,9 +32,9 @@ export const financeTheme = {
   amberBg: c.status.warningBg,
   redBg: c.status.dangerBg,
 
-  // Shape
-  radius: 20,
-  radiusSm: 14,
+  // Shape — from the shared radius scale (do not hardcode integers here).
+  radius: designTokens.radius.xl,
+  radiusSm: designTokens.radius.md,
 } as const;
 
 export function statusColor(status: HealthStatus): string {

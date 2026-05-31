@@ -32,8 +32,12 @@ function run(cmd: string): string {
 // ---------------------------------------------------------------------------
 function checkNoRawHexColors(): RuleResult {
   const raw = run(
-    `grep -rn --include="*.tsx" --include="*.ts" -E '#[0-9a-fA-F]{3,8}' ${ROOT}/app ${ROOT}/src/components 2>/dev/null || true`
+    `grep -rn --include="*.tsx" --include="*.ts" -E '#[0-9a-fA-F]{3,8}' ${ROOT}/app ${ROOT}/components ${ROOT}/src/components 2>/dev/null || true`
   );
+
+  // Documented exceptions: data-viz series palette (no semantic token) and the
+  // WhatsApp brand green (a fixed third-party brand color).
+  const ALLOWED_HEX = new Set(['#000', '#25d366']);
 
   const violations: string[] = [];
 
@@ -47,19 +51,22 @@ function checkNoRawHexColors(): RuleResult {
       line.includes('__tests__') ||
       line.includes('Toast.tsx') ||
       line.includes('modal.tsx') ||
-      line.includes('+html.tsx')
+      line.includes('+html.tsx') ||
+      line.includes('FinanceCharts.tsx') // categorical data-viz series palette
     ) {
       continue;
     }
 
     // Strip the file:line: prefix to inspect the code content
     const colonIdx = line.indexOf(':', line.indexOf(':') + 1); // second colon (after line number)
-    const content = colonIdx >= 0 ? line.slice(colonIdx + 1) : line;
+    const rawContent = colonIdx >= 0 ? line.slice(colonIdx + 1) : line;
+    // Ignore hex mentioned inside comments (docs often reference a token's hex).
+    const content = rawContent.replace(/\/\/.*$/, '').replace(/\/\*[\s\S]*?\*\//g, '');
 
     // Allow shadowColor "#000" — extract only the hex value context
     // A line is allowed if ALL hex occurrences in it are #000 used as shadowColor
     const hexMatches = content.match(/#[0-9a-fA-F]{3,8}/g) ?? [];
-    const nonBlackHex = hexMatches.filter(h => h.toLowerCase() !== '#000');
+    const nonBlackHex = hexMatches.filter(h => !ALLOWED_HEX.has(h.toLowerCase()));
 
     // Check if remaining hex values appear in a shadowColor context
     const remainingViolations = nonBlackHex.filter(hex => {
@@ -168,10 +175,11 @@ function checkAccessibilityLabels(): RuleResult {
       const line = lines[i];
       if (!/<Pressable|<TouchableOpacity/.test(line)) continue;
 
-      // Check a larger opening-tag window. Several local components keep
-      // style callbacks and long onPress handlers before accessibility props,
-      // so a small window creates false positives for otherwise labeled controls.
-      const window = lines.slice(i, Math.min(i + 32, lines.length)).join('\n');
+      // Window covers a single control's opening tag (props + a style callback).
+      // 22 is the project's vetted baseline — wide enough for a normal tag, tight
+      // enough that an unlabeled icon button can't borrow a sibling's label.
+      // Place accessibilityLabel near the TOP of the tag (not after a long onPress).
+      const window = lines.slice(i, Math.min(i + 22, lines.length)).join('\n');
       if (!/accessibilityLabel/.test(window)) {
         const relFile = path.relative(ROOT, file);
         violations.push(`${relFile}:${i + 1}: ${line.trim().slice(0, 80)}`);

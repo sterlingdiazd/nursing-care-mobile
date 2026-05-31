@@ -90,7 +90,7 @@ export function FormModalScaffold({
             accessibilityState={{ busy: !!submitLoading, disabled: !!(submitDisabled || submitLoading) }}
             testID={submitTestID}
           >
-            {submitLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>{submitLabel}</Text>}
+            {submitLoading ? <ActivityIndicator color={designTokens.color.ink.inverse} /> : <Text style={styles.primaryText}>{submitLabel}</Text>}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -281,16 +281,16 @@ const styles = StyleSheet.create({
   chipTextOn: { color: T.color.ink.inverse },
   summary: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: designTokens.spacing.md, backgroundColor: T.color.ink.accentStrong, borderRadius: designTokens.radius.lg, padding: designTokens.spacing.xl, boxShadow: "0px 10px 24px rgba(29, 93, 128, 0.3)", elevation: 4 },
   summaryLabel: { color: "rgba(255,255,255,0.85)", fontSize: designTokens.typography.caption.fontSize, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
-  summaryValue: { color: "#fff", fontSize: designTokens.typography.display.fontSize, fontWeight: "800", marginTop: designTokens.spacing.xs },
+  summaryValue: { color: designTokens.color.ink.inverse, fontSize: designTokens.typography.display.fontSize, fontWeight: "800", marginTop: designTokens.spacing.xs },
   summaryTag: { backgroundColor: "rgba(255,255,255,0.18)", borderRadius: designTokens.radius.pill, paddingHorizontal: designTokens.spacing.md, paddingVertical: designTokens.spacing.sm },
-  summaryTagText: { color: "#fff", fontSize: designTokens.typography.caption.fontSize, fontWeight: "800" },
+  summaryTagText: { color: designTokens.color.ink.inverse, fontSize: designTokens.typography.caption.fontSize, fontWeight: "800" },
   footer: { flexDirection: "row", gap: designTokens.spacing.md, padding: designTokens.spacing.lg, backgroundColor: T.color.surface.primary, borderTopWidth: 1, borderTopColor: T.color.border.subtle, boxShadow: "0px -6px 18px rgba(18, 48, 68, 0.06)", elevation: 8 },
   btn: { borderRadius: designTokens.radius.md, paddingVertical: designTokens.spacing.lg, alignItems: "center", justifyContent: "center" },
   ghost: { flex: 0, flexBasis: "33%", backgroundColor: T.color.surface.secondary, borderWidth: 1, borderColor: T.color.border.subtle },
   ghostText: { color: T.color.ink.secondary, fontSize: designTokens.typography.body.fontSize, fontWeight: "800" },
   primary: { flex: 1, backgroundColor: T.color.ink.accent, boxShadow: "0px 8px 20px rgba(46, 125, 163, 0.35)", elevation: 4 },
   primaryDisabled: { opacity: 0.45 },
-  primaryText: { color: "#fff", fontSize: designTokens.typography.body.fontSize, fontWeight: "800" },
+  primaryText: { color: designTokens.color.ink.inverse, fontSize: designTokens.typography.body.fontSize, fontWeight: "800" },
   backdrop: { flex: 1, backgroundColor: "rgba(18, 48, 68, 0.4)" },
   sheet: { position: "absolute", left: 0, right: 0, bottom: 0, maxHeight: "75%", backgroundColor: T.color.surface.primary, borderTopLeftRadius: designTokens.radius.xxl, borderTopRightRadius: designTokens.radius.xxl, paddingBottom: T.spacing.xxl },
   grab: { width: 40, height: 5, borderRadius: designTokens.radius.pill, backgroundColor: T.color.border.strong, alignSelf: "center", marginTop: designTokens.spacing.md, marginBottom: designTokens.spacing.xs },

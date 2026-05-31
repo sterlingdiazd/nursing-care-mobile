@@ -12,7 +12,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { router, type Href } from "expo-router";
 
 import AppFooter, { type FooterAction } from "@/src/components/navigation/AppFooter";
-import { mobileTheme } from "@/src/design-system/mobileStyles";
 import { designTokens, type SpacingToken } from "@/src/design-system/tokens";
 import { Stack } from "@/src/design-system/primitives";
 import { navigationTestIds } from "@/src/testing/testIds";
@@ -169,11 +168,11 @@ export default function MobileWorkspaceShell({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: mobileTheme.colors.surface.canvas,
+    backgroundColor: designTokens.color.surface.canvas,
   },
   screen: {
     flex: 1,
-    backgroundColor: mobileTheme.colors.surface.canvas,
+    backgroundColor: designTokens.color.surface.canvas,
   },
   main: {
     flex: 1,
@@ -207,7 +206,7 @@ const styles = StyleSheet.create({
     borderRadius: designTokens.radius.pill,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: mobileTheme.colors.surface.secondary,
+    backgroundColor: designTokens.color.surface.secondary,
   },
   backButtonPressed: {
     opacity: 0.7,
@@ -215,7 +214,7 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: designTokens.typography.display.fontSize,
     lineHeight: 28,
-    color: mobileTheme.colors.ink.primary,
+    color: designTokens.color.ink.primary,
     fontWeight: "600",
   },
   container: {
@@ -241,8 +240,8 @@ const styles = StyleSheet.create({
     paddingBottom: designTokens.spacing.sm,
     gap: designTokens.spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: mobileTheme.colors.border.subtle,
-    backgroundColor: mobileTheme.colors.surface.primary,
+    borderTopColor: designTokens.color.border.subtle,
+    backgroundColor: designTokens.color.surface.primary,
     boxShadow: "0px -2px 8px rgba(18, 48, 68, 0.04)",
     elevation: 6,
   },
