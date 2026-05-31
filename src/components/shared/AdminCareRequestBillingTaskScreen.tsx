@@ -20,7 +20,7 @@ import {
 import {
   mobileSecondarySurface,
   mobileSurfaceCard,
-  } from "@/src/design-system/mobileStyles";
+} from "@/src/design-system/mobileStyles";
 import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
 import { designTokens } from "@/src/design-system/tokens";
 

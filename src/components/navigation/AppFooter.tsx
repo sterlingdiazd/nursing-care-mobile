@@ -10,7 +10,7 @@ import {
 import {
   mobilePrimaryButton,
   mobileSecondaryButton,
-  } from "@/src/design-system/mobileStyles";
+} from "@/src/design-system/mobileStyles";
 import { designTokens } from "@/src/design-system/tokens";
 import { navigationTestIds } from "@/src/testing/testIds/navigationTestIds";
 import { hapticFeedback } from "@/src/utils/haptics";

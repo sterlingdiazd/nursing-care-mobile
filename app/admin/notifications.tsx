@@ -17,7 +17,7 @@ import { SwipePager } from "@/src/components/shared/SwipePager";
 import {
   mobileSecondaryButton,
   mobileSurfaceCard,
-  } from "@/src/design-system/mobileStyles";
+} from "@/src/design-system/mobileStyles";
 import { useAuth } from "@/src/context/AuthContext";
 import {
   archiveAdminNotification,
