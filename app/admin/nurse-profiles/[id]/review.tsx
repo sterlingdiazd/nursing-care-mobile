@@ -107,7 +107,12 @@ export default function AdminReviewNurseProfileScreen() {
     try {
       setSubmitError(null);
       setSubmitting(true);
-      await completeNurseProfileForAdmin(id, form);
+      // hireDate is not editable on this form. For a pending nurse with no recorded hire date it
+      // would be "", which the backend rejects (empty string is not a valid date). Omit it when
+      // empty so the profile can still be activated; a real date is sent through untouched.
+      const { hireDate, ...rest } = form;
+      const payload = hireDate && hireDate.trim() ? form : (rest as CompleteNurseProfileRequest);
+      await completeNurseProfileForAdmin(id, payload);
       router.replace(`/admin/nurse-profiles/${id}` as never);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "No fue posible completar el perfil de la enfermera.");
