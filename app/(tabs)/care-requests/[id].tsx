@@ -36,6 +36,7 @@ import { IconBadge } from "@/src/components/shared/IconBadge";
 import { careRequestTestIds } from "@/src/testing/testIds";
 import { CareRequestDto, CareRequestTransitionAction } from "@/src/types/careRequest";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+import { formatUnitType } from "@/src/utils/adminCareRequestBilling";
 import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
 import { formatDOP } from "@/src/utils/currency";
 import { hapticFeedback } from "@/src/utils/haptics";
@@ -483,6 +484,14 @@ export default function CareRequestDetailScreen() {
                 <Text style={styles.servicioLabel}>Fecha</Text>
                 <Text style={styles.servicioValue} numberOfLines={1}>
                   {careRequest.careRequestDate ?? "Sin fecha"}
+                </Text>
+              </View>
+              <View style={styles.servicioCol}>
+                <Text style={styles.servicioLabel}>Unidades</Text>
+                <Text style={styles.servicioValue} numberOfLines={1}>
+                  {careRequest.unit != null
+                    ? `${careRequest.unit}${careRequest.unitType ? ` ${formatUnitType(careRequest.unitType)}` : ""}`
+                    : "N/A"}
                 </Text>
               </View>
             </View>
@@ -1016,6 +1025,15 @@ function PricingSheet({
           <ScrollView style={styles.sheetScroll} contentContainerStyle={styles.sheetScrollContent}>
             <PriceRow label="Total" value={formatCurrency(careRequest.total)} emphasis testID="price-breakdown-total" />
             <PriceRow label="Precio base" value={formatCurrency(careRequest.price)} testID="price-breakdown-base-price" />
+            <PriceRow
+              label="Unidades"
+              value={
+                careRequest.unit != null
+                  ? `${careRequest.unit}${careRequest.unitType ? ` × ${formatUnitType(careRequest.unitType)}` : ""}`
+                  : "N/A"
+              }
+              testID="price-breakdown-units"
+            />
             {careRequest.categoryFactorSnapshot != null && careRequest.categoryFactorSnapshot !== 1 ? (
               <PriceRow label="Factor de categoría" value={formatFactor(careRequest.categoryFactorSnapshot)} testID="price-breakdown-category-factor" />
             ) : null}
