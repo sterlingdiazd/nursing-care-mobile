@@ -61,6 +61,25 @@ export function formatAdminCareRequestStatusLabel(status: string) {
   return status;
 }
 
+// UnitTypeCatalog seed codes -> Spanish display names (CatalogSeeding.cs).
+const UNIT_TYPE_LABELS: Record<string, string> = {
+  dia_completo: "Día completo",
+  mes: "Mes",
+  medio_dia: "Medio día",
+  sesion: "Sesión",
+};
+
+/**
+ * Spanish label for a care-request unit-type code. Matches the UnitTypeCatalog
+ * seed exactly; falls back to a humanized form of the code so a catalog entry
+ * added later still renders sensibly instead of showing the raw code.
+ */
+export function formatUnitType(unitType: string): string {
+  const key = unitType?.trim().toLowerCase();
+  if (!key) return "";
+  return UNIT_TYPE_LABELS[key] ?? key.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+}
+
 export function getAdminCareRequestStatusColor(status: string): string {
   if (status === "Paid") return designTokens.color.status.successText;
   if (status === "PaymentReported") return designTokens.color.status.warningText;
