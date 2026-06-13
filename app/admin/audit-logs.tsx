@@ -20,7 +20,7 @@ import {
 import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { hapticFeedback } from "@/src/utils/haptics";
-import { FilterChips, type FilterChipOption } from "@/src/components/shared/FilterChips";
+import { FilterSelect, type FilterSelectOption } from "@/src/components/shared/FilterSelect";
 import { Pagination } from "@/src/components/shared/Pagination";
 import { SwipePager } from "@/src/components/shared/SwipePager";
 import { FormPanel } from "@/src/components/shared/FormPanel";
@@ -134,22 +134,26 @@ const ALL_KEY = "" as const;
 type ActionFilterKey = "" | "CreateDeduction" | "UpdateDeduction" | "DeleteDeduction" | "CreateAdjustment" | "DeleteAdjustment" | "CreatePeriod" | "ClosePeriod" | "CareRequestApproved" | "CareRequestRejected" | "NurseProfileApproved";
 type EntityFilterKey = "" | "DeductionRecord" | "CompensationAdjustment" | "ScheduledDeduction" | "PayrollPeriod" | "CareRequest" | "NurseProfile" | "User";
 
-const ACTION_FILTER_OPTIONS: ReadonlyArray<FilterChipOption<ActionFilterKey>> = [
-  { key: ALL_KEY, label: "Todas" },
-  { key: "CreateDeduction", label: "Deducciones" },
-  { key: "CreateAdjustment", label: "Ajustes" },
-  { key: "CreatePeriod", label: "Nómina" },
-  { key: "CareRequestApproved", label: "Solicitudes" },
-  { key: "NurseProfileApproved", label: "Perfiles" },
+// Domain-category tints (consistent hue per domain across both filters).
+const AP = designTokens.color.palette;
+const tint = (h: keyof typeof AP) => ({ bg: AP[h].soft, fg: AP[h].text });
+
+const ACTION_FILTER_OPTIONS: ReadonlyArray<FilterSelectOption<ActionFilterKey>> = [
+  { key: ALL_KEY, label: "Todas", tint: null },
+  { key: "CreateDeduction", label: "Deducciones", tint: tint("indigo") },
+  { key: "CreateAdjustment", label: "Ajustes", tint: tint("purple") },
+  { key: "CreatePeriod", label: "Nómina", tint: tint("teal") },
+  { key: "CareRequestApproved", label: "Solicitudes", tint: tint("blue") },
+  { key: "NurseProfileApproved", label: "Perfiles", tint: tint("orange") },
 ];
 
-const ENTITY_FILTER_OPTIONS: ReadonlyArray<FilterChipOption<EntityFilterKey>> = [
-  { key: ALL_KEY, label: "Todas" },
-  { key: "DeductionRecord", label: "Deducción" },
-  { key: "CompensationAdjustment", label: "Ajuste" },
-  { key: "PayrollPeriod", label: "Nómina" },
-  { key: "CareRequest", label: "Solicitud" },
-  { key: "NurseProfile", label: "Perfil" },
+const ENTITY_FILTER_OPTIONS: ReadonlyArray<FilterSelectOption<EntityFilterKey>> = [
+  { key: ALL_KEY, label: "Todas", tint: null },
+  { key: "DeductionRecord", label: "Deducción", tint: tint("indigo") },
+  { key: "CompensationAdjustment", label: "Ajuste", tint: tint("purple") },
+  { key: "PayrollPeriod", label: "Nómina", tint: tint("teal") },
+  { key: "CareRequest", label: "Solicitud", tint: tint("blue") },
+  { key: "NurseProfile", label: "Perfil", tint: tint("orange") },
 ];
 
 export default function AdminAuditLogsScreen() {
@@ -252,16 +256,17 @@ export default function AdminAuditLogsScreen() {
         </Text>
       )}
 
-      <Text style={styles.filterLabel}>Acción</Text>
-      <FilterChips
+      <FilterSelect
+        label="Acción"
         options={ACTION_FILTER_OPTIONS}
         value={actionFilter}
         onChange={handleActionFilter}
         testIDPrefix="admin-audit-logs-action-filter"
       />
 
-      <Text style={[styles.filterLabel, { marginTop: designTokens.spacing.md }]}>Entidad</Text>
-      <FilterChips
+      <View style={{ height: 10 }} />
+      <FilterSelect
+        label="Entidad"
         options={ENTITY_FILTER_OPTIONS}
         value={entityTypeFilter}
         onChange={handleEntityFilter}

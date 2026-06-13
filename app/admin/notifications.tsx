@@ -11,7 +11,8 @@ import {
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
-import { FilterChips } from "@/src/components/shared/FilterChips";
+import { FilterSelect } from "@/src/components/shared/FilterSelect";
+import { designTokens } from "@/src/design-system/tokens";
 import { Pagination } from "@/src/components/shared/Pagination";
 import { SwipePager } from "@/src/components/shared/SwipePager";
 import {
@@ -39,7 +40,6 @@ import {
 } from "@/src/utils/adminOperationalUx";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { hapticFeedback } from "@/src/utils/haptics";
-import { designTokens } from "@/src/design-system/tokens";
 
 const PAGE_SIZE = 10;
 
@@ -63,6 +63,7 @@ export default function AdminNotificationsScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [status, setStatus] = useState<AdminNotificationStatus>("Active");
   const [page, setPage] = useState(1);
+  const [statusCounts, setStatusCounts] = useState<Record<string, number> | null>(null);
   const scrollRef = useRef<ScrollView | null>(null);
 
   const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
@@ -134,6 +135,33 @@ export default function AdminNotificationsScreen() {
     scrollRef.current?.scrollTo({ y: 0, animated: true });
   };
 
+  // Per-view counts (one light request per status view) so every filter shows its number.
+  useEffect(() => {
+    if (!isReady || !isAuthenticated) return;
+    let cancelled = false;
+    const keys: AdminNotificationStatus[] = ["Active", "Unread", "ActionRequired", "Archived", "All"];
+    Promise.all(
+      keys.map((k) =>
+        getAdminNotifications({ status: k, page: 1, pageSize: 1 })
+          .then((r) => [k, r.totalCount] as const)
+          .catch(() => [k, 0] as const),
+      ),
+    ).then((pairs) => { if (!cancelled) setStatusCounts(Object.fromEntries(pairs)); });
+    return () => { cancelled = true; };
+  }, [isReady, isAuthenticated, totalCount]);
+
+  const notifPalette = designTokens.color.palette;
+  const notifTint = (k: AdminNotificationStatus): { bg: string; fg: string } | null =>
+    k === "Unread" ? { bg: notifPalette.amber.soft, fg: notifPalette.amber.text }
+      : k === "ActionRequired" ? { bg: notifPalette.red.soft, fg: notifPalette.red.text }
+      : k === "Archived" ? { bg: notifPalette.neutral.soft, fg: notifPalette.neutral.text }
+      : null;
+  const statusOptions = STATUS_FILTER_OPTIONS.map((opt) => ({
+    ...opt,
+    count: statusCounts ? (statusCounts[opt.key] ?? 0) : undefined,
+    tint: notifTint(opt.key),
+  }));
+
   const showingFrom = items.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const showingTo = (page - 1) * PAGE_SIZE + items.length;
 
@@ -157,11 +185,10 @@ export default function AdminNotificationsScreen() {
             />
           }
         >
-        {/* Status filter chips — shared FilterChips; counts omitted because the
-            endpoint only returns totalCount for the active filter, and fetching
-            per-filter counts would require N parallel requests on every render. */}
-        <FilterChips<AdminNotificationStatus>
-          options={STATUS_FILTER_OPTIONS}
+        {/* Status filter — compact SelectRow + sheet (shared pattern across status pages). */}
+        <FilterSelect<AdminNotificationStatus>
+          label="Estado"
+          options={statusOptions}
           value={status}
           onChange={handleStatusChange}
           testIDPrefix="admin-notifications-filter"

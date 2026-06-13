@@ -47,7 +47,7 @@ export function getAdminCareCreateProgress(form: CreateAdminCareRequestDto): Adm
     { key: "date", label: "Fecha", complete: isFilled(form.careRequestDate) },
     { key: "type", label: "Tipo", complete: isFilled(form.careRequestType) },
     { key: "unit", label: "Unidades", complete: Boolean(form.unit && form.unit > 0) },
-    { key: "description", label: "Descripcion", complete: isFilled(form.careRequestDescription) },
+    { key: "description", label: "Descripción", complete: isFilled(form.careRequestDescription) },
   ];
 
   const missingCoreLabels = checklist.filter((item) => !item.complete).map((item) => item.label);

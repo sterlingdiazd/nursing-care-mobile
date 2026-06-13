@@ -15,6 +15,7 @@ import { router } from "expo-router";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
+import { FilterSelect } from "@/src/components/shared/FilterSelect";
 import { logClientEvent } from "@/src/logging/clientLogger";
 import { getCareRequests } from "@/src/services/careRequestService";
 import { CareRequestDto } from "@/src/types/careRequest";
@@ -267,6 +268,13 @@ export default function CareRequestsScreen() {
 
   const display = buildPageDisplay(currentPage, totalPages);
 
+  const filterOptions = FILTERS.map((f) => ({
+    key: f.key,
+    label: f.label,
+    count: counts[f.key],
+    tint: f.status ? getStatusColors(f.status) : null,
+  }));
+
   return (
     <MobileWorkspaceShell
       title="Solicitudes"
@@ -298,39 +306,13 @@ export default function CareRequestsScreen() {
       ) : null}
 
       <View style={styles.filterStrip}>
-        <View style={styles.filterContent}>
-          {FILTERS.map((f) => {
-            const active = filter === f.key;
-            const count = counts[f.key];
-            const statusColors = f.status ? getStatusColors(f.status) : null;
-            const badgeBg = statusColors ? statusColors.bg : (active ? "rgba(255,255,255,0.25)" : designTokens.color.surface.secondary);
-            const badgeFg = statusColors ? statusColors.fg : (active ? designTokens.color.ink.inverse : designTokens.color.ink.primary);
-            return (
-              <Pressable
-                key={f.key}
-                onPress={() => {
-                  hapticFeedback.selection();
-                  setFilter(f.key);
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={`Filtrar solicitudes por ${f.label}`}
-                accessibilityState={{ selected: active }}
-                style={({ pressed }) => [
-                  styles.filterChip,
-                  active && styles.filterChipActive,
-                  pressed && styles.buttonPressed,
-                ]}
-              >
-                <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
-                  {f.label}
-                </Text>
-                <View style={[styles.filterCount, { backgroundColor: badgeBg }]}>
-                  <Text style={[styles.filterCountText, { color: badgeFg }]}>{count}</Text>
-                </View>
-              </Pressable>
-            );
-          })}
-        </View>
+        <FilterSelect<StatusFilter>
+          label="Estado"
+          options={filterOptions}
+          value={filter}
+          onChange={setFilter}
+          testIDPrefix="care-requests-filter"
+        />
       </View>
 
       {isLoading && filtered.length === 0 ? (

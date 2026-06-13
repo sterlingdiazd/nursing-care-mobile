@@ -11,7 +11,7 @@ import {
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
-import { FilterChips } from "@/src/components/shared/FilterChips";
+import { FilterSelect } from "@/src/components/shared/FilterSelect";
 import { ListRow } from "@/src/components/shared/ListRow";
 import { Pagination } from "@/src/components/shared/Pagination";
 import { Banner } from "@/src/components/shared/Banner";
@@ -137,9 +137,17 @@ export default function AdminActionItemsScreen() {
 
   if (!isEnabled) return null;
 
+  const sevPalette = designTokens.color.palette;
+  const sevTint: Record<SeverityFilter, { bg: string; fg: string } | null> = {
+    All: null,
+    High: { bg: sevPalette.red.soft, fg: sevPalette.red.text },
+    Medium: { bg: sevPalette.orange.soft, fg: sevPalette.orange.text },
+    Low: { bg: sevPalette.amber.soft, fg: sevPalette.amber.text },
+  };
   const filterOptions = FILTER_OPTIONS.map((opt) => ({
     ...opt,
     count: counts[opt.key],
+    tint: sevTint[opt.key],
   }));
 
   return (
@@ -150,7 +158,8 @@ export default function AdminActionItemsScreen() {
       disableScroll
     >
       <View {...automationProps(adminTestIds.actionQueue.screen)} style={styles.screenRoot}>
-        <FilterChips
+        <FilterSelect
+          label="Prioridad"
           options={filterOptions}
           value={filter}
           onChange={(key) => setFilter(key)}

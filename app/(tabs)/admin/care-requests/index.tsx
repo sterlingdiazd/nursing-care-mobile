@@ -10,7 +10,8 @@ import {
 import { router, useLocalSearchParams } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
-import { FilterChips } from "@/src/components/shared/FilterChips";
+import { FilterSelect } from "@/src/components/shared/FilterSelect";
+import { getStatusPillColors } from "@/src/utils/adminCareRequestBilling";
 import { ListRow } from "@/src/components/shared/ListRow";
 import { Pagination } from "@/src/components/shared/Pagination";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
@@ -21,9 +22,11 @@ import { usePagedList } from "@/src/hooks/usePagedList";
 import { SwipePager } from "@/src/components/shared/SwipePager";
 import {
   getAdminCareRequests,
+  getAdminCareRequestCounts,
   type AdminCareRequestListItemDto,
   type AdminCareRequestStatus,
   type AdminCareRequestView,
+  type AdminCareRequestViewCountsDto,
 } from "@/src/services/adminPortalService";
 import { adminTestIds } from "@/src/testing/testIds";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
@@ -86,38 +89,54 @@ function getStatusLabel(status: AdminCareRequestStatus): string {
   }
 }
 
-function getStatusTone(status: AdminCareRequestStatus): "success" | "danger" | "warning" | "neutral" {
-  switch (status) {
-    case "Approved": return "success";
-    case "Rejected":
-    case "Voided":
-    case "Cancelled": return "danger";
-    case "Completed":
-    case "Invoiced":
-    case "Paid":
-    case "PaymentReported": return "neutral";
-    default: return "warning";
-  }
-}
-
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP" }).format(value);
 }
 
-const FILTER_OPTIONS: ReadonlyArray<{ key: Filter; label: string }> = [
-  { key: "Pending", label: "Pendientes" },
-  { key: "Unassigned", label: "Sin asignar" },
-  { key: "Overdue", label: "Vencidas" },
-  { key: "Approved", label: "Aprobadas" },
-  { key: "Completed", label: "Completadas" },
-  { key: "Invoiced", label: "Facturadas" },
-  { key: "PaymentReported", label: "Pago reportado" },
-  { key: "Paid", label: "Pagadas" },
-  { key: "Rejected", label: "Rechazadas" },
-  { key: "Cancelled", label: "Canceladas" },
-  { key: "Voided", label: "Anuladas" },
+// Ordered + grouped by lifecycle phase so the status colors cluster logically in the picker.
+const FILTER_OPTIONS: ReadonlyArray<{ key: Filter; label: string; group?: string }> = [
   { key: "All", label: "Todas" },
+  { key: "Pending", label: "Pendientes", group: "Por atender" },
+  { key: "Unassigned", label: "Sin asignar", group: "Por atender" },
+  { key: "Overdue", label: "Vencidas", group: "Por atender" },
+  { key: "Approved", label: "Aprobadas", group: "En curso" },
+  { key: "Completed", label: "Completadas", group: "En curso" },
+  { key: "Invoiced", label: "Facturadas", group: "Cobro" },
+  { key: "PaymentReported", label: "Pago reportado", group: "Cobro" },
+  { key: "Paid", label: "Pagadas", group: "Cobro" },
+  { key: "Rejected", label: "Rechazadas", group: "Cerradas" },
+  { key: "Cancelled", label: "Canceladas", group: "Cerradas" },
+  { key: "Voided", label: "Anuladas", group: "Cerradas" },
 ];
+
+/** Soft status tint {bg,fg} per filter — fills the whole option row (canonical status colors). */
+function filterTint(key: Filter): { bg: string; fg: string } | null {
+  const p = designTokens.color.palette;
+  if (key === "All") return null;
+  if (key === "Unassigned") return { bg: p.orange.soft, fg: p.orange.text };
+  if (key === "Overdue") return { bg: p.red.soft, fg: p.red.text };
+  return getStatusPillColors(key);
+}
+
+/** Per-view count from the counts endpoint, so every status shows its number (not just the active one). */
+function countForFilter(key: Filter, counts: AdminCareRequestViewCountsDto | null): number | undefined {
+  if (!counts) return undefined;
+  switch (key) {
+    case "All": return counts.all;
+    case "Pending": return counts.pending;
+    case "Unassigned": return counts.unassigned;
+    case "Overdue": return counts.overdue;
+    case "Approved": return counts.approved;
+    case "Completed": return counts.completed;
+    case "Invoiced": return counts.invoiced;
+    case "PaymentReported": return counts.paymentReported;
+    case "Paid": return counts.paid;
+    case "Rejected": return counts.rejected;
+    case "Cancelled": return counts.cancelled;
+    case "Voided": return counts.voided;
+    default: return undefined;
+  }
+}
 
 const PAGE_SIZE = 10;
 
@@ -127,6 +146,7 @@ export default function AdminCareRequestsScreen() {
   const [filter, setFilter] = useState<Filter>(() => viewParamToFilter(params.view));
 
   const isEnabled = isReady && isAuthenticated && !requiresProfileCompletion && roles.includes("ADMIN");
+  const [counts, setCounts] = useState<AdminCareRequestViewCountsDto | null>(null);
 
   const view = FILTER_TO_VIEW[filter];
 
@@ -152,11 +172,23 @@ export default function AdminCareRequestsScreen() {
     else if (!roles.includes("ADMIN")) router.replace("/" as never);
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles]);
 
+  // Load per-status counts so the filter shows every number at once. Refetched when the filter
+  // changes (and totalCount shifts) so counts stay fresh after create/transition actions.
+  useEffect(() => {
+    if (!isEnabled) return;
+    let cancelled = false;
+    getAdminCareRequestCounts()
+      .then((next) => { if (!cancelled) setCounts(next); })
+      .catch(() => { /* counts are non-critical; the list still works */ });
+    return () => { cancelled = true; };
+  }, [isEnabled, filter, totalCount]);
+
   if (!isEnabled) return null;
 
   const filterOptions = FILTER_OPTIONS.map((opt) => ({
     ...opt,
-    count: opt.key === filter ? totalCount : undefined,
+    count: countForFilter(opt.key, counts) ?? (opt.key === filter ? totalCount : undefined),
+    tint: filterTint(opt.key),
   }));
 
   return (
@@ -175,7 +207,8 @@ export default function AdminCareRequestsScreen() {
       disableScroll
     >
       <View style={styles.container}>
-        <FilterChips
+        <FilterSelect
+          label="Estado"
           options={filterOptions}
           value={filter}
           onChange={(key) => setFilter(key)}
@@ -206,10 +239,22 @@ export default function AdminCareRequestsScreen() {
                 : unassigned
                   ? designTokens.color.status.dangerText
                   : undefined;
-              const flags = [
-                overdue ? "Vencida" : null,
-                unassigned ? "Sin asignar" : null,
-              ].filter(Boolean) as string[];
+              // Motivo chips next to the status: WHY this request needs attention (and what to do).
+              // The status badge stays the real lifecycle state (e.g. Pendiente); these explain the view.
+              const motivo = (overdue || unassigned) ? (
+                <View style={styles.motivoRow}>
+                  {overdue ? (
+                    <View style={[styles.motivoChip, { backgroundColor: designTokens.color.palette.amber.soft }]}>
+                      <Text style={[styles.motivoText, { color: designTokens.color.palette.amber.text }]}>Vencida</Text>
+                    </View>
+                  ) : null}
+                  {unassigned ? (
+                    <View style={[styles.motivoChip, { backgroundColor: designTokens.color.palette.red.soft }]}>
+                      <Text style={[styles.motivoText, { color: designTokens.color.palette.red.text }]}>Sin asignar</Text>
+                    </View>
+                  ) : null}
+                </View>
+              ) : null;
               return (
                 <ListRow
                   key={item.id}
@@ -217,19 +262,18 @@ export default function AdminCareRequestsScreen() {
                   badge={
                     <StatusBadge
                       label={getStatusLabel(item.status)}
-                      tone={getStatusTone(item.status)}
+                      colors={getStatusPillColors(item.status)}
                     />
                   }
                   subtitle={`${item.careRequestTypeDisplayName || item.careRequestType} · ${formatCurrency(item.total)}`}
-                  metaLines={[
-                    item.assignedNurseDisplayName ?? "Sin enfermera asignada",
-                    flags.length > 0 ? flags.join(" · ") : null,
-                  ]}
+                  metaLines={[item.assignedNurseDisplayName ?? "Sin enfermera asignada"]}
                   railColor={railColor}
                   onPress={() => router.push(`/admin/care-requests/${item.id}` as never)}
                   testID={`admin-care-request-card-${item.id}`}
                   accessibilityLabel={`Abrir solicitud de ${item.clientDisplayName}`}
-                />
+                >
+                  {motivo}
+                </ListRow>
               );
             })}
             </ScrollView>
@@ -252,4 +296,7 @@ const styles = StyleSheet.create({
   list: { flex: 1 },
   loadingState: { flex: 1, paddingVertical: designTokens.spacing.huge, alignItems: "center", justifyContent: "center" },
   emptyText: { color: designTokens.color.ink.muted, fontSize: designTokens.typography.body.fontSize },
+  motivoRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 6 },
+  motivoChip: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  motivoText: { fontSize: 11, fontWeight: "800" },
 });

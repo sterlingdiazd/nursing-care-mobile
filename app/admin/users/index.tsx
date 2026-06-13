@@ -8,7 +8,7 @@ import { router } from "expo-router";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
-import { FilterChips } from "@/src/components/shared/FilterChips";
+import { FilterSelect } from "@/src/components/shared/FilterSelect";
 import { ListRow } from "@/src/components/shared/ListRow";
 import { Pagination } from "@/src/components/shared/Pagination";
 import { SwipePager } from "@/src/components/shared/SwipePager";
@@ -43,6 +43,15 @@ function statusTone(status: AdminUserAccountStatus): "success" | "danger" | "war
   }
 }
 
+/** Soft status tint {bg,fg} for the filter rows (matches the card badge tone). */
+function statusTint(key: StatusFilter): { bg: string; fg: string } | null {
+  if (key === "all") return null;
+  const tone = statusTone(key as AdminUserAccountStatus);
+  const p = designTokens.color.palette;
+  const hue = tone === "success" ? p.green : tone === "danger" ? p.red : tone === "warning" ? p.amber : p.neutral;
+  return { bg: hue.soft, fg: hue.text };
+}
+
 type StatusFilter = "all" | "Active" | "Inactive" | "ProfileIncomplete" | "AdminReview" | "ManualIntervention";
 
 const STATUS_OPTIONS: ReadonlyArray<{ key: StatusFilter; label: string }> = [
@@ -60,6 +69,7 @@ export default function AdminUsersScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusCounts, setStatusCounts] = useState<Record<string, number> | null>(null);
 
   const isEnabled = isReady && isAuthenticated && !requiresProfileCompletion && roles.includes("ADMIN");
   const resetKey = `${statusFilter}|${searchQuery}`;
@@ -89,11 +99,35 @@ export default function AdminUsersScreen() {
     else if (!roles.includes("ADMIN")) router.replace("/");
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles]);
 
+  // Per-status counts via one lightweight (pageSize 1) totalCount probe per status — accurate at
+  // any scale (a single fetch-and-group would cap at the page size and stop summing to "all").
+  useEffect(() => {
+    if (!isEnabled) return;
+    let cancelled = false;
+    const entries: ReadonlyArray<readonly [StatusFilter, AdminUserAccountStatus | undefined]> = [
+      ["all", undefined],
+      ["Active", "Active"],
+      ["Inactive", "Inactive"],
+      ["ProfileIncomplete", "ProfileIncomplete"],
+      ["AdminReview", "AdminReview"],
+      ["ManualIntervention", "ManualIntervention"],
+    ];
+    Promise.all(
+      entries.map(([k, status]) =>
+        getAdminUsers({ status, pageSize: 1 })
+          .then((r) => [k, r.totalCount] as const)
+          .catch(() => [k, 0] as const),
+      ),
+    ).then((pairs) => { if (!cancelled) setStatusCounts(Object.fromEntries(pairs)); });
+    return () => { cancelled = true; };
+  }, [isEnabled, totalCount]);
+
   if (!isEnabled) return null;
 
   const statusOptions = STATUS_OPTIONS.map((opt) => ({
     ...opt,
-    count: opt.key === "all" ? totalCount : undefined,
+    count: statusCounts ? (statusCounts[opt.key] ?? 0) : (opt.key === "all" ? totalCount : undefined),
+    tint: statusTint(opt.key),
   }));
 
   return (
@@ -107,7 +141,8 @@ export default function AdminUsersScreen() {
       disableScroll
     >
       <View style={styles.container}>
-        <FilterChips
+        <FilterSelect
+          label="Estado"
           options={statusOptions}
           value={statusFilter}
           onChange={(key) => { setStatusFilter(key); }}

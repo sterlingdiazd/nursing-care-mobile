@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { IconBadge } from "@/src/components/shared/IconBadge";
 import { useAuth } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
 import {
@@ -152,7 +153,10 @@ export default function AdminClientDetailScreen() {
           </View>
 
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Identidad y contacto</Text>
+            <View style={styles.cardHeader}>
+              <IconBadge icon="user" hue="blue" size={30} iconSize={15} />
+              <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Identidad y contacto</Text>
+            </View>
 
             <View style={styles.field}>
               <Text style={styles.fieldLabel}>Nombre</Text>
@@ -175,18 +179,17 @@ export default function AdminClientDetailScreen() {
               </View>
             </View>
 
-            <View style={styles.fieldRow}>
-              <View style={styles.fieldColumn}>
-                <Text style={styles.fieldLabel}>Registro</Text>
-                <Text style={styles.fieldValue}>{formatTimestamp(detail.createdAtUtc)}</Text>
-              </View>
-              <View style={styles.fieldColumn}>
-                <Text style={styles.fieldLabel}>Estado</Text>
-                <View style={[styles.statusBadge, detail.isActive ? styles.statusBadgeActive : styles.statusBadgeInactive]}>
-                  <Text style={[styles.statusBadgeText, detail.isActive ? styles.statusBadgeTextActive : styles.statusBadgeTextInactive]}>
-                    {detail.isActive ? "Activo" : "Inactivo"}
-                  </Text>
-                </View>
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>Registro</Text>
+              <Text style={styles.fieldValue}>{formatTimestamp(detail.createdAtUtc)}</Text>
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>Estado</Text>
+              <View style={[styles.statusBadge, detail.isActive ? styles.statusBadgeActive : styles.statusBadgeInactive]}>
+                <Text style={[styles.statusBadgeText, detail.isActive ? styles.statusBadgeTextActive : styles.statusBadgeTextInactive]}>
+                  {detail.isActive ? "Activo" : "Inactivo"}
+                </Text>
               </View>
             </View>
           </View>
@@ -319,6 +322,7 @@ const styles = StyleSheet.create({
     marginBottom: designTokens.spacing.md,
   },
   sectionTitle: { ...designTokens.typography.sectionTitle, fontSize: designTokens.typography.body.fontSize, marginBottom: designTokens.spacing.sm },
+  cardHeader: { flexDirection: "row", alignItems: "center", gap: designTokens.spacing.sm, marginBottom: designTokens.spacing.md },
   field: { marginBottom: designTokens.spacing.sm },
   fieldRow: { flexDirection: "row", gap: designTokens.spacing.md },
   fieldColumn: { flex: 1 },
@@ -374,6 +378,7 @@ const styles = StyleSheet.create({
   historyNurse: { ...designTokens.typography.body, fontSize: designTokens.typography.caption.fontSize, color: designTokens.color.ink.primary, marginTop: designTokens.spacing.xs },
   emptyState: { ...designTokens.typography.body, color: designTokens.color.ink.muted },
   statusBadge: {
+    alignSelf: "flex-start",
     borderRadius: designTokens.radius.pill,
     paddingHorizontal: designTokens.spacing.sm,
     paddingVertical: designTokens.spacing.xs,

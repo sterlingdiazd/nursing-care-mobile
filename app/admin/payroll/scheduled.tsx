@@ -7,7 +7,7 @@ import { type FooterAction } from "@/src/components/navigation/AppFooter";
 import { useAuth } from "@/src/context/AuthContext";
 import { useToast } from "@/src/components/shared/ToastProvider";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
-import { FilterChips, type FilterChipOption } from "@/src/components/shared/FilterChips";
+import { FilterSelect, type FilterSelectOption } from "@/src/components/shared/FilterSelect";
 import { Pagination } from "@/src/components/shared/Pagination";
 import { useClientPaging } from "@/src/hooks/usePagedList";
 import { SwipePager } from "@/src/components/shared/SwipePager";
@@ -152,10 +152,17 @@ export default function ScheduledScreen() {
     return m;
   }, [allItems]);
 
-  const STATUS_FILTER_OPTIONS: ReadonlyArray<FilterChipOption<StatusFilter>> = STATUS_FILTER_OPTIONS_BASE.map((o) =>
+  const schedPalette = designTokens.color.palette;
+  const schedTint: Record<StatusFilter, { bg: string; fg: string } | null> = {
+    "": null,
+    Active: { bg: schedPalette.green.soft, fg: schedPalette.green.text },
+    Completed: { bg: schedPalette.blue.soft, fg: schedPalette.blue.text },
+    Cancelled: { bg: schedPalette.red.soft, fg: schedPalette.red.text },
+  };
+  const STATUS_FILTER_OPTIONS: ReadonlyArray<FilterSelectOption<StatusFilter>> = STATUS_FILTER_OPTIONS_BASE.map((o) =>
     o.key === ""
-      ? { ...o, count: allItems.length }
-      : { ...o, count: countByStatus[o.key] ?? 0 }
+      ? { ...o, count: allItems.length, tint: schedTint[o.key] }
+      : { ...o, count: countByStatus[o.key] ?? 0, tint: schedTint[o.key] }
   );
 
   const filteredItems = useMemo(() => {
@@ -208,7 +215,8 @@ export default function ScheduledScreen() {
           contentContainerStyle={styles.scrollPad}
           refreshControl={<RefreshControl refreshing={scheduledRefreshing} onRefresh={handleRefresh} />}
         >
-        <FilterChips
+        <FilterSelect
+          label="Estado"
           options={STATUS_FILTER_OPTIONS}
           value={statusFilter}
           onChange={handleStatusFilterChange}

@@ -8,7 +8,7 @@ import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigation
 import { hapticFeedback } from "@/src/utils/haptics";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
-import { FilterChips } from "@/src/components/shared/FilterChips";
+import { FilterSelect } from "@/src/components/shared/FilterSelect";
 import { ListRow } from "@/src/components/shared/ListRow";
 import { Pagination } from "@/src/components/shared/Pagination";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
@@ -74,10 +74,11 @@ export default function AdminNurseProfilesScreen() {
   const current = tab === "pending" ? pending : tab === "active" ? active : inactive;
 
   // Always show all three tab counts — every bucket is loaded, so the numbers are known.
+  const p = designTokens.color.palette;
   const chipOptions = [
-    { key: "active" as TabType, label: "Activas", count: active.totalCount },
-    { key: "pending" as TabType, label: "Pendientes", count: pending.totalCount },
-    { key: "inactive" as TabType, label: "Inactivas", count: inactive.totalCount },
+    { key: "active" as TabType, label: "Activas", count: active.totalCount, tint: { bg: p.green.soft, fg: p.green.text } },
+    { key: "pending" as TabType, label: "Pendientes", count: pending.totalCount, tint: { bg: p.amber.soft, fg: p.amber.text } },
+    { key: "inactive" as TabType, label: "Inactivas", count: inactive.totalCount, tint: { bg: p.neutral.soft, fg: p.neutral.text } },
   ];
 
   const anyError = current.error;
@@ -111,7 +112,8 @@ export default function AdminNurseProfilesScreen() {
           testID={adminTestIds.nurses.listReadinessChip}
           nativeID={adminTestIds.nurses.listReadinessChip}
         >
-          <FilterChips
+          <FilterSelect
+            label="Estado"
             options={chipOptions}
             value={tab}
             onChange={(key) => setTab(key)}

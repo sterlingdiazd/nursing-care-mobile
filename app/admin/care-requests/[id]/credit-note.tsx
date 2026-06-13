@@ -13,9 +13,10 @@ import {
 import { adminTestIds } from "@/src/testing/testIds/adminTestIds";
 import {
   formatAdminCareRequestStatusLabel,
-  getAdminCareRequestStatusColor,
+  getStatusPillColors,
 } from "@/src/utils/adminCareRequestBilling";
-import { mobileSecondarySurface, mobileSurfaceCard } from "@/src/design-system/mobileStyles";
+import { IconBadge } from "@/src/components/shared/IconBadge";
+import { mobileSecondarySurface, mobileSurfaceCard, mobileTheme } from "@/src/design-system/mobileStyles";
 import { designTokens } from "@/src/design-system/tokens";
 
 function formatCurrency(value: number) {
@@ -142,16 +143,21 @@ export default function AdminCareRequestCreditNoteScreen() {
         {detail && (
           <ScrollView showsVerticalScrollIndicator={false}>
             <View style={styles.summaryCard}>
-              <Text style={styles.cardTitle}>Resumen</Text>
+              <View style={styles.cardHeader}>
+                <IconBadge icon="info-circle" hue="blue" size={30} iconSize={15} />
+                <Text style={styles.cardHeaderTitle}>Resumen</Text>
+              </View>
               <View style={styles.row}>
                 <Text style={styles.label}>Cliente</Text>
                 <Text style={styles.value}>{detail.clientDisplayName}</Text>
               </View>
               <View style={styles.row}>
                 <Text style={styles.label}>Estado</Text>
-                <Text style={[styles.value, { color: getAdminCareRequestStatusColor(detail.status), fontWeight: "800" }]}>
-                  {formatAdminCareRequestStatusLabel(detail.status)}
-                </Text>
+                <View style={[styles.statusPill, { backgroundColor: getStatusPillColors(detail.status).bg }]}>
+                  <Text style={[styles.statusPillText, { color: getStatusPillColors(detail.status).fg }]}>
+                    {formatAdminCareRequestStatusLabel(detail.status)}
+                  </Text>
+                </View>
               </View>
               <View style={styles.row}>
                 <Text style={styles.label}>Total pagado</Text>
@@ -249,6 +255,23 @@ const styles = StyleSheet.create({
     color: designTokens.color.ink.primary,
     marginBottom: designTokens.spacing.lg,
   },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: mobileTheme.spacing.sm,
+    marginBottom: mobileTheme.spacing.lg,
+  },
+  cardHeaderTitle: {
+    ...mobileTheme.typography.sectionTitle,
+    color: mobileTheme.colors.ink.primary,
+  },
+  statusPill: {
+    alignSelf: "flex-start",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  statusPillText: { fontSize: 12, fontWeight: "800" },
   row: { marginBottom: designTokens.spacing.md },
   label: { ...designTokens.typography.eyebrow, color: designTokens.color.ink.muted, marginBottom: designTokens.spacing.xs },
   value: { ...designTokens.typography.body, color: designTokens.color.ink.primary },

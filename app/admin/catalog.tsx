@@ -54,7 +54,7 @@ import {
 import { useAuth } from "@/src/context/AuthContext";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { Banner } from "@/src/components/shared/Banner";
-import { FilterChips } from "@/src/components/shared/FilterChips";
+import { FilterSelect } from "@/src/components/shared/FilterSelect";
 import { FormPanel } from "@/src/components/shared/FormPanel";
 import { ListRow } from "@/src/components/shared/ListRow";
 import { Pagination } from "@/src/components/shared/Pagination";
@@ -94,8 +94,6 @@ const TABS: TabConfig[] = [
 ];
 
 // Map TABS to FilterChip options (no counts — would require N extra requests).
-const TAB_FILTER_OPTIONS = TABS.map((t) => ({ key: t.key, label: t.label }));
-
 // Per-tab vivid accent: a hue + icon that reflects the active catalog section.
 type FontAwesomeIcon = ComponentProps<typeof FontAwesome>["name"];
 const TAB_BADGE: Record<TabKey, { hue: PaletteHue; icon: FontAwesomeIcon }> = {
@@ -108,6 +106,16 @@ const TAB_BADGE: Record<TabKey, { hue: PaletteHue; icon: FontAwesomeIcon }> = {
   specialties: { hue: "pink", icon: "certificate" },
   nurseCategories: { hue: "blue", icon: "user-md" },
 };
+
+// Each catalog section keeps its accent hue as a soft tint in the FilterSelect.
+const TAB_FILTER_OPTIONS = TABS.map((t) => ({
+  key: t.key,
+  label: t.label,
+  tint: {
+    bg: designTokens.color.palette[TAB_BADGE[t.key].hue].soft,
+    fg: designTokens.color.palette[TAB_BADGE[t.key].hue].text,
+  },
+}));
 
 type CatalogItem = CareRequestCategoryListItemDto | CareRequestTypeListItemDto | UnitTypeListItemDto | DistanceFactorListItemDto | ComplexityLevelListItemDto | VolumeDiscountRuleListItemDto | NurseSpecialtyListItemDto | NurseCategoryListItemDto;
 
@@ -547,12 +555,13 @@ export default function AdminCatalogScreen() {
 
       {!loading && (
         <>
-          {/* Tab switcher — shared FilterChips; counts omitted (one fetch covers all tabs). */}
+          {/* Section switcher — compact FilterSelect (each section keeps its accent hue). */}
           <View
             testID="admin-catalog-tab-bar"
             nativeID="admin-catalog-tab-bar"
           >
-            <FilterChips<TabKey>
+            <FilterSelect<TabKey>
+              label="Sección"
               options={TAB_FILTER_OPTIONS}
               value={activeTab}
               onChange={handleTabChange}

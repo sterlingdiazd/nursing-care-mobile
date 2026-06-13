@@ -31,6 +31,7 @@ import { designTokens } from "@/src/design-system/tokens";
 import { adminTestIds } from "@/src/testing/testIds/adminTestIds";
 import {
   formatAdminCareRequestStatusLabel,
+  formatUnitType,
   getBillingTaskActions,
   getLifecycleActions,
   getLifecycleGuidance,
@@ -464,12 +465,26 @@ export default function AdminCareRequestDetailScreen() {
               ) : null}
             </View>
 
-            {/* Cliente */}
-            <View style={styles.card}>
-              <View style={styles.cardHeaderRow}>
-                <View style={styles.sectionHeaderRow}>
-                  <IconBadge icon="user" hue="green" size={30} iconSize={15} />
-                  <Text style={styles.cardEyebrow}>Cliente</Text>
+            {/* Personas (cliente + enfermera) */}
+            <View
+              style={[
+                styles.card,
+                unassigned && { borderLeftWidth: 4, borderLeftColor: designTokens.color.status.warningText },
+              ]}
+            >
+              <View style={styles.sectionHeaderRow}>
+                <IconBadge icon="users" hue="neutral" size={30} iconSize={15} />
+                <Text style={styles.cardEyebrow}>Personas</Text>
+              </View>
+
+              <View style={styles.personRow}>
+                <View style={styles.personInfo}>
+                  <Text style={styles.personRole}>Cliente</Text>
+                  <Text style={styles.cardTitle} numberOfLines={1}>{detail.clientDisplayName}</Text>
+                  <Text style={styles.cardMeta} numberOfLines={1}>{detail.clientEmail}</Text>
+                  {detail.clientIdentificationNumber ? (
+                    <Text style={styles.cardMeta} numberOfLines={1}>Cédula: {detail.clientIdentificationNumber}</Text>
+                  ) : null}
                 </View>
                 <Pressable
                   accessibilityRole="link"
@@ -478,29 +493,26 @@ export default function AdminCareRequestDetailScreen() {
                     hapticFeedback.selection();
                     router.push(`/admin/users/${detail.clientUserId}` as any);
                   }}
-                  style={({ pressed }) => [styles.linkButton, pressed && styles.pressed]}
+                  style={({ pressed }) => [styles.link, pressed && styles.pressed]}
                 >
-                  <Text style={styles.linkButtonText}>Ver perfil</Text>
+                  <Text style={styles.linkText}>Ver perfil ›</Text>
                 </Pressable>
               </View>
-              <Text style={styles.cardTitle} numberOfLines={1}>{detail.clientDisplayName}</Text>
-              <Text style={styles.cardMeta} numberOfLines={1}>{detail.clientEmail}</Text>
-              {detail.clientIdentificationNumber ? (
-                <Text style={styles.cardMeta} numberOfLines={1}>Cédula: {detail.clientIdentificationNumber}</Text>
-              ) : null}
-            </View>
 
-            {/* Asignación */}
-            <View
-              style={[
-                styles.card,
-                unassigned && { borderLeftWidth: 4, borderLeftColor: designTokens.color.status.warningText },
-              ]}
-            >
-              <View style={styles.cardHeaderRow}>
-                <View style={styles.sectionHeaderRow}>
-                  <IconBadge icon="user-md" hue="orange" size={30} iconSize={15} />
-                  <Text style={styles.cardEyebrow}>Asignación</Text>
+              <View style={styles.personDivider} />
+
+              <View style={styles.personRow}>
+                <View style={styles.personInfo}>
+                  <Text style={styles.personRole}>Enfermera</Text>
+                  <Text style={styles.cardTitle} numberOfLines={1}>
+                    {detail.assignedNurseDisplayName ?? "Sin enfermera asignada"}
+                  </Text>
+                  {detail.assignedNurseEmail ? (
+                    <Text style={styles.cardMeta} numberOfLines={1}>{detail.assignedNurseEmail}</Text>
+                  ) : null}
+                  {detail.suggestedNurse && !detail.assignedNurseUserId ? (
+                    <Text style={styles.cardMeta} numberOfLines={1}>Sugerida: {detail.suggestedNurse}</Text>
+                  ) : null}
                 </View>
                 {detail.assignedNurseUserId ? (
                   <Pressable
@@ -510,28 +522,19 @@ export default function AdminCareRequestDetailScreen() {
                       hapticFeedback.selection();
                       router.push(`/admin/nurse-profiles/${detail.assignedNurseUserId}` as any);
                     }}
-                    style={({ pressed }) => [styles.linkButton, pressed && styles.pressed]}
+                    style={({ pressed }) => [styles.link, pressed && styles.pressed]}
                   >
-                    <Text style={styles.linkButtonText}>Ver perfil</Text>
+                    <Text style={styles.linkText}>Ver perfil ›</Text>
                   </Pressable>
                 ) : null}
               </View>
-              <Text style={styles.cardTitle} numberOfLines={1}>
-                {detail.assignedNurseDisplayName ?? "Sin enfermera asignada"}
-              </Text>
-              {detail.assignedNurseEmail ? (
-                <Text style={styles.cardMeta} numberOfLines={1}>{detail.assignedNurseEmail}</Text>
-              ) : null}
-              {detail.suggestedNurse && !detail.assignedNurseUserId ? (
-                <Text style={styles.cardMeta} numberOfLines={1}>Sugerida: {detail.suggestedNurse}</Text>
-              ) : null}
             </View>
 
             {/* Servicio (compact) */}
             <View style={styles.card}>
               <View style={styles.cardHeaderRow}>
                 <View style={styles.sectionHeaderRow}>
-                  <IconBadge icon="briefcase" hue="teal" size={30} iconSize={15} />
+                  <IconBadge icon="briefcase" hue="neutral" size={30} iconSize={15} />
                   <Text style={styles.cardEyebrow}>Servicio</Text>
                 </View>
                 <Pressable
@@ -541,9 +544,9 @@ export default function AdminCareRequestDetailScreen() {
                     hapticFeedback.selection();
                     setPricingSheetVisible(true);
                   }}
-                  style={({ pressed }) => [styles.linkButton, pressed && styles.pressed]}
+                  style={({ pressed }) => [styles.link, pressed && styles.pressed]}
                 >
-                  <Text style={styles.linkButtonText}>Ver desglose</Text>
+                  <Text style={styles.linkText}>Ver desglose ›</Text>
                 </Pressable>
               </View>
               <View style={styles.servicioGrid}>
@@ -553,7 +556,7 @@ export default function AdminCareRequestDetailScreen() {
                 </View>
                 <View style={styles.servicioCol}>
                   <Text style={styles.servicioLabel}>Unidades</Text>
-                  <Text style={styles.servicioValue} numberOfLines={1}>{detail.unit} {detail.unitType}</Text>
+                  <Text style={styles.servicioValue} numberOfLines={1}>{detail.unit} · {formatUnitType(detail.unitType)}</Text>
                 </View>
               </View>
               {detail.careRequestDate ? (
@@ -569,7 +572,7 @@ export default function AdminCareRequestDetailScreen() {
             {(detail.invoiceNumber || detail.bankReference || detail.voidReason || detail.receiptNumber) ? (
               <View style={styles.card} testID="billing-info-card" nativeID="billing-info-card">
                 <View style={styles.sectionHeaderRow}>
-                  <IconBadge icon="file-text-o" hue="purple" size={30} iconSize={15} />
+                  <IconBadge icon="file-text-o" hue="neutral" size={30} iconSize={15} />
                   <Text style={styles.cardEyebrow}>Facturación</Text>
                 </View>
                 {detail.invoiceNumber ? (
@@ -1071,11 +1074,17 @@ const styles = StyleSheet.create({
   flag: { borderRadius: designTokens.radius.sm, paddingHorizontal: designTokens.spacing.sm, paddingVertical: designTokens.spacing.xs },
   flagText: { fontSize: designTokens.typography.caption.fontSize, fontWeight: "900" },
 
-  linkButton: {
-    borderRadius: designTokens.radius.sm, paddingHorizontal: designTokens.spacing.md, paddingVertical: designTokens.spacing.sm,
-    backgroundColor: designTokens.color.surface.secondary,
+  // Subtle inline link (no button chrome) — de-emphasized vs the bottom action bar.
+  link: { paddingHorizontal: 2, paddingVertical: 2 },
+  linkText: { color: designTokens.color.ink.accent, fontSize: 13, fontWeight: "800" },
+
+  personRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  personInfo: { flex: 1, minWidth: 0, gap: 2 },
+  personRole: {
+    color: designTokens.color.ink.muted,
+    fontSize: 11, fontWeight: "900", textTransform: "uppercase", letterSpacing: 0.6,
   },
-  linkButtonText: { color: designTokens.color.ink.accent, fontSize: designTokens.typography.label.fontSize, fontWeight: "900" },
+  personDivider: { height: 1, backgroundColor: designTokens.color.border.subtle, marginVertical: 8 },
 
   servicioGrid: { flexDirection: "row", gap: designTokens.spacing.lg, marginTop: designTokens.spacing.xs },
   servicioCol: { flex: 1, minWidth: 0 },

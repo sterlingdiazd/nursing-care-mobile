@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ComponentProps, type ReactNode } from "react";
 import { Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
+import { IconBadge } from "@/src/components/shared/IconBadge";
+import { designTokens, type PaletteHue } from "@/src/design-system/tokens";
 import WorkflowActionBar from "@/src/components/shared/WorkflowActionBar";
 import type { WorkflowAction } from "@/src/components/shared/WorkflowActionBar";
 import { useAuth } from "@/src/context/AuthContext";
@@ -13,16 +16,15 @@ import {
 import { adminTestIds } from "@/src/testing/testIds/adminTestIds";
 import {
   formatAdminCareRequestStatusLabel,
-  getAdminCareRequestStatusColor,
   isBillingTaskAllowed,
   type AdminCareRequestBillingAction,
 } from "@/src/utils/adminCareRequestBilling";
 import {
   mobileSecondarySurface,
   mobileSurfaceCard,
+  mobileTheme,
 } from "@/src/design-system/mobileStyles";
 import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
-import { designTokens } from "@/src/design-system/tokens";
 
 interface BillingTaskScreenProps {
   action: AdminCareRequestBillingAction;
@@ -66,6 +68,31 @@ function formatTimestamp(value: string | null | undefined) {
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP" }).format(value);
 }
+
+/** Soft-tinted status pill colors (matches the care-request detail screen). */
+function statusPillColors(status: AdminCareRequestDetailDto["status"]): { bg: string; fg: string } {
+  const hue: PaletteHue =
+    status === "Approved"
+      ? "green"
+      : status === "Rejected" || status === "Cancelled" || status === "Voided"
+        ? "red"
+        : status === "Completed" || status === "Invoiced" || status === "Paid"
+          ? "blue"
+          : status === "Pending"
+            ? "amber"
+            : "neutral";
+  const tone = designTokens.color.palette[hue];
+  return { bg: tone.soft, fg: tone.text };
+}
+
+/** Icon + hue that anchors the "Tarea de facturación" card, per billing action. */
+const TASK_BADGE: Record<AdminCareRequestBillingAction, { icon: ComponentProps<typeof FontAwesome>["name"]; hue: PaletteHue }> = {
+  invoice: { icon: "file-text-o", hue: "purple" },
+  pay: { icon: "credit-card", hue: "green" },
+  void: { icon: "ban", hue: "red" },
+  receipt: { icon: "check-circle", hue: "teal" },
+  "credit-note": { icon: "reply", hue: "orange" },
+};
 
 export default function AdminCareRequestBillingTaskScreen({
   action,
@@ -228,7 +255,10 @@ export default function AdminCareRequestBillingTaskScreen({
         {detail && (
           <ScrollView showsVerticalScrollIndicator={false}>
             <View style={styles.summaryCard}>
-              <Text style={styles.cardTitle}>Resumen de la solicitud</Text>
+              <View style={styles.cardHeader}>
+                <IconBadge icon="info-circle" hue="blue" size={30} iconSize={15} />
+                <Text style={styles.cardHeaderTitle}>Resumen de la solicitud</Text>
+              </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Solicitud</Text>
                 <Text style={styles.detailValue}>#{detail.id.substring(0, 8)}</Text>
@@ -239,13 +269,15 @@ export default function AdminCareRequestBillingTaskScreen({
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Estado</Text>
-                <Text
-                  testID="care-request-status-badge"
-                  nativeID="care-request-status-badge"
-                  style={[styles.statusValue, { color: getAdminCareRequestStatusColor(detail.status) }]}
-                >
-                  {formatAdminCareRequestStatusLabel(detail.status)}
-                </Text>
+                <View style={[styles.statusPill, { backgroundColor: statusPillColors(detail.status).bg }]}>
+                  <Text
+                    testID="care-request-status-badge"
+                    nativeID="care-request-status-badge"
+                    style={[styles.statusPillText, { color: statusPillColors(detail.status).fg }]}
+                  >
+                    {formatAdminCareRequestStatusLabel(detail.status)}
+                  </Text>
+                </View>
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Total</Text>
@@ -258,8 +290,10 @@ export default function AdminCareRequestBillingTaskScreen({
             </View>
 
             <View style={styles.taskCard}>
-              <Text style={styles.cardTitle}>Tarea de facturación</Text>
-              <Text style={styles.taskDescription}>{description}</Text>
+              <View style={styles.cardHeader}>
+                <IconBadge icon={TASK_BADGE[action].icon} hue={TASK_BADGE[action].hue} size={30} iconSize={15} />
+                <Text style={styles.cardHeaderTitle}>Tarea de facturación</Text>
+              </View>
 
               {renderBeforeInput ? renderBeforeInput(detail) : null}
 
@@ -374,6 +408,26 @@ const styles = StyleSheet.create({
     ...designTokens.typography.sectionTitle,
     color: designTokens.color.ink.primary,
     marginBottom: designTokens.spacing.lg,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: mobileTheme.spacing.sm,
+    marginBottom: mobileTheme.spacing.lg,
+  },
+  cardHeaderTitle: {
+    ...mobileTheme.typography.sectionTitle,
+    color: mobileTheme.colors.ink.primary,
+  },
+  statusPill: {
+    alignSelf: "flex-start",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  statusPillText: {
+    fontSize: 12,
+    fontWeight: "800",
   },
   detailRow: {
     marginBottom: designTokens.spacing.md,

@@ -7,7 +7,7 @@ import { type FooterAction } from "@/src/components/navigation/AppFooter";
 import { useAuth } from "@/src/context/AuthContext";
 import { useToast } from "@/src/components/shared/ToastProvider";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
-import { FilterChips, type FilterChipOption } from "@/src/components/shared/FilterChips";
+import { FilterSelect, type FilterSelectOption } from "@/src/components/shared/FilterSelect";
 import { ListRow } from "@/src/components/shared/ListRow";
 import { Pagination } from "@/src/components/shared/Pagination";
 import { useClientPaging } from "@/src/hooks/usePagedList";
@@ -177,12 +177,13 @@ export default function DeductionsScreen() {
     return m;
   }, [allItems]);
 
-  const TYPE_FILTER_OPTIONS: ReadonlyArray<FilterChipOption<DeductionTypeFilter>> = [
-    { key: "", label: "Todas", count: allItems.length },
-    { key: "Loan", label: "Préstamo", count: countByType["Loan"] ?? 0 },
-    { key: "Advance", label: "Adelanto", count: countByType["Advance"] ?? 0 },
-    { key: "Insurance", label: "Seguro", count: countByType["Insurance"] ?? 0 },
-    { key: "Other", label: "Otro", count: countByType["Other"] ?? 0 },
+  const dedPalette = designTokens.color.palette;
+  const TYPE_FILTER_OPTIONS: ReadonlyArray<FilterSelectOption<DeductionTypeFilter>> = [
+    { key: "", label: "Todas", count: allItems.length, tint: null },
+    { key: "Loan", label: "Préstamo", count: countByType["Loan"] ?? 0, tint: { bg: dedPalette.indigo.soft, fg: dedPalette.indigo.text } },
+    { key: "Advance", label: "Adelanto", count: countByType["Advance"] ?? 0, tint: { bg: dedPalette.amber.soft, fg: dedPalette.amber.text } },
+    { key: "Insurance", label: "Seguro", count: countByType["Insurance"] ?? 0, tint: { bg: dedPalette.teal.soft, fg: dedPalette.teal.text } },
+    { key: "Other", label: "Otro", count: countByType["Other"] ?? 0, tint: { bg: dedPalette.neutral.soft, fg: dedPalette.neutral.text } },
   ];
 
   const handleTypeFilterChange = useCallback((key: DeductionTypeFilter) => {
@@ -217,7 +218,8 @@ export default function DeductionsScreen() {
             contentContainerStyle={styles.scrollPad}
             refreshControl={<RefreshControl refreshing={deductionsRefreshing} onRefresh={handleRefresh} />}
           >
-          <FilterChips
+          <FilterSelect
+            label="Tipo"
             options={TYPE_FILTER_OPTIONS}
             value={typeFilter}
             onChange={handleTypeFilterChange}

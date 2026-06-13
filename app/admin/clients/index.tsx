@@ -8,7 +8,7 @@ import { router } from "expo-router";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
-import { FilterChips } from "@/src/components/shared/FilterChips";
+import { FilterSelect } from "@/src/components/shared/FilterSelect";
 import { ListRow } from "@/src/components/shared/ListRow";
 import { Pagination } from "@/src/components/shared/Pagination";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
@@ -33,12 +33,21 @@ const STATUS_OPTIONS: ReadonlyArray<{ key: StatusFilter; label: string }> = [
   { key: "inactive", label: "Inactivos" },
 ];
 
+/** Soft status tint {bg,fg} for the filter rows (matches the card badge). */
+function statusTint(key: StatusFilter): { bg: string; fg: string } | null {
+  const p = designTokens.color.palette;
+  if (key === "active") return { bg: p.green.soft, fg: p.green.text };
+  if (key === "inactive") return { bg: p.red.soft, fg: p.red.text };
+  return null;
+}
+
 const PAGE_SIZE = 10;
 
 export default function AdminClientsScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusCounts, setStatusCounts] = useState<Record<string, number> | null>(null);
 
   const isEnabled = isReady && isAuthenticated && !requiresProfileCompletion && roles.includes("ADMIN");
   const resetKey = `${statusFilter}|${searchQuery}`;
@@ -66,11 +75,31 @@ export default function AdminClientsScreen() {
     else if (!roles.includes("ADMIN")) router.replace("/");
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles]);
 
+  // Per-status counts via lightweight totalCount probes — accurate at any scale.
+  useEffect(() => {
+    if (!isEnabled) return;
+    let cancelled = false;
+    const entries: ReadonlyArray<readonly [StatusFilter, AdminClientListStatus | undefined]> = [
+      ["all", undefined],
+      ["active", "active"],
+      ["inactive", "inactive"],
+    ];
+    Promise.all(
+      entries.map(([k, status]) =>
+        getAdminClients({ status, pageSize: 1 })
+          .then((r) => [k, r.totalCount] as const)
+          .catch(() => [k, 0] as const),
+      ),
+    ).then((pairs) => { if (!cancelled) setStatusCounts(Object.fromEntries(pairs)); });
+    return () => { cancelled = true; };
+  }, [isEnabled, totalCount]);
+
   if (!isEnabled) return null;
 
   const statusOptions = STATUS_OPTIONS.map((opt) => ({
     ...opt,
-    count: opt.key === "all" ? totalCount : undefined,
+    count: statusCounts ? (statusCounts[opt.key] ?? 0) : (opt.key === "all" ? totalCount : undefined),
+    tint: statusTint(opt.key),
   }));
 
   return (
@@ -92,7 +121,8 @@ export default function AdminClientsScreen() {
       disableScroll
     >
       <View style={styles.container}>
-        <FilterChips
+        <FilterSelect
+          label="Estado"
           options={statusOptions}
           value={statusFilter}
           onChange={(key) => { setStatusFilter(key); }}

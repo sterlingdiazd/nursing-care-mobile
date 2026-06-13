@@ -7,7 +7,7 @@ import { type FooterAction } from "@/src/components/navigation/AppFooter";
 import { useAuth } from "@/src/context/AuthContext";
 import { useToast } from "@/src/components/shared/ToastProvider";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
-import { FilterChips, type FilterChipOption } from "@/src/components/shared/FilterChips";
+import { FilterSelect, type FilterSelectOption } from "@/src/components/shared/FilterSelect";
 import { Pagination } from "@/src/components/shared/Pagination";
 import { usePagedList } from "@/src/hooks/usePagedList";
 import { SwipePager } from "@/src/components/shared/SwipePager";
@@ -46,7 +46,7 @@ function formatTriggeredAt(value: string) {
 type Mode = "list" | "detail" | "recalc-review";
 type StatusFilter = "" | "Open" | "Closed";
 
-const STATUS_FILTER_OPTIONS: ReadonlyArray<FilterChipOption<StatusFilter>> = [
+const STATUS_FILTER_OPTIONS: ReadonlyArray<FilterSelectOption<StatusFilter>> = [
   { key: "", label: "Todos" },
   { key: "Open", label: "Abiertos" },
   { key: "Closed", label: "Cerrados" },
@@ -75,6 +75,7 @@ export default function PeriodsScreen() {
   const [recalculateResult, setRecalculateResult] = useState<RecalculatePayrollResult | null>(null);
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("");
+  const [statusCounts, setStatusCounts] = useState<Record<string, number> | null>(null);
 
   // Admin-configured payment-date policy that drives the standard-period prefill. Defaults
   // (undefined here / DEFAULT_PAYMENT_DATE_POLICY in the util) reproduce the original behavior,
@@ -124,6 +125,33 @@ export default function PeriodsScreen() {
   // Keep a ref to the current period items for the quincena preview
   const periodItemsRef = useRef(periodItems);
   periodItemsRef.current = periodItems;
+
+  // Per-status counts via lightweight totalCount probes — accurate at any scale.
+  useEffect(() => {
+    if (!isReady$) return;
+    let cancelled = false;
+    const entries: ReadonlyArray<readonly [StatusFilter, string | null]> = [
+      ["", null],
+      ["Open", "Open"],
+      ["Closed", "Closed"],
+    ];
+    Promise.all(
+      entries.map(([k, status]) =>
+        getPayrollPeriods({ pageNumber: 1, pageSize: 1, status })
+          .then((r) => [k, r.totalCount] as const)
+          .catch(() => [k, 0] as const),
+      ),
+    ).then((pairs) => { if (!cancelled) setStatusCounts(Object.fromEntries(pairs)); });
+    return () => { cancelled = true; };
+  }, [isReady$, totalCount]);
+
+  const periodFilterOptions: ReadonlyArray<FilterSelectOption<StatusFilter>> = STATUS_FILTER_OPTIONS.map((opt) => {
+    const pal = designTokens.color.palette;
+    const tint = opt.key === "Open" ? { bg: pal.green.soft, fg: pal.green.text }
+      : opt.key === "Closed" ? { bg: pal.neutral.soft, fg: pal.neutral.text }
+      : null;
+    return { ...opt, count: statusCounts ? (statusCounts[opt.key] ?? 0) : undefined, tint };
+  });
 
   const handlePeriodPress = useCallback(async (id: string) => {
     try {
@@ -363,8 +391,9 @@ export default function PeriodsScreen() {
           </Text>
         )}
 
-        <FilterChips
-          options={STATUS_FILTER_OPTIONS}
+        <FilterSelect
+          label="Estado"
+          options={periodFilterOptions}
           value={statusFilter}
           onChange={(key) => setStatusFilter(key)}
           testIDPrefix="periods-filter"

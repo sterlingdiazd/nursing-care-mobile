@@ -5,7 +5,7 @@ import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigation
 import { hapticFeedback } from "@/src/utils/haptics";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
-import { FilterChips } from "@/src/components/shared/FilterChips";
+import { FilterSelect } from "@/src/components/shared/FilterSelect";
 import { Banner } from "@/src/components/shared/Banner";
 import { useAuth } from "@/src/context/AuthContext";
 import { useServiceCalendar, type CalendarView } from "@/src/hooks/useServiceCalendar";
@@ -90,7 +90,7 @@ export default function AdminServiceCalendarScreen() {
           </Pressable>
         </View>
 
-        <FilterChips options={VIEW_OPTIONS} value={cal.view} onChange={cal.setView} testIDPrefix="admin-calendar-view" />
+        <FilterSelect label="Vista" options={VIEW_OPTIONS} value={cal.view} onChange={cal.setView} testIDPrefix="admin-calendar-view" />
 
         <Banner tone="error" message={cal.error} />
 

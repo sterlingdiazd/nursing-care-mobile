@@ -61,23 +61,40 @@ export function formatAdminCareRequestStatusLabel(status: string) {
   return status;
 }
 
-// UnitTypeCatalog seed codes -> Spanish display names (CatalogSeeding.cs).
+// Readable Spanish labels for catalog unit-type codes (the catalog stores accentless display
+// names; this keeps user-facing copy correctly accented). Unknown codes fall back to a
+// snake_case → "Capitalizado" humanization so no raw code ever reaches the UI.
 const UNIT_TYPE_LABELS: Record<string, string> = {
   dia_completo: "Día completo",
-  mes: "Mes",
   medio_dia: "Medio día",
+  mes: "Mes",
   sesion: "Sesión",
+  hora: "Hora",
 };
 
-/**
- * Spanish label for a care-request unit-type code. Matches the UnitTypeCatalog
- * seed exactly; falls back to a humanized form of the code so a catalog entry
- * added later still renders sensibly instead of showing the raw code.
- */
-export function formatUnitType(unitType: string): string {
-  const key = unitType?.trim().toLowerCase();
-  if (!key) return "";
-  return UNIT_TYPE_LABELS[key] ?? key.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+export function formatUnitType(code: string | null | undefined): string {
+  if (!code) return "";
+  const key = code.trim().toLowerCase();
+  if (UNIT_TYPE_LABELS[key]) return UNIT_TYPE_LABELS[key];
+  const words = key.replace(/_/g, " ").trim();
+  return words.length ? words.charAt(0).toUpperCase() + words.slice(1) : code;
+}
+
+// Soft-tinted status pill colors (bg + fg) from the vivid palette — the single source for the
+// rounded status pill used across the care-request detail and billing screens.
+export function getStatusPillColors(status: string): { bg: string; fg: string } {
+  const p = designTokens.color.palette;
+  const tone =
+    status === "Approved"
+      ? p.green
+      : status === "Rejected" || status === "Cancelled" || status === "Voided"
+        ? p.red
+        : status === "PaymentReported" || status === "Pending"
+          ? p.amber
+          : status === "Completed" || status === "Invoiced" || status === "Paid"
+            ? p.blue
+            : p.neutral;
+  return { bg: tone.soft, fg: tone.text };
 }
 
 export function getAdminCareRequestStatusColor(status: string): string {

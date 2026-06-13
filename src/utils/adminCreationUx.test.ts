@@ -33,7 +33,7 @@ describe("getAdminCareCreateProgress", () => {
     });
 
     expect(progress.coreReady).toBe(false);
-    expect(progress.missingCoreLabels).toEqual(["Cliente", "Fecha", "Unidades", "Descripcion"]);
+    expect(progress.missingCoreLabels).toEqual(["Cliente", "Fecha", "Unidades", "Descripción"]);
   });
 });
 

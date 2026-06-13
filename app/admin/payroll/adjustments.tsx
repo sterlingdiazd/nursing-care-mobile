@@ -7,7 +7,7 @@ import { type FooterAction } from "@/src/components/navigation/AppFooter";
 import { useAuth } from "@/src/context/AuthContext";
 import { useToast } from "@/src/components/shared/ToastProvider";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
-import { FilterChips, type FilterChipOption } from "@/src/components/shared/FilterChips";
+import { FilterSelect, type FilterSelectOption } from "@/src/components/shared/FilterSelect";
 import { ListRow } from "@/src/components/shared/ListRow";
 import { Pagination } from "@/src/components/shared/Pagination";
 import { useClientPaging } from "@/src/hooks/usePagedList";
@@ -134,10 +134,11 @@ export default function AdjustmentsScreen() {
   const positiveCount = useMemo(() => allItems.filter((a) => a.amount >= 0).length, [allItems]);
   const negativeCount = useMemo(() => allItems.filter((a) => a.amount < 0).length, [allItems]);
 
-  const TYPE_FILTER_OPTIONS: ReadonlyArray<FilterChipOption<AdjustmentTypeFilter>> = [
-    { key: "", label: "Todos", count: allItems.length },
-    { key: "positive", label: "Bonos (+)", count: positiveCount },
-    { key: "negative", label: "Correcciones (−)", count: negativeCount },
+  const adjPalette = designTokens.color.palette;
+  const TYPE_FILTER_OPTIONS: ReadonlyArray<FilterSelectOption<AdjustmentTypeFilter>> = [
+    { key: "", label: "Todos", count: allItems.length, tint: null },
+    { key: "positive", label: "Bonos (+)", count: positiveCount, tint: { bg: adjPalette.green.soft, fg: adjPalette.green.text } },
+    { key: "negative", label: "Correcciones (−)", count: negativeCount, tint: { bg: adjPalette.red.soft, fg: adjPalette.red.text } },
   ];
 
   const { page, pageCount, pageItems, setPage } = useClientPaging(filteredItems, 10, typeFilter);
@@ -165,7 +166,8 @@ export default function AdjustmentsScreen() {
             contentContainerStyle={styles.scrollPad}
             refreshControl={<RefreshControl refreshing={adjustmentsRefreshing} onRefresh={handleRefresh} />}
           >
-          <FilterChips
+          <FilterSelect
+            label="Tipo"
             options={TYPE_FILTER_OPTIONS}
             value={typeFilter}
             onChange={(key) => setTypeFilter(key)}

@@ -427,6 +427,30 @@ export async function getAdminCareRequests(params?: {
   });
 }
 
+/** Care-request counts per list view — lets the status filter show every count at once. */
+export interface AdminCareRequestViewCountsDto {
+  all: number;
+  pending: number;
+  unassigned: number;
+  overdue: number;
+  approved: number;
+  completed: number;
+  invoiced: number;
+  paymentReported: number;
+  paid: number;
+  rejected: number;
+  cancelled: number;
+  voided: number;
+}
+
+export async function getAdminCareRequestCounts() {
+  return requestJson<AdminCareRequestViewCountsDto>({
+    path: `/api/admin/care-requests/counts`,
+    method: "GET",
+    auth: true,
+  });
+}
+
 /**
  * Fetch ALL care requests scheduled within an inclusive [from, to] date range,
  * looping pages (pageSize 100) until the full set is collected. Used by the
