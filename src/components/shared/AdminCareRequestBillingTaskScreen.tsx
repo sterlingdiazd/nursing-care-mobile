@@ -16,6 +16,7 @@ import {
 import { adminTestIds } from "@/src/testing/testIds/adminTestIds";
 import {
   formatAdminCareRequestStatusLabel,
+  getStatusPillColors,
   isBillingTaskAllowed,
   type AdminCareRequestBillingAction,
 } from "@/src/utils/adminCareRequestBilling";
@@ -69,20 +70,10 @@ function formatCurrency(value: number) {
   return new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP" }).format(value);
 }
 
-/** Soft-tinted status pill colors (matches the care-request detail screen). */
+/** Soft-tinted status pill colors — delegates to the single shared map so every screen
+ * agrees (incl. PaymentReported → amber, which the old local copy mapped to neutral/gray). */
 function statusPillColors(status: AdminCareRequestDetailDto["status"]): { bg: string; fg: string } {
-  const hue: PaletteHue =
-    status === "Approved"
-      ? "green"
-      : status === "Rejected" || status === "Cancelled" || status === "Voided"
-        ? "red"
-        : status === "Completed" || status === "Invoiced" || status === "Paid"
-          ? "blue"
-          : status === "Pending"
-            ? "amber"
-            : "neutral";
-  const tone = designTokens.color.palette[hue];
-  return { bg: tone.soft, fg: tone.text };
+  return getStatusPillColors(status);
 }
 
 /** Icon + hue that anchors the "Tarea de facturación" card, per billing action. */
