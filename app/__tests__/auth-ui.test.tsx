@@ -64,7 +64,7 @@ vi.mock("@/src/utils/haptics", () => ({
   withHapticFeedback: (handler?: (...args: unknown[]) => void) => (...args: unknown[]) => handler?.(...args),
 }));
 
-vi.mock("@/assets/images/icon.png", () => ({
+vi.mock("@/assets/images/logo-vertical.png", () => ({
   default: 1,
 }));
 

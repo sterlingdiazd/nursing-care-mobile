@@ -190,7 +190,7 @@ export default function LoginScreen() {
         >
           <View style={styles.header}>
             <Image
-              source={require("../assets/images/icon.png")}
+              source={require("../assets/images/logo-vertical.png")}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -314,8 +314,9 @@ const styles = StyleSheet.create({
     marginBottom: designTokens.spacing.xxl,
   },
   logo: {
-    width: 80,
-    height: 80,
+    // Vertical lockup (mark + "SOL Y LUNA / CASA HOGAR") — natural aspect ~1.37:1.
+    width: 208,
+    height: 152,
     marginBottom: designTokens.spacing.lg,
   },
   title: {

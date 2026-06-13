@@ -14,8 +14,8 @@ const color = {
     secondary: "#475569",
     muted: "#5B6B7F",
     inverse: "#ffffff",
-    accent: "#2563EB",
-    accentStrong: "#1D4ED8",
+    accent: "#2E3191",
+    accentStrong: "#252873",
     danger: "#DC2626",
     warning: "#D97706",
   },
@@ -24,7 +24,7 @@ const color = {
     primary: "#FFFFFF",
     secondary: "#F1F5F9",
     tertiary: "#E2E8F0",
-    accent: "#DBEAFE",
+    accent: "#E5E6F4",
     warning: "#FEF3C7",
     danger: "#FEE2E2",
     success: "#DCFCE7",
@@ -32,14 +32,14 @@ const color = {
   border: {
     subtle: "#E2E8F0",
     strong: "#CBD5E1",
-    accent: "#BFDBFE",
+    accent: "#B6B8DE",
     warning: "#FDE68A",
     danger: "#FECACA",
     success: "#BBF7D0",
   },
   status: {
-    infoBg: "#DBEAFE",
-    infoText: "#1D4ED8",
+    infoBg: "#E5E6F4",
+    infoText: "#252873",
     successBg: "#DCFCE7",
     successText: "#15803D",
     warningBg: "#FEF3C7",
@@ -57,7 +57,7 @@ const color = {
   //            even at small/bold sizes). Use `text` for labels, `color` for glyphs/rails.
   // amber/green `color` are 700-grade (their 600 fails 3:1 on the soft tint).
   palette: {
-    blue: { color: "#2563EB", soft: "#DBEAFE", border: "#93C5FD", text: "#1E40AF" },
+    blue: { color: "#2E3191", soft: "#E5E6F4", border: "#B6B8DE", text: "#252873" },
     teal: { color: "#0D9488", soft: "#CCFBF1", border: "#5EEAD4", text: "#115E59" },
     green: { color: "#15803D", soft: "#DCFCE7", border: "#86EFAC", text: "#166534" },
     amber: { color: "#B45309", soft: "#FEF3C7", border: "#FCD34D", text: "#92400E" },
@@ -67,6 +67,23 @@ const color = {
     indigo: { color: "#4F46E5", soft: "#E0E7FF", border: "#A5B4FC", text: "#3730A3" },
     pink: { color: "#DB2777", soft: "#FCE7F3", border: "#F9A8D4", text: "#9D174D" },
     neutral: { color: "#475569", soft: "#F1F5F9", border: "#CBD5E1", text: "#334155" },
+  },
+  // Official "Sol y Luna" brand colors, straight from the logo art (the source of truth).
+  // The app PRIMARY is `indigo` (#2E3191 — 10.7:1 on white, passes graphical AND text AA);
+  // it is already wired through `ink.accent` / `palette.blue` / `role.accent`. The two
+  // remaining brand hues are DECORATIVE-only because they fail AA on white:
+  //   gold (#FDDC00, ~1.2:1) — the sun motif; use ONLY as a fill or a chip/badge BACKGROUND
+  //                            with dark ink on top; for gold-family TEXT/icons use `goldText`.
+  //   sky  (#00AEEF, ~2.5:1) — illustration/gradient accent ONLY; for sky-family TEXT/icons
+  //                            use `skyText`. `navy` is for dark surfaces / immersive backgrounds.
+  brand: {
+    indigo: "#2E3191",
+    indigoStrong: "#252873",
+    navy: "#1F255A",
+    gold: "#FDDC00",
+    goldText: "#92400E",
+    sky: "#00AEEF",
+    skyText: "#0A6E96",
   },
 } as const;
 
@@ -103,7 +120,7 @@ const shadow = {
     elevation: 3,
   },
   accent: {
-    boxShadow: "0px 8px 20px rgba(37, 99, 235, 0.16)",
+    boxShadow: "0px 8px 20px rgba(46, 49, 145, 0.18)",
     elevation: 4,
   },
 } as const;
