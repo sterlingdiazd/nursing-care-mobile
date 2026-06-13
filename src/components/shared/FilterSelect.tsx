@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     gap: T.spacing.md,
-    paddingVertical: 13,
+    paddingVertical: T.spacing.md,
     paddingHorizontal: T.spacing.lg,
     borderRadius: T.radius.lg,
     borderWidth: 2,
@@ -133,11 +133,11 @@ const styles = StyleSheet.create({
   optionRight: { flexDirection: "row", alignItems: "center", gap: T.spacing.sm },
   count: {
     minWidth: 24,
-    paddingHorizontal: 7,
+    paddingHorizontal: T.spacing.xs,
     paddingVertical: 1,
     borderRadius: T.radius.pill,
     alignItems: "center",
   },
-  countText: { fontSize: 12, fontWeight: "900" },
-  check: { fontSize: 16, fontWeight: "900" },
+  countText: { fontSize: T.typography.caption.fontSize, fontWeight: "900" },
+  check: { fontSize: T.typography.body.fontSize, fontWeight: "900" },
 });

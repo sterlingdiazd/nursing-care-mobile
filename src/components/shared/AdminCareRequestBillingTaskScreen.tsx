@@ -421,12 +421,12 @@ const styles = StyleSheet.create({
   },
   statusPill: {
     alignSelf: "flex-start",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    borderRadius: designTokens.radius.sm,
+    paddingHorizontal: designTokens.spacing.sm,
+    paddingVertical: designTokens.spacing.xs,
   },
   statusPillText: {
-    fontSize: 12,
+    fontSize: designTokens.typography.caption.fontSize,
     fontWeight: "800",
   },
   detailRow: {

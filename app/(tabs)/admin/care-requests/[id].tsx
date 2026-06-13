@@ -1075,16 +1075,16 @@ const styles = StyleSheet.create({
   flagText: { fontSize: designTokens.typography.caption.fontSize, fontWeight: "900" },
 
   // Subtle inline link (no button chrome) — de-emphasized vs the bottom action bar.
-  link: { paddingHorizontal: 2, paddingVertical: 2 },
-  linkText: { color: designTokens.color.ink.accent, fontSize: 13, fontWeight: "800" },
+  link: { paddingHorizontal: designTokens.spacing.xs, paddingVertical: designTokens.spacing.xs },
+  linkText: { color: designTokens.color.ink.accent, fontSize: designTokens.typography.label.fontSize, fontWeight: "800" },
 
-  personRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
-  personInfo: { flex: 1, minWidth: 0, gap: 2 },
+  personRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: designTokens.spacing.sm },
+  personInfo: { flex: 1, minWidth: 0, gap: 0 },
   personRole: {
     color: designTokens.color.ink.muted,
-    fontSize: 11, fontWeight: "900", textTransform: "uppercase", letterSpacing: 0.6,
+    fontSize: designTokens.typography.caption.fontSize, fontWeight: "900", textTransform: "uppercase", letterSpacing: 0.6,
   },
-  personDivider: { height: 1, backgroundColor: designTokens.color.border.subtle, marginVertical: 8 },
+  personDivider: { height: 1, backgroundColor: designTokens.color.border.subtle, marginVertical: designTokens.spacing.sm },
 
   servicioGrid: { flexDirection: "row", gap: designTokens.spacing.lg, marginTop: designTokens.spacing.xs },
   servicioCol: { flex: 1, minWidth: 0 },

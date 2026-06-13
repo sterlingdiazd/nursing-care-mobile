@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
   list: { flex: 1 },
   loadingState: { flex: 1, paddingVertical: designTokens.spacing.huge, alignItems: "center", justifyContent: "center" },
   emptyText: { color: designTokens.color.ink.muted, fontSize: designTokens.typography.body.fontSize },
-  motivoRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 6 },
-  motivoChip: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
-  motivoText: { fontSize: 11, fontWeight: "800" },
+  motivoRow: { flexDirection: "row", flexWrap: "wrap", gap: designTokens.spacing.sm, marginTop: designTokens.spacing.xs },
+  motivoChip: { borderRadius: designTokens.radius.sm, paddingHorizontal: designTokens.spacing.sm, paddingVertical: designTokens.spacing.xs },
+  motivoText: { fontSize: designTokens.typography.caption.fontSize, fontWeight: "800" },
 });
