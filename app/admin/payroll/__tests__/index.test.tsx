@@ -95,7 +95,13 @@ describe("PeriodsScreen", () => {
     });
     await act(async () => { await Promise.resolve(); });
 
-    expect(vi.mocked(getPayrollPeriods)).toHaveBeenCalledTimes(1);
+    // On mount the screen issues the list load PLUS three lightweight per-status count
+    // probes (Todos / Abiertos / Cerrados, pageSize:1) that feed the FilterSelect badges.
+    expect(vi.mocked(getPayrollPeriods)).toHaveBeenCalledTimes(4);
+    // The list load is the full-page fetch; the probes are pageSize:1.
+    expect(vi.mocked(getPayrollPeriods)).toHaveBeenCalledWith(
+      expect.objectContaining({ pageSize: 1, status: "Open" }),
+    );
   });
 
   it("shows recalc button when periods exist and confirm dialog on press", async () => {
