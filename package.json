@@ -3,7 +3,9 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
-    "start": "node scripts/release-port.mjs 8081 && expo start --port 8081",
+    "start": "node ../../NursingCareDocumentation/automation/scripts/dev-mobile.mjs",
+    "start:metro": "node scripts/release-port.mjs 8081 && expo start --port 8081",
+    "stack:down": "node ../../NursingCareDocumentation/automation/scripts/stop-local-stack.mjs",
     "android": "node scripts/release-port.mjs 8081 && expo start --port 8081 --android",
     "ios": "node scripts/release-port.mjs 8081 && expo start --port 8081 --ios",
     "web": "node scripts/release-port.mjs 8081 && expo start --port 8081 --web",
