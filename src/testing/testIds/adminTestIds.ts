@@ -59,7 +59,11 @@ export const adminTestIds = {
     filterButton: "admin-care-list-filter-button",
     createButton: "admin-care-list-create-button",
     searchInput: "admin-care-list-search-input",
-    listItem: (index: number) => `admin-care-requests-list-item-${index}`,
+    // UC-014 step 2 targets the first row. Expose it as a colon-quote literal so the static testID
+    // validator captures it — a ternary `? "literal"` branch is NOT scanned (needs `key: "literal"`).
+    listItemFirst: "admin-care-requests-list-item-0",
+    listItem: (index: number) =>
+      index === 0 ? adminTestIds.careRequests.listItemFirst : `admin-care-requests-list-item-${index}`,
     detail: {
       screen: "admin-care-request-detail-page",
       loadedMarker: "care-request-detail-loaded",
@@ -202,6 +206,8 @@ export const adminTestIds = {
   },
   payroll: {
     periodsScreen: "admin-payroll-periods-screen",
+    recalculateButton: "admin-payroll-recalculate-button",
+    recalculateConfirmCta: "admin-payroll-recalculate-confirm-cta",
     nurseDetailScreen: "admin-payroll-nurse-detail-screen",
     // UC-008: Nurse Payroll Detail
     periodDetailPage: "admin-payroll-period-detail-page",

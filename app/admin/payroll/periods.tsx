@@ -15,6 +15,7 @@ import { designTokens } from "@/src/design-system/tokens";
 import { formatDateES, formatDateTimeES } from "@/src/utils/spanishTextValidator";
 import { nextQuincenaAfter, quincenaLabel, type PaymentDatePolicy } from "@/src/utils/payrollPeriods";
 import { getPaymentDatePolicy } from "@/src/services/payrollPaymentPolicy";
+import { adminTestIds } from "@/src/testing/testIds";
 import {
   getPayrollPeriods,
   getPayrollPeriodById,
@@ -310,7 +311,7 @@ export default function PeriodsScreen() {
           onPress: handleRecalculate,
           variant: "primary",
           disabled: recalculateLoading,
-          testID: "admin-payroll-recalculate-confirm-cta",
+          testID: adminTestIds.payroll.recalculateConfirmCta,
         },
       ];
     }
@@ -324,7 +325,7 @@ export default function PeriodsScreen() {
         onPress: () => setMode("recalc-review"),
         variant: "secondary",
         disabled: recalculateLoading,
-        testID: "admin-payroll-recalculate-button",
+        testID: adminTestIds.payroll.recalculateButton,
       });
     }
     actions.push({
