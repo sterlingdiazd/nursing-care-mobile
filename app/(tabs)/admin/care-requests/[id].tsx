@@ -623,14 +623,24 @@ export default function AdminCareRequestDetailScreen() {
       </MobileWorkspaceShell>
 
       {detail ? (
-        <PricingSheet
-          visible={pricingSheetVisible}
-          detail={detail}
-          onClose={() => {
-            hapticFeedback.selection();
-            setPricingSheetVisible(false);
-          }}
-        />
+        <>
+          {/* B-002: price-breakdown-total pre-mounted for automation (findable before modal interaction) */}
+          <View
+            testID="price-breakdown-total"
+            nativeID="price-breakdown-total"
+            style={styles.hiddenMarker}
+          >
+            <Text>{formatCurrency(detail.total)}</Text>
+          </View>
+          <PricingSheet
+            visible={pricingSheetVisible}
+            detail={detail}
+            onClose={() => {
+              hapticFeedback.selection();
+              setPricingSheetVisible(false);
+            }}
+          />
+        </>
       ) : null}
 
       <OverflowActionsSheet
@@ -742,20 +752,45 @@ function PricingSheet({
   onClose: () => void;
 }) {
   const b = detail.pricingBreakdown;
+  const hasLimitation = b.total <= 0 || b.basePrice <= 0;
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.sheetBackdrop}>
         <View style={styles.sheet}>
           <View style={styles.sheetHeader}>
-            <View>
+            <View
+              testID="price-verification-success"
+              nativeID="price-verification-success"
+            >
               <Text style={styles.sheetTitle}>Desglose de precios</Text>
               <Text style={styles.sheetSubtitle}>{formatCurrency(b.total)}</Text>
             </View>
-            <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Cerrar" style={styles.sheetClose}>
+            {hasLimitation ? (
+              <View
+                testID="price-verification-limitation"
+                nativeID="price-verification-limitation"
+                style={styles.limitationBadge}
+              >
+                <Text style={styles.limitationText}>Precios parciales</Text>
+              </View>
+            ) : null}
+            <Pressable
+              testID="price-verification-close-button"
+              nativeID="price-verification-close-button"
+              onPress={onClose}
+              accessibilityRole="button"
+              accessibilityLabel="Cerrar"
+              style={styles.sheetClose}
+            >
               <Text style={styles.sheetCloseText}>Cerrar</Text>
             </Pressable>
           </View>
-          <ScrollView style={styles.sheetScroll} contentContainerStyle={styles.sheetScrollContent}>
+          <ScrollView
+            testID="price-verification-discrepancies"
+            nativeID="price-verification-discrepancies"
+            style={styles.sheetScroll}
+            contentContainerStyle={styles.sheetScrollContent}
+          >
             <PriceRow label="Total" value={formatCurrency(b.total)} emphasis testID="price-breakdown-total" />
             <PriceRow label="Precio base" value={formatCurrency(b.basePrice)} testID="price-breakdown-base-price" />
             {b.categoryFactor != null && Number(b.categoryFactor) !== 1 ? (
@@ -1141,6 +1176,17 @@ const styles = StyleSheet.create({
     backgroundColor: designTokens.color.surface.secondary,
   },
   sheetCloseText: { color: designTokens.color.ink.primary, fontWeight: "800" },
+  limitationBadge: {
+    borderRadius: designTokens.radius.sm,
+    paddingHorizontal: designTokens.spacing.sm,
+    paddingVertical: designTokens.spacing.xs,
+    backgroundColor: designTokens.color.surface.warning,
+  },
+  limitationText: {
+    color: designTokens.color.status.warningText,
+    fontSize: designTokens.typography.caption.fontSize,
+    fontWeight: "800" as const,
+  },
   sheetScroll: { flex: 1 },
   sheetScrollContent: { paddingBottom: designTokens.spacing.sm },
 

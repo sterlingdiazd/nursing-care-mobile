@@ -427,15 +427,19 @@ export default function CareRequestDetailScreen() {
           {/* Estado */}
           <View
             style={[styles.card, { borderLeftWidth: 4, borderLeftColor: statusPalette.rail }]}
-            testID={careRequestTestIds.detail.statusChip}
-            nativeID={careRequestTestIds.detail.statusChip}
+            testID={careRequestTestIds.detail.infoSection}
+            nativeID={careRequestTestIds.detail.infoSection}
           >
             <View style={styles.cardHeaderRow}>
               <View style={styles.sectionHeaderRow}>
                 <IconBadge icon="info-circle" hue="blue" size={30} iconSize={15} />
                 <Text style={styles.cardEyebrow}>Estado</Text>
               </View>
-              <View style={[styles.countPill, { backgroundColor: statusPalette.bg }]}>
+              <View
+                testID={careRequestTestIds.detail.statusChip}
+                nativeID={careRequestTestIds.detail.statusChip}
+                style={[styles.countPill, { backgroundColor: statusPalette.bg }]}
+              >
                 <Text style={[styles.countPillText, { color: statusPalette.fg }]}>{statusLabel}</Text>
               </View>
             </View>

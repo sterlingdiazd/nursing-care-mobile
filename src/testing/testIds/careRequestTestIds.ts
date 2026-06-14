@@ -4,6 +4,7 @@ export const careRequestTestIds = {
   },
   detail: {
     screen: "care-detail-page",
+    infoSection: "care-detail-info-section",
     statusChip: "care-detail-status-chip",
     errorBanner: "care-detail-error-banner",
     primaryAction: "price-breakdown-verify-button",

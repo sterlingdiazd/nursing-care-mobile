@@ -66,6 +66,8 @@ export default function AccountScreen() {
 
   return (
     <MobileWorkspaceShell
+      testID={authTestIds.account.screenRoot}
+      nativeID={authTestIds.account.screenRoot}
       eyebrow="Cuenta"
       title="Acceso y sesión"
       description="Consulta el estado actual de tu cuenta y gestiona tu sesión."

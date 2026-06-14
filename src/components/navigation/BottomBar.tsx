@@ -41,7 +41,7 @@ const TABS: ReadonlyArray<TabConfig> = [
     visibleTo: [UserProfileType.ADMIN, UserProfileType.NURSE, UserProfileType.CLIENT],
   },
   {
-    key: "nurse-payroll",
+    key: "nurse/payroll",
     label: "Nómina",
     icon: "money",
     route: "/nurse/payroll",
@@ -49,7 +49,7 @@ const TABS: ReadonlyArray<TabConfig> = [
     visibleTo: [UserProfileType.NURSE],
   },
   {
-    key: "admin-payroll",
+    key: "admin/payroll",
     label: "Nómina",
     icon: "money",
     route: "/admin/payroll",

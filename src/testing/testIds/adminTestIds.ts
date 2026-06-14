@@ -59,11 +59,17 @@ export const adminTestIds = {
     filterButton: "admin-care-list-filter-button",
     createButton: "admin-care-list-create-button",
     searchInput: "admin-care-list-search-input",
+    listItem: (index: number) => `admin-care-requests-list-item-${index}`,
     detail: {
       screen: "admin-care-request-detail-page",
       loadedMarker: "care-request-detail-loaded",
       statusBadge: "care-request-status-badge",
       errorBanner: "admin-care-request-error-banner",
+      // UC-003 price verification panel selectors
+      priceVerificationSuccess: "price-verification-success",
+      priceVerificationLimitation: "price-verification-limitation",
+      priceVerificationDiscrepancies: "price-verification-discrepancies",
+      priceVerificationCloseButton: "price-verification-close-button",
       guidanceLine: "admin-care-detail-guidance-line",
       approveButton: "admin-care-detail-approve-button",
       rejectButton: "admin-care-detail-reject-button",

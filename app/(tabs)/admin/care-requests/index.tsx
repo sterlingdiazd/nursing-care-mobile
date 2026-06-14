@@ -231,7 +231,7 @@ export default function AdminCareRequestsScreen() {
               style={{ flex: 1 }}
               refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} />}
             >
-              {items.map((item) => {
+              {items.map((item, index) => {
               const overdue = item.isOverdueOrStale;
               const unassigned = !item.assignedNurseUserId;
               const railColor = overdue
@@ -256,24 +256,28 @@ export default function AdminCareRequestsScreen() {
                 </View>
               ) : null;
               return (
-                <ListRow
+                <View
                   key={item.id}
-                  title={item.clientDisplayName}
-                  badge={
-                    <StatusBadge
-                      label={getStatusLabel(item.status)}
-                      colors={getStatusPillColors(item.status)}
-                    />
-                  }
-                  subtitle={`${item.careRequestTypeDisplayName || item.careRequestType} · ${formatCurrency(item.total)}`}
-                  metaLines={[item.assignedNurseDisplayName ?? "Sin enfermera asignada"]}
-                  railColor={railColor}
-                  onPress={() => router.push(`/admin/care-requests/${item.id}` as never)}
-                  testID={`admin-care-request-card-${item.id}`}
-                  accessibilityLabel={`Abrir solicitud de ${item.clientDisplayName}`}
+                  testID={adminTestIds.careRequests.listItem(index)}
+                  nativeID={adminTestIds.careRequests.listItem(index)}
                 >
-                  {motivo}
-                </ListRow>
+                  <ListRow
+                    title={item.clientDisplayName}
+                    badge={
+                      <StatusBadge
+                        label={getStatusLabel(item.status)}
+                        colors={getStatusPillColors(item.status)}
+                      />
+                    }
+                    subtitle={`${item.careRequestTypeDisplayName || item.careRequestType} · ${formatCurrency(item.total)}`}
+                    metaLines={[item.assignedNurseDisplayName ?? "Sin enfermera asignada"]}
+                    railColor={railColor}
+                    onPress={() => router.push(`/admin/care-requests/${item.id}` as never)}
+                    accessibilityLabel={`Abrir solicitud de ${item.clientDisplayName}`}
+                  >
+                    {motivo}
+                  </ListRow>
+                </View>
               );
             })}
             </ScrollView>

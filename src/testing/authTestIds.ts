@@ -58,6 +58,7 @@ export const authTestIds = {
   },
   account: {
     screen: "account-screen",
+    screenRoot: "account-screen-root",
     googleButton: "account-google-oauth-button",
     logoutButton: "account-logout-button",
     profileLink: "account-profile-link",
