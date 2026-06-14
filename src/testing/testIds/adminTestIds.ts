@@ -66,6 +66,7 @@ export const adminTestIds = {
       index === 0 ? adminTestIds.careRequests.listItemFirst : `admin-care-requests-list-item-${index}`,
     detail: {
       screen: "admin-care-request-detail-page",
+      viewBreakdownButton: "admin-care-detail-view-breakdown-button",
       loadedMarker: "care-request-detail-loaded",
       statusBadge: "care-request-status-badge",
       errorBanner: "admin-care-request-error-banner",

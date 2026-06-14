@@ -538,6 +538,8 @@ export default function AdminCareRequestDetailScreen() {
                   <Text style={styles.cardEyebrow}>Servicio</Text>
                 </View>
                 <Pressable
+                  testID={adminTestIds.careRequests.detail.viewBreakdownButton}
+                  nativeID={adminTestIds.careRequests.detail.viewBreakdownButton}
                   accessibilityRole="button"
                   accessibilityLabel="Ver desglose de precios"
                   onPress={() => {
