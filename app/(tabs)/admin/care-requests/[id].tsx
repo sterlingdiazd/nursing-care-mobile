@@ -623,24 +623,14 @@ export default function AdminCareRequestDetailScreen() {
       </MobileWorkspaceShell>
 
       {detail ? (
-        <>
-          {/* B-002: price-breakdown-total pre-mounted for automation (findable before modal interaction) */}
-          <View
-            testID="price-breakdown-total"
-            nativeID="price-breakdown-total"
-            style={styles.hiddenMarker}
-          >
-            <Text>{formatCurrency(detail.total)}</Text>
-          </View>
-          <PricingSheet
-            visible={pricingSheetVisible}
-            detail={detail}
-            onClose={() => {
-              hapticFeedback.selection();
-              setPricingSheetVisible(false);
-            }}
-          />
-        </>
+        <PricingSheet
+          visible={pricingSheetVisible}
+          detail={detail}
+          onClose={() => {
+            hapticFeedback.selection();
+            setPricingSheetVisible(false);
+          }}
+        />
       ) : null}
 
       <OverflowActionsSheet
