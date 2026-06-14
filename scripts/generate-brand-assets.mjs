@@ -76,9 +76,11 @@ const targets = [
   ["icon.png", MARK, { size: 1024, frac: 0.78, bg: "#ffffff", mode: "square" }, 1024],
   // Android adaptive foreground — mark ~62% inside transparent canvas (outer ~25% is cropped by the mask).
   ["adaptive-icon.png", MARK, { size: 1024, frac: 0.62, bg: null, mode: "square" }, 1024],
-  // Splash images — mark on white (splash background stays light); Expo "contain"-scales these.
+  // Splash image (legacy `splash` key) — mark on white; Expo "contain"-scales it.
   ["logo.png", MARK, { size: 1024, frac: 0.7, bg: "#ffffff", mode: "square" }, 1024],
-  ["splash-icon.png", MARK, { size: 1024, frac: 0.7, bg: "#ffffff", mode: "square" }, 1024],
+  // Splash icon (expo-splash-screen plugin) — TRANSPARENT mark so the plugin's own
+  // backgroundColor (light) and dark-mode background show through; sized via imageWidth.
+  ["splash-icon.png", MARK, { size: 1024, frac: 0.9, bg: null, mode: "square" }, 1024],
   // Expo web favicon — small mark on white.
   ["favicon.png", MARK, { size: 196, frac: 0.84, bg: "#ffffff", mode: "square" }, 196],
   // Login / manual-cover vertical lockup — transparent, keep aspect, wordmark rendered via Montserrat-Bold.
