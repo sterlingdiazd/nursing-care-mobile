@@ -759,24 +759,21 @@ function PricingSheet({
         <View style={styles.sheet}>
           <View style={styles.sheetHeader}>
             <View
-              testID="price-verification-success"
-              nativeID="price-verification-success"
+              {...automationProps(adminTestIds.careRequests.detail.priceVerificationSuccess)}
             >
               <Text style={styles.sheetTitle}>Desglose de precios</Text>
               <Text style={styles.sheetSubtitle}>{formatCurrency(b.total)}</Text>
             </View>
             {hasLimitation ? (
               <View
-                testID="price-verification-limitation"
-                nativeID="price-verification-limitation"
+                {...automationProps(adminTestIds.careRequests.detail.priceVerificationLimitation)}
                 style={styles.limitationBadge}
               >
                 <Text style={styles.limitationText}>Precios parciales</Text>
               </View>
             ) : null}
             <Pressable
-              testID="price-verification-close-button"
-              nativeID="price-verification-close-button"
+              {...automationProps(adminTestIds.careRequests.detail.priceVerificationCloseButton)}
               onPress={onClose}
               accessibilityRole="button"
               accessibilityLabel="Cerrar"
@@ -786,8 +783,7 @@ function PricingSheet({
             </Pressable>
           </View>
           <ScrollView
-            testID="price-verification-discrepancies"
-            nativeID="price-verification-discrepancies"
+            {...automationProps(adminTestIds.careRequests.detail.priceVerificationDiscrepancies)}
             style={styles.sheetScroll}
             contentContainerStyle={styles.sheetScrollContent}
           >
