@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0",
+  "project_name": "NursingCareMobile",
+  "language_primary": "typescript",
+  "product_language": "en",
+  "domain_terms": [],
+  "git": {
+    "main_branch": "main",
+    "remote": "origin",
+    "host": "github"
+  },
+  "repos": [
+    {
+      "name": "NursingCareMobile",
+      "role": "app",
+      "path": "."
+    }
+  ],
+  "stack": {
+    "app": {
+      "runtime": "typescript",
+      "framework": "",
+      "package_dir": "",
+      "entry": "",
+      "build_cmd": ""
+    },
+    "tests": {
+      "runner": "",
+      "path": "",
+      "cmd": ""
+    },
+    "lint": {
+      "tool": "",
+      "cmd": ""
+    },
+    "ci": "none",
+    "db": "none",
+    "ai_providers": []
+  },
+  "infra": {
+    "default_level": "L0",
+    "max_level": "L1"
+  },
+  "paths": {
+    "sdlc_root": "docs/sdlc",
+    "rubric": "specs/DESIGN_KPI_RUBRIC.md",
+    "learned_criteria": "specs/learned-criteria.json"
+  },
+  "session_isolation": {
+    "kind": "worktree+ports",
+    "cdp_base_port": 9242,
+    "slot_dir": ".session-slots",
+    "link_into_slot": [],
+    "guard_mode": "commits-only"
+  },
+  "framework_version": "1.3.0"
+}

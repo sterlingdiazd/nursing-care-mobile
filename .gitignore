@@ -44,3 +44,6 @@ yarn-error.*
 .demo-tunnel.pid
 .demo-tunnel.log
 .demo-tunnel.url
+worktrees/
+.session-slots/
+AGENT-COORDINATION.md
