@@ -81,19 +81,19 @@ export default function AdminCreateAdminAccountScreen() {
 
     const identificationInputError = getRejectedDigitsOnlyInputError(
       form.identificationNumber,
-      "La cedula",
+      "La cédula",
       11,
     );
     if (identificationInputError) newErrors.identificationNumber = identificationInputError;
     else {
-      const nextIdentificationError = getExactDigitsFieldError(form.identificationNumber, "La cedula", 11);
+      const nextIdentificationError = getExactDigitsFieldError(form.identificationNumber, "La cédula", 11);
       if (nextIdentificationError) newErrors.identificationNumber = nextIdentificationError;
     }
 
-    const phoneInputError = getRejectedDigitsOnlyInputError(form.phone, "El telefono", 10);
+    const phoneInputError = getRejectedDigitsOnlyInputError(form.phone, "El teléfono", 10);
     if (phoneInputError) newErrors.phone = phoneInputError;
     else {
-      const nextPhoneError = getExactDigitsFieldError(form.phone, "El telefono", 10);
+      const nextPhoneError = getExactDigitsFieldError(form.phone, "El teléfono", 10);
       if (nextPhoneError) newErrors.phone = nextPhoneError;
     }
 

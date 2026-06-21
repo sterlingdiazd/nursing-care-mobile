@@ -77,10 +77,10 @@ export default function ClientProfileScreen() {
   const errors = {
     name: getTextOnlyFieldError(form.name, "Nombre"),
     lastName: getTextOnlyFieldError(form.lastName, "Apellido"),
-    identificationNumber: getExactDigitsFieldError(form.identificationNumber, "Cedula", 11),
-    phone: getExactDigitsFieldError(form.phone, "Telefono", 10),
+    identificationNumber: getExactDigitsFieldError(form.identificationNumber, "Cédula", 11),
+    phone: getExactDigitsFieldError(form.phone, "Teléfono", 10),
     emergencyContactName: getTextOnlyFieldError(form.emergencyContactName ?? "", "Contacto de emergencia", false),
-    emergencyContactPhone: getExactDigitsFieldError(form.emergencyContactPhone ?? "", "Telefono de emergencia", 10, false),
+    emergencyContactPhone: getExactDigitsFieldError(form.emergencyContactPhone ?? "", "Teléfono de emergencia", 10, false),
   };
   const hasErrors = Object.values(errors).some(Boolean);
 
@@ -180,7 +180,7 @@ export default function ClientProfileScreen() {
             />
             <FormInput
               testID={clientTestIds.profile.identificationInput}
-              label="Cedula"
+              label="Cédula"
               value={form.identificationNumber}
               editable={isEditing && !isSaving}
               keyboardType="number-pad"
@@ -189,7 +189,7 @@ export default function ClientProfileScreen() {
             />
             <FormInput
               testID={clientTestIds.profile.phoneInput}
-              label="Telefono"
+              label="Teléfono"
               value={form.phone}
               editable={isEditing && !isSaving}
               keyboardType="phone-pad"
@@ -198,7 +198,7 @@ export default function ClientProfileScreen() {
             />
             <FormInput
               testID={clientTestIds.profile.addressInput}
-              label="Direccion frecuente"
+              label="Dirección frecuente"
               value={form.preferredAddress ?? ""}
               editable={isEditing && !isSaving}
               onChangeText={(value) => setForm((prev) => ({ ...prev, preferredAddress: value }))}
@@ -214,7 +214,7 @@ export default function ClientProfileScreen() {
             />
             <FormInput
               testID={clientTestIds.profile.emergencyPhoneInput}
-              label="Telefono de emergencia"
+              label="Teléfono de emergencia"
               value={form.emergencyContactPhone ?? ""}
               editable={isEditing && !isSaving}
               keyboardType="phone-pad"

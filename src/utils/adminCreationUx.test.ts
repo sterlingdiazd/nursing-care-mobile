@@ -73,7 +73,7 @@ describe("getAdminNurseReviewProgress", () => {
     });
 
     expect(progress.ready).toBe(false);
-    expect(progress.missingLabels).toEqual(["Especialidad", "Licencia", "Cuenta", "Categoria"]);
+    expect(progress.missingLabels).toEqual(["Especialidad", "Licencia", "Cuenta", "Categoría"]);
   });
 });
 
@@ -120,7 +120,7 @@ describe("getAdminNurseCreateProgress", () => {
 
     expect(progress.ready).toBe(false);
     expect(progress.missingLabels).toContain("Nombre");
-    expect(progress.missingLabels).toContain("Contrasena");
-    expect(progress.missingLabels).toContain("Categoria");
+    expect(progress.missingLabels).toContain("Contraseña");
+    expect(progress.missingLabels).toContain("Categoría");
   });
 });

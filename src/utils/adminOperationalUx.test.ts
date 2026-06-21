@@ -326,7 +326,7 @@ describe("notification labels", () => {
       createdBySystem: true,
     } as const;
 
-    expect(getNotificationSecondaryActionLabel(item)).toBe("Marcar como leida");
-    expect(getNotificationStatusLabel(item)).toContain("No leida");
+    expect(getNotificationSecondaryActionLabel(item)).toBe("Marcar como leída");
+    expect(getNotificationStatusLabel(item)).toContain("No leída");
   });
 });

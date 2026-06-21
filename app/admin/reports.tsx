@@ -181,7 +181,7 @@ export default function AdminReportsScreen() {
       const session = getCachedAuthSession();
       const token = session?.token;
 
-      if (!token) throw new Error("No hay sesion activa para exportar.");
+      if (!token) throw new Error("No hay sesión activa para exportar.");
 
       const filename = `reporte-${selectedReportKey}-${Date.now()}.csv`;
       const fileUri = FileSystem.documentDirectory + filename;

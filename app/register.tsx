@@ -35,7 +35,7 @@ const clientProfileCopy =
   "Perfil de cliente seleccionado. No hay campos adicionales por completar en esta etapa y el acceso operativo queda disponible cuando termine el registro.";
 
 const nurseProfileCopy =
-  "Perfil de enfermeria seleccionado. Podras iniciar sesion al terminar el registro, pero el panel quedara en revision administrativa hasta que completen tu perfil.";
+  "Perfil de enfermería seleccionado. Podrás iniciar sesión al terminar el registro, pero el panel quedará en revisión administrativa hasta que completen tu perfil.";
 
 enum RegisterStep {
   IDENTITY = 0,
@@ -105,22 +105,22 @@ export default function RegisterScreen() {
   };
 
   const getPasswordError = (value: string) => {
-    if (!value) return "La contrasena es obligatoria";
+    if (!value) return "La contraseña es obligatoria";
     const validation = validatePassword(value);
     return validation.isValid ? "" : validation.message;
   };
 
   const getConfirmPasswordError = (value: string) => {
-    if (!value) return "Confirma tu contrasena";
-    if (value !== password) return "Las contrasenas no coinciden";
+    if (!value) return "Confirma tu contraseña";
+    if (value !== password) return "Las contraseñas no coinciden";
     return "";
   };
 
   const validateIdentity = () => {
     const nextNameError = getTextOnlyFieldError(name, "El nombre");
     const nextLastNameError = getTextOnlyFieldError(lastName, "El apellido");
-    const nextIdentificationNumberError = getExactDigitsFieldError(identificationNumber, "La cedula", 11);
-    const nextPhoneError = getExactDigitsFieldError(phone, "El telefono", 10);
+    const nextIdentificationNumberError = getExactDigitsFieldError(identificationNumber, "La cédula", 11);
+    const nextPhoneError = getExactDigitsFieldError(phone, "El teléfono", 10);
 
     setNameError(nextNameError);
     setLastNameError(nextLastNameError);
@@ -143,11 +143,11 @@ export default function RegisterScreen() {
   };
 
   const validateNurseDetails = () => {
-    const nextHireDateError = !hireDate.trim() ? "La fecha de contratacion es obligatoria" : "";
+    const nextHireDateError = !hireDate.trim() ? "La fecha de contratación es obligatoria" : "";
     const nextSpecialtyError = !specialty.trim() ? "La especialidad es obligatoria" : "";
     const nextLicenseIdError = getOptionalDigitsFieldError(licenseId, "La licencia");
     const nextBankNameError = getTextOnlyFieldError(bankName, "El banco");
-    const nextAccountNumberError = getOptionalDigitsFieldError(accountNumber, "El numero de cuenta");
+    const nextAccountNumberError = getOptionalDigitsFieldError(accountNumber, "El número de cuenta");
 
     setHireDateError(nextHireDateError);
     setSpecialtyError(nextSpecialtyError);

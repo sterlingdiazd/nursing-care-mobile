@@ -251,7 +251,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       hapticFeedback.success();
       return response;
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "No fue posible iniciar sesion.";
+      const errorMsg = err instanceof Error ? err.message : "No fue posible iniciar sesión.";
       setError(errorMsg);
       hapticFeedback.error();
       throw err;

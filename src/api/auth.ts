@@ -101,7 +101,7 @@ export async function loginUser(email: string, password: string): Promise<AuthRe
       error.response?.data?.message ||
       error.response?.data?.title ||
       error.message ||
-      "No fue posible iniciar sesion";
+      "No fue posible iniciar sesión";
 
     throw new Error(errorMessage);
   }
@@ -150,7 +150,7 @@ export async function resetPassword(
       error.response?.data?.message ||
       error.response?.data?.title ||
       error.message ||
-      "No fue posible restablecer la contrasena";
+      "No fue posible restablecer la contraseña";
 
     throw new Error(errorMessage);
   }
@@ -174,11 +174,11 @@ export function validatePassword(password: string): {
   if (password.length < 6) {
     return {
       isValid: false,
-      message: "La contrasena debe tener al menos 6 caracteres",
+      message: "La contraseña debe tener al menos 6 caracteres",
     };
   }
   return {
     isValid: true,
-    message: "Contrasena valida",
+    message: "Contraseña válida",
   };
 }

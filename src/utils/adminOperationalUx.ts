@@ -228,7 +228,7 @@ export function getAdminActionItemPrimaryLabel(item: AdminActionItemDto) {
 
 export function getAdminActionItemStatusLabel(item: AdminActionItemDto) {
   const severity = getAdminSeverityPresentation(item.severity);
-  return `${severity.label} · ${item.state === "Unread" ? "No leida" : "Pendiente"}`;
+  return `${severity.label} · ${item.state === "Unread" ? "No leída" : "Pendiente"}`;
 }
 
 export function getNotificationPrimaryActionLabel(item: AdminNotificationDto) {
@@ -236,13 +236,13 @@ export function getNotificationPrimaryActionLabel(item: AdminNotificationDto) {
     return item.requiresAction ? "Abrir tarea" : "Abrir contexto";
   }
 
-  return item.readAtUtc ? "Marcar no leida" : "Marcar leida";
+  return item.readAtUtc ? "Marcar no leída" : "Marcar leída";
 }
 
 export function getNotificationSecondaryActionLabel(item: AdminNotificationDto) {
-  return item.readAtUtc ? "Marcar como no leida" : "Marcar como leida";
+  return item.readAtUtc ? "Marcar como no leída" : "Marcar como leída";
 }
 
 export function getNotificationStatusLabel(item: AdminNotificationDto) {
-  return `${item.readAtUtc ? "Leida" : "No leida"} · ${item.requiresAction ? "Accion requerida" : "Informativa"}`;
+  return `${item.readAtUtc ? "Leída" : "No leída"} · ${item.requiresAction ? "Acción requerida" : "Informativa"}`;
 }

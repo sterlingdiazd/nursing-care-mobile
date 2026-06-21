@@ -102,11 +102,11 @@ function AuthenticatedRoutes() {
           <Stack.Screen name="login" options={{ headerShown: false }} />
           <Stack.Screen
             name="forgot-password"
-            options={{ title: "Recuperar contrasena", headerShown: false }}
+            options={{ title: "Recuperar contraseña", headerShown: false }}
           />
           <Stack.Screen
             name="reset-password"
-            options={{ title: "Restablecer contrasena", headerShown: false }}
+            options={{ title: "Restablecer contraseña", headerShown: false }}
           />
           <Stack.Screen name="modal" options={{ presentation: "modal" }} />
         </Stack>

@@ -457,18 +457,18 @@ export default function AdminCatalogScreen() {
 
   const getFieldLabel = (key: string): string => {
     const labels: Record<string, string> = {
-      code: "Codigo",
+      code: "Código",
       displayName: "Nombre",
-      categoryFactor: "Factor de categoria",
-      careRequestCategoryCode: "Categoria de solicitud",
+      categoryFactor: "Factor de categoría",
+      careRequestCategoryCode: "Categoría de solicitud",
       unitTypeCode: "Tipo de unidad",
       basePrice: "Precio base",
       multiplier: "Multiplicador",
-      minimumCount: "Cantidad minima",
+      minimumCount: "Cantidad mínima",
       discountPercent: "Porcentaje de descuento",
-      alternativeCodes: "Codigos alternativos",
+      alternativeCodes: "Códigos alternativos",
       isActive: "Activo",
-      displayOrder: "Orden de visualizacion",
+      displayOrder: "Orden de visualización",
     };
     return labels[key] ?? key;
   };

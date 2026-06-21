@@ -38,12 +38,12 @@ export function estimateCareRequestPricingFromCatalog(
 
   const typeRow = options.careRequestTypes.find((t) => t.code === input.careRequestTypeCode);
   if (!typeRow) {
-    throw new Error("El tipo de solicitud no esta disponible en el catalogo.");
+    throw new Error("El tipo de solicitud no está disponible en el catálogo.");
   }
 
   const categoryRow = options.careRequestCategories.find((c) => c.code === typeRow.careRequestCategoryCode);
   if (!categoryRow) {
-    throw new Error("La categoria de precios no esta disponible en el catalogo.");
+    throw new Error("La categoría de precios no está disponible en el catálogo.");
   }
 
   let categoryFactor = categoryRow.categoryFactor;

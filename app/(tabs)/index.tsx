@@ -21,7 +21,6 @@ import { clientTestIds } from "@/src/testing/testIds";
 
 type QuickSection = {
   title: string;
-  body: string;
   path: string;
   icon: ComponentProps<typeof FontAwesome>["name"];
   hue: PaletteHue;
@@ -30,31 +29,31 @@ type QuickSection = {
 };
 
 const adminQuickSections: QuickSection[] = [
-  { title: "Panel admin", body: "Indicadores y accesos administrativos.", path: "/admin", icon: "th-large", hue: "blue" },
-  { title: "Solicitudes", body: "Cola activa y seguimiento.", path: "/care-requests", icon: "list", hue: "indigo" },
-  { title: "Nueva solicitud", body: "Registrar un nuevo servicio.", path: "/create-care-request", icon: "plus-circle", hue: "green" },
-  { title: "Cuenta", body: "Sesión, acceso y perfil.", path: "/account", icon: "user", hue: "purple" },
-  { title: "Diagnóstico", body: "Estado técnico y errores.", path: "/admin/diagnostics", icon: "heartbeat", hue: "neutral" },
-  { title: "Herramientas", body: "Utilidades avanzadas.", path: "/admin/tools", icon: "wrench", hue: "neutral" },
+  { title: "Panel admin", path: "/admin", icon: "th-large", hue: "blue" },
+  { title: "Solicitudes", path: "/care-requests", icon: "list", hue: "indigo" },
+  { title: "Nueva solicitud", path: "/create-care-request", icon: "plus-circle", hue: "green" },
+  { title: "Cuenta", path: "/account", icon: "user", hue: "purple" },
+  { title: "Diagnóstico", path: "/admin/diagnostics", icon: "heartbeat", hue: "neutral" },
+  { title: "Herramientas", path: "/admin/tools", icon: "wrench", hue: "neutral" },
 ];
 
 const clientQuickSections: QuickSection[] = [
-  { title: "Necesito cuidado", body: "Crea una nueva solicitud de cuidado.", path: "/create-care-request", key: "crear", priority: "Ahora", icon: "plus-circle", hue: "green" },
-  { title: "Ver mis servicios", body: "Estado, fechas y pago de tus solicitudes.", path: "/care-requests", key: "servicios", priority: "Seguimiento", icon: "list", hue: "blue" },
-  { title: "Avisos importantes", body: "Cambios recientes de tus solicitudes.", path: "/client-notifications", key: "avisos", priority: "Pendiente", icon: "bell", hue: "amber" },
-  { title: "Mis datos", body: "Perfil y contacto de emergencia.", path: "/client-profile", key: "perfil", priority: "Cuenta", icon: "user", hue: "purple" },
+  { title: "Necesito cuidado", path: "/create-care-request", key: "crear", priority: "Ahora", icon: "plus-circle", hue: "green" },
+  { title: "Ver mis servicios", path: "/care-requests", key: "servicios", priority: "Seguimiento", icon: "list", hue: "blue" },
+  { title: "Avisos importantes", path: "/client-notifications", key: "avisos", priority: "Pendiente", icon: "bell", hue: "amber" },
+  { title: "Mis datos", path: "/client-profile", key: "perfil", priority: "Cuenta", icon: "user", hue: "purple" },
 ];
 
 const nurseQuickSections: QuickSection[] = [
-  { title: "Mi Nómina", body: "Resumen de compensaciones y historial de pagos.", path: "/nurse/payroll", icon: "money", hue: "green" },
-  { title: "Solicitudes", body: "Servicios asignados y seguimiento.", path: "/care-requests", icon: "list", hue: "blue" },
-  { title: "Diagnóstico", body: "Estado técnico y errores.", path: "/admin/diagnostics", icon: "heartbeat", hue: "neutral" },
-  { title: "Herramientas", body: "Utilidades avanzadas.", path: "/admin/tools", icon: "wrench", hue: "neutral" },
+  { title: "Mi Nómina", path: "/nurse/payroll", icon: "money", hue: "green" },
+  { title: "Solicitudes", path: "/care-requests", icon: "list", hue: "blue" },
+  { title: "Diagnóstico", path: "/admin/diagnostics", icon: "heartbeat", hue: "neutral" },
+  { title: "Herramientas", path: "/admin/tools", icon: "wrench", hue: "neutral" },
 ];
 
 const publicQuickSections: QuickSection[] = [
-  { title: "Iniciar sesión", body: "Entrar con tu cuenta.", path: "/login", icon: "sign-in", hue: "blue" },
-  { title: "Registrar", body: "Crear una cuenta nueva.", path: "/register", icon: "user-plus", hue: "green" },
+  { title: "Iniciar sesión", path: "/login", icon: "sign-in", hue: "blue" },
+  { title: "Registrar", path: "/register", icon: "user-plus", hue: "green" },
 ];
 
 export default function HomeScreen() {
@@ -126,24 +125,12 @@ export default function HomeScreen() {
       : canOpenSupportTools
         ? "Tu cuenta tiene acceso restringido."
         : "Tu cuenta aún no puede operar.";
-  const heroDescription = hasOperationalAccess
-    ? isAdmin
-      ? "Accede a panel, solicitudes y herramientas según tus permisos."
-      : isClient
-        ? "Servicios, avisos y datos de cuenta."
-        : "Consulta servicios asignados y estado de tu cuenta."
-    : isAnonymous
-      ? "Inicia sesión o crea tu cuenta para solicitar servicios y dar seguimiento."
-      : canOpenSupportTools
-        ? "Mientras termina la revisión administrativa, solo verás accesos permitidos para tu perfil."
-        : "Mientras termina la revisión administrativa, no verás funciones operativas.";
   return (
     <MobileWorkspaceShell
       testID={isClient ? clientTestIds.home.screen : undefined}
       nativeID={isClient ? clientTestIds.home.screen : undefined}
       eyebrow={heroEyebrow}
       title={heroTitle}
-      description={heroDescription}
       actions={
         <>
           {hasOperationalAccess ? (
@@ -201,7 +188,7 @@ export default function HomeScreen() {
                   pressed && styles.buttonPressed,
                 ]}
               >
-                <Text style={styles.primaryButtonText}>Iniciar sesion</Text>
+                <Text style={styles.primaryButtonText}>Iniciar sesión</Text>
               </Pressable>
 
               <Pressable
@@ -270,7 +257,6 @@ export default function HomeScreen() {
                   <Text style={styles.cardPriority}>{clientSection.priority}</Text>
                 ) : null}
                 <Text style={styles.cardTitleSmall}>{section.title}</Text>
-                <Text style={styles.cardBodySmall} numberOfLines={2}>{section.body}</Text>
               </View>
               <Text style={styles.cardChevron}>›</Text>
             </View>
@@ -310,9 +296,6 @@ const styles = StyleSheet.create({
     color: T.color.ink.accentStrong,
     fontWeight: "900",
     marginBottom: T.spacing.xs,
-  },
-  cardBodySmall: {
-    ...T.text.caption,
   },
   primaryButton: {
     backgroundColor: T.color.ink.accent,

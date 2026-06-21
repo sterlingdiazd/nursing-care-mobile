@@ -36,12 +36,12 @@ describe("Auth Logic & Validation", () => {
 
     it("validates Cedula (11 digits)", () => {
       expect(getExactDigitsFieldError("40212345678", "La cédula", 11)).toBe("");
-      expect(getExactDigitsFieldError("123", "La cédula", 11)).toContain("exactamente 11 digitos");
+      expect(getExactDigitsFieldError("123", "La cédula", 11)).toContain("exactamente 11 dígitos");
     });
 
     it("validates Phone (10 digits)", () => {
       expect(getExactDigitsFieldError("8095550101", "El teléfono", 10)).toBe("");
-      expect(getExactDigitsFieldError("809555", "El teléfono", 10)).toContain("exactamente 10 digitos");
+      expect(getExactDigitsFieldError("809555", "El teléfono", 10)).toContain("exactamente 10 dígitos");
     });
   });
 });

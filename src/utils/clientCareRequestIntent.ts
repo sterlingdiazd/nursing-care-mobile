@@ -6,9 +6,7 @@ export type ClientCareRequestIntentKey = "hoy" | "programar" | "medico";
 interface ClientCareRequestIntent {
   key: ClientCareRequestIntentKey;
   title: string;
-  body: string;
   description: string;
-  defaultsLabel: string;
   typeCandidates: string[];
   categoryFallback: string;
   preselectService: boolean;
@@ -34,9 +32,7 @@ export const CLIENT_CARE_REQUEST_INTENTS: readonly ClientCareRequestIntent[] = [
   {
     key: "hoy",
     title: "Necesito ayuda hoy",
-    body: "Para cuidado cercano o acompañamiento urgente.",
     description: "Necesito cuidado lo antes posible. ",
-    defaultsLabel: "Prepara fecha de hoy y servicio a domicilio.",
     typeCandidates: ["domicilio_24h", "domicilio_dia_12h", "hogar_diario"],
     categoryFallback: "domicilio",
     preselectService: true,
@@ -48,9 +44,7 @@ export const CLIENT_CARE_REQUEST_INTENTS: readonly ClientCareRequestIntent[] = [
   {
     key: "programar",
     title: "Quiero programar una visita",
-    body: "Para elegir fecha y detalles con calma.",
     description: "Quiero programar una visita de cuidado. ",
-    defaultsLabel: "Prepara visita para mañana y servicio diurno.",
     typeCandidates: ["domicilio_dia_12h", "hogar_diario", "domicilio_noche_12h"],
     categoryFallback: "domicilio",
     preselectService: true,
@@ -62,9 +56,7 @@ export const CLIENT_CARE_REQUEST_INTENTS: readonly ClientCareRequestIntent[] = [
   {
     key: "medico",
     title: "Necesito apoyo médico",
-    body: "Para curas, medicamentos o seguimiento clínico.",
     description: "Necesito apoyo médico en casa. ",
-    defaultsLabel: "Prepara Médicos para elegir el servicio exacto.",
     typeCandidates: ["curas", "medicamentos", "suero"],
     categoryFallback: "medicos",
     preselectService: false,

@@ -76,7 +76,7 @@ export function getAdminNurseReviewProgress(form: CompleteNurseProfileRequest): 
     ["licenseId", "Licencia", isFilled(form.licenseId ?? undefined)],
     ["bankName", "Banco", isFilled(form.bankName)],
     ["accountNumber", "Cuenta", isFilled(form.accountNumber ?? undefined)],
-    ["category", "Categoria", isFilled(form.category)],
+    ["category", "Categoría", isFilled(form.category)],
   ] as const;
 
   const missingLabels = requiredFields.filter(([, , complete]) => !complete).map(([, label]) => label);
@@ -101,14 +101,14 @@ export function getAdminNurseCreateProgress(form: CreateNurseProfileRequest): Ad
   const requiredChecks = [
     ["name", "Nombre", isFilled(form.name)],
     ["lastName", "Apellido", isFilled(form.lastName)],
-    ["identificationNumber", "Cedula", isFilled(form.identificationNumber)],
-    ["phone", "Telefono", isFilled(form.phone)],
+    ["identificationNumber", "Cédula", isFilled(form.identificationNumber)],
+    ["phone", "Teléfono", isFilled(form.phone)],
     ["email", "Correo", isFilled(form.email) && form.email.includes("@")],
-    ["password", "Contrasena", isFilled(form.password) && form.password.length >= 8],
-    ["confirmPassword", "Confirmacion", isFilled(form.confirmPassword) && form.confirmPassword === form.password],
-    ["hireDate", "Fecha de contratacion", isFilled(form.hireDate)],
+    ["password", "Contraseña", isFilled(form.password) && form.password.length >= 8],
+    ["confirmPassword", "Confirmación", isFilled(form.confirmPassword) && form.confirmPassword === form.password],
+    ["hireDate", "Fecha de contratación", isFilled(form.hireDate)],
     ["specialty", "Especialidad", isFilled(form.specialty)],
-    ["category", "Categoria", isFilled(form.category)],
+    ["category", "Categoría", isFilled(form.category)],
   ] as const;
 
   const missingLabels = requiredChecks.filter(([, , complete]) => !complete).map(([, label]) => label);
@@ -120,7 +120,7 @@ export function getAdminNurseCreateProgress(form: CreateNurseProfileRequest): Ad
     requiredCompletedCount: requiredChecks.length - missingLabels.length,
     requiredTotalCount: requiredChecks.length,
     status: ready
-      ? buildStatus("Registro listo", "success", "La informacion requerida ya permite crear el perfil.")
+      ? buildStatus("Registro listo", "success", "La información requerida ya permite crear el perfil.")
       : buildStatus(
           `Faltan ${missingLabels.length} validaciones`,
           "warning",

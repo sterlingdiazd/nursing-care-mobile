@@ -185,8 +185,7 @@ export default function ClientNotificationsScreen() {
           <Text style={styles.errorBanner}>{error}</Text>
         ) : items.length === 0 ? (
           <View style={styles.stateCard}>
-            <Text style={styles.emptyTitle}>Todo está al día</Text>
-            <Text style={styles.emptyText}>Aquí verás cambios importantes de tus solicitudes.</Text>
+            <Text style={styles.emptyTitle}>No hay avisos</Text>
           </View>
         ) : (
           <View style={styles.list}>
@@ -257,7 +256,6 @@ const styles = StyleSheet.create({
   },
   stateText: { color: designTokens.color.ink.secondary, fontWeight: "700" },
   emptyTitle: { ...designTokens.text.section },
-  emptyText: { color: designTokens.color.ink.secondary, textAlign: "center", lineHeight: 20 },
   errorBanner: {
     color: designTokens.color.status.dangerText,
     backgroundColor: designTokens.color.surface.danger,

@@ -22,11 +22,11 @@ export function getRejectedTextOnlyInputError(value: string, label: string) {
 
 export function getRejectedDigitsOnlyInputError(value: string, label: string, maxLength?: number) {
   if (forbiddenDigitsCharsRegex.test(value)) {
-    return `${label} solo acepta numeros`;
+    return `${label} solo acepta números`;
   }
 
   if (typeof maxLength === "number" && value.length > maxLength) {
-    return `${label} debe tener exactamente ${maxLength} digitos`;
+    return `${label} debe tener exactamente ${maxLength} dígitos`;
   }
 
   return "";
@@ -54,11 +54,11 @@ export function getExactDigitsFieldError(value: string, label: string, length: n
   }
 
   if (!digitsOnlyRegex.test(trimmed)) {
-    return `${label} solo acepta numeros`;
+    return `${label} solo acepta números`;
   }
 
   if (trimmed.length !== length) {
-    return `${label} debe tener exactamente ${length} digitos`;
+    return `${label} debe tener exactamente ${length} dígitos`;
   }
 
   return "";
@@ -72,7 +72,7 @@ export function getOptionalDigitsFieldError(value: string, label: string) {
   }
 
   if (!digitsOnlyRegex.test(trimmed)) {
-    return `${label} solo acepta numeros`;
+    return `${label} solo acepta números`;
   }
 
   return "";

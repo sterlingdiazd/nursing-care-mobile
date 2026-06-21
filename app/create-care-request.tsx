@@ -439,36 +439,36 @@ export default function CreateCareRequestScreen() {
         descriptionPresent: Boolean(form.careRequestDescription.trim()),
         careRequestTypePresent: Boolean(form.careRequestType),
       });
-      const msg = "La descripcion de la solicitud y el tipo de servicio son obligatorios.";
+      const msg = "La descripción de la solicitud y el tipo de servicio son obligatorios.";
       setFormError(msg);
       hapticFeedback.error();
 
-      showAlert("Validacion", msg);
+      showAlert("Validación", msg);
       return;
     }
 
     if (!canCreateRequest) {
-      const msg = "Solo los perfiles de cliente o administracion pueden crear solicitudes de cuidado.";
+      const msg = "Solo los perfiles de cliente o administración pueden crear solicitudes de cuidado.";
       setFormError(msg);
       hapticFeedback.error();
 
-      showAlert("Accion no permitida", msg);
+      showAlert("Acción no permitida", msg);
       return;
     }
 
     if (!isReady) {
       logClientEvent("mobile.ui", "Solicitud bloqueada mientras la sesion termina de cargar");
-      const msg = "La sesion todavia se esta preparando. Espera un momento e intenta de nuevo.";
+      const msg = "La sesión todavía se está preparando. Espera un momento e intenta de nuevo.";
       setFormError(msg);
       hapticFeedback.error();
 
-      showAlert("Sesion cargando", msg);
+      showAlert("Sesión cargando", msg);
       return;
     }
 
     if (!token || !userId) {
       logClientEvent("mobile.ui", "Solicitud bloqueada por sesion incompleta");
-      const msg = "Inicia sesion nuevamente antes de crear una solicitud.";
+      const msg = "Inicia sesión nuevamente antes de crear una solicitud.";
       setFormError(msg);
       hapticFeedback.error();
 
@@ -570,7 +570,7 @@ export default function CreateCareRequestScreen() {
         });
       })
       .catch((e: unknown) => {
-        setCatalogError(e instanceof Error ? e.message : "No fue posible cargar el catalogo.");
+        setCatalogError(e instanceof Error ? e.message : "No fue posible cargar el catálogo.");
       })
       .finally(() => setCatalogLoading(false));
   }, [token]);
@@ -651,13 +651,6 @@ export default function CreateCareRequestScreen() {
   return (
     <MobileWorkspaceShell
       title="Nueva Solicitud"
-      description={
-        wizardStep === "intent"
-          ? "Elige lo que necesitas. Luego pediremos solo los detalles importantes."
-          : wizardStep === "details"
-            ? "Completa los datos del servicio."
-            : "Revisa antes de enviar."
-      }
       testID={careRequestTestIds.create.screen}
       nativeID={careRequestTestIds.create.screen}
       primaryReturnLabel="Volver"
@@ -734,9 +727,6 @@ export default function CreateCareRequestScreen() {
             >
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>¿Qué necesitas?</Text>
-                <Text style={styles.sectionCopy}>
-                  Elige la opción más parecida. Puedes ajustar los detalles en el siguiente paso.
-                </Text>
               </View>
               <View style={styles.intentList}>
                 {CLIENT_CARE_REQUEST_INTENTS.map((intent) => {
@@ -761,8 +751,6 @@ export default function CreateCareRequestScreen() {
                     >
                       <View style={styles.intentText}>
                         <Text style={styles.intentTitle}>{intent.title}</Text>
-                        <Text style={styles.intentBody}>{intent.body}</Text>
-                        <Text style={styles.intentDefaults}>{intent.defaultsLabel}</Text>
                       </View>
                       <Text style={[styles.intentCheck, selected && styles.intentCheckSelected]}>
                         {selected ? "Preparado" : "Elegir"}
@@ -907,9 +895,6 @@ export default function CreateCareRequestScreen() {
               <View style={styles.intentAppliedBanner}>
                 <Text style={styles.intentAppliedEyebrow}>Opción elegida</Text>
                 <Text style={styles.intentAppliedTitle}>{selectedIntent.title}</Text>
-                <Text style={styles.intentAppliedBody}>
-                  Dejamos lista la categoría, la fecha y la cantidad. Puedes cambiar cualquier dato antes de enviar.
-                </Text>
               </View>
             ) : null}
 
@@ -922,14 +907,14 @@ export default function CreateCareRequestScreen() {
             {catalogLoading ? (
               <View style={styles.warningBox}>
                 <ActivityIndicator color={designTokens.color.ink.accentStrong} accessibilityLabel="Cargando..." />
-                <Text style={styles.warningText}>Cargando catalogo de precios...</Text>
+                <Text style={styles.warningText}>Cargando catálogo de precios...</Text>
               </View>
             ) : null}
 
             {!canCreateRequest && (
               <View style={styles.warningBox}>
                 <Text style={styles.warningText}>
-                  Solo los perfiles de cliente o administracion pueden crear solicitudes. Usa la
+                  Solo los perfiles de cliente o administración pueden crear solicitudes. Usa la
                   cola para revisar el trabajo ya asignado.
                 </Text>
               </View>
@@ -938,8 +923,8 @@ export default function CreateCareRequestScreen() {
             {isReady && isAuthenticated && !userId && (
               <View style={styles.warningBox}>
                 <Text style={styles.warningText}>
-                  No hay un identificador de usuario disponible en la sesion. Vuelve a iniciar
-                  sesion antes de continuar.
+                  No hay un identificador de usuario disponible en la sesión. Vuelve a iniciar
+                  sesión antes de continuar.
                 </Text>
               </View>
             )}
@@ -1129,10 +1114,10 @@ export default function CreateCareRequestScreen() {
 
             <FormInput
               testID={careRequestTestIds.create.descriptionInput}
-              label="Descripcion de la solicitud"
+              label="Descripción de la solicitud"
               value={form.careRequestDescription}
               onChangeText={(text) => setForm((prev) => ({ ...prev, careRequestDescription: text }))}
-              placeholder="Describe el cuidado requerido, urgencia, detalles clinicos y notas operativas."
+              placeholder="Descripción"
               multiline
               textAlignVertical="top"
               editable={!isLoading}
@@ -1233,13 +1218,12 @@ export default function CreateCareRequestScreen() {
             >
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Revisa tu solicitud</Text>
-                <Text style={styles.sectionCopy}>Si algo no luce correcto, vuelve y cámbialo antes de crearla.</Text>
               </View>
               <ReviewRow label="Necesidad" value={selectedIntentTitle} />
               <ReviewRow label="Servicio" value={selectedType?.displayName ?? "Sin servicio"} />
               <ReviewRow label="Fecha" value={form.careRequestDate ?? "Sin fecha"} />
               <ReviewRow label="Cantidad" value={`${form.unit ?? 1}`} />
-              <ReviewRow label="Detalle" value={form.careRequestDescription.trim() || "Sin descripcion"} />
+              <ReviewRow label="Detalle" value={form.careRequestDescription.trim() || "Sin descripción"} />
               {selectedNurse ? <ReviewRow label="Enfermera sugerida" value={selectedNurse.displayName} /> : null}
             </View>
           ) : null}
@@ -1471,19 +1455,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     fontWeight: "900",
   },
-  intentBody: {
-    color: designTokens.color.ink.secondary,
-    fontSize: designTokens.typography.label.fontSize,
-    lineHeight: 19,
-    marginTop: designTokens.spacing.xs,
-  },
-  intentDefaults: {
-    color: designTokens.color.ink.accentStrong,
-    fontSize: designTokens.typography.caption.fontSize,
-    lineHeight: 17,
-    fontWeight: "800",
-    marginTop: designTokens.spacing.sm,
-  },
   intentCheck: {
     color: designTokens.color.ink.muted,
     fontSize: designTokens.typography.label.fontSize,
@@ -1584,12 +1555,6 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     fontWeight: "900",
   },
-  intentAppliedBody: {
-    color: designTokens.color.ink.secondary,
-    fontSize: designTokens.typography.label.fontSize,
-    lineHeight: 19,
-  },
-
   estimateCard: {
     backgroundColor: designTokens.color.surface.primary,
     borderWidth: 1,
@@ -1638,11 +1603,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: designTokens.color.ink.primary,
     marginBottom: designTokens.spacing.sm,
-  },
-  sectionCopy: {
-    fontSize: designTokens.typography.body.fontSize,
-    lineHeight: 22,
-    color: designTokens.color.ink.secondary,
   },
   warningBox: {
     backgroundColor: designTokens.color.surface.danger,
