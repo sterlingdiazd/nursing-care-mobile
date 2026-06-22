@@ -4,6 +4,7 @@ import { router } from "expo-router";
 
 import { useAuth } from "@/src/context/AuthContext";
 import { registerForPushAsync } from "@/src/services/pushNotificationsService";
+import { resolveAdminOperationalDeepLink } from "@/src/utils/adminOperationalUx";
 
 /**
  * Mounted once from the root layout. Responsibilities:
@@ -36,7 +37,7 @@ export function usePushNotifications() {
       const deepLinkPath = typeof data.deepLinkPath === "string" ? data.deepLinkPath : null;
       if (deepLinkPath) {
         try {
-          router.push(deepLinkPath as never);
+          router.push(resolveAdminOperationalDeepLink(deepLinkPath) as never);
         } catch {
           // Path no longer exists or router not ready; swallow.
         }
@@ -58,7 +59,7 @@ export function usePushNotifications() {
         const deepLinkPath = typeof data.deepLinkPath === "string" ? data.deepLinkPath : null;
         if (deepLinkPath) {
           try {
-            router.push(deepLinkPath as never);
+            router.push(resolveAdminOperationalDeepLink(deepLinkPath) as never);
           } catch {
             // ignore
           }
