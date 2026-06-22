@@ -4,7 +4,7 @@ import { router } from "expo-router";
 
 import { useAuth } from "@/src/context/AuthContext";
 import { registerForPushAsync } from "@/src/services/pushNotificationsService";
-import { resolveNotificationNavTarget } from "@/src/utils/adminOperationalUx";
+import { processNotificationTap } from "@/src/utils/adminOperationalUx";
 
 /**
  * Mounted once from the root layout. Responsibilities:
@@ -41,17 +41,16 @@ export function usePushNotifications() {
   // closure at subscription time.
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const navTarget = resolveNotificationNavTarget(getRawPayload(response), roles);
-      if (navTarget) {
+      processNotificationTap(getRawPayload(response), roles, (path) => {
         try {
-          router.push(navTarget as never);
+          router.push(path as never);
         } catch (err) {
           // Path not found or router not yet mounted (e.g. the user tapped a
           // push before the navigator finished rendering). The cold-start
           // handler below covers the latter case for app-open taps.
-          if (__DEV__) console.warn("[push] foreground navigation failed:", navTarget, err);
+          if (__DEV__) console.warn("[push] foreground navigation failed:", path, err);
         }
-      }
+      });
     });
     return () => sub.remove();
   }, [roles]);
@@ -71,14 +70,13 @@ export function usePushNotifications() {
     Notifications.getLastNotificationResponseAsync()
       .then((response) => {
         if (!response) return;
-        const navTarget = resolveNotificationNavTarget(getRawPayload(response), roles);
-        if (navTarget) {
+        processNotificationTap(getRawPayload(response), roles, (path) => {
           try {
-            router.push(navTarget as never);
+            router.push(path as never);
           } catch (err) {
-            if (__DEV__) console.warn("[push] cold-start navigation failed:", navTarget, err);
+            if (__DEV__) console.warn("[push] cold-start navigation failed:", path, err);
           }
-        }
+        });
       })
       .catch(() => {});
   }, [isReady, isAuthenticated, roles]);

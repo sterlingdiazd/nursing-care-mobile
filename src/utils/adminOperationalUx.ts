@@ -137,6 +137,25 @@ export function resolveNotificationNavTarget(
   return resolveDeepLink(deepLinkPath, roles);
 }
 
+/**
+ * Process a notification tap end-to-end: extract the deepLinkPath from the
+ * raw push payload, resolve it for the user's role, and call `navigate` with
+ * the result. If the payload carries no valid deepLinkPath, `navigate` is not
+ * called.
+ *
+ * The `navigate` callback is injected so this function is unit-testable as a
+ * pure handler without Expo SDK or React Router mocks. The hook uses
+ * `router.push` as the callback.
+ */
+export function processNotificationTap(
+  rawPayload: Record<string, unknown>,
+  roles: string[],
+  navigate: (path: string) => void,
+): void {
+  const navTarget = resolveNotificationNavTarget(rawPayload, roles);
+  if (navTarget) navigate(navTarget);
+}
+
 export function getAdminSeverityPresentation(severity: AdminSeverity) {
   switch (severity) {
     case "High":

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { vi } from "vitest";
+
 import {
   buildAdminDashboardStatusSummary,
   buildAdminDashboardTriage,
@@ -9,6 +11,7 @@ import {
   getNotificationPrimaryActionLabel,
   getNotificationSecondaryActionLabel,
   getNotificationStatusLabel,
+  processNotificationTap,
   resolveAdminOperationalDeepLink,
   resolveDeepLink,
   resolveNotificationNavTarget,
@@ -403,5 +406,38 @@ describe("resolveNotificationNavTarget", () => {
   it("returns null for empty-string deepLinkPath", () => {
     // resolveAdminOperationalDeepLink guards on !path; empty string is falsy.
     expect(resolveNotificationNavTarget({ deepLinkPath: "" }, ["ADMIN"])).toBeNull();
+  });
+});
+
+describe("processNotificationTap", () => {
+  it("calls navigate with the admin-resolved path for ADMIN users", () => {
+    // /payroll is a backend alias → /admin/payroll for admins.
+    // This test FAILS if the role gate is removed from resolveDeepLink,
+    // AND fails if processNotificationTap bypasses resolveNotificationNavTarget.
+    const navigate = vi.fn();
+    processNotificationTap({ deepLinkPath: "/payroll" }, ["ADMIN"], navigate);
+    expect(navigate).toHaveBeenCalledOnce();
+    expect(navigate).toHaveBeenCalledWith("/admin/payroll");
+  });
+
+  it("calls navigate with the raw path unchanged for non-admin users", () => {
+    // A nurse receiving /nurse/payroll must reach that screen, not /admin.
+    // This test FAILS if the role gate is removed and all users hit the admin resolver.
+    const navigate = vi.fn();
+    processNotificationTap({ deepLinkPath: "/nurse/payroll" }, ["NURSE"], navigate);
+    expect(navigate).toHaveBeenCalledOnce();
+    expect(navigate).toHaveBeenCalledWith("/nurse/payroll");
+  });
+
+  it("does not call navigate when the payload has no deepLinkPath", () => {
+    const navigate = vi.fn();
+    processNotificationTap({}, ["ADMIN"], navigate);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("does not call navigate for a non-string deepLinkPath", () => {
+    const navigate = vi.fn();
+    processNotificationTap({ deepLinkPath: 123 }, ["ADMIN"], navigate);
+    expect(navigate).not.toHaveBeenCalled();
   });
 });
