@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
@@ -9,7 +9,7 @@ import {
   createNurseProfileForAdmin,
   type CreateNurseProfileRequest,
 } from "@/src/services/adminPortalService";
-import { FormInput, FormSwitch } from "@/src/components/form";
+import { DateField, FormInput, FormSwitch } from "@/src/components/form";
 import { FormButton } from "@/src/components/form/FormButton";
 import { adminTestIds } from "@/src/testing/testIds";
 import { getAdminNurseCreateProgress } from "@/src/utils/adminCreationUx";
@@ -17,6 +17,16 @@ import { mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { hapticFeedback } from "@/src/utils/haptics";
 
 const CATEGORIES = ["Auxiliar", "Técnico", "Profesional", "Especialista"];
+
+// Nurse specialty catalog — matches the seeded NurseSpecialtyCatalog entries in the backend.
+// The Nurse entity stores specialty as a free-text string; these are the standard values.
+const SPECIALTIES = [
+  "Cuidado de adultos",
+  "Cuidado pediatrico",
+  "Cuidado geriatrico",
+  "Cuidados intensivos",
+  "Atencion domiciliaria",
+];
 
 // Legal working days per month under the DR 44-hour week (Código de Trabajo):
 // 8h Mon–Fri + 4h Sat = 5.5 days/week × 52 ÷ 12 = 23.83 — the standard divisor for daily/hourly pay.
@@ -55,6 +65,7 @@ export default function AdminCreateNurseProfileScreen() {
   // UI States
   const [showBankingInfo, setShowBankingInfo] = useState(false);
   const [customCategory, setCustomCategory] = useState("");
+  const [customSpecialty, setCustomSpecialty] = useState("");
 
   useEffect(() => {
     if (!isReady) return;
@@ -112,6 +123,7 @@ export default function AdminCreateNurseProfileScreen() {
   };
 
   const activeCategoryIsCustom = !CATEGORIES.includes(form.category);
+  const activeSpecialtyIsCustom = !SPECIALTIES.includes(form.specialty);
   const createProgress = getAdminNurseCreateProgress(form);
 
   if (!isReady || !isAuthenticated || !roles.includes("ADMIN")) return null;
@@ -318,52 +330,56 @@ export default function AdminCreateNurseProfileScreen() {
             errorMessage={errors.category}
           />
 
-          <View style={{ flexDirection: "row", gap: designTokens.spacing.md }}>
-            <FormInput
-              testID={adminTestIds.nurses.create.specialtyInput}
-              label="Especialidad"
-              required
-              containerStyle={{ flex: 1 }}
-              accessibilityLabel="Especialidad profesional"
-              placeholder="Ej: Pediatría"
-              value={form.specialty}
-              onChangeText={(text) => setForm({ ...form, specialty: text })}
-              errorMessage={errors.specialty}
-            />
-            <FormInput
-              testID={adminTestIds.nurses.create.licenseInput}
-              label="Licencia / Exequátur"
-              containerStyle={{ flex: 1 }}
-              accessibilityLabel="Número de licencia o exequátur"
-              placeholder="(Opcional)"
-              value={form.licenseId ?? ""}
-              onChangeText={(text) => setForm({ ...form, licenseId: text })}
-            />
+          <Text style={styles.cardLabel}>Especialidad *</Text>
+          <View style={styles.chipsContainer}>
+            {SPECIALTIES.map((spec) => (
+              <Pressable
+                key={spec}
+                style={[styles.chip, form.specialty === spec && styles.chipActive]}
+                onPress={() => {
+                  hapticFeedback.selection();
+                  setCustomSpecialty("");
+                  setForm({ ...form, specialty: spec });
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`Especialidad: ${spec}`}
+                accessibilityState={{ selected: form.specialty === spec }}
+              >
+                <Text style={[styles.chipText, form.specialty === spec && styles.chipTextActive]}>{spec}</Text>
+              </Pressable>
+            ))}
           </View>
+          <FormInput
+            testID={adminTestIds.nurses.create.specialtyInput}
+            accessibilityLabel="Especificar otra especialidad"
+            placeholder="Ej: Cuidado geriátrico"
+            value={activeSpecialtyIsCustom ? form.specialty : customSpecialty}
+            onChangeText={(text) => {
+              setCustomSpecialty(text);
+              setForm({ ...form, specialty: text || SPECIALTIES[0] });
+            }}
+            onFocus={() => { if (!activeSpecialtyIsCustom) setForm({ ...form, specialty: "" }); }}
+            errorMessage={errors.specialty}
+          />
 
-          {Platform.OS === "web" ? (
-            <FormInput
-              testID={adminTestIds.nurses.create.hireDateInput}
-              label="Fecha de contratación"
-              required
-              accessibilityLabel="Fecha de contratación"
-              value={form.hireDate}
-              onChangeText={(text) => setForm({ ...form, hireDate: text })}
-              errorMessage={errors.hireDate}
-              {...({ type: "date" } as any)}
-            />
-          ) : (
-            <FormInput
-              testID={adminTestIds.nurses.create.hireDateInput}
-              label="Fecha de contratación"
-              required
-              accessibilityLabel="Fecha de contratación en formato AAAA-MM-DD"
-              placeholder="YYYY-MM-DD"
-              value={form.hireDate}
-              onChangeText={(text) => setForm({ ...form, hireDate: text })}
-              errorMessage={errors.hireDate}
-            />
-          )}
+          <FormInput
+            testID={adminTestIds.nurses.create.licenseInput}
+            label="Licencia / Exequátur"
+            accessibilityLabel="Número de licencia o exequátur"
+            placeholder="(Opcional)"
+            value={form.licenseId ?? ""}
+            onChangeText={(text) => setForm({ ...form, licenseId: text })}
+          />
+
+          <DateField
+            testID={adminTestIds.nurses.create.hireDateInput}
+            label="Fecha de contratación"
+            required
+            accessibilityLabel="Fecha de contratación"
+            value={form.hireDate}
+            onChange={(iso) => setForm({ ...form, hireDate: iso })}
+            errorMessage={errors.hireDate}
+          />
         </View>
 
         {/* === SECTION: PAGO === */}
