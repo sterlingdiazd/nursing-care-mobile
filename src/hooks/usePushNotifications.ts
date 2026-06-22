@@ -4,7 +4,7 @@ import { router } from "expo-router";
 
 import { useAuth } from "@/src/context/AuthContext";
 import { registerForPushAsync } from "@/src/services/pushNotificationsService";
-import { resolveAdminOperationalDeepLink } from "@/src/utils/adminOperationalUx";
+import { resolveDeepLink } from "@/src/utils/adminOperationalUx";
 
 /**
  * Mounted once from the root layout. Responsibilities:
@@ -19,16 +19,6 @@ import { resolveAdminOperationalDeepLink } from "@/src/utils/adminOperationalUx"
 function getDeepLinkPath(response: Notifications.NotificationResponse): string | null {
   const data = (response.notification?.request?.content?.data ?? {}) as Record<string, unknown>;
   return typeof data.deepLinkPath === "string" ? data.deepLinkPath : null;
-}
-
-/**
- * Resolve the backend-emitted deepLinkPath to a real Expo Router path.
- * Admin users have path aliases (e.g. /payroll → /admin/payroll) that must
- * be translated. Non-admin users receive paths that are already valid Expo
- * Router routes (e.g. /nurse/payroll), so they pass through unchanged.
- */
-function resolveDeepLink(path: string, roles: string[]): string {
-  return roles.includes("ADMIN") ? resolveAdminOperationalDeepLink(path) : path;
 }
 
 export function usePushNotifications() {
@@ -48,6 +38,9 @@ export function usePushNotifications() {
   }, [isReady, isAuthenticated, userId]);
 
   // Handle taps on notifications while the app is open or backgrounded.
+  // `roles` is in the dep array so the listener re-subscribes if roles change
+  // (e.g. a freshly-granted admin role), capturing the current value in the
+  // closure at subscription time.
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       const deepLinkPath = getDeepLinkPath(response);
@@ -55,7 +48,9 @@ export function usePushNotifications() {
         try {
           router.push(resolveDeepLink(deepLinkPath, roles) as never);
         } catch {
-          // Path no longer exists or router not ready; swallow.
+          // Path not found or router not yet mounted (e.g. the user tapped a
+          // push before the navigator finished rendering). The cold-start
+          // handler below covers the latter case for app-open taps.
         }
       }
     });
@@ -64,6 +59,12 @@ export function usePushNotifications() {
 
   // Cold-start tap handling: if the user opened the app by tapping a push,
   // honor that deep link once auth is ready.
+  //
+  // `roles` is listed as a dep to satisfy the exhaustive-deps rule and because
+  // AuthContext sets `isAuthenticated` and `roles` in the same synchronous
+  // state batch, so `roles` is already populated when this effect first fires.
+  // The `handledColdStartRef` latch (line above the async call) ensures this
+  // runs at most once per app lifecycle regardless of subsequent role changes.
   useEffect(() => {
     if (!isReady || !isAuthenticated) return;
     if (handledColdStartRef.current) return;
@@ -76,7 +77,8 @@ export function usePushNotifications() {
           try {
             router.push(resolveDeepLink(deepLinkPath, roles) as never);
           } catch {
-            // ignore
+            // ignore — the navigator may not be mounted yet on very fast cold
+            // starts; the notification payload is still accessible in-app.
           }
         }
       })

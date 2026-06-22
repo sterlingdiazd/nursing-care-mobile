@@ -10,6 +10,7 @@ import {
   getNotificationSecondaryActionLabel,
   getNotificationStatusLabel,
   resolveAdminOperationalDeepLink,
+  resolveDeepLink,
   sortAdminActionItems,
   sortAdminNotifications,
 } from "@/src/utils/adminOperationalUx";
@@ -328,5 +329,33 @@ describe("notification labels", () => {
 
     expect(getNotificationSecondaryActionLabel(item)).toBe("Marcar como leída");
     expect(getNotificationStatusLabel(item)).toContain("No leída");
+  });
+});
+
+describe("resolveDeepLink", () => {
+  it("applies the admin alias resolver for ADMIN-role users", () => {
+    // /payroll is a backend alias that must become /admin/payroll for admins
+    expect(resolveDeepLink("/payroll", ["ADMIN"])).toBe("/admin/payroll");
+  });
+
+  it("passes through the raw path unchanged for non-admin users", () => {
+    // Backend emits /nurse/payroll directly to nurse-role users
+    // (e.g. ConfirmNursePeriodPaymentHandler); no alias resolution needed
+    expect(resolveDeepLink("/nurse/payroll", ["NURSE"])).toBe("/nurse/payroll");
+  });
+
+  it("passes through the raw path unchanged when roles is empty", () => {
+    // Guards against routing an unauthenticated or role-less user to /admin
+    expect(resolveDeepLink("/nurse/payroll", [])).toBe("/nurse/payroll");
+  });
+
+  it("the admin resolver is NOT applied to non-admin users even when the path looks admin-like", () => {
+    // A non-admin user receiving /admin/something must NOT go through the
+    // resolver (which would return it unchanged via the /admin/* passthrough),
+    // but must also NOT be incorrectly gated — the raw path is used and Expo
+    // Router's own auth guards handle role enforcement on the target screen.
+    expect(resolveDeepLink("/admin/care-requests", ["NURSE"])).toBe(
+      "/admin/care-requests",
+    );
   });
 });

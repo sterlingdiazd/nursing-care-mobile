@@ -103,6 +103,21 @@ export function resolveAdminOperationalDeepLink(path: string | null | undefined)
   return "/admin";
 }
 
+/**
+ * Resolve a backend-emitted `deepLinkPath` to the correct Expo Router route
+ * for the current user's roles.
+ *
+ * Admin users receive path aliases (e.g. `/payroll` → `/admin/payroll`) that
+ * require translation via `resolveAdminOperationalDeepLink`. Non-admin users
+ * (nurses, clients) are assumed to receive paths that are already valid Expo
+ * Router routes — e.g. `/nurse/payroll` from `ConfirmNursePeriodPaymentHandler`
+ * — and those pass through unchanged. If the backend emits an unrecognised path
+ * for a non-admin user, Expo Router's `+not-found` screen handles it.
+ */
+export function resolveDeepLink(path: string, roles: string[]): string {
+  return roles.includes("ADMIN") ? resolveAdminOperationalDeepLink(path) : path;
+}
+
 export function getAdminSeverityPresentation(severity: AdminSeverity) {
   switch (severity) {
     case "High":
