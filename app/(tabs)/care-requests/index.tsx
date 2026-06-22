@@ -623,12 +623,12 @@ export default function CareRequestsScreen() {
                 }}
                 style={({ pressed }) => [
                   styles.assignmentBtn,
-                  styles.assignmentBtnReject,
+                  styles.modalCancelBtn,
                   assignmentBusyId && styles.disabled,
                   pressed && !assignmentBusyId && styles.buttonPressed,
                 ]}
               >
-                <Text style={styles.assignmentBtnRejectText}>Cancelar</Text>
+                <Text style={styles.modalCancelBtnText}>Cancelar</Text>
               </Pressable>
               <Pressable
                 testID={careRequestTestIds.list.rejectConfirmButton}
@@ -738,7 +738,7 @@ const styles = StyleSheet.create({
     flexDirection: "row", gap: designTokens.spacing.sm, marginTop: designTokens.spacing.md,
   },
   assignmentBtn: {
-    flex: 1, minHeight: 40, borderRadius: designTokens.radius.pill,
+    flex: 1, minHeight: 44, borderRadius: designTokens.radius.pill,
     alignItems: "center", justifyContent: "center",
     paddingHorizontal: designTokens.spacing.md, paddingVertical: designTokens.spacing.sm, borderWidth: 1,
   },
@@ -753,6 +753,12 @@ const styles = StyleSheet.create({
   },
   assignmentBtnRejectText: {
     color: designTokens.color.status.dangerText, fontWeight: "800", fontSize: designTokens.typography.label.fontSize,
+  },
+  modalCancelBtn: {
+    backgroundColor: designTokens.color.surface.primary, borderColor: designTokens.color.border.strong,
+  },
+  modalCancelBtnText: {
+    color: designTokens.color.ink.primary, fontWeight: "800", fontSize: designTokens.typography.label.fontSize,
   },
   assignmentErrorBanner: {
     color: designTokens.color.status.dangerText, backgroundColor: designTokens.color.surface.danger,
