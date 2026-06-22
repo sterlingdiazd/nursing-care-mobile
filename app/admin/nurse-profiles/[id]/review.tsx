@@ -5,6 +5,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { useAuth } from "@/src/context/AuthContext";
 import { FormInput } from "@/src/components/form";
+import { BankSelector } from "@/components/BankSelector";
 import { designTokens } from "@/src/design-system/tokens";
 import {
   getNurseProfileForAdmin,
@@ -232,15 +233,13 @@ export default function AdminReviewNurseProfileScreen() {
             errorMessage={errors.licenseId}
           />
 
-          <FormInput
+          <BankSelector
             testID={adminTestIds.nurses.review.bankNameInput}
-            nativeID={adminTestIds.nurses.review.bankNameInput}
             label="Banco"
             required
-            accessibilityLabel="Nombre del banco"
-            placeholder="Nombre del banco"
+            placeholder="Selecciona un banco"
             value={form.bankName}
-            onChangeText={(text) => setForm({ ...form, bankName: text })}
+            onChange={(text) => setForm({ ...form, bankName: text })}
             errorMessage={errors.bankName}
           />
 

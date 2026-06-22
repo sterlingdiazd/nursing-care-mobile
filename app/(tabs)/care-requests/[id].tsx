@@ -14,6 +14,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import type { FooterAction } from "@/src/components/navigation/AppFooter";
+import { BankSelector } from "@/components/BankSelector";
 import { useAuth } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
 import { logClientEvent } from "@/src/logging/clientLogger";
@@ -1127,13 +1128,12 @@ function PaymentProofSheet({
             style={styles.proofNoteInput}
             testID="report-payment-date"
           />
-          <TextInput
-            value={payingBank}
-            onChangeText={setPayingBank}
-            placeholder="Banco desde el que pagaste"
-            placeholderTextColor={designTokens.color.ink.muted}
-            style={styles.proofNoteInput}
+          <BankSelector
             testID="report-payment-bank"
+            label="Banco pagador"
+            placeholder="Banco desde el que pagaste"
+            value={payingBank}
+            onChange={setPayingBank}
           />
           <TextInput
             value={note}

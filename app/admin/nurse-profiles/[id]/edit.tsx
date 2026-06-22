@@ -8,6 +8,7 @@ import { useAuth } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
 import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import { FormInput, FormSwitch } from "@/src/components/form";
+import { BankSelector } from "@/components/BankSelector";
 import {
   getNurseProfileForAdmin,
   updateNurseProfileForAdmin,
@@ -422,13 +423,13 @@ export default function AdminEditNurseProfileScreen() {
           {step === 3 ? (
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Información Bancaria</Text>
-              <FormInput
+              <BankSelector
                 testID="admin-edit-nurse-bank-input"
-                label="Banco *"
+                label="Banco"
+                required
                 value={form.bankName}
-                onChangeText={(v) => updateField("bankName", v)}
+                onChange={(v) => updateField("bankName", v)}
                 errorMessage={errors.bankName}
-                accessibilityLabel="Banco"
               />
               <FormInput
                 testID="admin-edit-nurse-account-input"

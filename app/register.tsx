@@ -28,6 +28,7 @@ import { authTestIds } from "@/src/testing/authTestIds";
 import { FormButton, FormInput } from "@/src/components/form";
 import { designTokens } from "@/src/design-system/tokens";
 import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
+import { BankSelector } from "@/components/BankSelector";
 import { Banner } from "@/src/components/shared/Banner";
 import { testProps } from "@/src/testing/testIds";
 
@@ -146,7 +147,7 @@ export default function RegisterScreen() {
     const nextHireDateError = !hireDate.trim() ? "La fecha de contratación es obligatoria" : "";
     const nextSpecialtyError = !specialty.trim() ? "La especialidad es obligatoria" : "";
     const nextLicenseIdError = getOptionalDigitsFieldError(licenseId, "La licencia");
-    const nextBankNameError = getTextOnlyFieldError(bankName, "El banco");
+    const nextBankNameError = bankName.trim() ? "" : "El banco es obligatorio";
     const nextAccountNumberError = getOptionalDigitsFieldError(accountNumber, "El número de cuenta");
 
     setHireDateError(nextHireDateError);
@@ -434,14 +435,14 @@ export default function RegisterScreen() {
         keyboardType="number-pad"
       />
 
-      <FormInput
+      <BankSelector
         testID="register-bank-name-input"
-        accessibilityLabel="Nombre del banco"
         label="Banco"
-        placeholder="Nombre del banco"
+        placeholder="Selecciona un banco"
         value={bankName}
-        onChangeText={(val) => setBankName(sanitizeTextOnlyInput(val))}
-        error={bankNameError}
+        onChange={setBankName}
+        errorMessage={bankNameError}
+        required
       />
 
       <FormInput

@@ -13,6 +13,7 @@ import { getNurseProfileOptions } from "@/src/services/catalogOptionsService";
 import type { CatalogCodeNameOption } from "@/src/types/catalog";
 import { DateField, FormInput, FormSwitch } from "@/src/components/form";
 import { FormButton } from "@/src/components/form/FormButton";
+import { BankSelector } from "@/components/BankSelector";
 import { adminTestIds } from "@/src/testing/testIds";
 import { getAdminNurseCreateProgress } from "@/src/utils/adminCreationUx";
 import { mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
@@ -472,13 +473,12 @@ export default function AdminCreateNurseProfileScreen() {
           </Pressable>
           {showBankingInfo && (
             <View style={styles.accordionContent}>
-              <FormInput
+              <BankSelector
                 testID={adminTestIds.nurses.create.bankNameInput}
                 label="Nombre del Banco"
-                accessibilityLabel="Nombre del banco"
-                placeholder="Ej: Banreservas"
+                placeholder="Selecciona un banco"
                 value={form.bankName}
-                onChangeText={(text) => setForm({ ...form, bankName: text })}
+                onChange={(text) => setForm({ ...form, bankName: text })}
                 errorMessage={errors.bankName}
               />
               <FormInput
