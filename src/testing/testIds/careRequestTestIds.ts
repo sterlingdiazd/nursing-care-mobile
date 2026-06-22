@@ -1,6 +1,14 @@
 export const careRequestTestIds = {
   list: {
     screen: "care-request-list-screen",
+    // Nurse quick accept/reject of an `Asignada` assignment from the list card.
+    acceptAssignment: (id: string) => `care-request-accept-${id}`,
+    rejectAssignment: (id: string) => `care-request-reject-${id}`,
+    assignmentError: "care-requests-assignment-error",
+    rejectSheet: "care-requests-reject-sheet",
+    rejectReasonInput: "care-requests-reject-reason-input",
+    rejectConfirmButton: "care-requests-reject-confirm",
+    rejectError: "care-requests-reject-error",
   },
   detail: {
     screen: "care-detail-page",

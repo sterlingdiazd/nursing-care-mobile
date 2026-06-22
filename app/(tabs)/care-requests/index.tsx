@@ -27,6 +27,7 @@ import { formatDOP } from "@/src/utils/currency";
 import { usePaginatedList } from "@/src/hooks/usePaginatedList";
 import { designTokens } from "@/src/design-system/tokens";
 import { navigationTestIds } from "@/src/testing/testIds/navigationTestIds";
+import { careRequestTestIds } from "@/src/testing/testIds";
 import { hapticFeedback } from "@/src/utils/haptics";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { OfflineSnapshotBanner } from "@/src/components/shared/OfflineSnapshotBanner";
@@ -176,8 +177,8 @@ function CareRequestCard({
       {assignmentActions ? (
         <View style={styles.assignmentActionsRow}>
           <Pressable
-            testID={`care-request-reject-${item.id}`}
-            nativeID={`care-request-reject-${item.id}`}
+            testID={careRequestTestIds.list.rejectAssignment(item.id)}
+            nativeID={careRequestTestIds.list.rejectAssignment(item.id)}
             accessibilityRole="button"
             accessibilityLabel="Rechazar asignación"
             disabled={assignmentActions.busy}
@@ -192,8 +193,8 @@ function CareRequestCard({
             <Text style={styles.assignmentBtnRejectText}>Rechazar</Text>
           </Pressable>
           <Pressable
-            testID={`care-request-accept-${item.id}`}
-            nativeID={`care-request-accept-${item.id}`}
+            testID={careRequestTestIds.list.acceptAssignment(item.id)}
+            nativeID={careRequestTestIds.list.acceptAssignment(item.id)}
             accessibilityRole="button"
             accessibilityLabel="Aceptar asignación"
             disabled={assignmentActions.busy}
@@ -441,7 +442,7 @@ export default function CareRequestsScreen() {
       ) : null}
 
       {assignmentError && !rejectTarget ? (
-        <Text style={styles.assignmentErrorBanner} testID="care-requests-assignment-error">
+        <Text style={styles.assignmentErrorBanner} testID={careRequestTestIds.list.assignmentError}>
           {assignmentError}
         </Text>
       ) : null}
@@ -587,14 +588,14 @@ export default function CareRequestsScreen() {
         }}
       >
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard} testID="care-requests-reject-sheet">
+          <View style={styles.modalCard} testID={careRequestTestIds.list.rejectSheet}>
             <Text style={styles.modalTitle}>Rechazar asignación</Text>
             <Text style={styles.modalBody}>
               Indica el motivo del rechazo. La administración lo usará para reasignar la solicitud.
             </Text>
             <TextInput
-              testID="care-requests-reject-reason-input"
-              nativeID="care-requests-reject-reason-input"
+              testID={careRequestTestIds.list.rejectReasonInput}
+              nativeID={careRequestTestIds.list.rejectReasonInput}
               style={styles.modalInput}
               value={rejectReason}
               onChangeText={setRejectReason}
@@ -605,7 +606,7 @@ export default function CareRequestsScreen() {
               accessibilityLabel="Motivo del rechazo"
             />
             {assignmentError ? (
-              <Text style={styles.modalError} testID="care-requests-reject-error">
+              <Text style={styles.modalError} testID={careRequestTestIds.list.rejectError}>
                 {assignmentError}
               </Text>
             ) : null}
@@ -630,8 +631,8 @@ export default function CareRequestsScreen() {
                 <Text style={styles.assignmentBtnRejectText}>Cancelar</Text>
               </Pressable>
               <Pressable
-                testID="care-requests-reject-confirm"
-                nativeID="care-requests-reject-confirm"
+                testID={careRequestTestIds.list.rejectConfirmButton}
+                nativeID={careRequestTestIds.list.rejectConfirmButton}
                 accessibilityRole="button"
                 accessibilityLabel="Confirmar rechazo"
                 disabled={Boolean(assignmentBusyId)}
