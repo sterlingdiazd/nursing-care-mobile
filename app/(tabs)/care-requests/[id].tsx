@@ -18,11 +18,13 @@ import { useAuth } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
 import { logClientEvent } from "@/src/logging/clientLogger";
 import {
+  acceptAssignment,
   assessPaymentProofOcr,
   assignCareRequestNurse,
   downloadAndShareCareRequestReceipt,
   getActiveNurseProfiles,
   getCareRequestById,
+  rejectAssignment,
   reportPayment,
   transitionCareRequest,
   type ActiveNurseProfileSummary,
@@ -43,6 +45,13 @@ import { hapticFeedback } from "@/src/utils/haptics";
 
 function getStatusPalette(status: CareRequestDto["status"]) {
   switch (status) {
+    case "Asignada":
+      // Awaiting the nurse's accept/reject response — distinct purple "action needed" tone.
+      return {
+        bg: designTokens.color.palette.purple.soft,
+        fg: designTokens.color.palette.purple.text,
+        rail: designTokens.color.palette.purple.color,
+      };
     case "Approved":
       return {
         bg: designTokens.color.surface.success,
@@ -86,6 +95,7 @@ function getStatusPalette(status: CareRequestDto["status"]) {
 
 function getStatusLabel(status: CareRequestDto["status"]) {
   switch (status) {
+    case "Asignada": return "Asignada";
     case "Approved": return "Aprobada";
     case "Rejected": return "Rechazada";
     case "Completed": return "Completada";
@@ -135,6 +145,8 @@ export default function CareRequestDetailScreen() {
   const [paymentSheetVisible, setPaymentSheetVisible] = useState(false);
   const [isDownloadingReceipt, setIsDownloadingReceipt] = useState(false);
   const [nurseSearchQuery, setNurseSearchQuery] = useState("");
+  const [rejectSheetVisible, setRejectSheetVisible] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
 
   const loadCareRequest = async () => {
     if (!id) return;
@@ -220,11 +232,16 @@ export default function CareRequestDetailScreen() {
   const assignedNurseRecord =
     activeNurses.find((n) => n.userId === (careRequest?.assignedNurse ?? assignedNurseId)) ?? null;
   const selectedNurseRecord = activeNurses.find((n) => n.userId === assignedNurseId) ?? null;
+  // Prefer the admin-loaded nurse record (full label); otherwise fall back to the
+  // server-resolved name carried on the DTO (this is what a nurse viewer sees, since
+  // she never loads the admin nurse roster); finally a generic label, then "Sin asignar".
   const assignedNurseLabel = assignedNurseRecord
     ? buildNurseLabel(assignedNurseRecord)
-    : careRequest?.assignedNurse
-      ? "Enfermera asignada"
-      : "Sin asignar";
+    : careRequest?.assignedNurseDisplayName
+      ? careRequest.assignedNurseDisplayName
+      : careRequest?.assignedNurse
+        ? "Enfermera asignada"
+        : "Sin asignar";
   const selectedNurseLabel = selectedNurseRecord ? buildNurseLabel(selectedNurseRecord) : assignedNurseLabel;
 
   const runAction = async (action: CareRequestTransitionAction) => {
@@ -243,6 +260,45 @@ export default function CareRequestDetailScreen() {
     } catch (nextError: any) {
       hapticFeedback.error();
       setError(nextError.message ?? "No fue posible actualizar la solicitud.");
+    } finally {
+      setIsActing(false);
+    }
+  };
+
+  const runAcceptAssignment = async () => {
+    if (!id) return;
+    setIsActing(true); setError(null); setSuccessMessage(null);
+    try {
+      const updated = await acceptAssignment(id);
+      setCareRequest(updated);
+      hapticFeedback.success();
+      setSuccessMessage("Asignación aceptada. La solicitud quedó aprobada.");
+    } catch (nextError: any) {
+      hapticFeedback.error();
+      setError(nextError.message ?? "No fue posible aceptar la asignación.");
+    } finally {
+      setIsActing(false);
+    }
+  };
+
+  const runRejectAssignment = async () => {
+    if (!id) return;
+    const reason = rejectReason.trim();
+    if (!reason) {
+      setError("Debes indicar el motivo del rechazo.");
+      return;
+    }
+    setIsActing(true); setError(null); setSuccessMessage(null);
+    try {
+      const updated = await rejectAssignment(id, reason);
+      setCareRequest(updated);
+      setRejectSheetVisible(false);
+      setRejectReason("");
+      hapticFeedback.success();
+      setSuccessMessage("Asignación rechazada. La solicitud volvió a la administración para reasignarse.");
+    } catch (nextError: any) {
+      hapticFeedback.error();
+      setError(nextError.message ?? "No fue posible rechazar la asignación.");
     } finally {
       setIsActing(false);
     }
@@ -311,6 +367,10 @@ export default function CareRequestDetailScreen() {
   const isNursePayViewer = !showClientPricing && roles.includes("NURSE");
   const canApproveOrReject = isAdmin && careRequest.status === "Pending";
   const canApprove = canApproveOrReject && Boolean(careRequest.assignedNurse);
+  // The assigned nurse can accept or reject the offer while it is `Asignada`.
+  const canRespondToAssignment =
+    roles.includes("NURSE") && Boolean(userId) &&
+    careRequest.status === "Asignada" && careRequest.assignedNurse === userId;
   const canComplete =
     roles.includes("NURSE") && Boolean(userId) &&
     careRequest.status === "Approved" && careRequest.assignedNurse === userId;
@@ -322,7 +382,15 @@ export default function CareRequestDetailScreen() {
 
   // Build action set
   let primaryAction: FooterAction | null = null;
-  if (canApprove) {
+  if (canRespondToAssignment) {
+    primaryAction = {
+      label: "Aceptar",
+      onPress: () => void runAcceptAssignment(),
+      variant: "primary",
+      disabled: isActing,
+      testID: careRequestTestIds.detail.acceptAssignmentButton,
+    };
+  } else if (canApprove) {
     primaryAction = {
       label: "Aprobar",
       onPress: () => void runAction("approve"),
@@ -352,7 +420,20 @@ export default function CareRequestDetailScreen() {
   }
 
   let secondaryAction: FooterAction | null = null;
-  if (isAdmin && careRequest.assignedNurse && (canApproveOrReject || careRequest.status === "Approved")) {
+  if (canRespondToAssignment) {
+    secondaryAction = {
+      label: "Rechazar",
+      onPress: () => {
+        hapticFeedback.selection();
+        setError(null);
+        setRejectReason("");
+        setRejectSheetVisible(true);
+      },
+      variant: "danger",
+      disabled: isActing,
+      testID: careRequestTestIds.detail.rejectAssignmentButton,
+    };
+  } else if (isAdmin && careRequest.assignedNurse && (canApproveOrReject || careRequest.status === "Approved")) {
     secondaryAction = {
       label: "Cambiar enfermera",
       onPress: () => setAssignmentSheetVisible(true),
@@ -516,7 +597,7 @@ export default function CareRequestDetailScreen() {
                 testID={careRequestTestIds.detail.nursePayCard}
                 nativeID={careRequestTestIds.detail.nursePayCard}
               >
-                <Text style={styles.totalLabel}>Tu pago por este servicio</Text>
+                <Text style={styles.totalLabel}>Pago</Text>
                 <Text
                   style={styles.totalValue}
                   testID={careRequestTestIds.detail.nursePayValue}
@@ -635,6 +716,79 @@ export default function CareRequestDetailScreen() {
           setOverflowSheetVisible(false);
         }}
       />
+
+      <Modal
+        visible={rejectSheetVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (isActing) return;
+          setRejectSheetVisible(false);
+        }}
+      >
+        <View style={styles.rejectBackdrop}>
+          <View
+            style={styles.rejectCard}
+            testID={careRequestTestIds.detail.rejectAssignmentSheet}
+            nativeID={careRequestTestIds.detail.rejectAssignmentSheet}
+          >
+            <Text style={styles.rejectTitle}>Rechazar asignación</Text>
+            <Text style={styles.rejectBody}>
+              Indica el motivo del rechazo. La administración lo usará para reasignar la solicitud.
+            </Text>
+            <TextInput
+              testID={careRequestTestIds.detail.rejectAssignmentReasonInput}
+              nativeID={careRequestTestIds.detail.rejectAssignmentReasonInput}
+              style={styles.rejectInput}
+              value={rejectReason}
+              onChangeText={setRejectReason}
+              placeholder="Motivo del rechazo"
+              placeholderTextColor={designTokens.color.ink.muted}
+              multiline
+              editable={!isActing}
+              accessibilityLabel="Motivo del rechazo"
+            />
+            {error ? <Text style={styles.rejectError}>{error}</Text> : null}
+            <View style={styles.rejectActions}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Cancelar"
+                disabled={isActing}
+                onPress={() => {
+                  hapticFeedback.selection();
+                  setRejectSheetVisible(false);
+                  setRejectReason("");
+                  setError(null);
+                }}
+                style={({ pressed }) => [
+                  styles.rejectButton,
+                  styles.rejectCancelButton,
+                  isActing && styles.disabled,
+                  pressed && !isActing && styles.pressed,
+                ]}
+              >
+                <Text style={styles.rejectCancelText}>Cancelar</Text>
+              </Pressable>
+              <Pressable
+                testID={careRequestTestIds.detail.rejectAssignmentConfirmButton}
+                nativeID={careRequestTestIds.detail.rejectAssignmentConfirmButton}
+                accessibilityRole="button"
+                accessibilityLabel="Confirmar rechazo"
+                disabled={isActing}
+                onPress={() => void runRejectAssignment()}
+                style={({ pressed }) => [
+                  styles.rejectButton,
+                  styles.rejectConfirmButton,
+                  isActing && styles.disabled,
+                  pressed && !isActing && styles.pressed,
+                ]}
+              >
+                <Text style={styles.rejectConfirmText}>{isActing ? "Enviando..." : "Rechazar"}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <PaymentProofSheet
         visible={paymentSheetVisible}
@@ -1460,6 +1614,49 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.78 },
   disabled: { opacity: 0.45 },
+
+  // Reject-assignment reason modal (nurse).
+  rejectBackdrop: {
+    flex: 1, backgroundColor: "rgba(15, 23, 42, 0.45)",
+    alignItems: "center", justifyContent: "center", padding: designTokens.spacing.xl,
+  },
+  rejectCard: {
+    width: "100%", backgroundColor: designTokens.color.surface.primary,
+    borderRadius: designTokens.radius.xl, padding: designTokens.spacing.xl, gap: designTokens.spacing.md,
+  },
+  rejectTitle: {
+    color: designTokens.color.ink.primary, fontSize: designTokens.typography.section.fontSize, fontWeight: "800",
+  },
+  rejectBody: {
+    color: designTokens.color.ink.muted, fontSize: designTokens.typography.label.fontSize, lineHeight: 19,
+  },
+  rejectInput: {
+    minHeight: 80, borderWidth: 1, borderColor: designTokens.color.border.strong,
+    borderRadius: designTokens.radius.lg, padding: designTokens.spacing.md,
+    color: designTokens.color.ink.primary, fontSize: designTokens.typography.body.fontSize,
+    textAlignVertical: "top",
+  },
+  rejectError: {
+    color: designTokens.color.status.dangerText, fontSize: designTokens.typography.label.fontSize, fontWeight: "700",
+  },
+  rejectActions: { flexDirection: "row", gap: designTokens.spacing.sm, marginTop: designTokens.spacing.xs },
+  rejectButton: {
+    flex: 1, minHeight: 44, borderRadius: designTokens.radius.pill,
+    alignItems: "center", justifyContent: "center", borderWidth: 1,
+    paddingHorizontal: designTokens.spacing.md,
+  },
+  rejectCancelButton: {
+    backgroundColor: designTokens.color.surface.primary, borderColor: designTokens.color.border.strong,
+  },
+  rejectCancelText: {
+    color: designTokens.color.ink.primary, fontWeight: "800", fontSize: designTokens.typography.label.fontSize,
+  },
+  rejectConfirmButton: {
+    backgroundColor: designTokens.color.status.dangerText, borderColor: designTokens.color.status.dangerText,
+  },
+  rejectConfirmText: {
+    color: designTokens.color.ink.inverse, fontWeight: "800", fontSize: designTokens.typography.label.fontSize,
+  },
 
   // Sheet styles (shared)
   sheetBackdrop: {

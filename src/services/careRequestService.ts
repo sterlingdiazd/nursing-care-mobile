@@ -302,6 +302,33 @@ export async function transitionCareRequest(
   });
 }
 
+/**
+ * Nurse accepts the assignment offered to her. The backend moves the request from
+ * `Asignada` to `Approved` (no admin re-approval) and stamps the accepted time.
+ * Returns the refreshed care request (nurse-facing: client pricing stripped).
+ */
+export async function acceptAssignment(id: string): Promise<CareRequestDto> {
+  return requestJson<CareRequestDto>({
+    path: `/api/care-requests/${id}/accept-assignment`,
+    method: "POST",
+    auth: true,
+  });
+}
+
+/**
+ * Nurse rejects the assignment. A reason is required by the backend (it tells the
+ * admin why to reassign). The request returns to `Pending` with the nurse cleared,
+ * so it leaves her queue.
+ */
+export async function rejectAssignment(id: string, reason: string): Promise<CareRequestDto> {
+  return requestJson<CareRequestDto>({
+    path: `/api/care-requests/${id}/reject-assignment`,
+    method: "POST",
+    body: { reason },
+    auth: true,
+  });
+}
+
 export async function assignCareRequestNurse(
   id: string,
   dto: AssignCareRequestNurseRequest,

@@ -2,11 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Modal,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   useWindowDimensions,
   View,
 } from "react-native";
@@ -17,7 +19,7 @@ import { useAuth } from "@/src/context/AuthContext";
 import { StatusBadge } from "@/src/components/shared/StatusBadge";
 import { FilterSelect } from "@/src/components/shared/FilterSelect";
 import { logClientEvent } from "@/src/logging/clientLogger";
-import { getCareRequests } from "@/src/services/careRequestService";
+import { acceptAssignment, getCareRequests, rejectAssignment } from "@/src/services/careRequestService";
 import { CareRequestDto } from "@/src/types/careRequest";
 import { canAccessCareRequests, canSeeClientPricing } from "@/src/utils/authRedirect";
 import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
@@ -30,7 +32,7 @@ import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigation
 import { OfflineSnapshotBanner } from "@/src/components/shared/OfflineSnapshotBanner";
 import { SnapshotBuckets } from "@/src/services/apiSnapshotCache";
 
-type StatusFilter = "Active" | "Pending" | "Approved" | "Completed" | "Rejected" | "Cancelled" | "All";
+type StatusFilter = "Active" | "Pending" | "Asignada" | "Approved" | "Completed" | "Rejected" | "Cancelled" | "All";
 
 interface FilterDef {
   key: StatusFilter;
@@ -48,18 +50,22 @@ const FILTERS: FilterDef[] = [
   { key: "All", label: "Todas", status: null },
 ];
 
-// Nurses only manage the statuses tied to their assigned work — the active
-// (assigned/approved) services and the ones they have completed. Rejected /
-// cancelled / pending-triage chips are admin/client concerns and would only add
-// noise. (When Phase 3 lands the "Asignada" status, add it here.)
+// Nurses only manage the statuses tied to their assigned work — assignments
+// awaiting her response (Asignada), the active (assigned/approved) services, and
+// the ones she has completed. Rejected / cancelled / pending-triage chips are
+// admin/client concerns and would only add noise.
 const NURSE_FILTERS: FilterDef[] = [
   { key: "Active", label: "Activas", status: null },
+  { key: "Asignada", label: "Por responder", status: "Asignada" },
   { key: "Approved", label: "Aprobadas", status: "Approved" },
   { key: "Completed", label: "Completadas", status: "Completed" },
 ];
 
 function getStatusColors(status: CareRequestDto["status"]) {
   switch (status) {
+    case "Asignada":
+      // Awaiting the nurse's accept/reject response — distinct purple "action needed" tone.
+      return { bg: designTokens.color.palette.purple.soft, fg: designTokens.color.palette.purple.text };
     case "Approved":
       return { bg: designTokens.color.surface.success, fg: designTokens.color.status.successText };
     case "Rejected":
@@ -75,6 +81,7 @@ function getStatusColors(status: CareRequestDto["status"]) {
 
 function getStatusLabel(status: CareRequestDto["status"]) {
   switch (status) {
+    case "Asignada": return "Asignada";
     case "Approved": return "Aprobada";
     case "Rejected": return "Rechazada";
     case "Completed": return "Completada";
@@ -107,11 +114,19 @@ function getPaymentBadgeProps(item: CareRequestDto): { label: string; tone: "neu
 function CareRequestCard({
   item,
   showClientBilling,
+  assignmentActions,
 }: {
   item: CareRequestDto;
   // ADMIN/CLIENT see the client billing badge (Facturado/Pagado…). Nurses do
   // not — they see their own pay instead.
   showClientBilling: boolean;
+  // Present only for a nurse viewing one of HER `Asignada` requests: a quick
+  // accept/reject pair so she can respond without opening the detail screen.
+  assignmentActions?: {
+    onAccept: () => void;
+    onReject: () => void;
+    busy: boolean;
+  } | null;
 }) {
   const colors = getStatusColors(item.status);
   const statusLabel = getStatusLabel(item.status);
@@ -154,10 +169,46 @@ function CareRequestCard({
             testID={`care-request-nurse-pay-${item.id}`}
             nativeID={`care-request-nurse-pay-${item.id}`}
           >
-            Tu pago: {formatDOP(item.nurseExpectedPay)}
+            Pago: {formatDOP(item.nurseExpectedPay)}
           </Text>
         ) : null}
       </View>
+      {assignmentActions ? (
+        <View style={styles.assignmentActionsRow}>
+          <Pressable
+            testID={`care-request-reject-${item.id}`}
+            nativeID={`care-request-reject-${item.id}`}
+            accessibilityRole="button"
+            accessibilityLabel="Rechazar asignación"
+            disabled={assignmentActions.busy}
+            onPress={assignmentActions.onReject}
+            style={({ pressed }) => [
+              styles.assignmentBtn,
+              styles.assignmentBtnReject,
+              assignmentActions.busy && styles.disabled,
+              pressed && !assignmentActions.busy && styles.buttonPressed,
+            ]}
+          >
+            <Text style={styles.assignmentBtnRejectText}>Rechazar</Text>
+          </Pressable>
+          <Pressable
+            testID={`care-request-accept-${item.id}`}
+            nativeID={`care-request-accept-${item.id}`}
+            accessibilityRole="button"
+            accessibilityLabel="Aceptar asignación"
+            disabled={assignmentActions.busy}
+            onPress={assignmentActions.onAccept}
+            style={({ pressed }) => [
+              styles.assignmentBtn,
+              styles.assignmentBtnAccept,
+              assignmentActions.busy && styles.disabled,
+              pressed && !assignmentActions.busy && styles.buttonPressed,
+            ]}
+          >
+            <Text style={styles.assignmentBtnAcceptText}>Aceptar</Text>
+          </Pressable>
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -184,7 +235,7 @@ function buildPageDisplay(current: number, total: number): Array<number | "ellip
 }
 
 export default function CareRequestsScreen() {
-  const { isAuthenticated, isReady, roles, requiresProfileCompletion, requiresAdminReview } = useAuth();
+  const { isAuthenticated, isReady, roles, userId, requiresProfileCompletion, requiresAdminReview } = useAuth();
   const canOpenCareRequests = canAccessCareRequests({ roles, requiresProfileCompletion, requiresAdminReview });
   const { width: viewportWidth } = useWindowDimensions();
   const pageWidth = Math.max(0, viewportWidth - SHELL_HORIZONTAL_PADDING * 2);
@@ -192,6 +243,12 @@ export default function CareRequestsScreen() {
   const [filter, setFilter] = useState<StatusFilter>("Active");
   const [currentPage, setCurrentPage] = useState(1);
   const pagerRef = useRef<FlatList<CareRequestDto[]> | null>(null);
+
+  // Quick accept/reject of an assignment from the list (nurse, status `Asignada`).
+  const [assignmentBusyId, setAssignmentBusyId] = useState<string | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<CareRequestDto | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [assignmentError, setAssignmentError] = useState<string | null>(null);
 
   // Reset to page 1 when filter changes
   useEffect(() => {
@@ -219,6 +276,49 @@ export default function CareRequestsScreen() {
     cacheBucket: SnapshotBuckets.careRequestsList(primaryRole),
   });
 
+  const handleAcceptAssignment = useCallback(
+    async (item: CareRequestDto) => {
+      hapticFeedback.selection();
+      setAssignmentBusyId(item.id);
+      setAssignmentError(null);
+      try {
+        await acceptAssignment(item.id);
+        hapticFeedback.success();
+        await refresh();
+      } catch (e: any) {
+        hapticFeedback.error();
+        setAssignmentError(e?.message ?? "No fue posible aceptar la asignación.");
+      } finally {
+        setAssignmentBusyId(null);
+      }
+    },
+    [refresh],
+  );
+
+  const submitRejectAssignment = useCallback(async () => {
+    if (!rejectTarget) return;
+    const reason = rejectReason.trim();
+    if (!reason) {
+      setAssignmentError("Debes indicar el motivo del rechazo.");
+      return;
+    }
+    hapticFeedback.selection();
+    setAssignmentBusyId(rejectTarget.id);
+    setAssignmentError(null);
+    try {
+      await rejectAssignment(rejectTarget.id, reason);
+      hapticFeedback.success();
+      setRejectTarget(null);
+      setRejectReason("");
+      await refresh();
+    } catch (e: any) {
+      hapticFeedback.error();
+      setAssignmentError(e?.message ?? "No fue posible rechazar la asignación.");
+    } finally {
+      setAssignmentBusyId(null);
+    }
+  }, [refresh, rejectReason, rejectTarget]);
+
   useEffect(() => {
     if (!isReady) return;
     if (!isAuthenticated) {
@@ -234,7 +334,8 @@ export default function CareRequestsScreen() {
   const filtered = useMemo(() => {
     let items: CareRequestDto[];
     if (filter === "All") items = data;
-    else if (filter === "Active") items = data.filter((r) => r.status === "Pending" || r.status === "Approved");
+    else if (filter === "Active")
+      items = data.filter((r) => r.status === "Pending" || r.status === "Asignada" || r.status === "Approved");
     else items = data.filter((r) => r.status === filter);
     return [...items].sort(
       (a, b) => new Date(b.createdAtUtc).getTime() - new Date(a.createdAtUtc).getTime(),
@@ -283,10 +384,10 @@ export default function CareRequestsScreen() {
 
   const counts = useMemo(() => {
     const out: Record<StatusFilter, number> = {
-      Active: 0, Pending: 0, Approved: 0, Completed: 0, Rejected: 0, Cancelled: 0, All: data.length,
+      Active: 0, Pending: 0, Asignada: 0, Approved: 0, Completed: 0, Rejected: 0, Cancelled: 0, All: data.length,
     };
     for (const r of data) {
-      if (r.status === "Pending" || r.status === "Approved") out.Active += 1;
+      if (r.status === "Pending" || r.status === "Asignada" || r.status === "Approved") out.Active += 1;
       if (r.status in out) {
         out[r.status as StatusFilter] = (out[r.status as StatusFilter] ?? 0) + 1;
       }
@@ -339,6 +440,12 @@ export default function CareRequestsScreen() {
         </View>
       ) : null}
 
+      {assignmentError && !rejectTarget ? (
+        <Text style={styles.assignmentErrorBanner} testID="care-requests-assignment-error">
+          {assignmentError}
+        </Text>
+      ) : null}
+
       <View style={styles.filterStrip}>
         <FilterSelect<StatusFilter>
           label="Estado"
@@ -380,9 +487,30 @@ export default function CareRequestsScreen() {
                 <FlatList
                   data={pageItems}
                   keyExtractor={(item) => item.id}
-                  renderItem={({ item }) => (
-                    <CareRequestCard item={item} showClientBilling={showClientBilling} />
-                  )}
+                  renderItem={({ item }) => {
+                    const canRespond =
+                      isNurseViewer && item.status === "Asignada" && Boolean(userId) && item.assignedNurse === userId;
+                    return (
+                      <CareRequestCard
+                        item={item}
+                        showClientBilling={showClientBilling}
+                        assignmentActions={
+                          canRespond
+                            ? {
+                                onAccept: () => void handleAcceptAssignment(item),
+                                onReject: () => {
+                                  hapticFeedback.selection();
+                                  setAssignmentError(null);
+                                  setRejectReason("");
+                                  setRejectTarget(item);
+                                },
+                                busy: assignmentBusyId === item.id,
+                              }
+                            : null
+                        }
+                      />
+                    );
+                  }}
                   ItemSeparatorComponent={() => <View style={styles.separator} />}
                   refreshing={isRefreshing}
                   onRefresh={refresh}
@@ -448,6 +576,81 @@ export default function CareRequestsScreen() {
           </View>
         </View>
       )}
+
+      <Modal
+        visible={rejectTarget != null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (assignmentBusyId) return;
+          setRejectTarget(null);
+        }}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard} testID="care-requests-reject-sheet">
+            <Text style={styles.modalTitle}>Rechazar asignación</Text>
+            <Text style={styles.modalBody}>
+              Indica el motivo del rechazo. La administración lo usará para reasignar la solicitud.
+            </Text>
+            <TextInput
+              testID="care-requests-reject-reason-input"
+              nativeID="care-requests-reject-reason-input"
+              style={styles.modalInput}
+              value={rejectReason}
+              onChangeText={setRejectReason}
+              placeholder="Motivo del rechazo"
+              placeholderTextColor={designTokens.color.ink.muted}
+              multiline
+              editable={!assignmentBusyId}
+              accessibilityLabel="Motivo del rechazo"
+            />
+            {assignmentError ? (
+              <Text style={styles.modalError} testID="care-requests-reject-error">
+                {assignmentError}
+              </Text>
+            ) : null}
+            <View style={styles.modalActions}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Cancelar"
+                disabled={Boolean(assignmentBusyId)}
+                onPress={() => {
+                  hapticFeedback.selection();
+                  setRejectTarget(null);
+                  setRejectReason("");
+                  setAssignmentError(null);
+                }}
+                style={({ pressed }) => [
+                  styles.assignmentBtn,
+                  styles.assignmentBtnReject,
+                  assignmentBusyId && styles.disabled,
+                  pressed && !assignmentBusyId && styles.buttonPressed,
+                ]}
+              >
+                <Text style={styles.assignmentBtnRejectText}>Cancelar</Text>
+              </Pressable>
+              <Pressable
+                testID="care-requests-reject-confirm"
+                nativeID="care-requests-reject-confirm"
+                accessibilityRole="button"
+                accessibilityLabel="Confirmar rechazo"
+                disabled={Boolean(assignmentBusyId)}
+                onPress={() => void submitRejectAssignment()}
+                style={({ pressed }) => [
+                  styles.assignmentBtn,
+                  styles.modalConfirmBtn,
+                  assignmentBusyId && styles.disabled,
+                  pressed && !assignmentBusyId && styles.buttonPressed,
+                ]}
+              >
+                <Text style={styles.modalConfirmBtnText}>
+                  {assignmentBusyId ? "Enviando..." : "Rechazar"}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </MobileWorkspaceShell>
   );
 }
@@ -529,4 +732,59 @@ const styles = StyleSheet.create({
   cardFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: designTokens.spacing.sm, marginTop: designTokens.spacing.xs },
   cardMeta: { color: designTokens.color.ink.muted, fontSize: designTokens.typography.label.fontSize, lineHeight: 19, flex: 1 },
   nursePay: { color: designTokens.color.status.successText, fontSize: designTokens.typography.label.fontSize, fontWeight: "800" },
+
+  assignmentActionsRow: {
+    flexDirection: "row", gap: designTokens.spacing.sm, marginTop: designTokens.spacing.md,
+  },
+  assignmentBtn: {
+    flex: 1, minHeight: 40, borderRadius: designTokens.radius.pill,
+    alignItems: "center", justifyContent: "center",
+    paddingHorizontal: designTokens.spacing.md, paddingVertical: designTokens.spacing.sm, borderWidth: 1,
+  },
+  assignmentBtnAccept: {
+    backgroundColor: designTokens.color.status.successText, borderColor: designTokens.color.status.successText,
+  },
+  assignmentBtnAcceptText: {
+    color: designTokens.color.ink.inverse, fontWeight: "800", fontSize: designTokens.typography.label.fontSize,
+  },
+  assignmentBtnReject: {
+    backgroundColor: designTokens.color.surface.primary, borderColor: designTokens.color.status.dangerText,
+  },
+  assignmentBtnRejectText: {
+    color: designTokens.color.status.dangerText, fontWeight: "800", fontSize: designTokens.typography.label.fontSize,
+  },
+  assignmentErrorBanner: {
+    color: designTokens.color.status.dangerText, backgroundColor: designTokens.color.surface.danger,
+    borderRadius: designTokens.radius.lg, padding: designTokens.spacing.md, marginBottom: designTokens.spacing.sm,
+    fontSize: designTokens.typography.label.fontSize, fontWeight: "700",
+  },
+
+  modalBackdrop: {
+    flex: 1, backgroundColor: "rgba(15, 23, 42, 0.45)",
+    alignItems: "center", justifyContent: "center", padding: designTokens.spacing.xl,
+  },
+  modalCard: {
+    width: "100%", backgroundColor: designTokens.color.surface.primary,
+    borderRadius: designTokens.radius.xl, padding: designTokens.spacing.xl, gap: designTokens.spacing.md,
+  },
+  modalTitle: {
+    color: designTokens.color.ink.primary, fontSize: designTokens.typography.section.fontSize, fontWeight: "800",
+  },
+  modalBody: {
+    color: designTokens.color.ink.muted, fontSize: designTokens.typography.label.fontSize, lineHeight: 19,
+  },
+  modalInput: {
+    minHeight: 80, borderWidth: 1, borderColor: designTokens.color.border.strong,
+    borderRadius: designTokens.radius.lg, padding: designTokens.spacing.md,
+    color: designTokens.color.ink.primary, fontSize: designTokens.typography.body.fontSize,
+    textAlignVertical: "top",
+  },
+  modalError: { color: designTokens.color.status.dangerText, fontSize: designTokens.typography.label.fontSize, fontWeight: "700" },
+  modalActions: { flexDirection: "row", gap: designTokens.spacing.sm, marginTop: designTokens.spacing.xs },
+  modalConfirmBtn: {
+    backgroundColor: designTokens.color.status.dangerText, borderColor: designTokens.color.status.dangerText,
+  },
+  modalConfirmBtnText: {
+    color: designTokens.color.ink.inverse, fontWeight: "800", fontSize: designTokens.typography.label.fontSize,
+  },
 });

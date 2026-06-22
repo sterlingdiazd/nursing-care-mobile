@@ -1,7 +1,9 @@
 import {
+  acceptAssignment,
   assignCareRequestNurse,
   downloadAndShareCareRequestReceipt,
   getActiveNurseProfiles,
+  rejectAssignment,
 } from "@/src/services/careRequestService";
 import { requestJson } from "@/src/services/httpClient";
 import * as authSession from "@/src/services/authSession";
@@ -91,6 +93,31 @@ describe("careRequestService", () => {
       path: "/api/care-requests/request-1/assignment",
       method: "PUT",
       body: { assignedNurse: "nurse-1" },
+      auth: true,
+    });
+  });
+
+  it("accepts an assignment through the accept-assignment endpoint", async () => {
+    vi.mocked(requestJson).mockResolvedValue({ id: "request-1", status: "Approved" });
+
+    await acceptAssignment("request-1");
+
+    expect(requestJson).toHaveBeenCalledWith({
+      path: "/api/care-requests/request-1/accept-assignment",
+      method: "POST",
+      auth: true,
+    });
+  });
+
+  it("rejects an assignment with a reason through the reject-assignment endpoint", async () => {
+    vi.mocked(requestJson).mockResolvedValue({ id: "request-1", status: "Pending" });
+
+    await rejectAssignment("request-1", "No tengo disponibilidad esa fecha.");
+
+    expect(requestJson).toHaveBeenCalledWith({
+      path: "/api/care-requests/request-1/reject-assignment",
+      method: "POST",
+      body: { reason: "No tengo disponibilidad esa fecha." },
       auth: true,
     });
   });

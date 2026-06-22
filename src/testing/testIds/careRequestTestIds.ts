@@ -31,6 +31,12 @@ export const careRequestTestIds = {
     // Nurse-facing own-pay row (replaces the client price for NURSE viewers).
     nursePayCard: "care-detail-nurse-pay-card",
     nursePayValue: "care-detail-nurse-pay-value",
+    // Nurse assignment accept/reject (status `Asignada`).
+    acceptAssignmentButton: "care-detail-accept-assignment-button",
+    rejectAssignmentButton: "care-detail-reject-assignment-button",
+    rejectAssignmentSheet: "care-detail-reject-assignment-sheet",
+    rejectAssignmentReasonInput: "care-detail-reject-assignment-reason-input",
+    rejectAssignmentConfirmButton: "care-detail-reject-assignment-confirm-button",
   },
   create: {
     screen: "care-request-create-screen",

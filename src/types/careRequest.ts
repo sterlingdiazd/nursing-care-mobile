@@ -34,6 +34,8 @@ export interface CareRequestDto {
   assignedNurse?: string | null;
   status:
     | "Pending"
+    // Assigned to a nurse, awaiting her accept/reject response (owner's "Uber-style" flow).
+    | "Asignada"
     | "Approved"
     | "Rejected"
     | "Completed"
@@ -78,6 +80,17 @@ export interface CareRequestDto {
    * "Pendiente de factura" | "Facturado" | "Pagado" | "Anulado"
    */
   paymentStatus?: string | null;
+  /**
+   * Human-readable name of the currently assigned nurse (server-resolved from
+   * Name + LastName, else email), or null when no nurse is assigned. Lets the UI
+   * show who is assigned instead of a raw GUID or a generic label. Non-pricing —
+   * safe for the nurse payload.
+   */
+  assignedNurseDisplayName?: string | null;
+  /** Assignment accept/reject loop stamps (owner's "Uber-style" variant). */
+  assignedNurseAcceptedAtUtc?: string | null;
+  assignedNurseRejectedAtUtc?: string | null;
+  assignmentRejectionReason?: string | null;
 }
 
 export type CareRequestTransitionAction = "approve" | "reject" | "complete" | "cancel";
