@@ -19,8 +19,9 @@ import { FilterSelect } from "@/src/components/shared/FilterSelect";
 import { logClientEvent } from "@/src/logging/clientLogger";
 import { getCareRequests } from "@/src/services/careRequestService";
 import { CareRequestDto } from "@/src/types/careRequest";
-import { canAccessCareRequests } from "@/src/utils/authRedirect";
+import { canAccessCareRequests, canSeeClientPricing } from "@/src/utils/authRedirect";
 import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
+import { formatDOP } from "@/src/utils/currency";
 import { usePaginatedList } from "@/src/hooks/usePaginatedList";
 import { designTokens } from "@/src/design-system/tokens";
 import { navigationTestIds } from "@/src/testing/testIds/navigationTestIds";
@@ -45,6 +46,16 @@ const FILTERS: FilterDef[] = [
   { key: "Rejected", label: "Rechazadas", status: "Rejected" },
   { key: "Cancelled", label: "Canceladas", status: "Cancelled" },
   { key: "All", label: "Todas", status: null },
+];
+
+// Nurses only manage the statuses tied to their assigned work — the active
+// (assigned/approved) services and the ones they have completed. Rejected /
+// cancelled / pending-triage chips are admin/client concerns and would only add
+// noise. (When Phase 3 lands the "Asignada" status, add it here.)
+const NURSE_FILTERS: FilterDef[] = [
+  { key: "Active", label: "Activas", status: null },
+  { key: "Approved", label: "Aprobadas", status: "Approved" },
+  { key: "Completed", label: "Completadas", status: "Completed" },
 ];
 
 function getStatusColors(status: CareRequestDto["status"]) {
@@ -93,10 +104,19 @@ function getPaymentBadgeProps(item: CareRequestDto): { label: string; tone: "neu
   return null;
 }
 
-function CareRequestCard({ item }: { item: CareRequestDto }) {
+function CareRequestCard({
+  item,
+  showClientBilling,
+}: {
+  item: CareRequestDto;
+  // ADMIN/CLIENT see the client billing badge (Facturado/Pagado…). Nurses do
+  // not — they see their own pay instead.
+  showClientBilling: boolean;
+}) {
   const colors = getStatusColors(item.status);
   const statusLabel = getStatusLabel(item.status);
-  const paymentBadge = getPaymentBadgeProps(item);
+  const paymentBadge = showClientBilling ? getPaymentBadgeProps(item) : null;
+  const showNursePay = !showClientBilling && item.nurseExpectedPay != null;
   return (
     <Pressable
       testID={`care-request-card-${item.id}`}
@@ -128,6 +148,14 @@ function CareRequestCard({ item }: { item: CareRequestDto }) {
             tone={paymentBadge.tone}
             testID={`care-request-payment-badge-${item.id}`}
           />
+        ) : showNursePay ? (
+          <Text
+            style={styles.nursePay}
+            testID={`care-request-nurse-pay-${item.id}`}
+            nativeID={`care-request-nurse-pay-${item.id}`}
+          >
+            Tu pago: {formatDOP(item.nurseExpectedPay)}
+          </Text>
         ) : null}
       </View>
     </Pressable>
@@ -268,7 +296,13 @@ export default function CareRequestsScreen() {
 
   const display = buildPageDisplay(currentPage, totalPages);
 
-  const filterOptions = FILTERS.map((f) => ({
+  // Nurses (non-admin) get a role-trimmed status filter set and never see the
+  // client billing badge (they see their own pay instead).
+  const isNurseViewer = roles.includes("NURSE") && !roles.includes("ADMIN");
+  const availableFilters = isNurseViewer ? NURSE_FILTERS : FILTERS;
+  const showClientBilling = canSeeClientPricing(roles);
+
+  const filterOptions = availableFilters.map((f) => ({
     key: f.key,
     label: f.label,
     count: counts[f.key],
@@ -346,7 +380,9 @@ export default function CareRequestsScreen() {
                 <FlatList
                   data={pageItems}
                   keyExtractor={(item) => item.id}
-                  renderItem={({ item }) => <CareRequestCard item={item} />}
+                  renderItem={({ item }) => (
+                    <CareRequestCard item={item} showClientBilling={showClientBilling} />
+                  )}
                   ItemSeparatorComponent={() => <View style={styles.separator} />}
                   refreshing={isRefreshing}
                   onRefresh={refresh}
@@ -492,4 +528,5 @@ const styles = StyleSheet.create({
   cardTitle: { flex: 1, color: designTokens.color.ink.primary, fontSize: designTokens.typography.section.fontSize, lineHeight: 24, fontWeight: "800" },
   cardFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: designTokens.spacing.sm, marginTop: designTokens.spacing.xs },
   cardMeta: { color: designTokens.color.ink.muted, fontSize: designTokens.typography.label.fontSize, lineHeight: 19, flex: 1 },
+  nursePay: { color: designTokens.color.status.successText, fontSize: designTokens.typography.label.fontSize, fontWeight: "800" },
 });

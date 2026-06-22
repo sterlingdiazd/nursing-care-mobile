@@ -35,6 +35,7 @@ import { IconBadge } from "@/src/components/shared/IconBadge";
 import { careRequestTestIds } from "@/src/testing/testIds";
 import { CareRequestDto, CareRequestTransitionAction } from "@/src/types/careRequest";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
+import { canSeeClientPricing } from "@/src/utils/authRedirect";
 import { formatUnitType } from "@/src/utils/adminCareRequestBilling";
 import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
 import { formatDOP } from "@/src/utils/currency";
@@ -304,6 +305,10 @@ export default function CareRequestDetailScreen() {
     careRequest.lineBeforeVolumeDiscount != null;
 
   const isAdmin = roles.includes("ADMIN");
+  // A nurse must never see the CLIENT price (total, base, breakdown). She sees
+  // only her own expected pay. ADMIN/CLIENT keep full client-price visibility.
+  const showClientPricing = canSeeClientPricing(roles);
+  const isNursePayViewer = !showClientPricing && roles.includes("NURSE");
   const canApproveOrReject = isAdmin && careRequest.status === "Pending";
   const canApprove = canApproveOrReject && Boolean(careRequest.assignedNurse);
   const canComplete =
@@ -456,24 +461,26 @@ export default function CareRequestDetailScreen() {
                 <IconBadge icon="briefcase" hue="teal" size={30} iconSize={15} />
                 <Text style={styles.cardEyebrow}>Servicio</Text>
               </View>
-              <Pressable
-                onPress={() => {
-                  hapticFeedback.selection();
-                  setPricingSheetVisible(true);
-                }}
-                disabled={!hasPricingData}
-                testID={careRequestTestIds.detail.pricingBreakdownToggle}
-                nativeID={careRequestTestIds.detail.pricingBreakdownToggle}
-                style={({ pressed }) => [
-                  styles.linkButton,
-                  !hasPricingData && styles.disabled,
-                  pressed && hasPricingData && styles.pressed,
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel="Ver desglose de precios"
-              >
-                <Text style={styles.linkButtonText}>Ver desglose</Text>
-              </Pressable>
+              {showClientPricing ? (
+                <Pressable
+                  onPress={() => {
+                    hapticFeedback.selection();
+                    setPricingSheetVisible(true);
+                  }}
+                  disabled={!hasPricingData}
+                  testID={careRequestTestIds.detail.pricingBreakdownToggle}
+                  nativeID={careRequestTestIds.detail.pricingBreakdownToggle}
+                  style={({ pressed }) => [
+                    styles.linkButton,
+                    !hasPricingData && styles.disabled,
+                    pressed && hasPricingData && styles.pressed,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Ver desglose de precios"
+                >
+                  <Text style={styles.linkButtonText}>Ver desglose</Text>
+                </Pressable>
+              ) : null}
             </View>
             <View style={styles.servicioGrid}>
               <View style={styles.servicioCol}>
@@ -498,10 +505,27 @@ export default function CareRequestDetailScreen() {
                 </Text>
               </View>
             </View>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Total</Text>
-              <Text style={styles.totalValue}>{formatCurrency(careRequest.total)}</Text>
-            </View>
+            {showClientPricing ? (
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Total</Text>
+                <Text style={styles.totalValue}>{formatCurrency(careRequest.total)}</Text>
+              </View>
+            ) : isNursePayViewer && careRequest.nurseExpectedPay != null ? (
+              <View
+                style={styles.totalRow}
+                testID={careRequestTestIds.detail.nursePayCard}
+                nativeID={careRequestTestIds.detail.nursePayCard}
+              >
+                <Text style={styles.totalLabel}>Tu pago por este servicio</Text>
+                <Text
+                  style={styles.totalValue}
+                  testID={careRequestTestIds.detail.nursePayValue}
+                  nativeID={careRequestTestIds.detail.nursePayValue}
+                >
+                  {formatDOP(careRequest.nurseExpectedPay)}
+                </Text>
+              </View>
+            ) : null}
           </View>
 
           {/* Asignación */}
@@ -563,12 +587,16 @@ export default function CareRequestDetailScreen() {
             </View>
           ) : null}
 
-          {/* Estado de pago — visible for statuses where billing information is relevant */}
-          <PaymentStatusCard
-            careRequest={careRequest}
-            downloadingReceipt={isDownloadingReceipt}
-            onDownloadReceipt={runReceiptDownload}
-          />
+          {/* Estado de pago — client billing (total charged, invoice, receipt).
+              Hidden from nurses: it is the client's payment to Sol y Luna, not
+              nurse-relevant, and exposes the client total. */}
+          {showClientPricing ? (
+            <PaymentStatusCard
+              careRequest={careRequest}
+              downloadingReceipt={isDownloadingReceipt}
+              onDownloadReceipt={runReceiptDownload}
+            />
+          ) : null}
         </ScrollView>
       </MobileWorkspaceShell>
 

@@ -55,6 +55,18 @@ export function canCreateCareRequests(response: AuthAccessState): boolean {
   return roles.includes("CLIENT") || roles.includes("ADMIN");
 }
 
+/**
+ * Whether the viewer may see the CLIENT-facing price of a care request
+ * (base price, total, factor breakdown, supplies, the "Ver desglose" sheet).
+ * Only ADMIN and CLIENT see the client price. A NURSE must NEVER see what the
+ * client is charged — she sees only her own expected pay (nurseExpectedPay).
+ * Accepts the raw roles array so call sites with just `roles` can use it directly.
+ */
+export function canSeeClientPricing(roles: string[]): boolean {
+  const normalized = normalizeRoles(roles);
+  return normalized.includes("ADMIN") || normalized.includes("CLIENT");
+}
+
 export function canAccessAccount(response: AuthAccessState): boolean {
   const roles = normalizeRoles(response.roles);
   return roles.includes("CLIENT")

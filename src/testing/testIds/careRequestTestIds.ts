@@ -28,6 +28,9 @@ export const careRequestTestIds = {
     paymentStatusInvoicedAt: "care-detail-payment-status-invoiced-at",
     paymentStatusPaidAt: "care-detail-payment-status-paid-at",
     receiptDownloadButton: "care-detail-receipt-download-button",
+    // Nurse-facing own-pay row (replaces the client price for NURSE viewers).
+    nursePayCard: "care-detail-nurse-pay-card",
+    nursePayValue: "care-detail-nurse-pay-value",
   },
   create: {
     screen: "care-request-create-screen",

@@ -135,24 +135,25 @@ export default function HomeScreen() {
         <>
           {hasOperationalAccess ? (
             <>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Crear solicitud"
-                onPress={() => {
-                  hapticFeedback.selection();
-                  logClientEvent("mobile.ui", "Home hero opened create care request");
-                  if (canCreateRequest) {
+              {/* Create is a CLIENT/ADMIN action only — never show it (even disabled)
+                  to roles that cannot create, e.g. nurses. */}
+              {canCreateRequest ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Crear solicitud"
+                  onPress={() => {
+                    hapticFeedback.selection();
+                    logClientEvent("mobile.ui", "Home hero opened create care request");
                     router.push("/create-care-request");
-                  }
-                }}
-                style={({ pressed }) => [
-                  styles.primaryButton,
-                  !canCreateRequest && styles.disabledButton,
-                  pressed && styles.buttonPressed,
-                ]}
-              >
-                <Text style={styles.primaryButtonText}>Crear solicitud</Text>
-              </Pressable>
+                  }}
+                  style={({ pressed }) => [
+                    styles.primaryButton,
+                    pressed && styles.buttonPressed,
+                  ]}
+                >
+                  <Text style={styles.primaryButtonText}>Crear solicitud</Text>
+                </Pressable>
+              ) : null}
 
               <Pressable
                 accessibilityRole="button"
@@ -165,12 +166,15 @@ export default function HomeScreen() {
                   }
                 }}
                 style={({ pressed }) => [
-                  styles.secondaryButton,
+                  // When create isn't available (nurse), the queue is the lead action.
+                  canCreateRequest ? styles.secondaryButton : styles.primaryButton,
                   isNurseUnderReview && styles.disabledButton,
                   pressed && styles.buttonPressed,
                 ]}
               >
-                <Text style={styles.secondaryButtonText}>Abrir cola de solicitudes</Text>
+                <Text style={canCreateRequest ? styles.secondaryButtonText : styles.primaryButtonText}>
+                  Abrir cola de solicitudes
+                </Text>
               </Pressable>
             </>
           ) : isAnonymous ? (

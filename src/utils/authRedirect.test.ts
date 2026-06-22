@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   canAccessCareRequests,
   canCreateCareRequests,
+  canSeeClientPricing,
   resolvePostAuthRoute,
 } from "@/src/utils/authRedirect";
 
@@ -115,6 +116,20 @@ describe("canAccessCareRequests", () => {
         requiresAdminReview: false,
       }),
     ).toBe(false);
+  });
+});
+
+describe("canSeeClientPricing", () => {
+  it("allows admins and clients to see the client price", () => {
+    expect(canSeeClientPricing(["ADMIN"])).toBe(true);
+    expect(canSeeClientPricing(["CLIENT"])).toBe(true);
+    expect(canSeeClientPricing(["admin"])).toBe(true);
+  });
+
+  it("never shows the client price to a nurse", () => {
+    expect(canSeeClientPricing(["NURSE"])).toBe(false);
+    expect(canSeeClientPricing(["nurse"])).toBe(false);
+    expect(canSeeClientPricing([])).toBe(false);
   });
 });
 

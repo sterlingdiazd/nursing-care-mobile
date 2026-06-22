@@ -66,6 +66,14 @@ export interface CareRequestDto {
   paidAtUtc?: string | null;
   voidedAtUtc?: string | null;
   /**
+   * The assigned nurse's own expected compensation for this service, in DOP.
+   * Populated by the backend ONLY for the nurse's own assigned-request view
+   * (nurse rate × días, from her NurseProfile). It is the nurse-facing
+   * counterpart to the client `total`/`price`, which she must never see.
+   * Undefined/null for client and admin views — render nothing in that case.
+   */
+  nurseExpectedPay?: number | null;
+  /**
    * Derived server-side from billing timestamps.
    * "Pendiente de factura" | "Facturado" | "Pagado" | "Anulado"
    */
