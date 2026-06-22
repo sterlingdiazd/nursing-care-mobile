@@ -118,6 +118,25 @@ export function resolveDeepLink(path: string, roles: string[]): string {
   return roles.includes("ADMIN") ? resolveAdminOperationalDeepLink(path) : path;
 }
 
+/**
+ * Extract and resolve the navigation target from a raw Expo push notification
+ * payload. Returns the resolved Expo Router path, or `null` if the payload
+ * carries no `deepLinkPath` string.
+ *
+ * This is a pure function over plain objects (no Expo SDK types) so it can be
+ * unit-tested without RN mocks alongside `resolveDeepLink` and
+ * `resolveAdminOperationalDeepLink`.
+ */
+export function resolveNotificationNavTarget(
+  rawPayload: Record<string, unknown>,
+  roles: string[],
+): string | null {
+  const deepLinkPath =
+    typeof rawPayload.deepLinkPath === "string" ? rawPayload.deepLinkPath : null;
+  if (!deepLinkPath) return null;
+  return resolveDeepLink(deepLinkPath, roles);
+}
+
 export function getAdminSeverityPresentation(severity: AdminSeverity) {
   switch (severity) {
     case "High":

@@ -11,6 +11,7 @@ import {
   getNotificationStatusLabel,
   resolveAdminOperationalDeepLink,
   resolveDeepLink,
+  resolveNotificationNavTarget,
   sortAdminActionItems,
   sortAdminNotifications,
 } from "@/src/utils/adminOperationalUx";
@@ -357,5 +358,50 @@ describe("resolveDeepLink", () => {
     expect(resolveDeepLink("/admin/care-requests", ["NURSE"])).toBe(
       "/admin/care-requests",
     );
+  });
+
+  it("a non-admin user receiving an admin alias path is NOT elevated to the resolved admin route", () => {
+    // /payroll is an admin alias (→ /admin/payroll for admins). A NURSE with
+    // this path must receive /payroll unchanged — not the admin destination.
+    // This test fails if the roles.includes("ADMIN") gate is removed.
+    expect(resolveDeepLink("/payroll", ["NURSE"])).toBe("/payroll");
+  });
+});
+
+describe("resolveNotificationNavTarget", () => {
+  it("returns null for a payload with no deepLinkPath field", () => {
+    expect(resolveNotificationNavTarget({}, ["ADMIN"])).toBeNull();
+  });
+
+  it("returns null for a non-string deepLinkPath (guards against malformed payloads)", () => {
+    expect(resolveNotificationNavTarget({ deepLinkPath: 42 }, ["ADMIN"])).toBeNull();
+    expect(resolveNotificationNavTarget({ deepLinkPath: null }, ["ADMIN"])).toBeNull();
+  });
+
+  it("applies alias resolution end-to-end for admin users", () => {
+    // Verifies the full pipeline: payload extraction → resolveDeepLink → admin alias
+    // This test fails if the call to resolveDeepLink is bypassed in this function.
+    expect(resolveNotificationNavTarget({ deepLinkPath: "/payroll" }, ["ADMIN"])).toBe(
+      "/admin/payroll",
+    );
+  });
+
+  it("passes the path through unchanged for non-admin users (role gate enforced end-to-end)", () => {
+    // /payroll would resolve to /admin/payroll for admins; a NURSE must get the raw path.
+    // This test fails if the role gate inside resolveDeepLink is removed.
+    expect(resolveNotificationNavTarget({ deepLinkPath: "/payroll" }, ["NURSE"])).toBe(
+      "/payroll",
+    );
+  });
+
+  it("passes a nurse-specific path through unchanged", () => {
+    expect(resolveNotificationNavTarget({ deepLinkPath: "/nurse/payroll" }, ["NURSE"])).toBe(
+      "/nurse/payroll",
+    );
+  });
+
+  it("returns null for empty-string deepLinkPath", () => {
+    // resolveAdminOperationalDeepLink guards on !path; empty string is falsy.
+    expect(resolveNotificationNavTarget({ deepLinkPath: "" }, ["ADMIN"])).toBeNull();
   });
 });

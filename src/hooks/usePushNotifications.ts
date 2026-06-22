@@ -4,7 +4,7 @@ import { router } from "expo-router";
 
 import { useAuth } from "@/src/context/AuthContext";
 import { registerForPushAsync } from "@/src/services/pushNotificationsService";
-import { resolveDeepLink } from "@/src/utils/adminOperationalUx";
+import { resolveNotificationNavTarget } from "@/src/utils/adminOperationalUx";
 
 /**
  * Mounted once from the root layout. Responsibilities:
@@ -15,10 +15,8 @@ import { resolveDeepLink } from "@/src/utils/adminOperationalUx";
  *      that the backend embedded in the push payload.
  */
 
-/** Extract the `deepLinkPath` string from a raw Expo push payload, or null. */
-function getDeepLinkPath(response: Notifications.NotificationResponse): string | null {
-  const data = (response.notification?.request?.content?.data ?? {}) as Record<string, unknown>;
-  return typeof data.deepLinkPath === "string" ? data.deepLinkPath : null;
+function getRawPayload(response: Notifications.NotificationResponse): Record<string, unknown> {
+  return (response.notification?.request?.content?.data ?? {}) as Record<string, unknown>;
 }
 
 export function usePushNotifications() {
@@ -43,14 +41,15 @@ export function usePushNotifications() {
   // closure at subscription time.
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const deepLinkPath = getDeepLinkPath(response);
-      if (deepLinkPath) {
+      const navTarget = resolveNotificationNavTarget(getRawPayload(response), roles);
+      if (navTarget) {
         try {
-          router.push(resolveDeepLink(deepLinkPath, roles) as never);
-        } catch {
+          router.push(navTarget as never);
+        } catch (err) {
           // Path not found or router not yet mounted (e.g. the user tapped a
           // push before the navigator finished rendering). The cold-start
           // handler below covers the latter case for app-open taps.
+          if (__DEV__) console.warn("[push] foreground navigation failed:", navTarget, err);
         }
       }
     });
@@ -72,13 +71,12 @@ export function usePushNotifications() {
     Notifications.getLastNotificationResponseAsync()
       .then((response) => {
         if (!response) return;
-        const deepLinkPath = getDeepLinkPath(response);
-        if (deepLinkPath) {
+        const navTarget = resolveNotificationNavTarget(getRawPayload(response), roles);
+        if (navTarget) {
           try {
-            router.push(resolveDeepLink(deepLinkPath, roles) as never);
-          } catch {
-            // ignore — the navigator may not be mounted yet on very fast cold
-            // starts; the notification payload is still accessible in-app.
+            router.push(navTarget as never);
+          } catch (err) {
+            if (__DEV__) console.warn("[push] cold-start navigation failed:", navTarget, err);
           }
         }
       })
