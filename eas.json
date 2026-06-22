@@ -11,11 +11,17 @@
     },
     "preview": {
       "distribution": "internal",
-      "channel": "preview"
+      "channel": "preview",
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://nursingcarebackend-f9f7h3gafhg2gjc9.centralus-01.azurewebsites.net"
+      }
     },
     "production": {
       "channel": "production",
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://nursingcarebackend-f9f7h3gafhg2gjc9.centralus-01.azurewebsites.net"
+      }
     }
   },
   "submit": {
