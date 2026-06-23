@@ -261,6 +261,7 @@ export default function NursePayrollScreen() {
           </View>
         )}
 
+        {/* TODO: replace with real nurse payroll earnings API data */}
         <NurseEarningsDashboard
           data={[
             { date: "2026-05-01", amount: 1500 },
