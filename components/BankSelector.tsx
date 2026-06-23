@@ -16,13 +16,22 @@ interface BankSelectorProps {
   onChange: (bank: string) => void;
   label?: string;
   placeholder?: string;
-  /** Maps to testID on the SelectRow trigger. Each list item gets `${testID}-option-<index>`. */
+  /**
+   * Maps to testID (and nativeID) on the SelectRow trigger. Each list item gets
+   * `${testID}-option-<idx>` where `idx` is the FILTERED-list index — not stable
+   * across search states, so automation must not rely on a fixed option index.
+   * The custom-entry option always uses `${testID}-option-custom`.
+   */
   testID?: string;
   /** When true, the trigger row is non-interactive (read-only display). */
   disabled?: boolean;
   /** Error message shown below the selector row. */
   errorMessage?: string;
-  /** Required field marker — appends a teal `*` after the label. */
+  /**
+   * Required field marker — appends an accent-colored `*` after the label.
+   * The token is `T.color.ink.accent` = #2E3191 (blue/indigo — not teal;
+   * teal #0D9488 is a different palette hue).
+   */
   required?: boolean;
 }
 
@@ -90,6 +99,7 @@ export function BankSelector({
         onPress={handleOpen}
         disabled={disabled}
         testID={testID}
+        nativeID={testID}
         accessibilityLabel={`${label}: ${value.trim() || placeholder}`}
       />
 
@@ -117,6 +127,7 @@ export function BankSelector({
           placeholder="Buscar banco..."
           autoFocus
           testID={testID ? `${testID}-search` : undefined}
+          accessibilityLabel="Buscar banco"
           returnKeyType="done"
         />
 
