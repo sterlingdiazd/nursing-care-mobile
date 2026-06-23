@@ -3,11 +3,11 @@ import "react-native-reanimated";
 
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
+import { Stack, router, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StyleSheet, View } from "react-native";
 import { SafeAreaProvider, initialWindowMetrics } from "react-native-safe-area-context";
-import { AuthProvider } from "@/src/context/AuthContext";
+import { AuthProvider, useAuth } from "@/src/context/AuthContext";
 import { ToastProvider } from "@/src/components/shared/ToastProvider";
 import { usePushNotifications } from "@/src/hooks/usePushNotifications";
 import BottomBar from "@/src/components/navigation/BottomBar";
@@ -85,10 +85,28 @@ function RootLayoutNav() {
   );
 }
 
+// Top-level route segments that are reachable WITHOUT a session. Everything
+// else is treated as protected.
+const PUBLIC_ROUTE_SEGMENTS = ["login", "register", "forgot-password", "reset-password"];
+
 function AuthenticatedRoutes() {
   // Lives inside AuthProvider so the hook can read isReady/isAuthenticated.
   // Registers the device's Expo push token + tap-to-deep-link handler.
   usePushNotifications();
+
+  // Global auth guard: the single source of truth for "no session => login".
+  // Per-screen guards are easy to forget, so this central effect guarantees that
+  // ANY protected route bounces to /login the moment the session is gone (logout,
+  // token expiry, storage cleared) — regardless of which screen the user is on.
+  const { isReady, isAuthenticated } = useAuth();
+  const segments = useSegments();
+  useEffect(() => {
+    if (!isReady) return;
+    const onPublicRoute = PUBLIC_ROUTE_SEGMENTS.includes(segments[0] as string);
+    if (!isAuthenticated && !onPublicRoute) {
+      router.replace("/login");
+    }
+  }, [isReady, isAuthenticated, segments]);
   // BottomBar lives at the root so it persists across every authenticated
   // route — including admin sub-routes like /admin/payroll which are not
   // file-system children of the (tabs) group. The bar self-gates on

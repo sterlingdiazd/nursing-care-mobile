@@ -61,7 +61,7 @@ export default function AccountScreen() {
     hapticFeedback.selection();
     logClientEvent("mobile.ui", "Account screen logout tapped");
     await logout();
-    router.replace("/");
+    router.replace("/login");
   };
 
   return (

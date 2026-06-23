@@ -361,16 +361,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    // Deactivate push token for this device BEFORE clearing the JWT — the
-    // DELETE endpoint needs the auth header. Non-fatal on failure (the worker
-    // will eventually flag stale tokens as DeviceNotRegistered).
-    try {
-      const { deactivateTokenOnLogout } = await import("@/src/services/pushNotificationsService");
-      await deactivateTokenOnLogout();
-    } catch {
-      // ignore
-    }
-
+    // Clear the session FIRST. Logout is a security-critical action that must be
+    // instant and infallible — it must NEVER be held hostage by a slow or hanging
+    // network call. Setting `token` to null immediately flips `isAuthenticated`
+    // false so the route guards redirect to /login on the next render, and
+    // clearing storage atomically here prevents a later re-login from being
+    // wiped by a still-in-flight background task.
     setToken(null);
     setUserId(null);
     setEmail(null);
@@ -383,6 +379,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await clearAuthSession();
 
     logClientEvent("mobile.auth", "Session cleared");
+
+    // Best-effort: deactivate THIS device's push token in the background. The
+    // auth header may already be cleared (so the DELETE can 401) — that is
+    // acceptable; the backend worker ages out stale tokens via the
+    // DeviceNotRegistered cleanup. Fire-and-forget so it can never block the
+    // logout or the redirect, even on a 30s request timeout + self-heal retry.
+    void (async () => {
+      try {
+        const { deactivateTokenOnLogout } = await import("@/src/services/pushNotificationsService");
+        await deactivateTokenOnLogout();
+      } catch {
+        // ignore — logout already succeeded locally
+      }
+    })();
   };
 
   const clearError = () => {
