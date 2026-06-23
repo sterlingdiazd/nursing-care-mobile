@@ -261,9 +261,8 @@ export default function NursePayrollScreen() {
           </View>
         )}
 
-        {/* TODO: replace with real nurse payroll earnings API data */}
         <NurseEarningsDashboard
-          data={history.map((p) => ({
+          data={[...history].reverse().map((p) => ({
             date: p.startDate,
             amount: p.totalCompensation ?? 0,
           }))}
