@@ -1,4 +1,4 @@
-import { createElement, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -11,10 +11,9 @@ import {
   View,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
-import { FormInput } from "@/src/components/form";
+import { DateField, FormInput } from "@/src/components/form";
 import { designTokens } from "@/src/design-system/tokens";
 import { careRequestTestIds } from "@/src/testing/testIds";
 import { useAuth } from "@/src/context/AuthContext";
@@ -83,8 +82,6 @@ export default function CreateCareRequestScreen() {
   const [nurseLookupError, setNurseLookupError] = useState<string | null>(null);
   const [showSuggestedNurseOptions, setShowSuggestedNurseOptions] = useState(false);
   const [selectedNurse, setSelectedNurse] = useState<AvailableNurseOption | null>(null);
-  const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
-  const [draftServiceDate, setDraftServiceDate] = useState<Date>(new Date());
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [activeCategoryCode, setActiveCategoryCode] = useState<string>("hogar");
   const [wizardStep, setWizardStep] = useState<WizardStep>("intent");
@@ -224,18 +221,6 @@ export default function CreateCareRequestScreen() {
     const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   };
-  const parseIsoDate = (value?: string) => {
-    if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-      return null;
-    }
-
-    const parsedDate = new Date(`${value}T00:00:00`);
-    if (Number.isNaN(parsedDate.getTime())) {
-      return null;
-    }
-    return parsedDate;
-  };
-
   const buildNurseDisplayName = (nurse: AvailableNurseOption) => nurse.displayName;
 
   const selectedType = catalogOptions?.careRequestTypes.find((t) => t.code === form.careRequestType);
@@ -380,41 +365,11 @@ export default function CreateCareRequestScreen() {
     setFormError(null);
   };
 
-  const openDatePicker = () => {
+  const setQuickDate = (offsetDays: number) => {
     hapticFeedback.selection();
-    setDraftServiceDate(parseIsoDate(form.careRequestDate) ?? new Date());
-    setIsDatePickerVisible(true);
-  };
-
-  const confirmDateSelection = () => {
-    hapticFeedback.light();
-    setForm((prev) => ({ ...prev, careRequestDate: formatDateToIso(draftServiceDate) }));
-    setIsDatePickerVisible(false);
-  };
-
-  const closeDatePicker = () => {
-    hapticFeedback.selection();
-    setIsDatePickerVisible(false);
-  };
-
-  const clearSelectedDate = () => {
-    hapticFeedback.selection();
-    setForm((prev) => ({ ...prev, careRequestDate: undefined }));
-  };
-
-  const handleNativeDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
-    if (Platform.OS === "android") {
-      if (event.type === "set" && selectedDate) {
-        hapticFeedback.selection();
-        setForm((prev) => ({ ...prev, careRequestDate: formatDateToIso(selectedDate) }));
-      }
-      setIsDatePickerVisible(false);
-      return;
-    }
-
-    if (selectedDate) {
-      setDraftServiceDate(selectedDate);
-    }
+    const d = new Date();
+    d.setDate(d.getDate() + offsetDays);
+    setForm((prev) => ({ ...prev, careRequestDate: formatDateToIso(d) }));
   };
 
   const showAlert = (title: string, message: string, onOk?: () => void) => {
@@ -928,105 +883,42 @@ export default function CreateCareRequestScreen() {
               </View>
             )}
 
-            <Text style={styles.label}>Fecha del servicio (opcional)</Text>
-            {Platform.OS === "web" ? (
-              <View>
-                {createElement("input", {
-                  type: "date",
-                  value: form.careRequestDate || "",
-                  onChange: (e: any) => setForm((prev) => ({ ...prev, careRequestDate: e.target.value || undefined })),
-                  disabled: isLoading,
-                  placeholder: "YYYY-MM-DD",
-                  style: {
-                    padding: "12px",
-                    borderRadius: "12px",
-                    border: `1px solid ${designTokens.color.border.subtle}`,
-                    backgroundColor: isLoading ? designTokens.color.surface.secondary : designTokens.color.ink.inverse,
-                    fontSize: "15px",
-                    minHeight: "48px",
-                    width: "100%",
-                    fontFamily: "inherit",
-                    outline: "none",
-                    boxSizing: "border-box",
-                    opacity: isLoading ? 0.5 : 1
-                  }
-                })}
-                {!isLoading && (
-                  <View style={{ flexDirection: "row", gap: designTokens.spacing.sm, marginTop: designTokens.spacing.sm }}>
-                    <Pressable
-                      style={{ flex: 1, backgroundColor: designTokens.color.surface.secondary, padding: designTokens.spacing.sm, borderRadius: designTokens.radius.sm, alignItems: "center" }}
-                      onPress={() => {
-                        hapticFeedback.selection();
-                        setForm((prev) => ({ ...prev, careRequestDate: formatDateToIso(new Date()) }));
-                      }}
-                      accessibilityRole="button"
-                      accessibilityLabel="Seleccionar hoy como fecha del servicio"
-                    >
-                      <Text style={{ fontSize: designTokens.typography.label.fontSize, color: designTokens.color.ink.primary, fontWeight: "600" }}>Hoy</Text>
-                    </Pressable>
-                    <Pressable
-                      style={{ flex: 1, backgroundColor: designTokens.color.surface.secondary, padding: designTokens.spacing.sm, borderRadius: designTokens.radius.sm, alignItems: "center" }}
-                      onPress={() => {
-                        hapticFeedback.selection();
-                        const d = new Date(); d.setDate(d.getDate() + 1);
-                        setForm((prev) => ({ ...prev, careRequestDate: formatDateToIso(d) }));
-                      }}
-                      accessibilityRole="button"
-                      accessibilityLabel="Seleccionar mañana como fecha del servicio"
-                    >
-                      <Text style={{ fontSize: designTokens.typography.label.fontSize, color: designTokens.color.ink.primary, fontWeight: "600" }}>Mañana</Text>
-                    </Pressable>
-                  </View>
-                )}
-              </View>
-            ) : (
-              <Pressable
-                onPress={openDatePicker}
-                disabled={isLoading}
-                style={({ pressed }) => [
-                  styles.input,
-                  styles.datePickerTrigger,
-                  isLoading && styles.inputDisabled,
-                  pressed && !isLoading && styles.buttonPressed,
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel="Seleccionar fecha del servicio"
-              >
-                <Text style={form.careRequestDate ? styles.dateValue : styles.datePlaceholder}>
-                  {form.careRequestDate ?? "Selecciona una fecha"}
-                </Text>
-              </Pressable>
-            )}
+            <DateField
+              label="Fecha del servicio (opcional)"
+              value={form.careRequestDate ?? ""}
+              onChange={(iso) => setForm((prev) => ({ ...prev, careRequestDate: iso || undefined }))}
+              testID={careRequestTestIds.create.serviceDate}
+              placeholder="DD-MM-YYYY"
+              clearable
+            />
             <View style={styles.dateActionsRow}>
-              {Platform.OS !== "web" && (
-                <Pressable
-                  onPress={openDatePicker}
-                  disabled={isLoading}
-                  style={({ pressed }) => [
-                    styles.dateActionButton,
-                    styles.datePrimaryAction,
-                    isLoading && styles.buttonDisabled,
-                    pressed && !isLoading && styles.buttonPressed,
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel="Elegir fecha del servicio"
-                >
-                  <Text style={styles.datePrimaryActionText}>Elegir fecha</Text>
-                </Pressable>
-              )}
               <Pressable
-                onPress={clearSelectedDate}
-                disabled={isLoading || !form.careRequestDate}
+                onPress={() => setQuickDate(0)}
+                disabled={isLoading}
                 style={({ pressed }) => [
                   styles.dateActionButton,
                   styles.dateSecondaryAction,
-                  (isLoading || !form.careRequestDate) && styles.buttonDisabled,
+                  isLoading && styles.buttonDisabled,
                   pressed && !isLoading && styles.buttonPressed,
                 ]}
                 accessibilityRole="button"
-                accessibilityLabel="Limpiar fecha del servicio"
+                accessibilityLabel="Seleccionar hoy como fecha del servicio"
               >
-                <Text style={styles.dateSecondaryActionText}>Limpiar fecha</Text>
+                <Text style={styles.dateSecondaryActionText}>Hoy</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setQuickDate(1)}
+                disabled={isLoading}
+                style={({ pressed }) => [
+                  styles.dateActionButton,
+                  styles.dateSecondaryAction,
+                  isLoading && styles.buttonDisabled,
+                  pressed && !isLoading && styles.buttonPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel="Seleccionar mañana como fecha del servicio"
+              >
+                <Text style={styles.dateSecondaryActionText}>Mañana</Text>
               </Pressable>
             </View>
             <Text style={styles.label}>Servicio *</Text>
@@ -1242,49 +1134,6 @@ export default function CreateCareRequestScreen() {
             </View>
           ) : null}
       </View>
-      {isDatePickerVisible && Platform.OS !== "web" ? (
-        Platform.OS === "ios" ? (
-          <Modal transparent animationType="slide" visible={isDatePickerVisible} onRequestClose={closeDatePicker}>
-            <View style={styles.dateModalBackdrop}>
-              <View style={styles.dateModalContent}>
-                <Text style={styles.dateModalTitle}>Selecciona la fecha del servicio</Text>
-                <DateTimePicker
-                  value={draftServiceDate}
-                  mode="date"
-                  display="spinner"
-                  onChange={handleNativeDateChange}
-                />
-                <View style={styles.dateModalActions}>
-                  <Pressable
-                    style={styles.dateModalCancelButton}
-                    onPress={closeDatePicker}
-                    accessibilityRole="button"
-                    accessibilityLabel="Cancelar selección de fecha"
-                  >
-                    <Text style={styles.dateModalCancelText}>Cancelar</Text>
-                  </Pressable>
-                  <Pressable
-                    style={styles.dateModalConfirmButton}
-                    onPress={confirmDateSelection}
-                    accessibilityRole="button"
-                    accessibilityLabel="Guardar fecha seleccionada"
-                  >
-                    <Text style={styles.dateModalConfirmText}>Guardar</Text>
-                  </Pressable>
-                </View>
-              </View>
-            </View>
-          </Modal>
-        ) : (
-          <DateTimePicker
-            value={parseIsoDate(form.careRequestDate) ?? new Date()}
-            mode="date"
-            display="default"
-            onChange={handleNativeDateChange}
-          />
-        )
-      ) : null}
-
       <Modal
         visible={showLeaveConfirm}
         transparent
@@ -1639,17 +1488,6 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 120,
   },
-  datePickerTrigger: {
-    justifyContent: "center",
-  },
-  dateValue: {
-    fontSize: designTokens.typography.body.fontSize,
-    color: designTokens.color.ink.primary,
-  },
-  datePlaceholder: {
-    fontSize: designTokens.typography.body.fontSize,
-    color: designTokens.color.ink.secondary,
-  },
   dateActionsRow: {
     flexDirection: "row",
     gap: designTokens.spacing.md,
@@ -1663,69 +1501,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
   },
-  datePrimaryAction: {
-    borderColor: "rgba(31, 75, 110, 0.2)",
-    backgroundColor: designTokens.color.surface.secondary,
-  },
   dateSecondaryAction: {
     borderColor: "rgba(23, 48, 66, 0.15)",
     backgroundColor: designTokens.color.ink.inverse,
   },
-  datePrimaryActionText: {
-    color: designTokens.color.ink.accentStrong,
-    fontWeight: "700",
-  },
   dateSecondaryActionText: {
     color: designTokens.color.ink.secondary,
     fontWeight: "700",
-  },
-  dateModalBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(23, 48, 66, 0.4)",
-    justifyContent: "flex-end",
-  },
-  dateModalContent: {
-    backgroundColor: designTokens.color.ink.inverse,
-    borderTopLeftRadius: designTokens.radius.lg,
-    borderTopRightRadius: designTokens.radius.lg,
-    paddingHorizontal: designTokens.spacing.xl,
-    paddingTop: designTokens.spacing.lg,
-    paddingBottom: designTokens.spacing.xxxl,
-    gap: designTokens.spacing.md,
-  },
-  dateModalTitle: {
-    fontSize: designTokens.typography.body.fontSize,
-    fontWeight: "700",
-    color: designTokens.color.ink.primary,
-    textAlign: "center",
-  },
-  dateModalActions: {
-    flexDirection: "row",
-    gap: designTokens.spacing.md,
-    marginTop: designTokens.spacing.xs,
-  },
-  dateModalCancelButton: {
-    flex: 1,
-    borderRadius: designTokens.radius.sm,
-    borderWidth: 1,
-    borderColor: "rgba(23, 48, 66, 0.15)",
-    paddingVertical: designTokens.spacing.md,
-    alignItems: "center",
-  },
-  dateModalCancelText: {
-    color: designTokens.color.ink.secondary,
-    fontWeight: "700",
-  },
-  dateModalConfirmButton: {
-    flex: 1,
-    borderRadius: designTokens.radius.sm,
-    backgroundColor: designTokens.color.ink.accentStrong,
-    paddingVertical: designTokens.spacing.md,
-    alignItems: "center",
-  },
-  dateModalConfirmText: {
-    color: designTokens.color.ink.inverse,
-    fontWeight: "800",
   },
   helperText: {
     marginTop: -10,

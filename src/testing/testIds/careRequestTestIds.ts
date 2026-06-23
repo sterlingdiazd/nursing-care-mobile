@@ -61,6 +61,9 @@ export const careRequestTestIds = {
     clientOptions: "create-care-request-client-options",
     clientOption: (userId: string) => `create-care-request-client-option-${userId}`,
     clientClearButton: "create-care-request-client-clear-button",
+    // Service-date field (shared DateField). The calendar button and clear control
+    // derive `${serviceDate}-calendar` / `${serviceDate}-clear` inside DateField.
+    serviceDate: "create-care-request-service-date",
     submitButton: "create-care-request-submit-button",
   },
 } as const;
