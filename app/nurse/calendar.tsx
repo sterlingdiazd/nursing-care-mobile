@@ -56,6 +56,7 @@ export default function NurseServiceCalendarScreen() {
             accessibilityRole="button"
             accessibilityLabel="Anterior"
             testID="nurse-calendar-prev"
+            nativeID="nurse-calendar-prev"
             style={({ pressed }) => [styles.navBtn, pressed && styles.pressed]}
           >
             <Text style={styles.navGlyph}>‹</Text>
@@ -71,6 +72,7 @@ export default function NurseServiceCalendarScreen() {
             accessibilityRole="button"
             accessibilityLabel="Siguiente"
             testID="nurse-calendar-next"
+            nativeID="nurse-calendar-next"
             style={({ pressed }) => [styles.navBtn, pressed && styles.pressed]}
           >
             <Text style={styles.navGlyph}>›</Text>
@@ -84,6 +86,7 @@ export default function NurseServiceCalendarScreen() {
             accessibilityRole="button"
             accessibilityLabel="Ir a hoy"
             testID="nurse-calendar-today"
+            nativeID="nurse-calendar-today"
             style={({ pressed }) => [styles.todayBtn, pressed && styles.pressed]}
           >
             <Text style={styles.todayText}>Hoy</Text>

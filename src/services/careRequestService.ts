@@ -345,18 +345,6 @@ export async function getNurseCareRequestsInRange(range: { from: string; to: str
   });
 }
 
-/**
- * Nurse marks a service as complete. The backend moves the request from
- * `Approved` to `Completed` and records the completion time.
- */
-export async function completeServiceRequest(id: string): Promise<void> {
-  await requestJson<void>({
-    path: `/api/care-requests/${id}/complete`,
-    method: "POST",
-    auth: true,
-  });
-}
-
 export async function assignCareRequestNurse(
   id: string,
   dto: AssignCareRequestNurseRequest,

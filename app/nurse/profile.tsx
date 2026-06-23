@@ -17,6 +17,7 @@ import { nurseTestIds } from "@/src/testing/testIds";
 import { automationProps } from "@/src/utils/adminOperationalUx";
 import { goBackOrReplace } from "@/src/utils/navigationEscapes";
 import { formatDOP } from "@/src/utils/currency";
+import { formatShortDate } from "@/src/utils/dateFormat";
 import { getExactDigitsFieldError, sanitizeDigitsOnlyInput } from "@/src/utils/identityValidation";
 import { hapticFeedback } from "@/src/utils/haptics";
 import { getCachedAuthSession } from "@/src/services/authSession";
@@ -60,11 +61,6 @@ function resolvePeriodId(period: PayrollPeriodListItemDto): string | null {
   return pid;
 }
 
-function formatShortDate(iso: string): string {
-  const [y, m, d] = iso.split("-");
-  return `${d}/${m}/${y}`;
-}
-
 export default function NurseProfileScreen() {
   const { isReady, isAuthenticated, roles } = useAuth();
   const { showToast } = useToast();
@@ -80,6 +76,7 @@ export default function NurseProfileScreen() {
   const [payrollFetchDone, setPayrollFetchDone] = useState(false);
   const [payrollFetchError, setPayrollFetchError] = useState<string | null>(null);
   const [downloadingVoucherId, setDownloadingVoucherId] = useState<string | null>(null);
+  const [payrollReloadKey, setPayrollReloadKey] = useState(0);
 
   useEffect(() => {
     if (!isReady) return;
@@ -120,6 +117,7 @@ export default function NurseProfileScreen() {
     if (!isReady || !isAuthenticated || !roles.includes("NURSE")) return;
     let cancelled = false;
     setIsLoadingPayroll(true);
+    setPayrollFetchError(null);
     void getNursePayrollHistory("")
       .then((periods) => {
         if (!cancelled) setPayrollHistory(periods);
@@ -132,7 +130,7 @@ export default function NurseProfileScreen() {
         }
       });
     return () => { cancelled = true; };
-  }, [isReady, isAuthenticated, roles]);
+  }, [isReady, isAuthenticated, roles, payrollReloadKey]);
 
   const handleDownloadVoucher = async (periodId: string) => {
     if (downloadingVoucherId) return;
@@ -375,6 +373,16 @@ export default function NurseProfileScreen() {
             <View style={styles.paymentsCard}>
               <Text style={styles.sectionTitle}>Mis Pagos</Text>
               <Text style={styles.emptyPayments}>{payrollFetchError}</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Reintentar cargar Mis Pagos"
+                onPress={() => setPayrollReloadKey((key) => key + 1)}
+                style={({ pressed }) => [styles.retryBtn, pressed && styles.pressed]}
+                testID="nurse-profile-payroll-retry"
+                nativeID="nurse-profile-payroll-retry"
+              >
+                <Text style={styles.retryBtnText}>Reintentar</Text>
+              </Pressable>
             </View>
           ) : null}
 
@@ -561,5 +569,19 @@ const styles = StyleSheet.create({
     ...designTokens.typography.body,
     color: designTokens.color.ink.muted,
     paddingVertical: designTokens.spacing.sm,
+  },
+  retryBtn: {
+    alignSelf: "flex-start",
+    paddingHorizontal: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.sm,
+    borderRadius: designTokens.radius.md,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.strong,
+    backgroundColor: designTokens.color.surface.secondary,
+  },
+  retryBtnText: {
+    ...designTokens.typography.label,
+    color: designTokens.color.ink.accent,
+    fontWeight: "700",
   },
 });
