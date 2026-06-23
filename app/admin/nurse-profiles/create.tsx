@@ -54,6 +54,7 @@ export default function AdminCreateNurseProfileScreen() {
 
   // UI States
   const [showBankingInfo, setShowBankingInfo] = useState(false);
+  const [optionsLoading, setOptionsLoading] = useState(true);
   const [categoryOptions, setCategoryOptions] = useState<CatalogCodeNameOption[]>([]);
   const [specialtyOptions, setSpecialtyOptions] = useState<CatalogCodeNameOption[]>([]);
 
@@ -73,7 +74,8 @@ export default function AdminCreateNurseProfileScreen() {
       .catch(() => {
         setCategoryOptions([]);
         setSpecialtyOptions([]);
-      });
+      })
+      .finally(() => setOptionsLoading(false));
   }, []);
 
   const validateAll = () => {
@@ -306,7 +308,9 @@ export default function AdminCreateNurseProfileScreen() {
             accessibilityLabel="Categoría"
             style={styles.chipsContainer}
           >
-            {categoryOptions.map((opt) => (
+            {optionsLoading ? (
+              <Text style={styles.helperText}>Cargando...</Text>
+            ) : categoryOptions.map((opt) => (
               <Pressable
                 key={opt.code}
                 style={[styles.chip, form.category === opt.code && styles.chipActive]}
@@ -332,7 +336,9 @@ export default function AdminCreateNurseProfileScreen() {
             accessibilityLabel="Especialidad"
             style={styles.chipsContainer}
           >
-            {specialtyOptions.map((opt) => (
+            {optionsLoading ? (
+              <Text style={styles.helperText}>Cargando...</Text>
+            ) : specialtyOptions.map((opt) => (
               <Pressable
                 key={opt.code}
                 style={[styles.chip, form.specialty === opt.code && styles.chipActive]}
