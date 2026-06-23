@@ -3,6 +3,7 @@ import React from "react";
 import { Text } from "react-native";
 import renderer, { act } from "react-test-renderer";
 import { BankSelector } from "../BankSelector";
+import { DR_BANKS } from "@/src/constants/banks";
 
 // All react-native and expo mocks are provided by setupTests.ts + vitest.config.ts alias.
 
@@ -172,6 +173,13 @@ describe("BankSelector", () => {
       closeButtons[0].props.onPress();
     });
 
+    // 6.2: trigger's accessibilityState.expanded must revert to false after close.
+    const closedTrigger = findFirst(
+      component,
+      (n) => n.props.testID === "bank" && n.props.accessibilityState !== undefined,
+    );
+    expect(closedTrigger.props.accessibilityState?.expanded).toBe(false);
+
     expect(onChange).not.toHaveBeenCalled();
   });
 
@@ -269,6 +277,57 @@ describe("BankSelector", () => {
       return typeof c === "string" && c.includes("*");
     });
     expect(reqNode).toBeTruthy();
+  });
+
+  // ── 6.2. expanded=false / 6.3a. Whitespace query ────────────────────────────
+  it("all-whitespace query shows the full DR_BANKS list", () => {
+    let component!: renderer.ReactTestRenderer;
+    act(() => {
+      component = renderer.create(
+        <BankSelector value="" onChange={onChange} testID="bank" />,
+      );
+    });
+
+    const searchInput = findFirst(
+      component,
+      (n) => n.props.testID === "bank-search" && typeof n.props.onChangeText === "function",
+    );
+
+    // query.trim() === "" → filtered === DR_BANKS, full list must be rendered.
+    act(() => {
+      searchInput.props.onChangeText("   ");
+    });
+
+    // Count unique bank-option-N testIDs. Using a Set avoids double-counting that
+    // arises when both the composite PickerOption node and its inner host component
+    // (e.g. TouchableOpacity) carry the same testID in the test renderer tree.
+    const uniqueOptionIds = new Set(
+      component.root
+        .findAll((n) =>
+          typeof n.props.testID === "string" &&
+          /^bank-option-\d+$/.test(n.props.testID),
+        )
+        .map((n) => n.props.testID),
+    );
+    expect(uniqueOptionIds.size).toBe(DR_BANKS.length);
+  });
+
+  // ── 6.3b. Pre-selected bank ───────────────────────────────────────────────────
+  it("pre-selected bank appears with selected=true in picker option", () => {
+    let component!: renderer.ReactTestRenderer;
+    act(() => {
+      component = renderer.create(
+        <BankSelector value="Banco Popular Dominicano" onChange={onChange} testID="bank" />,
+      );
+    });
+
+    // The Modal mock renders children regardless of visible, so options are in the tree
+    // even before the picker is explicitly opened.
+    // PickerOption's inner TouchableOpacity carries accessibilityState={{ selected: !!selected }}.
+    const selectedOpts = component.root.findAll(
+      (n) => n.props.accessibilityState?.selected === true,
+    );
+    expect(selectedOpts.length).toBeGreaterThan(0);
   });
 
   // ── 6. isCustomEntry hint ─────────────────────────────────────────────────────
