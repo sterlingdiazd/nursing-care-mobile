@@ -47,6 +47,7 @@ const clientQuickSections: QuickSection[] = [
 const nurseQuickSections: QuickSection[] = [
   { title: "Mi Nómina", path: "/nurse/payroll", icon: "money", hue: "green" },
   { title: "Solicitudes", path: "/care-requests", icon: "list", hue: "blue" },
+  { title: "Mi Calendario", path: "/nurse/calendar", icon: "calendar", hue: "teal" },
   { title: "Diagnóstico", path: "/admin/diagnostics", icon: "heartbeat", hue: "neutral" },
   { title: "Herramientas", path: "/admin/tools", icon: "wrench", hue: "neutral" },
 ];

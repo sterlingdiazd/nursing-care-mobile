@@ -329,6 +329,34 @@ export async function rejectAssignment(id: string, reason: string): Promise<Care
   });
 }
 
+/**
+ * Fetch the current nurse's own care requests scheduled in an inclusive
+ * [from, to] date range. Used by the nurse service calendar.
+ * The backend date-filter parameter names mirror the admin endpoint.
+ */
+export async function getNurseCareRequestsInRange(range: { from: string; to: string }): Promise<CareRequestDto[]> {
+  const params = new URLSearchParams();
+  params.set("scheduledFrom", range.from);
+  params.set("scheduledTo", range.to);
+  return requestList<CareRequestDto>({
+    path: `/api/care-requests?${params.toString()}`,
+    method: "GET",
+    auth: true,
+  });
+}
+
+/**
+ * Nurse marks a service as complete. The backend moves the request from
+ * `Approved` to `Completed` and records the completion time.
+ */
+export async function completeServiceRequest(id: string): Promise<void> {
+  await requestJson<void>({
+    path: `/api/care-requests/${id}/complete`,
+    method: "POST",
+    auth: true,
+  });
+}
+
 export async function assignCareRequestNurse(
   id: string,
   dto: AssignCareRequestNurseRequest,

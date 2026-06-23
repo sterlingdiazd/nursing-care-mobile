@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { FormInput } from "@/src/components/form";
@@ -17,6 +19,13 @@ import { goBackOrReplace } from "@/src/utils/navigationEscapes";
 import { formatDOP } from "@/src/utils/currency";
 import { getExactDigitsFieldError, sanitizeDigitsOnlyInput } from "@/src/utils/identityValidation";
 import { hapticFeedback } from "@/src/utils/haptics";
+import { getCachedAuthSession } from "@/src/services/authSession";
+import {
+  getNursePayrollHistory,
+  getNursePayrollVoucherUrl,
+  type PayrollPeriodListItemDto,
+} from "@/src/services/payrollService";
+import { useToast } from "@/src/components/shared/ToastProvider";
 
 type EditableForm = {
   phone: string;
@@ -44,8 +53,21 @@ function detailToForm(detail: NurseProfileDto): EditableForm {
   };
 }
 
+function resolvePeriodId(period: PayrollPeriodListItemDto): string | null {
+  // Backend may return id under "periodId" or "id" (both fields exist in the DTO).
+  const pid = (period as unknown as Record<string, unknown>).periodId ?? period.id ?? null;
+  if (pid === "undefined" || pid === "null") return null;
+  return typeof pid === "string" ? pid : null;
+}
+
+function formatShortDate(iso: string): string {
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+
 export default function NurseProfileScreen() {
   const { isReady, isAuthenticated, roles } = useAuth();
+  const { showToast } = useToast();
   const [detail, setDetail] = useState<NurseProfileDto | null>(null);
   const [form, setForm] = useState<EditableForm>(EMPTY_FORM);
   const [isEditing, setIsEditing] = useState(false);
@@ -53,6 +75,9 @@ export default function NurseProfileScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [payrollHistory, setPayrollHistory] = useState<PayrollPeriodListItemDto[]>([]);
+  const [isLoadingPayroll, setIsLoadingPayroll] = useState(false);
+  const [downloadingVoucherId, setDownloadingVoucherId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isReady) return;
@@ -88,6 +113,52 @@ export default function NurseProfileScreen() {
       cancelled = true;
     };
   }, [isReady, isAuthenticated, roles]);
+
+  useEffect(() => {
+    if (!isReady || !isAuthenticated || !roles.includes("NURSE")) return;
+    let cancelled = false;
+    setIsLoadingPayroll(true);
+    void getNursePayrollHistory("")
+      .then((periods) => {
+        if (!cancelled) setPayrollHistory(periods);
+      })
+      .catch(() => { /* silent — section stays hidden on error */ })
+      .finally(() => { if (!cancelled) setIsLoadingPayroll(false); });
+    return () => { cancelled = true; };
+  }, [isReady, isAuthenticated, roles]);
+
+  const handleDownloadVoucher = async (periodId: string) => {
+    if (downloadingVoucherId) return;
+    hapticFeedback.light();
+    setDownloadingVoucherId(periodId);
+    try {
+      const session = getCachedAuthSession();
+      const token = session?.token;
+      if (!token) {
+        showToast({ variant: "error", message: "No hay sesión activa." });
+        return;
+      }
+      const url = getNursePayrollVoucherUrl(periodId);
+      const fileUri = (FileSystem.documentDirectory ?? "") + `comprobante-${periodId}.pdf`;
+      const downloadRes = await FileSystem.downloadAsync(url, fileUri, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (downloadRes.status === 200) {
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(downloadRes.uri);
+        } else {
+          showToast({ variant: "error", message: "Archivo descargado pero compartir no está disponible." });
+        }
+      } else {
+        showToast({ variant: "error", message: "No fue posible descargar el comprobante." });
+      }
+    } catch (e) {
+      console.error(e);
+      showToast({ variant: "error", message: "No fue posible descargar el comprobante." });
+    } finally {
+      setDownloadingVoucherId(null);
+    }
+  };
 
   const phoneError = isEditing ? getExactDigitsFieldError(form.phone, "Teléfono", 10) : "";
   const hasErrors = Boolean(phoneError);
@@ -142,7 +213,7 @@ export default function NurseProfileScreen() {
   return (
     <MobileWorkspaceShell
       title="Mi Perfil"
-      description="Tus datos de contacto y la cuenta donde recibes tu pago."
+      description="Tus datos de contacto y la cuenta donde recibes pago."
       testID={nurseTestIds.profile.screen}
       nativeID={nurseTestIds.profile.screen}
       primaryReturnLabel="Volver"
@@ -282,6 +353,49 @@ export default function NurseProfileScreen() {
               </Pressable>
             ) : null}
           </FormPanel>
+
+          {/* Mis Pagos — last 3 closed payroll periods */}
+          {isLoadingPayroll ? (
+            <View style={styles.loaderWrap}>
+              <ActivityIndicator color={designTokens.color.ink.accent} accessibilityLabel="Cargando pagos..." />
+            </View>
+          ) : null}
+
+          {!isLoadingPayroll && payrollHistory.filter((p) => p.status === "Closed").length > 0 ? (
+            <View style={styles.paymentsCard}>
+              <Text style={styles.sectionTitle}>Mis Pagos</Text>
+              {payrollHistory
+                .filter((p) => p.status === "Closed")
+                .slice(0, 3)
+                .map((period) => {
+                  const pid = resolvePeriodId(period);
+                  const rowKey = pid ?? `${period.startDate}-${period.endDate}`;
+                  return (
+                    <View key={rowKey} style={styles.paymentRow}>
+                      <View style={styles.paymentInfo}>
+                        <Text style={styles.paymentDates}>
+                          {formatShortDate(period.startDate)} – {formatShortDate(period.endDate)}
+                        </Text>
+                        <Text style={styles.paymentAmount}>{formatDOP(period.totalCompensation)}</Text>
+                      </View>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Descargar comprobante"
+                        onPress={() => { if (pid) void handleDownloadVoucher(pid); }}
+                        disabled={!pid || downloadingVoucherId === pid}
+                        style={({ pressed }) => [styles.downloadBtn, pressed && styles.pressed]}
+                        testID={`nurse-profile-download-voucher-${rowKey}`}
+                        nativeID={`nurse-profile-download-voucher-${rowKey}`}
+                      >
+                        <Text style={styles.downloadBtnText}>
+                          {downloadingVoucherId === pid ? "Descargando…" : "Descargar comprobante"}
+                        </Text>
+                      </Pressable>
+                    </View>
+                  );
+                })}
+            </View>
+          ) : null}
         </ScrollView>
       )}
     </MobileWorkspaceShell>
@@ -372,4 +486,51 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   pressed: { opacity: 0.75 },
+  paymentsCard: {
+    ...mobileSurfaceCard,
+    padding: designTokens.spacing.lg,
+    gap: designTokens.spacing.sm,
+  },
+  sectionTitle: {
+    ...designTokens.typography.label,
+    color: designTokens.color.ink.secondary,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+    marginBottom: designTokens.spacing.xs,
+  },
+  paymentRow: {
+    gap: designTokens.spacing.sm,
+    paddingVertical: designTokens.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: designTokens.color.border.subtle,
+  },
+  paymentInfo: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  paymentDates: {
+    ...designTokens.typography.body,
+    color: designTokens.color.ink.primary,
+  },
+  paymentAmount: {
+    ...designTokens.typography.body,
+    color: designTokens.color.ink.primary,
+    fontWeight: "800",
+  },
+  downloadBtn: {
+    alignSelf: "flex-start",
+    paddingHorizontal: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.sm,
+    borderRadius: designTokens.radius.md,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.strong,
+    backgroundColor: designTokens.color.surface.secondary,
+  },
+  downloadBtnText: {
+    ...designTokens.typography.label,
+    color: designTokens.color.ink.accent,
+    fontWeight: "700",
+  },
 });

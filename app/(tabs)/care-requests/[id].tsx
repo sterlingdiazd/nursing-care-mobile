@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Modal,
   Pressable,
@@ -338,6 +339,18 @@ export default function CareRequestDetailScreen() {
     }
   };
 
+  const runCompleteWithConfirm = () => {
+    hapticFeedback.selection();
+    Alert.alert(
+      "Marcar completado",
+      "¿Confirmas que este servicio fue completado?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Confirmar", onPress: () => void runAction("complete") },
+      ],
+    );
+  };
+
   if (isLoading && !careRequest) {
     return (
       <View style={styles.loadingState}>
@@ -400,8 +413,8 @@ export default function CareRequestDetailScreen() {
     };
   } else if (canComplete) {
     primaryAction = {
-      label: "Completar",
-      onPress: () => void runAction("complete"),
+      label: "Marcar completado",
+      onPress: runCompleteWithConfirm,
       variant: "primary",
       disabled: isActing,
     };
