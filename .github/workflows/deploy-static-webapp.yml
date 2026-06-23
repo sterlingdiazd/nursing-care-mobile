@@ -1,13 +1,13 @@
 name: Deploy Mobile Web To Azure Static Web Apps
 
-# Azure subscription disabled - re-enable push trigger when restored.
-# See initiative 2026-05-04-cicd-trivy-vitest-azure-disable.
+# Azure subscription restored (2026-06-22) - auto-deploy mobile web on push to main.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   deploy:
-    if: false
     runs-on: ubuntu-latest
     permissions:
       contents: read
