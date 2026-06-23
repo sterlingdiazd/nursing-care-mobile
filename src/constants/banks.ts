@@ -4,7 +4,7 @@
  */
 export const DR_BANKS: readonly string[] = [
   "Banco Popular Dominicano",
-  "Banco de Reservas (BanReservas)",
+  "Banco de Reservas",
   "BHD León",
   "Scotiabank República Dominicana",
   "Banco Santa Cruz",
