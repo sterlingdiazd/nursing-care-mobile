@@ -101,6 +101,15 @@ export function formatDateES(date: string | Date): string {
 }
 
 /**
+ * Date-only display with a null/empty fallback: returns "N/A" for nullish input,
+ * otherwise DD-MM-YYYY via formatDateES. Shared so screens don't each re-declare it.
+ */
+export function formatDateSafe(value: string | null | undefined): string {
+  if (!value) return 'N/A';
+  return formatDateES(value);
+}
+
+/**
  * Format date+time as DD-MM-YYYY HH:MM:SS AM/PM (12-hour). Used for any
  * timestamp shown to the user (audit logs, created-at, last-modified, etc).
  */

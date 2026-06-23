@@ -37,7 +37,7 @@ import {
   getLifecycleGuidance,
 } from "@/src/utils/adminCareRequestBilling";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
-import { formatDateES, formatDateTimeES } from "@/src/utils/spanishTextValidator";
+import { formatDateSafe, formatDateTimeES } from "@/src/utils/spanishTextValidator";
 import { hapticFeedback } from "@/src/utils/haptics";
 
 function automationProps(testId: string) {
@@ -53,11 +53,6 @@ function automationProps(testId: string) {
 function formatTimestamp(value: string | null | undefined) {
   if (!value) return "N/A";
   return formatDateTimeES(value);
-}
-
-function formatDate(value: string | null | undefined) {
-  if (!value) return "N/A";
-  return formatDateES(value);
 }
 
 function formatCurrency(value: number) {
@@ -567,7 +562,7 @@ export default function AdminCareRequestDetailScreen() {
                 </View>
               </View>
               {detail.careRequestDate ? (
-                <Text style={styles.cardMeta} numberOfLines={1}>Fecha: {formatDate(detail.careRequestDate)}</Text>
+                <Text style={styles.cardMeta} numberOfLines={1}>Fecha: {formatDateSafe(detail.careRequestDate)}</Text>
               ) : null}
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>Total</Text>

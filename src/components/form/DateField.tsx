@@ -139,6 +139,7 @@ export function DateField({
           onPress={open}
           accessibilityRole="button"
           accessibilityLabel={resolvedLabel}
+          accessibilityState={{ expanded: pickerVisible }}
           style={[styles.trigger, errorMessage ? styles.triggerError : null]}
         >
           <Text style={value ? styles.value : styles.placeholder}>
@@ -166,7 +167,7 @@ export function DateField({
         Platform.OS === "ios" ? (
           <Modal transparent animationType="slide" visible={pickerVisible} onRequestClose={close}>
             <Pressable style={styles.backdrop} onPress={close} accessibilityLabel="Cerrar selector de fecha" />
-            <View style={styles.sheet}>
+            <View style={styles.sheet} accessibilityViewIsModal={true}>
               <Text style={styles.sheetTitle}>{label}</Text>
               <DateTimePicker value={draft} mode="date" display="spinner" onChange={handleNativeChange} />
               <View style={styles.sheetActions}>
