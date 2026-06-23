@@ -18,7 +18,7 @@ import {
 } from "@/src/services/adminPortalService";
 import { adminTestIds } from "@/src/testing/testIds";
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
-import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
+import { formatDateES } from "@/src/utils/spanishTextValidator";
 import { hapticFeedback } from "@/src/utils/haptics";
 
 function translateRole(role: AdminUserRoleName): string {
@@ -50,9 +50,9 @@ function statusColors(status: AdminUserAccountStatus) {
   }
 }
 
-function formatTimestamp(value: string | null) {
+function formatDate(value: string | null) {
   if (!value) return "N/A";
-  return formatDateTimeES(value);
+  return formatDateES(value);
 }
 
 const ALL_ROLES: AdminUserRoleName[] = ["ADMIN", "CLIENT", "NURSE"];
@@ -286,7 +286,7 @@ export default function AdminUserDetailScreen() {
               }
             />
             <Field label="Sesiones Activas" value={String(detail.activeRefreshTokenCount)} />
-            <Field label="Fecha de Registro" value={formatTimestamp(detail.createdAtUtc)} />
+            <Field label="Fecha de Registro" value={formatDate(detail.createdAtUtc)} />
           </View>
 
           {detail.nurseProfile ? (
@@ -308,7 +308,7 @@ export default function AdminUserDetailScreen() {
               {detail.nurseProfile.hireDate ? (
                 <Field
                   label="Fecha de Contratación"
-                  value={formatTimestamp(detail.nurseProfile.hireDate)}
+                  value={formatDate(detail.nurseProfile.hireDate)}
                 />
               ) : null}
             </View>

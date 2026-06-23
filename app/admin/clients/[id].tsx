@@ -14,12 +14,17 @@ import {
 } from "@/src/services/adminPortalService";
 import { adminTestIds } from "@/src/testing/testIds";
 import { mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
-import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
+import { formatDateES, formatDateTimeES } from "@/src/utils/spanishTextValidator";
 import { hapticFeedback } from "@/src/utils/haptics";
 
 function formatTimestamp(value: string | null) {
   if (!value) return "N/A";
   return formatDateTimeES(value);
+}
+
+function formatDate(value: string | null) {
+  if (!value) return "N/A";
+  return formatDateES(value);
 }
 
 function formatCurrency(value: number) {
@@ -181,7 +186,7 @@ export default function AdminClientDetailScreen() {
 
             <View style={styles.field}>
               <Text style={styles.fieldLabel}>Registro</Text>
-              <Text style={styles.fieldValue}>{formatTimestamp(detail.createdAtUtc)}</Text>
+              <Text style={styles.fieldValue}>{formatDate(detail.createdAtUtc)}</Text>
             </View>
 
             <View style={styles.field}>
@@ -254,7 +259,7 @@ export default function AdminClientDetailScreen() {
                     </View>
                   </View>
                   <Text style={styles.historyMeta}>
-                    {item.careRequestDate ? formatTimestamp(item.careRequestDate) : "Fecha pendiente"} • {formatCurrency(item.total)}
+                    {item.careRequestDate ? formatDate(item.careRequestDate) : "Fecha pendiente"} • {formatCurrency(item.total)}
                   </Text>
                   {item.assignedNurseDisplayName ? (
                     <Text style={styles.historyNurse}>Enfermera: {item.assignedNurseDisplayName}</Text>

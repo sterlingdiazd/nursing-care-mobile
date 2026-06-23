@@ -25,7 +25,7 @@ import { getNurseProfileOptions } from "@/src/services/catalogOptionsService";
 import type { CatalogCodeNameOption } from "@/src/types/catalog";
 import { hapticFeedback } from "@/src/utils/haptics";
 import { authTestIds } from "@/src/testing/authTestIds";
-import { FormButton, FormInput } from "@/src/components/form";
+import { FormButton, FormInput, DateField } from "@/src/components/form";
 import { designTokens } from "@/src/design-system/tokens";
 import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import { BankSelector } from "@/components/BankSelector";
@@ -386,14 +386,14 @@ export default function RegisterScreen() {
       <Text style={styles.stepTitle}>Datos Profesionales</Text>
       <Text style={styles.stepSubtitle}>Información para validación administrativa</Text>
 
-      <FormInput
+      <DateField
         testID={authTestIds.register.hireDateInput}
         accessibilityLabel="Fecha de contratación"
         label="Fecha de Contratación"
-        placeholder="AAAA-MM-DD"
+        required
         value={hireDate}
-        onChangeText={setHireDate}
-        error={hireDateError}
+        onChange={setHireDate}
+        errorMessage={hireDateError}
       />
 
       <View style={styles.fieldGroup}>

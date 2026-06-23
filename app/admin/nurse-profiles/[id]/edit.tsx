@@ -7,7 +7,7 @@ import { type FooterAction } from "@/src/components/navigation/AppFooter";
 import { useAuth } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
 import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
-import { FormInput, FormSwitch } from "@/src/components/form";
+import { DateField, FormInput, FormSwitch } from "@/src/components/form";
 import { BankSelector } from "@/components/BankSelector";
 import {
   getNurseProfileForAdmin,
@@ -48,7 +48,7 @@ function dtoToForm(d: NurseProfileAdminRecordDto): UpdateNurseProfileRequest {
     identificationNumber: d.identificationNumber || "",
     phone: d.phone || "",
     email: d.email || "",
-    hireDate: d.hireDate || "",
+    hireDate: (d.hireDate || "").slice(0, 10),
     specialty: d.specialty || "",
     licenseId: d.licenseId || "",
     bankName: d.bankName || "",
@@ -361,12 +361,12 @@ export default function AdminEditNurseProfileScreen() {
           {step === 2 ? (
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Información Profesional</Text>
-              <FormInput
+              <DateField
                 testID="admin-edit-nurse-hire-date-input"
-                label="Fecha de Contratación *"
-                placeholder="YYYY-MM-DD"
+                label="Fecha de Contratación"
+                required
                 value={form.hireDate}
-                onChangeText={(v) => updateField("hireDate", v)}
+                onChange={(v) => updateField("hireDate", v)}
                 errorMessage={errors.hireDate}
                 accessibilityLabel="Fecha de contratación"
               />
