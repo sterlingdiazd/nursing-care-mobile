@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { BarChart } from "react-native-gifted-charts";
 import { designTokens } from "@/src/design-system/tokens";
+import { formatDateES } from "@/src/utils/spanishTextValidator";
 
 interface NurseEarningsDashboardProps {
   data: { date: string; amount: number }[];
@@ -10,7 +11,7 @@ interface NurseEarningsDashboardProps {
 export function NurseEarningsDashboard({ data }: NurseEarningsDashboardProps) {
   const chartData = data.map((item) => ({
     value: item.amount,
-    label: `${item.date.slice(8)}-${item.date.slice(5, 7)}`,
+    label: formatDateES(item.date).slice(0, 5), // DD-MM label for bar chart axis
     frontColor: designTokens.color.ink.accent,
   }));
 

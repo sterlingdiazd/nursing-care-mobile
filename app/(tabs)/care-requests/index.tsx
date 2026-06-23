@@ -156,7 +156,7 @@ function CareRequestCard({
       </View>
       <View style={styles.cardFooter}>
         <Text style={styles.cardMeta}>
-          {item.careRequestDate ? `Servicio ${item.careRequestDate ? formatDateES(item.careRequestDate) : "Sin fecha"}` : `Creada ${formatDateTimeES(item.createdAtUtc)}`}
+          {item.careRequestDate ? `Servicio ${formatDateES(item.careRequestDate)}` : `Creada ${formatDateTimeES(item.createdAtUtc)}`}
         </Text>
         {paymentBadge ? (
           <StatusBadge
