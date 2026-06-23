@@ -133,7 +133,7 @@ function IconBox({ icon }: { icon?: IconName }) {
 
 export function SelectRow({ icon, value, subtitle, placeholder, onPress, loading, disabled, expanded, testID, nativeID, accessibilityLabel }: { icon?: IconName; value?: string | null; subtitle?: string | null; placeholder: string; onPress: () => void; loading?: boolean; disabled?: boolean; expanded?: boolean; testID?: string; nativeID?: string; accessibilityLabel?: string }) {
   return (
-    <TouchableOpacity style={styles.row} onPress={withHapticFeedback(onPress, "selection")} disabled={disabled || loading} testID={testID} accessibilityRole="button" accessibilityLabel={accessibilityLabel} accessibilityState={{ expanded: expanded ?? false }} {...(nativeID !== undefined ? { nativeID } as any : {})}>
+    <TouchableOpacity style={styles.row} onPress={withHapticFeedback(onPress, "selection")} disabled={disabled || loading} testID={testID} accessibilityRole="button" accessibilityLabel={accessibilityLabel} accessibilityState={{ ...(expanded !== undefined ? { expanded } : {}) }} {...(nativeID !== undefined ? { nativeID } as any : {})}>
       <IconBox icon={icon} />
       <View style={{ flex: 1 }}>
         {loading ? (

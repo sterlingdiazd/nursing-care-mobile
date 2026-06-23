@@ -147,6 +147,21 @@ describe("BankSelector", () => {
       trigger.props.onPress();
     });
 
+    // a11y assertions: expanded state toggles and PickerSheet Modal is labelled modal.
+    // Narrow to the node that actually carries accessibilityState (the inner TouchableOpacity)
+    // rather than the SelectRow function-component node, which receives testID + onPress but
+    // never receives accessibilityState as a prop from BankSelector.
+    const openedTrigger = findFirst(
+      component,
+      (n) => n.props.testID === "bank" && n.props.accessibilityState !== undefined,
+    );
+    expect(openedTrigger.props.accessibilityState?.expanded).toBe(true);
+
+    const modalWithA11y = component.root.findAll(
+      (n) => n.props.accessibilityViewIsModal === true,
+    );
+    expect(modalWithA11y.length).toBeGreaterThan(0);
+
     // Close via the sheet close button (backdrop or header button, both labelled "Cerrar selector").
     const closeButtons = component.root.findAll(
       (n) => n.props.accessibilityLabel === "Cerrar selector" && typeof n.props.onPress === "function",
