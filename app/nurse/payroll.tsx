@@ -263,12 +263,10 @@ export default function NursePayrollScreen() {
 
         {/* TODO: replace with real nurse payroll earnings API data */}
         <NurseEarningsDashboard
-          data={[
-            { date: "2026-05-01", amount: 1500 },
-            { date: "2026-05-02", amount: 2200 },
-            { date: "2026-05-03", amount: 0 },
-            { date: "2026-05-04", amount: 1800 },
-          ]}
+          data={history.map((p) => ({
+            date: p.startDate,
+            amount: p.totalCompensation ?? 0,
+          }))}
         />
 
         <View style={styles.section}>
