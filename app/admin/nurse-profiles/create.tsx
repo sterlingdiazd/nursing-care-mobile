@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { AccessibilityInfo, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
@@ -67,11 +67,13 @@ export default function AdminCreateNurseProfileScreen() {
       .then((response) => {
         setCategoryOptions(response.categories);
         setSpecialtyOptions(response.specialties);
+        AccessibilityInfo.announceForAccessibility('Opciones cargadas.');
       })
       .catch(() => {
         setCategoryOptions([]);
         setSpecialtyOptions([]);
         setCatalogFetchError(true);
+        AccessibilityInfo.announceForAccessibility('No se pudieron cargar las opciones del catálogo.');
       })
       .finally(() => setOptionsLoading(false));
   };
@@ -324,10 +326,10 @@ export default function AdminCreateNurseProfileScreen() {
               <Text style={styles.helperText}>Cargando...</Text>
             ) : catalogFetchError ? (
               <>
-                <Text style={{ color: designTokens.color.ink.danger, marginBottom: 8 }}>
+                <Text style={styles.catalogErrorText}>
                   No se pudieron cargar las opciones. Intente de nuevo.
                 </Text>
-                <Pressable onPress={fetchCatalogOptions} accessibilityRole="button" accessibilityLabel="Reintentar carga de opciones">
+                <Pressable onPress={fetchCatalogOptions} accessibilityRole="button" accessibilityLabel="Reintentar carga de opciones" style={styles.retryPressable}>
                   <Text style={{ color: designTokens.color.ink.accent }}>Reintentar</Text>
                 </Pressable>
               </>
@@ -365,10 +367,10 @@ export default function AdminCreateNurseProfileScreen() {
               <Text style={styles.helperText}>Cargando...</Text>
             ) : catalogFetchError ? (
               <>
-                <Text style={{ color: designTokens.color.ink.danger, marginBottom: 8 }}>
+                <Text style={styles.catalogErrorText}>
                   No se pudieron cargar las opciones. Intente de nuevo.
                 </Text>
-                <Pressable onPress={fetchCatalogOptions} accessibilityRole="button" accessibilityLabel="Reintentar carga de opciones">
+                <Pressable onPress={fetchCatalogOptions} accessibilityRole="button" accessibilityLabel="Reintentar carga de opciones" style={styles.retryPressable}>
                   <Text style={{ color: designTokens.color.ink.accent }}>Reintentar</Text>
                 </Pressable>
               </>
@@ -543,4 +545,6 @@ const styles = StyleSheet.create({
   accordionTitle: { fontSize: designTokens.typography.body.fontSize, fontWeight: "700", color: designTokens.color.ink.secondary },
   accordionIcon: { fontSize: designTokens.typography.body.fontSize, color: designTokens.color.ink.secondary, fontWeight: "700" },
   accordionContent: { padding: designTokens.spacing.lg, borderTopWidth: 1, borderTopColor: designTokens.color.border.subtle },
+  catalogErrorText: { color: designTokens.color.ink.danger, marginBottom: designTokens.spacing.sm },
+  retryPressable: { paddingVertical: designTokens.spacing.sm, minHeight: 44, justifyContent: 'center' },
 });
