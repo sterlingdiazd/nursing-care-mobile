@@ -117,7 +117,7 @@ export default function NurseServiceCalendarScreen() {
         <DayDetail
           dateIso={cal.selectedDay}
           assignments={dayAssignments}
-          roster={[]}
+          roster={[] /* intentionally empty: nurse has no concept of other nurses' availability */}
           onOpenRequest={(id) => {
             hapticFeedback.selection();
             router.push(`/care-requests/${id}` as never);

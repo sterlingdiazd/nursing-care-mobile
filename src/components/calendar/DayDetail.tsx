@@ -44,7 +44,7 @@ function AssignmentRow({ a, onOpen }: { a: CalendarAssignment; onOpen: () => voi
     <Pressable
       onPress={withHapticFeedback(onOpen, "selection")}
       accessibilityRole="button"
-      accessibilityLabel={`Servicio de ${a.clientName}`}
+      accessibilityLabel={`Servicio de ${a.clientName || a.careRequestType || "servicio"}`}
       testID={`calendar-assignment-${a.id}`}
       style={({ pressed }) => [styles.row, { borderLeftColor: CATEGORY_META[a.category].color }, pressed && styles.pressed]}
     >
@@ -108,20 +108,22 @@ export function DayDetail({
         </View>
       ) : null}
 
-      <View style={styles.freeCard}>
-        <Text style={styles.freeTitle}>Enfermeras libres ({freeNurses.length})</Text>
-        {freeNurses.length === 0 ? (
-          <Text style={styles.freeEmpty}>Todas las enfermeras tienen asignación este día.</Text>
-        ) : (
-          <View style={styles.freeChips}>
-            {freeNurses.map((n) => (
-              <View key={n.userId} style={styles.freeChip}>
-                <Text style={styles.freeChipText}>{n.name}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-      </View>
+      {roster.length > 0 ? (
+        <View style={styles.freeCard}>
+          <Text style={styles.freeTitle}>Enfermeras libres ({freeNurses.length})</Text>
+          {freeNurses.length === 0 ? (
+            <Text style={styles.freeEmpty}>Todas las enfermeras tienen asignación este día.</Text>
+          ) : (
+            <View style={styles.freeChips}>
+              {freeNurses.map((n) => (
+                <View key={n.userId} style={styles.freeChip}>
+                  <Text style={styles.freeChipText}>{n.name}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      ) : null}
     </View>
   );
 }

@@ -336,8 +336,8 @@ export async function rejectAssignment(id: string, reason: string): Promise<Care
  */
 export async function getNurseCareRequestsInRange(range: { from: string; to: string }): Promise<CareRequestDto[]> {
   const params = new URLSearchParams();
-  params.set("scheduledFrom", range.from);
-  params.set("scheduledTo", range.to);
+  params.set("from", range.from);
+  params.set("to", range.to);
   return requestList<CareRequestDto>({
     path: `/api/care-requests?${params.toString()}`,
     method: "GET",

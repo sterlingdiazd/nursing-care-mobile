@@ -54,10 +54,10 @@ function detailToForm(detail: NurseProfileDto): EditableForm {
 }
 
 function resolvePeriodId(period: PayrollPeriodListItemDto): string | null {
-  // Backend may return id under "periodId" or "id" (both fields exist in the DTO).
-  const pid = (period as unknown as Record<string, unknown>).periodId ?? period.id ?? null;
+  // Both periodId and id are typed on the DTO; prefer periodId.
+  const pid = period.periodId ?? period.id ?? null;
   if (pid === "undefined" || pid === "null") return null;
-  return typeof pid === "string" ? pid : null;
+  return pid;
 }
 
 function formatShortDate(iso: string): string {
@@ -78,6 +78,7 @@ export default function NurseProfileScreen() {
   const [payrollHistory, setPayrollHistory] = useState<PayrollPeriodListItemDto[]>([]);
   const [isLoadingPayroll, setIsLoadingPayroll] = useState(false);
   const [payrollFetchDone, setPayrollFetchDone] = useState(false);
+  const [payrollFetchError, setPayrollFetchError] = useState<string | null>(null);
   const [downloadingVoucherId, setDownloadingVoucherId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -123,7 +124,7 @@ export default function NurseProfileScreen() {
       .then((periods) => {
         if (!cancelled) setPayrollHistory(periods);
       })
-      .catch(() => { /* section stays hidden on network error — supplementary data */ })
+      .catch(() => { if (!cancelled) setPayrollFetchError("No se pudo cargar Mis Pagos."); })
       .finally(() => {
         if (!cancelled) {
           setIsLoadingPayroll(false);
@@ -160,6 +161,9 @@ export default function NurseProfileScreen() {
       }
     } catch (e) {
       console.error(e);
+      // Delete any partial file left by a failed downloadAsync (Android partial-write risk).
+      const partialUri = (FileSystem.documentDirectory ?? "") + `comprobante-${periodId}.pdf`;
+      try { await FileSystem.deleteAsync(partialUri, { idempotent: true }); } catch { /* ignore */ }
       showToast({ variant: "error", message: "No fue posible descargar el comprobante." });
     } finally {
       setDownloadingVoucherId(null);
@@ -367,7 +371,14 @@ export default function NurseProfileScreen() {
             </View>
           ) : null}
 
-          {payrollFetchDone && !isLoadingPayroll && payrollHistory.filter((p) => p.status === "Closed").length === 0 ? (
+          {payrollFetchDone && !isLoadingPayroll && payrollFetchError ? (
+            <View style={styles.paymentsCard}>
+              <Text style={styles.sectionTitle}>Mis Pagos</Text>
+              <Text style={styles.emptyPayments}>{payrollFetchError}</Text>
+            </View>
+          ) : null}
+
+          {payrollFetchDone && !isLoadingPayroll && !payrollFetchError && payrollHistory.filter((p) => p.status === "Closed").length === 0 ? (
             <View style={styles.paymentsCard}>
               <Text style={styles.sectionTitle}>Mis Pagos</Text>
               <Text style={styles.emptyPayments}>Aún no hay períodos de pago cerrados.</Text>
@@ -395,7 +406,7 @@ export default function NurseProfileScreen() {
                         accessibilityRole="button"
                         accessibilityLabel="Descargar comprobante"
                         onPress={() => { if (pid) void handleDownloadVoucher(pid); }}
-                        disabled={!pid || downloadingVoucherId === pid}
+                        disabled={!pid || Boolean(downloadingVoucherId)}
                         style={({ pressed }) => [styles.downloadBtn, pressed && styles.pressed]}
                         testID={`nurse-profile-download-voucher-${rowKey}`}
                         nativeID={`nurse-profile-download-voucher-${rowKey}`}
