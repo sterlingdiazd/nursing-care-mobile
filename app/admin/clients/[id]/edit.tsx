@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
@@ -18,7 +18,8 @@ import { designTokens } from "@/src/design-system/tokens";
 type FormState = {
   name: string;
   lastName: string;
-  identificationNumber: string;
+  identificationNumber: string | null;
+  passportNumber: string | null;
   phone: string;
   email: string;
 };
@@ -26,7 +27,8 @@ type FormState = {
 const EMPTY_FORM: FormState = {
   name: "",
   lastName: "",
-  identificationNumber: "",
+  identificationNumber: null,
+  passportNumber: null,
   phone: "",
   email: "",
 };
@@ -35,7 +37,8 @@ function detailToForm(detail: AdminClientDetailDto): FormState {
   return {
     name: detail.name ?? "",
     lastName: detail.lastName ?? "",
-    identificationNumber: detail.identificationNumber ?? "",
+    identificationNumber: detail.identificationNumber ?? null,
+    passportNumber: detail.passportNumber ?? null,
     phone: detail.phone ?? "",
     email: detail.email ?? "",
   };
@@ -45,11 +48,16 @@ function isEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }
 
-function validateForm(form: FormState): Partial<Record<keyof FormState, string>> {
+function validateForm(form: FormState, documentType: "cedula" | "passport"): Partial<Record<keyof FormState, string>> {
   const errors: Partial<Record<keyof FormState, string>> = {};
   if (!form.name.trim()) errors.name = "El nombre es obligatorio.";
   if (!form.lastName.trim()) errors.lastName = "El apellido es obligatorio.";
-  if (!form.identificationNumber.trim()) errors.identificationNumber = "La cédula es obligatoria.";
+  if (documentType === "cedula") {
+    if (!form.identificationNumber?.trim()) errors.identificationNumber = "La cédula es obligatoria.";
+  } else {
+    if (!form.passportNumber?.trim()) errors.passportNumber = "El pasaporte es obligatorio.";
+    else if (form.passportNumber.trim().length > 9) errors.passportNumber = "El pasaporte no puede tener más de 9 dígitos.";
+  }
   if (!form.phone.trim()) errors.phone = "El teléfono es obligatorio.";
   if (!form.email.trim()) errors.email = "El correo es obligatorio.";
   else if (!isEmail(form.email)) errors.email = "Correo no válido.";
@@ -60,6 +68,7 @@ export default function AdminClientEditScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
   const [detail, setDetail] = useState<AdminClientDetailDto | null>(null);
+  const [documentType, setDocumentType] = useState<"cedula" | "passport">("cedula");
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [originalForm, setOriginalForm] = useState<FormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
@@ -96,6 +105,7 @@ export default function AdminClientEditScreen() {
       .then((dto) => {
         if (cancelled) return;
         setDetail(dto);
+        setDocumentType(dto.passportNumber ? "passport" : "cedula");
         const next = detailToForm(dto);
         setForm(next);
         setOriginalForm(next);
@@ -117,6 +127,7 @@ export default function AdminClientEditScreen() {
       form.name !== originalForm.name ||
       form.lastName !== originalForm.lastName ||
       form.identificationNumber !== originalForm.identificationNumber ||
+      form.passportNumber !== originalForm.passportNumber ||
       form.phone !== originalForm.phone ||
       form.email !== originalForm.email,
     [form, originalForm],
@@ -143,7 +154,7 @@ export default function AdminClientEditScreen() {
 
   const handleSave = async () => {
     if (!id) return;
-    const validation = validateForm(form);
+    const validation = validateForm(form, documentType);
     if (Object.keys(validation).length > 0) {
       setErrors(validation);
       return;
@@ -156,7 +167,8 @@ export default function AdminClientEditScreen() {
       const updated = await updateAdminClient(id, {
         name: form.name.trim(),
         lastName: form.lastName.trim(),
-        identificationNumber: form.identificationNumber.trim(),
+        identificationNumber: documentType === "cedula" ? form.identificationNumber?.trim() ?? null : null,
+        passportNumber: documentType === "passport" ? form.passportNumber?.trim() ?? null : null,
         phone: form.phone.trim(),
         email: form.email.trim(),
       });
@@ -235,15 +247,51 @@ export default function AdminClientEditScreen() {
               error={errors.lastName}
               editable={!isSaving}
             />
-            <FormInput
-              testID="admin-client-edit-identification-input"
-              label="Cédula"
-              value={form.identificationNumber}
-              onChangeText={(v) => updateField("identificationNumber", v)}
-              keyboardType="number-pad"
-              error={errors.identificationNumber}
-              editable={!isSaving}
-            />
+            <Text style={styles.sectionHeading}>Documento de identidad</Text>
+            <View style={styles.docToggleRow}>
+              <Pressable
+                style={[styles.docChip, documentType === "cedula" ? styles.docChipActive : undefined]}
+                onPress={() => { setDocumentType("cedula"); setForm((prev) => ({ ...prev, passportNumber: null })); }}
+                accessibilityRole="button"
+                accessibilityLabel="Cédula de identidad"
+                accessibilityState={{ selected: documentType === "cedula" }}
+                testID="client-edit-document-type-cedula"
+              >
+                <Text style={[styles.docChipText, documentType === "cedula" ? styles.docChipTextActive : undefined]}>Cédula</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.docChip, documentType === "passport" ? styles.docChipActive : undefined]}
+                onPress={() => { setDocumentType("passport"); setForm((prev) => ({ ...prev, identificationNumber: null })); }}
+                accessibilityRole="button"
+                accessibilityLabel="Pasaporte"
+                accessibilityState={{ selected: documentType === "passport" }}
+                testID="client-edit-document-type-passport"
+              >
+                <Text style={[styles.docChipText, documentType === "passport" ? styles.docChipTextActive : undefined]}>Pasaporte</Text>
+              </Pressable>
+            </View>
+            {documentType === "cedula" ? (
+              <FormInput
+                testID="admin-client-edit-identification-input"
+                label="Cédula"
+                value={form.identificationNumber ?? ""}
+                onChangeText={(v) => updateField("identificationNumber", v)}
+                keyboardType="number-pad"
+                error={errors.identificationNumber}
+                editable={!isSaving}
+              />
+            ) : (
+              <FormInput
+                testID="admin-client-edit-passport-input"
+                label="Pasaporte"
+                value={form.passportNumber ?? ""}
+                onChangeText={(v) => updateField("passportNumber", v)}
+                keyboardType="number-pad"
+                maxLength={9}
+                error={errors.passportNumber}
+                editable={!isSaving}
+              />
+            )}
             <FormInput
               testID="admin-client-edit-phone-input"
               label="Teléfono"
@@ -309,5 +357,38 @@ const styles = StyleSheet.create({
     ...mobileSurfaceCard,
     padding: designTokens.spacing.lg,
     gap: designTokens.spacing.md,
+  },
+  sectionHeading: {
+    color: designTokens.color.ink.secondary,
+    fontWeight: "700" as const,
+    fontSize: designTokens.typography.label.fontSize,
+    marginBottom: designTokens.spacing.xs,
+  },
+  docToggleRow: {
+    flexDirection: "row",
+    gap: designTokens.spacing.sm,
+    marginBottom: designTokens.spacing.sm,
+  },
+  docChip: {
+    paddingHorizontal: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.sm,
+    borderRadius: designTokens.radius.pill,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.strong,
+    backgroundColor: designTokens.color.surface.secondary,
+    minHeight: 36,
+    justifyContent: "center" as const,
+  },
+  docChipActive: {
+    borderColor: designTokens.color.ink.accent,
+    backgroundColor: designTokens.color.ink.accent,
+  },
+  docChipText: {
+    color: designTokens.color.ink.secondary,
+    fontWeight: "700" as const,
+    fontSize: 14,
+  },
+  docChipTextActive: {
+    color: designTokens.color.ink.inverse,
   },
 });

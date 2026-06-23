@@ -17,6 +17,7 @@ function makeForm(overrides?: Partial<CreateNurseProfileRequest>): CreateNursePr
     name: "María",
     lastName: "González",
     identificationNumber: "001-9876543-2",
+    passportNumber: null,
     phone: "809-555-0099",
     email: "maria@example.com",
     password: "password123",
@@ -124,7 +125,7 @@ describe("Admin Create Nurse Profile Screen - Step 1 Validation", () => {
     const errors: Record<string, string> = {};
     if (!form.name.trim()) errors.name = "El nombre es obligatorio";
     if (!form.lastName.trim()) errors.lastName = "El apellido es obligatorio";
-    if (!form.identificationNumber.trim()) errors.identificationNumber = "La cédula es obligatoria";
+    if (!form.identificationNumber?.trim()) errors.identificationNumber = "La cédula es obligatoria";
     if (!form.phone.trim()) errors.phone = "El teléfono es obligatorio";
     if (!form.email.trim()) errors.email = "El correo electrónico es obligatorio";
     else if (!form.email.includes("@")) errors.email = "El correo debe ser válido";
@@ -266,7 +267,7 @@ describe("Admin Create Nurse Profile Screen - Multi-Step Navigation", () => {
     const errors: Record<string, string> = {};
     if (!form.name.trim()) errors.name = "El nombre es obligatorio";
     if (!form.lastName.trim()) errors.lastName = "El apellido es obligatorio";
-    if (!form.identificationNumber.trim()) errors.identificationNumber = "La cédula es obligatoria";
+    if (!form.identificationNumber?.trim()) errors.identificationNumber = "La cédula es obligatoria";
     if (!form.phone.trim()) errors.phone = "El teléfono es obligatorio";
     if (!form.email.trim()) errors.email = "El correo electrónico es obligatorio";
     else if (!form.email.includes("@")) errors.email = "El correo debe ser válido";

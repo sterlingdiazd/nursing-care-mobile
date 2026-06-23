@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
@@ -28,10 +28,12 @@ export default function AdminCreateClientScreen() {
   const { showToast } = useToast();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [documentType, setDocumentType] = useState<"cedula" | "passport">("cedula");
   const [form, setForm] = useState<CreateAdminClientRequest>({
     name: "",
     lastName: "",
-    identificationNumber: "",
+    identificationNumber: null,
+    passportNumber: null,
     phone: "",
     email: "",
     password: "",
@@ -64,11 +66,18 @@ export default function AdminCreateClientScreen() {
       if (nextLastNameError) newErrors.lastName = nextLastNameError;
     }
 
-    const identificationInputError = getRejectedDigitsOnlyInputError(form.identificationNumber, "La cédula", 11);
-    if (identificationInputError) newErrors.identificationNumber = identificationInputError;
-    else {
-      const nextIdentificationError = getExactDigitsFieldError(form.identificationNumber, "La cédula", 11);
-      if (nextIdentificationError) newErrors.identificationNumber = nextIdentificationError;
+    if (documentType === "cedula") {
+      const cedula = form.identificationNumber ?? "";
+      const identificationInputError = getRejectedDigitsOnlyInputError(cedula, "La cédula", 11);
+      if (identificationInputError) newErrors.identificationNumber = identificationInputError;
+      else {
+        const nextIdentificationError = getExactDigitsFieldError(cedula, "La cédula", 11);
+        if (nextIdentificationError) newErrors.identificationNumber = nextIdentificationError;
+      }
+    } else {
+      const passport = form.passportNumber ?? "";
+      if (!passport.trim()) newErrors.identificationNumber = "El pasaporte es obligatorio";
+      else if (passport.trim().length > 9) newErrors.identificationNumber = "El pasaporte no puede tener más de 9 dígitos";
     }
 
     const phoneInputError = getRejectedDigitsOnlyInputError(form.phone, "El teléfono", 10);
@@ -174,17 +183,54 @@ export default function AdminCreateClientScreen() {
           />
         </View>
 
-        <FormInput
-          testID={adminTestIds.clients.create.identificationInput}
-          label="Cédula"
-          required
-          placeholder="00112345678"
-          value={form.identificationNumber}
-          onChangeText={(text) => setForm({ ...form, identificationNumber: sanitizeDigitsOnlyInput(text, 11) })}
-          keyboardType="number-pad"
-          maxLength={11}
-          errorMessage={errors.identificationNumber}
-        />
+        <Text style={styles.sectionHeading}>Documento de identidad</Text>
+        <View style={styles.docToggleRow}>
+          <Pressable
+            style={[styles.docChip, documentType === "cedula" ? styles.docChipActive : undefined]}
+            onPress={() => { setDocumentType("cedula"); setForm({ ...form, passportNumber: null }); }}
+            accessibilityRole="button"
+            accessibilityLabel="Cédula de identidad"
+            accessibilityState={{ selected: documentType === "cedula" }}
+            testID="client-create-document-type-cedula"
+          >
+            <Text style={[styles.docChipText, documentType === "cedula" ? styles.docChipTextActive : undefined]}>Cédula</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.docChip, documentType === "passport" ? styles.docChipActive : undefined]}
+            onPress={() => { setDocumentType("passport"); setForm({ ...form, identificationNumber: null }); }}
+            accessibilityRole="button"
+            accessibilityLabel="Pasaporte"
+            accessibilityState={{ selected: documentType === "passport" }}
+            testID="client-create-document-type-passport"
+          >
+            <Text style={[styles.docChipText, documentType === "passport" ? styles.docChipTextActive : undefined]}>Pasaporte</Text>
+          </Pressable>
+        </View>
+        {documentType === "cedula" ? (
+          <FormInput
+            testID={adminTestIds.clients.create.identificationInput}
+            label="Cédula"
+            required
+            placeholder="00112345678"
+            value={form.identificationNumber ?? ""}
+            onChangeText={(text) => setForm({ ...form, identificationNumber: sanitizeDigitsOnlyInput(text, 11) })}
+            keyboardType="number-pad"
+            maxLength={11}
+            errorMessage={errors.identificationNumber}
+          />
+        ) : (
+          <FormInput
+            testID="client-create-passport-input"
+            label="Pasaporte"
+            required
+            placeholder="Máx. 9 dígitos"
+            value={form.passportNumber ?? ""}
+            onChangeText={(text) => setForm({ ...form, passportNumber: sanitizeDigitsOnlyInput(text, 9) })}
+            keyboardType="number-pad"
+            maxLength={9}
+            errorMessage={errors.identificationNumber}
+          />
+        )}
 
         <FormInput
           testID={adminTestIds.clients.create.phoneInput}
@@ -285,5 +331,32 @@ const styles = StyleSheet.create({
     ...designTokens.typography.sectionTitle,
     fontSize: designTokens.typography.body.fontSize,
     marginBottom: designTokens.spacing.sm,
+  },
+  docToggleRow: {
+    flexDirection: "row",
+    gap: designTokens.spacing.sm,
+    marginBottom: designTokens.spacing.sm,
+  },
+  docChip: {
+    paddingHorizontal: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.sm,
+    borderRadius: designTokens.radius.pill,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.strong,
+    backgroundColor: designTokens.color.surface.secondary,
+    minHeight: 36,
+    justifyContent: "center" as const,
+  },
+  docChipActive: {
+    borderColor: designTokens.color.ink.accent,
+    backgroundColor: designTokens.color.ink.accent,
+  },
+  docChipText: {
+    color: designTokens.color.ink.secondary,
+    fontWeight: "700" as const,
+    fontSize: 14,
+  },
+  docChipTextActive: {
+    color: designTokens.color.ink.inverse,
   },
 });

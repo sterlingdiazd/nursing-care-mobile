@@ -12,6 +12,7 @@ export interface NurseProfileDto {
   name?: string | null;
   lastName?: string | null;
   identificationNumber?: string | null;
+  passportNumber?: string | null;
   phone?: string | null;
   specialty?: string | null;
   category?: string | null;

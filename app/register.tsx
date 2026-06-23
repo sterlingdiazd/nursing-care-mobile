@@ -61,6 +61,8 @@ export default function RegisterScreen() {
   const [name, setName] = useState("");
   const [lastName, setLastName] = useState("");
   const [identificationNumber, setIdentificationNumber] = useState("");
+  const [documentType, setDocumentType] = useState<"cedula" | "passport">("cedula");
+  const [passportNumber, setPassportNumber] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -79,6 +81,7 @@ export default function RegisterScreen() {
   const [nameError, setNameError] = useState("");
   const [lastNameError, setLastNameError] = useState("");
   const [identificationNumberError, setIdentificationNumberError] = useState("");
+  const [passportError, setPassportError] = useState("");
   const [phoneError, setPhoneError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
@@ -110,15 +113,28 @@ export default function RegisterScreen() {
   const validateIdentity = () => {
     const nextNameError = getTextOnlyFieldError(name, "El nombre");
     const nextLastNameError = getTextOnlyFieldError(lastName, "El apellido");
-    const nextIdentificationNumberError = getExactDigitsFieldError(identificationNumber, "La cédula", 11);
     const nextPhoneError = getExactDigitsFieldError(phone, "El teléfono", 10);
+
+    let nextIdentificationNumberError = "";
+    let nextPassportError = "";
+
+    if (documentType === "cedula") {
+      nextIdentificationNumberError = getExactDigitsFieldError(identificationNumber, "La cédula", 11);
+    } else {
+      nextPassportError = !passportNumber.trim()
+        ? "El pasaporte es obligatorio"
+        : passportNumber.trim().length > 9
+        ? "El pasaporte no puede tener más de 9 dígitos"
+        : "";
+    }
 
     setNameError(nextNameError);
     setLastNameError(nextLastNameError);
     setIdentificationNumberError(nextIdentificationNumberError);
+    setPassportError(nextPassportError);
     setPhoneError(nextPhoneError);
 
-    return !(nextNameError || nextLastNameError || nextIdentificationNumberError || nextPhoneError);
+    return !(nextNameError || nextLastNameError || nextIdentificationNumberError || nextPassportError || nextPhoneError);
   };
 
   const validateCredentials = () => {
@@ -198,7 +214,8 @@ export default function RegisterScreen() {
         await register(
           name.trim(),
           lastName.trim(),
-          identificationNumber.trim(),
+          documentType === "cedula" ? identificationNumber.trim() : null,
+          documentType === "passport" ? passportNumber.trim() : null,
           phone.trim(),
           effectiveEmail.trim(),
           password,
@@ -243,17 +260,58 @@ export default function RegisterScreen() {
         error={lastNameError}
       />
 
-      <FormInput
-        testID={authTestIds.register.identificationInput}
-        accessibilityLabel="Cédula"
-        label="Cédula"
-        placeholder="00112345678"
-        value={identificationNumber}
-        onChangeText={(val) => setIdentificationNumber(sanitizeDigitsOnlyInput(val, 11))}
-        error={identificationNumberError}
-        keyboardType="number-pad"
-        maxLength={11}
-      />
+      {/* Document type toggle */}
+      <View style={styles.fieldGroup}>
+        <Text style={styles.fieldLabel}>Documento de identidad</Text>
+        <View style={styles.chipGroup}>
+          <TouchableOpacity
+            style={[styles.chip, documentType === "cedula" ? styles.chipActive : null]}
+            onPress={() => { setDocumentType("cedula"); setPassportNumber(""); setPassportError(""); }}
+            accessibilityRole="button"
+            accessibilityLabel="Cédula de identidad"
+            accessibilityState={{ selected: documentType === "cedula" }}
+            testID="register-document-type-cedula"
+          >
+            <Text style={[styles.chipText, documentType === "cedula" ? styles.chipTextActive : null]}>Cédula</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.chip, documentType === "passport" ? styles.chipActive : null]}
+            onPress={() => { setDocumentType("passport"); setIdentificationNumber(""); setIdentificationNumberError(""); }}
+            accessibilityRole="button"
+            accessibilityLabel="Pasaporte"
+            accessibilityState={{ selected: documentType === "passport" }}
+            testID="register-document-type-passport"
+          >
+            <Text style={[styles.chipText, documentType === "passport" ? styles.chipTextActive : null]}>Pasaporte</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {documentType === "cedula" ? (
+        <FormInput
+          testID={authTestIds.register.identificationInput}
+          accessibilityLabel="Cédula"
+          label="Cédula"
+          placeholder="00112345678"
+          value={identificationNumber}
+          onChangeText={(val) => setIdentificationNumber(sanitizeDigitsOnlyInput(val, 11))}
+          error={identificationNumberError}
+          keyboardType="number-pad"
+          maxLength={11}
+        />
+      ) : (
+        <FormInput
+          testID="register-passport-input"
+          accessibilityLabel="Pasaporte"
+          label="Pasaporte"
+          placeholder="Máx. 9 dígitos"
+          value={passportNumber}
+          onChangeText={(val) => setPassportNumber(sanitizeDigitsOnlyInput(val, 9))}
+          error={passportError}
+          keyboardType="number-pad"
+          maxLength={9}
+        />
+      )}
 
       <FormInput
         testID={authTestIds.register.phoneInput}

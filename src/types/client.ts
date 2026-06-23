@@ -1,7 +1,8 @@
 export interface ClientProfileDto {
   name: string;
   lastName: string;
-  identificationNumber: string;
+  identificationNumber?: string | null;
+  passportNumber?: string | null;
   phone: string;
   email?: string | null;
   preferredAddress?: string | null;
@@ -12,7 +13,8 @@ export interface ClientProfileDto {
 export interface UpdateClientProfileDto {
   name: string;
   lastName: string;
-  identificationNumber: string;
+  identificationNumber?: string | null;
+  passportNumber?: string | null;
   phone: string;
   preferredAddress?: string | null;
   emergencyContactName?: string | null;

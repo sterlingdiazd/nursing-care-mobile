@@ -27,11 +27,13 @@ export default function AdminCreateNurseProfileScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [documentType, setDocumentType] = useState<"cedula" | "passport">("cedula");
 
   const [form, setForm] = useState<CreateNurseProfileRequest>({
     name: "",
     lastName: "",
-    identificationNumber: "",
+    identificationNumber: null,
+    passportNumber: null,
     phone: "",
     email: "",
     password: "",
@@ -93,7 +95,13 @@ export default function AdminCreateNurseProfileScreen() {
     const newErrors: Record<string, string> = {};
     if (!form.name.trim()) newErrors.name = "El nombre es obligatorio";
     if (!form.lastName.trim()) newErrors.lastName = "El apellido es obligatorio";
-    if (!form.identificationNumber.trim()) newErrors.identificationNumber = "La cédula es obligatoria";
+    if (documentType === "cedula") {
+      if (!form.identificationNumber?.trim()) newErrors.identificationNumber = "La cédula es obligatoria";
+      else if (form.identificationNumber.trim().length !== 11) newErrors.identificationNumber = "La cédula debe tener exactamente 11 dígitos";
+    } else {
+      if (!form.passportNumber?.trim()) newErrors.identificationNumber = "El pasaporte es obligatorio";
+      else if (form.passportNumber.trim().length > 9) newErrors.identificationNumber = "El pasaporte no puede tener más de 9 dígitos";
+    }
     if (!form.phone.trim()) newErrors.phone = "El teléfono es obligatorio";
 
     if (!form.email.trim()) newErrors.email = "El correo electrónico es obligatorio";
@@ -204,17 +212,56 @@ export default function AdminCreateNurseProfileScreen() {
             />
           </View>
 
-          <FormInput
-            testID={adminTestIds.nurses.create.identificationInput}
-            label="Cédula"
-            required
-            accessibilityLabel="Número de cédula de identidad"
-            placeholder="Número de identificación"
-            value={form.identificationNumber}
-            onChangeText={(text) => setForm({ ...form, identificationNumber: text })}
-            keyboardType="numeric"
-            errorMessage={errors.identificationNumber}
-          />
+          <Text style={styles.cardLabel}>Documento de identidad</Text>
+          <View style={styles.chipsContainer}>
+            <Pressable
+              style={[styles.chip, documentType === "cedula" ? styles.chipActive : undefined]}
+              onPress={() => { hapticFeedback.selection(); setDocumentType("cedula"); setForm({ ...form, passportNumber: null }); }}
+              accessibilityRole="button"
+              accessibilityLabel="Cédula de identidad"
+              accessibilityState={{ selected: documentType === "cedula" }}
+              testID="nurse-create-document-type-cedula"
+            >
+              <Text style={[styles.chipText, documentType === "cedula" ? styles.chipTextActive : undefined]}>Cédula</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.chip, documentType === "passport" ? styles.chipActive : undefined]}
+              onPress={() => { hapticFeedback.selection(); setDocumentType("passport"); setForm({ ...form, identificationNumber: null }); }}
+              accessibilityRole="button"
+              accessibilityLabel="Pasaporte"
+              accessibilityState={{ selected: documentType === "passport" }}
+              testID="nurse-create-document-type-passport"
+            >
+              <Text style={[styles.chipText, documentType === "passport" ? styles.chipTextActive : undefined]}>Pasaporte</Text>
+            </Pressable>
+          </View>
+          {documentType === "cedula" ? (
+            <FormInput
+              testID={adminTestIds.nurses.create.identificationInput}
+              label="Cédula"
+              required
+              accessibilityLabel="Número de cédula de identidad"
+              placeholder="00112345678"
+              value={form.identificationNumber ?? ""}
+              onChangeText={(text) => setForm({ ...form, identificationNumber: text.replace(/\D/g, "").slice(0, 11) })}
+              keyboardType="numeric"
+              maxLength={11}
+              errorMessage={errors.identificationNumber}
+            />
+          ) : (
+            <FormInput
+              testID="nurse-create-passport-input"
+              label="Pasaporte"
+              required
+              accessibilityLabel="Número de pasaporte"
+              placeholder="Máx. 9 dígitos"
+              value={form.passportNumber ?? ""}
+              onChangeText={(text) => setForm({ ...form, passportNumber: text.replace(/\D/g, "").slice(0, 9) })}
+              keyboardType="numeric"
+              maxLength={9}
+              errorMessage={errors.identificationNumber}
+            />
+          )}
 
           <FormInput
             testID={adminTestIds.nurses.create.phoneInput}

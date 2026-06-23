@@ -41,7 +41,8 @@ interface AuthContextValue {
   register: (
     name: string,
     lastName: string,
-    identificationNumber: string,
+    identificationNumber: string | null,
+    passportNumber: string | null,
     phone: string,
     email: string,
     password: string,
@@ -263,7 +264,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (
     name: string,
     lastName: string,
-    identificationNumber: string,
+    identificationNumber: string | null,
+    passportNumber: string | null,
     phone: string,
     emailAddress: string,
     passwordInput: string,
@@ -296,7 +298,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         licenseIdInput,
         bankNameInput,
         accountNumberInput,
-        profileTypeInput
+        profileTypeInput,
+        passportNumber
       );
 
       await persistSession(response, profileTypeInput);

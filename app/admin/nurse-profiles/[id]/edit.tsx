@@ -39,6 +39,7 @@ const EMPTY_FORM: UpdateNurseProfileRequest = {
   homeCareMonthlyRate: 0,
   homeCareMonthlyExpectedDays: 23.83,
   optInWhatsApp: false,
+  passportNumber: null,
 };
 
 function dtoToForm(d: NurseProfileAdminRecordDto): UpdateNurseProfileRequest {
@@ -60,6 +61,7 @@ function dtoToForm(d: NurseProfileAdminRecordDto): UpdateNurseProfileRequest {
     homeCareMonthlyRate: d.homeCareMonthlyRate ?? 0,
     homeCareMonthlyExpectedDays: d.homeCareMonthlyExpectedDays ?? 23.83,
     optInWhatsApp: d.optInWhatsApp ?? false,
+    passportNumber: d.passportNumber ?? null,
   };
 }
 
@@ -67,7 +69,7 @@ function formsEqual(a: UpdateNurseProfileRequest, b: UpdateNurseProfileRequest) 
   const keys: (keyof UpdateNurseProfileRequest)[] = [
     "name", "lastName", "identificationNumber", "phone", "email",
     "hireDate", "specialty", "licenseId", "bankName", "accountNumber", "accountType", "accountHolderName", "category",
-    "visitDailyRate", "homeCareMonthlyRate", "homeCareMonthlyExpectedDays", "optInWhatsApp",
+    "visitDailyRate", "homeCareMonthlyRate", "homeCareMonthlyExpectedDays", "optInWhatsApp", "passportNumber",
   ];
   return keys.every((k) => (a[k] ?? "") === (b[k] ?? ""));
 }
@@ -80,6 +82,7 @@ export default function AdminEditNurseProfileScreen() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [documentType, setDocumentType] = useState<"cedula" | "passport">("cedula");
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<UpdateNurseProfileRequest>(EMPTY_FORM);
   const [originalForm, setOriginalForm] = useState<UpdateNurseProfileRequest>(EMPTY_FORM);
@@ -116,6 +119,7 @@ export default function AdminEditNurseProfileScreen() {
         const next = dtoToForm(data);
         setForm(next);
         setOriginalForm(next);
+        setDocumentType(data.passportNumber ? "passport" : "cedula");
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -137,7 +141,13 @@ export default function AdminEditNurseProfileScreen() {
     const next: Record<string, string> = {};
     if (!form.name.trim()) next.name = "El nombre es obligatorio.";
     if (!form.lastName.trim()) next.lastName = "El apellido es obligatorio.";
-    if (!form.identificationNumber.trim()) next.identificationNumber = "La cédula es obligatoria.";
+    if (documentType === "cedula") {
+      if (!form.identificationNumber?.trim()) next.identificationNumber = "La cédula es obligatoria.";
+      else if (form.identificationNumber.trim().length !== 11) next.identificationNumber = "La cédula debe tener exactamente 11 dígitos.";
+    } else {
+      if (!form.passportNumber?.trim()) next.identificationNumber = "El pasaporte es obligatorio.";
+      else if (form.passportNumber.trim().length > 9) next.identificationNumber = "El pasaporte no puede tener más de 9 dígitos.";
+    }
     if (!form.phone.trim()) next.phone = "El teléfono es obligatorio.";
     if (!form.email.trim()) next.email = "El correo es obligatorio.";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) next.email = "Correo no válido.";
@@ -316,15 +326,54 @@ export default function AdminEditNurseProfileScreen() {
                 errorMessage={errors.lastName}
                 accessibilityLabel="Apellido"
               />
-              <FormInput
-                testID="admin-edit-nurse-id-input"
-                label="Cédula *"
-                value={form.identificationNumber}
-                onChangeText={(v) => updateField("identificationNumber", v)}
-                errorMessage={errors.identificationNumber}
-                keyboardType="number-pad"
-                accessibilityLabel="Cédula"
-              />
+              <View style={{ marginBottom: 4 }}>
+                <Text style={{ fontSize: 14, fontWeight: "700", color: designTokens.color.ink.primary, marginBottom: 6 }}>Documento de identidad</Text>
+                <View style={{ flexDirection: "row", gap: designTokens.spacing.sm, marginBottom: 8 }}>
+                  <Pressable
+                    style={{ paddingHorizontal: designTokens.spacing.md, paddingVertical: designTokens.spacing.sm, borderRadius: designTokens.radius.pill, borderWidth: 1, borderColor: documentType === "cedula" ? designTokens.color.ink.accent : designTokens.color.border.strong, backgroundColor: documentType === "cedula" ? designTokens.color.ink.accent : designTokens.color.surface.secondary, minHeight: 36, justifyContent: "center" }}
+                    onPress={() => { hapticFeedback.selection(); setDocumentType("cedula"); updateField("passportNumber", ""); }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Cédula de identidad"
+                    accessibilityState={{ selected: documentType === "cedula" }}
+                    testID="nurse-edit-document-type-cedula"
+                  >
+                    <Text style={{ color: documentType === "cedula" ? designTokens.color.ink.inverse : designTokens.color.ink.secondary, fontWeight: "700", fontSize: 14 }}>Cédula</Text>
+                  </Pressable>
+                  <Pressable
+                    style={{ paddingHorizontal: designTokens.spacing.md, paddingVertical: designTokens.spacing.sm, borderRadius: designTokens.radius.pill, borderWidth: 1, borderColor: documentType === "passport" ? designTokens.color.ink.accent : designTokens.color.border.strong, backgroundColor: documentType === "passport" ? designTokens.color.ink.accent : designTokens.color.surface.secondary, minHeight: 36, justifyContent: "center" }}
+                    onPress={() => { hapticFeedback.selection(); setDocumentType("passport"); updateField("identificationNumber", ""); }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Pasaporte"
+                    accessibilityState={{ selected: documentType === "passport" }}
+                    testID="nurse-edit-document-type-passport"
+                  >
+                    <Text style={{ color: documentType === "passport" ? designTokens.color.ink.inverse : designTokens.color.ink.secondary, fontWeight: "700", fontSize: 14 }}>Pasaporte</Text>
+                  </Pressable>
+                </View>
+                {documentType === "cedula" ? (
+                  <FormInput
+                    testID="admin-edit-nurse-id-input"
+                    label="Cédula *"
+                    value={form.identificationNumber ?? ""}
+                    onChangeText={(v) => updateField("identificationNumber", v.replace(/\D/g, "").slice(0, 11))}
+                    errorMessage={errors.identificationNumber}
+                    keyboardType="number-pad"
+                    maxLength={11}
+                    accessibilityLabel="Cédula"
+                  />
+                ) : (
+                  <FormInput
+                    testID="admin-edit-nurse-passport-input"
+                    label="Pasaporte *"
+                    value={form.passportNumber ?? ""}
+                    onChangeText={(v) => updateField("passportNumber", v.replace(/\D/g, "").slice(0, 9))}
+                    errorMessage={errors.identificationNumber}
+                    keyboardType="number-pad"
+                    maxLength={9}
+                    accessibilityLabel="Pasaporte"
+                  />
+                )}
+              </View>
               <FormInput
                 testID="admin-edit-nurse-phone-input"
                 label="Teléfono *"

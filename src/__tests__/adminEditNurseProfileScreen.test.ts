@@ -20,6 +20,7 @@ function makeMockProfile(overrides?: Partial<NurseProfileAdminRecordDto>): Nurse
     name: "María",
     lastName: "González",
     identificationNumber: "001-9876543-2",
+    passportNumber: null,
     phone: "809-555-0099",
     profileType: "NURSE",
     userIsActive: true,
@@ -44,6 +45,7 @@ function makeUpdateForm(overrides?: Partial<UpdateNurseProfileRequest>): UpdateN
     name: "María",
     lastName: "González",
     identificationNumber: "001-9876543-2",
+    passportNumber: null,
     phone: "809-555-0099",
     email: "maria@example.com",
     hireDate: "2026-02-15T00:00:00Z",
@@ -226,7 +228,7 @@ describe("Admin Edit Nurse Profile Screen - Step 1 Validation", () => {
     const errors: Record<string, string> = {};
     if (!form.name.trim()) errors.name = "El nombre es obligatorio";
     if (!form.lastName.trim()) errors.lastName = "El apellido es obligatorio";
-    if (!form.identificationNumber.trim()) errors.identificationNumber = "La cédula es obligatoria";
+    if (!form.identificationNumber?.trim()) errors.identificationNumber = "La cédula es obligatoria";
     if (!form.phone.trim()) errors.phone = "El teléfono es obligatorio";
     if (!form.email.trim()) errors.email = "El correo electrónico es obligatorio";
     else if (!form.email.includes("@")) errors.email = "El correo debe ser válido";
@@ -347,7 +349,7 @@ describe("Admin Edit Nurse Profile Screen - Multi-Step Navigation", () => {
     const errors: Record<string, string> = {};
     if (!form.name.trim()) errors.name = "El nombre es obligatorio";
     if (!form.lastName.trim()) errors.lastName = "El apellido es obligatorio";
-    if (!form.identificationNumber.trim()) errors.identificationNumber = "La cédula es obligatoria";
+    if (!form.identificationNumber?.trim()) errors.identificationNumber = "La cédula es obligatoria";
     if (!form.phone.trim()) errors.phone = "El teléfono es obligatorio";
     if (!form.email.trim()) errors.email = "El correo electrónico es obligatorio";
     else if (!form.email.includes("@")) errors.email = "El correo debe ser válido";

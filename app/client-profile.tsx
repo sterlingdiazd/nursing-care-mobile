@@ -19,10 +19,12 @@ import { hapticFeedback } from "@/src/utils/haptics";
 
 export default function ClientProfileScreen() {
   const { isAuthenticated, isReady, roles } = useAuth();
+  const [documentType, setDocumentType] = useState<"cedula" | "passport">("cedula");
   const [form, setForm] = useState<UpdateClientProfileDto>({
     name: "",
     lastName: "",
-    identificationNumber: "",
+    identificationNumber: null,
+    passportNumber: null,
     phone: "",
     preferredAddress: "",
     emergencyContactName: "",
@@ -53,10 +55,12 @@ export default function ClientProfileScreen() {
     void getClientProfile()
       .then((profile) => {
         if (cancelled) return;
+        setDocumentType(profile.passportNumber ? "passport" : "cedula");
         setForm({
           name: profile.name ?? "",
           lastName: profile.lastName ?? "",
-          identificationNumber: profile.identificationNumber ?? "",
+          identificationNumber: profile.identificationNumber ?? null,
+          passportNumber: profile.passportNumber ?? null,
           phone: profile.phone ?? "",
           preferredAddress: profile.preferredAddress ?? "",
           emergencyContactName: profile.emergencyContactName ?? "",
@@ -77,7 +81,8 @@ export default function ClientProfileScreen() {
   const errors = {
     name: getTextOnlyFieldError(form.name, "Nombre"),
     lastName: getTextOnlyFieldError(form.lastName, "Apellido"),
-    identificationNumber: getExactDigitsFieldError(form.identificationNumber, "Cédula", 11),
+    identificationNumber: documentType === "cedula" ? getExactDigitsFieldError(form.identificationNumber ?? "", "Cédula", 11) : "",
+    passportNumber: documentType === "passport" ? (!form.passportNumber?.trim() ? "El pasaporte es obligatorio" : form.passportNumber.trim().length > 9 ? "El pasaporte no puede tener más de 9 dígitos" : "") : "",
     phone: getExactDigitsFieldError(form.phone, "Teléfono", 10),
     emergencyContactName: getTextOnlyFieldError(form.emergencyContactName ?? "", "Contacto de emergencia", false),
     emergencyContactPhone: getExactDigitsFieldError(form.emergencyContactPhone ?? "", "Teléfono de emergencia", 10, false),
@@ -98,6 +103,8 @@ export default function ClientProfileScreen() {
     try {
       const updated = await updateClientProfile({
         ...form,
+        identificationNumber: documentType === "cedula" ? form.identificationNumber?.trim() ?? null : null,
+        passportNumber: documentType === "passport" ? form.passportNumber?.trim() ?? null : null,
         preferredAddress: form.preferredAddress?.trim() || null,
         emergencyContactName: form.emergencyContactName?.trim() || null,
         emergencyContactPhone: form.emergencyContactPhone?.trim() || null,
@@ -105,7 +112,8 @@ export default function ClientProfileScreen() {
       setForm({
         name: updated.name ?? "",
         lastName: updated.lastName ?? "",
-        identificationNumber: updated.identificationNumber ?? "",
+        identificationNumber: updated.identificationNumber ?? null,
+        passportNumber: updated.passportNumber ?? null,
         phone: updated.phone ?? "",
         preferredAddress: updated.preferredAddress ?? "",
         emergencyContactName: updated.emergencyContactName ?? "",
@@ -178,15 +186,53 @@ export default function ClientProfileScreen() {
               error={isEditing ? errors.lastName : ""}
               onChangeText={(value) => setForm((prev) => ({ ...prev, lastName: sanitizeTextOnlyInput(value) }))}
             />
-            <FormInput
-              testID={clientTestIds.profile.identificationInput}
-              label="Cédula"
-              value={form.identificationNumber}
-              editable={isEditing && !isSaving}
-              keyboardType="number-pad"
-              error={isEditing ? errors.identificationNumber : ""}
-              onChangeText={(value) => setForm((prev) => ({ ...prev, identificationNumber: sanitizeDigitsOnlyInput(value, 11) }))}
-            />
+            <Text style={styles.docLabel}>Documento de identidad</Text>
+            <View style={styles.docToggleRow}>
+              <Pressable
+                style={[styles.docChip, documentType === "cedula" ? styles.docChipActive : undefined]}
+                onPress={() => { setDocumentType("cedula"); setForm((prev) => ({ ...prev, passportNumber: null })); }}
+                disabled={!isEditing}
+                accessibilityRole="button"
+                accessibilityLabel="Cédula de identidad"
+                accessibilityState={{ selected: documentType === "cedula", disabled: !isEditing }}
+                testID="client-profile-document-type-cedula"
+              >
+                <Text style={[styles.docChipText, documentType === "cedula" ? styles.docChipTextActive : undefined]}>Cédula</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.docChip, documentType === "passport" ? styles.docChipActive : undefined]}
+                onPress={() => { setDocumentType("passport"); setForm((prev) => ({ ...prev, identificationNumber: null })); }}
+                disabled={!isEditing}
+                accessibilityRole="button"
+                accessibilityLabel="Pasaporte"
+                accessibilityState={{ selected: documentType === "passport", disabled: !isEditing }}
+                testID="client-profile-document-type-passport"
+              >
+                <Text style={[styles.docChipText, documentType === "passport" ? styles.docChipTextActive : undefined]}>Pasaporte</Text>
+              </Pressable>
+            </View>
+            {documentType === "cedula" ? (
+              <FormInput
+                testID={clientTestIds.profile.identificationInput}
+                label="Cédula"
+                value={form.identificationNumber ?? ""}
+                editable={isEditing && !isSaving}
+                keyboardType="number-pad"
+                error={isEditing ? errors.identificationNumber : ""}
+                onChangeText={(value) => setForm((prev) => ({ ...prev, identificationNumber: sanitizeDigitsOnlyInput(value, 11) }))}
+              />
+            ) : (
+              <FormInput
+                testID="client-profile-passport-input"
+                label="Pasaporte"
+                value={form.passportNumber ?? ""}
+                editable={isEditing && !isSaving}
+                keyboardType="number-pad"
+                maxLength={9}
+                error={isEditing ? errors.passportNumber : ""}
+                onChangeText={(value) => setForm((prev) => ({ ...prev, passportNumber: sanitizeDigitsOnlyInput(value, 9) }))}
+              />
+            )}
             <FormInput
               testID={clientTestIds.profile.phoneInput}
               label="Teléfono"
@@ -290,4 +336,37 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   pressed: { opacity: 0.75 },
+  docLabel: {
+    color: designTokens.color.ink.secondary,
+    fontWeight: "700" as const,
+    fontSize: designTokens.typography.label.fontSize,
+    marginBottom: designTokens.spacing.xs,
+  },
+  docToggleRow: {
+    flexDirection: "row",
+    gap: designTokens.spacing.sm,
+    marginBottom: designTokens.spacing.sm,
+  },
+  docChip: {
+    paddingHorizontal: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.sm,
+    borderRadius: designTokens.radius.pill,
+    borderWidth: 1,
+    borderColor: designTokens.color.border.strong,
+    backgroundColor: designTokens.color.surface.secondary,
+    minHeight: 36,
+    justifyContent: "center" as const,
+  },
+  docChipActive: {
+    borderColor: designTokens.color.ink.accent,
+    backgroundColor: designTokens.color.ink.accent,
+  },
+  docChipText: {
+    color: designTokens.color.ink.secondary,
+    fontWeight: "700" as const,
+    fontSize: 14,
+  },
+  docChipTextActive: {
+    color: designTokens.color.ink.inverse,
+  },
 });

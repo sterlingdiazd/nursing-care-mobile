@@ -722,6 +722,7 @@ export interface PendingNurseProfileDto {
   name: string | null;
   lastName: string | null;
   identificationNumber: string | null;
+  passportNumber?: string | null;
   phone: string | null;
   hireDate?: string | null;
   specialty?: string | null;
@@ -733,6 +734,7 @@ export interface NurseProfileSummaryDto {
   email: string;
   name: string | null;
   lastName: string | null;
+  passportNumber?: string | null;
   specialty: string | null;
   category: string | null;
   userIsActive?: boolean;
@@ -751,6 +753,7 @@ export interface NurseProfileAdminRecordDto {
   name: string | null;
   lastName: string | null;
   identificationNumber: string | null;
+  passportNumber?: string | null;
   phone: string | null;
   profileType: AdminUserProfileType;
   userIsActive: boolean;
@@ -778,7 +781,8 @@ export interface NurseProfileAdminRecordDto {
 export interface NurseProfileIdentityRequest {
   name: string;
   lastName: string;
-  identificationNumber: string;
+  identificationNumber: string | null;
+  passportNumber?: string | null;
   phone: string;
   email: string;
   hireDate: string;
@@ -820,6 +824,7 @@ export interface AdminClientListItemDto {
   name: string | null;
   lastName: string | null;
   identificationNumber: string | null;
+  passportNumber?: string | null;
   phone: string | null;
   isActive: boolean;
   ownedCareRequestsCount: number;
@@ -847,6 +852,7 @@ export interface AdminClientDetailDto {
   name: string | null;
   lastName: string | null;
   identificationNumber: string | null;
+  passportNumber?: string | null;
   phone: string | null;
   isActive: boolean;
   ownedCareRequestsCount: number;
@@ -860,7 +866,8 @@ export interface AdminClientDetailDto {
 export interface CreateAdminClientRequest {
   name: string;
   lastName: string;
-  identificationNumber: string;
+  identificationNumber: string | null;
+  passportNumber?: string | null;
   phone: string;
   email: string;
   password: string;
@@ -870,7 +877,8 @@ export interface CreateAdminClientRequest {
 export interface UpdateAdminClientRequest {
   name: string;
   lastName: string;
-  identificationNumber: string;
+  identificationNumber: string | null;
+  passportNumber?: string | null;
   phone: string;
   email: string;
 }

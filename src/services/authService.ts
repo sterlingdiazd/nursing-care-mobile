@@ -11,7 +11,8 @@ export enum UserProfileType {
 export interface RegisterRequest {
   name: string;
   lastName: string;
-  identificationNumber: string;
+  identificationNumber: string | null;
+  passportNumber?: string | null;
   phone: string;
   email: string;
   password: string;
@@ -72,7 +73,7 @@ export async function refresh(refreshToken: string): Promise<AuthResponse> {
 export async function registerUser(
   name: string,
   lastName: string,
-  identificationNumber: string,
+  identificationNumber: string | null,
   phone: string,
   email: string,
   password: string,
@@ -82,7 +83,8 @@ export async function registerUser(
   licenseId: string | null,
   bankName: string | null,
   accountNumber: string | null,
-  profileType: UserProfileType
+  profileType: UserProfileType,
+  passportNumber: string | null = null
 ): Promise<AuthResponse> {
   let responseMeta:
     | {
@@ -94,6 +96,7 @@ export async function registerUser(
     name,
     lastName,
     identificationNumber,
+    passportNumber,
     phone,
     email,
     password,
