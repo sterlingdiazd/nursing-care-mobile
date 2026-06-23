@@ -96,7 +96,39 @@ describe("BankSelector", () => {
     expect(onChange).toHaveBeenCalledWith("Banco Privado");
   });
 
+  // ── 1b. Padded query trimmed before matching ──────────────────────────────────
+  // Regression guard: normalizeText(query) without trimming returns an empty list
+  // for " banco " because no bank name contains the surrounding spaces.
+  it("leading/trailing whitespace in the query does not produce an empty result list", () => {
+    let component!: renderer.ReactTestRenderer;
+    act(() => {
+      component = renderer.create(
+        <BankSelector value="" onChange={onChange} testID="bank" />,
+      );
+    });
+
+    const searchInput = findFirst(
+      component,
+      (n) => n.props.testID === "bank-search" && typeof n.props.onChangeText === "function",
+    );
+
+    // The needle must be trimmed; " popular " should still match "Banco Popular Dominicano".
+    act(() => {
+      searchInput.props.onChangeText(" popular ");
+    });
+
+    const popularOpts = component.root.findAll(
+      (n) => n.props.accessibilityLabel === "Seleccionar Banco Popular Dominicano",
+    );
+    expect(popularOpts.length).toBeGreaterThan(0);
+  });
+
   // ── 3. Value preserved on close ───────────────────────────────────────────────
+  // Note on test structure: the Modal mock renders its children regardless of the
+  // `visible` prop, so the close button is present in the tree before the picker
+  // is opened. The open step is therefore non-gating for the close-button search.
+  // What this test does guarantee: the close-button's onPress handler does NOT
+  // invoke onChange — which is the core behavioral contract being verified.
   it("dismissing the picker without selecting does not call onChange", () => {
     let component!: renderer.ReactTestRenderer;
     act(() => {

@@ -59,7 +59,7 @@ export function BankSelector({
 
   const filtered = useMemo(() => {
     if (!query.trim()) return DR_BANKS;
-    const needle = normalizeText(query);
+    const needle = normalizeText(query.trim());
     return DR_BANKS.filter((b) => normalizeText(b).includes(needle));
   }, [query]);
 
