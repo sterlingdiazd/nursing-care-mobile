@@ -9,6 +9,8 @@ import {
   createNurseProfileForAdmin,
   type CreateNurseProfileRequest,
 } from "@/src/services/adminPortalService";
+import { getNurseProfileOptions } from "@/src/services/catalogOptionsService";
+import type { CatalogCodeNameOption } from "@/src/types/catalog";
 import { DateField, FormInput, FormSwitch } from "@/src/components/form";
 import { FormButton } from "@/src/components/form/FormButton";
 import { adminTestIds } from "@/src/testing/testIds";
@@ -17,16 +19,6 @@ import { mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { hapticFeedback } from "@/src/utils/haptics";
 
 const CATEGORIES = ["Auxiliar", "Técnico", "Profesional", "Especialista"];
-
-// Nurse specialty catalog — matches the seeded NurseSpecialtyCatalog entries in the backend.
-// The Nurse entity stores specialty as a free-text string; these are the standard values.
-const SPECIALTIES = [
-  "Cuidado de adultos",
-  "Cuidado pediatrico",
-  "Cuidado geriatrico",
-  "Cuidados intensivos",
-  "Atencion domiciliaria",
-];
 
 // Legal working days per month under the DR 44-hour week (Código de Trabajo):
 // 8h Mon–Fri + 4h Sat = 5.5 days/week × 52 ÷ 12 = 23.83 — the standard divisor for daily/hourly pay.
@@ -65,7 +57,7 @@ export default function AdminCreateNurseProfileScreen() {
   // UI States
   const [showBankingInfo, setShowBankingInfo] = useState(false);
   const [customCategory, setCustomCategory] = useState("");
-  const [customSpecialty, setCustomSpecialty] = useState("");
+  const [specialtyOptions, setSpecialtyOptions] = useState<CatalogCodeNameOption[]>([]);
 
   useEffect(() => {
     if (!isReady) return;
@@ -73,6 +65,12 @@ export default function AdminCreateNurseProfileScreen() {
     if (requiresProfileCompletion) return void router.replace("/register");
     if (!roles.includes("ADMIN")) return void router.replace("/");
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles]);
+
+  useEffect(() => {
+    void getNurseProfileOptions()
+      .then((response) => setSpecialtyOptions(response.specialties))
+      .catch(() => setSpecialtyOptions([]));
+  }, []);
 
   const validateAll = () => {
     const newErrors: Record<string, string> = {};
@@ -123,7 +121,6 @@ export default function AdminCreateNurseProfileScreen() {
   };
 
   const activeCategoryIsCustom = !CATEGORIES.includes(form.category);
-  const activeSpecialtyIsCustom = !SPECIALTIES.includes(form.specialty);
   const createProgress = getAdminNurseCreateProgress(form);
 
   if (!isReady || !isAuthenticated || !roles.includes("ADMIN")) return null;
@@ -331,36 +328,30 @@ export default function AdminCreateNurseProfileScreen() {
           />
 
           <Text style={styles.cardLabel}>Especialidad *</Text>
-          <View style={styles.chipsContainer}>
-            {SPECIALTIES.map((spec) => (
+          <View
+            testID={adminTestIds.nurses.create.specialtyInput}
+            nativeID={adminTestIds.nurses.create.specialtyInput}
+            accessibilityRole="radiogroup"
+            accessibilityLabel="Especialidad"
+            style={styles.chipsContainer}
+          >
+            {specialtyOptions.map((opt) => (
               <Pressable
-                key={spec}
-                style={[styles.chip, form.specialty === spec && styles.chipActive]}
+                key={opt.code}
+                style={[styles.chip, form.specialty === opt.code && styles.chipActive]}
                 onPress={() => {
                   hapticFeedback.selection();
-                  setCustomSpecialty("");
-                  setForm({ ...form, specialty: spec });
+                  setForm({ ...form, specialty: opt.code });
                 }}
-                accessibilityRole="button"
-                accessibilityLabel={`Especialidad: ${spec}`}
-                accessibilityState={{ selected: form.specialty === spec }}
+                accessibilityRole="radio"
+                accessibilityLabel={opt.displayName}
+                accessibilityState={{ checked: form.specialty === opt.code }}
               >
-                <Text style={[styles.chipText, form.specialty === spec && styles.chipTextActive]}>{spec}</Text>
+                <Text style={[styles.chipText, form.specialty === opt.code && styles.chipTextActive]}>{opt.displayName}</Text>
               </Pressable>
             ))}
           </View>
-          <FormInput
-            testID={adminTestIds.nurses.create.specialtyInput}
-            accessibilityLabel="Especificar otra especialidad"
-            placeholder="Ej: Cuidado geriátrico"
-            value={activeSpecialtyIsCustom ? form.specialty : customSpecialty}
-            onChangeText={(text) => {
-              setCustomSpecialty(text);
-              setForm({ ...form, specialty: text || SPECIALTIES[0] });
-            }}
-            onFocus={() => { if (!activeSpecialtyIsCustom) setForm({ ...form, specialty: "" }); }}
-            errorMessage={errors.specialty}
-          />
+          {errors.specialty ? <Text style={styles.errorText}>{errors.specialty}</Text> : null}
 
           <FormInput
             testID={adminTestIds.nurses.create.licenseInput}
@@ -497,7 +488,7 @@ const styles = StyleSheet.create({
   helperText: { color: designTokens.color.ink.secondary, fontSize: designTokens.typography.caption.fontSize, marginTop: designTokens.spacing.xs, marginBottom: designTokens.spacing.xs },
 
   chipsContainer: { flexDirection: "row", flexWrap: "wrap", gap: designTokens.spacing.sm, marginBottom: designTokens.spacing.xs },
-  chip: { backgroundColor: designTokens.color.surface.secondary, paddingVertical: designTokens.spacing.md, paddingHorizontal: designTokens.spacing.lg, borderRadius: designTokens.radius.xl, borderWidth: 1, borderColor: designTokens.color.border.subtle },
+  chip: { backgroundColor: designTokens.color.surface.secondary, paddingVertical: designTokens.spacing.md, paddingHorizontal: designTokens.spacing.lg, borderRadius: designTokens.radius.xl, borderWidth: 1, borderColor: designTokens.color.border.subtle, minHeight: 44, justifyContent: "center" },
   chipActive: { backgroundColor: designTokens.color.ink.accent, borderColor: designTokens.color.ink.accentStrong },
   chipSuccess: { backgroundColor: designTokens.color.surface.success, borderColor: designTokens.color.border.subtle },
   chipDanger: { backgroundColor: designTokens.color.surface.danger, borderColor: designTokens.color.ink.danger },
