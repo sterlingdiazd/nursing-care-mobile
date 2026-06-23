@@ -207,7 +207,7 @@ export default function CreateAdminCareRequestScreen() {
     if (!query) return nurses.slice(0, 8);
     return nurses
       .filter((nurse) =>
-        [nurse.displayName, nurse.specialty, nurse.category]
+        [nurse.displayName, nurse.category]
           .filter(Boolean)
           .some((value) => value.toLocaleLowerCase().includes(query)),
       )
@@ -218,7 +218,7 @@ export default function CreateAdminCareRequestScreen() {
     const query = assignedNurseSearch.trim().toLocaleLowerCase();
     if (!query) return nurses;
     return nurses.filter((nurse) =>
-      [nurse.displayName, nurse.specialty, nurse.category]
+      [nurse.displayName, nurse.category]
         .filter(Boolean)
         .some((value) => value.toLocaleLowerCase().includes(query)),
     );
@@ -673,7 +673,7 @@ export default function CreateAdminCareRequestScreen() {
               <View>
                 <Text style={styles.selectedClientName}>{selectedAssignedNurse.displayName}</Text>
                 <Text style={styles.selectedClientEmail}>
-                  {[selectedAssignedNurse.specialty, selectedAssignedNurse.category].filter(Boolean).join(" · ")}
+                  {[selectedAssignedNurse.category].filter(Boolean).join(" · ")}
                 </Text>
               </View>
               <Pressable
@@ -750,7 +750,7 @@ export default function CreateAdminCareRequestScreen() {
                     accessibilityLabel={`Seleccionar enfermera ${nurse.displayName}`}
                   >
                     <Text style={styles.clientOptionName}>{nurse.displayName}</Text>
-                    <Text style={styles.clientOptionEmail}>{[nurse.specialty, nurse.category].filter(Boolean).join(" • ")}</Text>
+                    <Text style={styles.clientOptionEmail}>{[nurse.category].filter(Boolean).join(" • ")}</Text>
                   </Pressable>
                 ))
               ) : (
@@ -916,7 +916,7 @@ export default function CreateAdminCareRequestScreen() {
               nativeID={adminTestIds.careRequests.create.assignedNursePickerSearch}
               value={assignedNurseSearch}
               onChangeText={setAssignedNurseSearch}
-              placeholder="Buscar por nombre o especialidad"
+              placeholder="Buscar por nombre"
               placeholderTextColor={designTokens.color.ink.muted}
               style={styles.searchInput}
               accessibilityLabel="Buscar enfermera"
@@ -950,7 +950,7 @@ export default function CreateAdminCareRequestScreen() {
                     <View style={styles.nurseSheetRowText}>
                       <Text style={styles.nurseSheetName}>{nurse.displayName}</Text>
                       <Text style={styles.nurseSheetMeta} numberOfLines={1}>
-                        {[nurse.specialty, nurse.category].filter(Boolean).join(" · ") || "Sin datos adicionales"}
+                        {[nurse.category].filter(Boolean).join(" · ") || "Sin datos adicionales"}
                       </Text>
                     </View>
                     {selected ? (

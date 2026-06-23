@@ -143,7 +143,7 @@ export default function AdminNurseProfilesScreen() {
               <ListRow
                 title={`${p.name ?? ""} ${p.lastName ?? ""}`.trim()}
                 badge={<StatusBadge label="Pendiente" tone="warning" testID={`admin-nurse-profile-status-badge-${p.userId}`} />}
-                metaLines={[p.identificationNumber, p.specialty]}
+                metaLines={[p.identificationNumber]}
                 railColor={designTokens.color.ink.warning}
                 onPress={() => router.push(`/admin/nurse-profiles/${p.userId}` as never)}
                 testID={`admin-nurse-profile-pending-card-${p.userId}`}
@@ -169,7 +169,7 @@ export default function AdminNurseProfilesScreen() {
               key={a.userId}
               title={`${a.name ?? ""} ${a.lastName ?? ""}`.trim()}
               badge={<StatusBadge label="Activa" tone="success" testID={`admin-nurse-profile-status-badge-${a.userId}`} />}
-              metaLines={[a.specialty, (a as ActiveNurseProfileSummaryDto).category]}
+              metaLines={[(a as ActiveNurseProfileSummaryDto).category]}
               onPress={() => router.push(`/admin/nurse-profiles/${a.userId}` as never)}
               testID={`admin-nurse-profile-active-card-${a.userId}`}
               accessibilityLabel={`Perfil de ${a.name} ${a.lastName}`}
@@ -181,7 +181,7 @@ export default function AdminNurseProfilesScreen() {
               key={n.userId}
               title={`${n.name ?? ""} ${n.lastName ?? ""}`.trim()}
               badge={<StatusBadge label="Inactiva" tone="neutral" testID={`admin-nurse-profile-status-badge-${n.userId}`} />}
-              metaLines={[n.specialty, n.category]}
+              metaLines={[n.category]}
               onPress={() => router.push(`/admin/nurse-profiles/${n.userId}` as never)}
               testID={`admin-nurse-profile-inactive-card-${n.userId}`}
               accessibilityLabel={`Perfil de ${n.name} ${n.lastName}`}

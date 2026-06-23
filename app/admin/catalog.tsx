@@ -22,7 +22,6 @@ import {
   listDistanceFactors,
   listComplexityLevels,
   listVolumeDiscountRules,
-  listNurseSpecialties,
   listNurseCategories,
   createCareRequestCategory,
   createCareRequestType,
@@ -30,7 +29,6 @@ import {
   createDistanceFactor,
   createComplexityLevel,
   createVolumeDiscountRule,
-  createNurseSpecialty,
   createNurseCategory,
   updateCareRequestCategory,
   updateCareRequestType,
@@ -38,7 +36,6 @@ import {
   updateDistanceFactor,
   updateComplexityLevel,
   updateVolumeDiscountRule,
-  updateNurseSpecialty,
   updateNurseCategory,
   catalogPricingPreview,
   type CareRequestCategoryListItemDto,
@@ -47,7 +44,6 @@ import {
   type DistanceFactorListItemDto,
   type ComplexityLevelListItemDto,
   type VolumeDiscountRuleListItemDto,
-  type NurseSpecialtyListItemDto,
   type NurseCategoryListItemDto,
   type CatalogPricingPreviewResult,
 } from "@/src/services/adminPortalService";
@@ -74,7 +70,6 @@ type TabKey =
   | "distance"
   | "complexity"
   | "volume"
-  | "specialties"
   | "nurseCategories";
 
 interface TabConfig {
@@ -89,7 +84,6 @@ const TABS: TabConfig[] = [
   { key: "distance", label: "Distancia" },
   { key: "complexity", label: "Complejidad" },
   { key: "volume", label: "Descuentos" },
-  { key: "specialties", label: "Especialidades" },
   { key: "nurseCategories", label: "Cat. Enfermería" },
 ];
 
@@ -103,7 +97,6 @@ const TAB_BADGE: Record<TabKey, { hue: PaletteHue; icon: FontAwesomeIcon }> = {
   distance: { hue: "amber", icon: "map-marker" },
   complexity: { hue: "orange", icon: "tasks" },
   volume: { hue: "purple", icon: "percent" },
-  specialties: { hue: "pink", icon: "certificate" },
   nurseCategories: { hue: "blue", icon: "user-md" },
 };
 
@@ -117,7 +110,7 @@ const TAB_FILTER_OPTIONS = TABS.map((t) => ({
   },
 }));
 
-type CatalogItem = CareRequestCategoryListItemDto | CareRequestTypeListItemDto | UnitTypeListItemDto | DistanceFactorListItemDto | ComplexityLevelListItemDto | VolumeDiscountRuleListItemDto | NurseSpecialtyListItemDto | NurseCategoryListItemDto;
+type CatalogItem = CareRequestCategoryListItemDto | CareRequestTypeListItemDto | UnitTypeListItemDto | DistanceFactorListItemDto | ComplexityLevelListItemDto | VolumeDiscountRuleListItemDto | NurseCategoryListItemDto;
 
 export default function AdminCatalogScreen() {
   const { isReady, isAuthenticated, requiresProfileCompletion, roles, token } = useAuth();
@@ -134,7 +127,6 @@ export default function AdminCatalogScreen() {
   const [distances, setDistances] = useState<DistanceFactorListItemDto[]>([]);
   const [complexities, setComplexities] = useState<ComplexityLevelListItemDto[]>([]);
   const [volumeRules, setVolumeRules] = useState<VolumeDiscountRuleListItemDto[]>([]);
-  const [specialties, setSpecialties] = useState<NurseSpecialtyListItemDto[]>([]);
   const [nurseCategories, setNurseCategories] = useState<NurseCategoryListItemDto[]>([]);
 
   // Inline panel states (replaces Modals)
@@ -165,14 +157,13 @@ export default function AdminCatalogScreen() {
     setError(null);
     setLoading(true);
     try {
-      const [c, t, u, d, x, v, s, n] = await Promise.all([
+      const [c, t, u, d, x, v, n] = await Promise.all([
         listCareRequestCategories(includeInactive),
         listCareRequestTypes(includeInactive),
         listUnitTypes(includeInactive),
         listDistanceFactors(includeInactive),
         listComplexityLevels(includeInactive),
         listVolumeDiscountRules(includeInactive),
-        listNurseSpecialties(includeInactive),
         listNurseCategories(includeInactive),
       ]);
       setCategories(c);
@@ -181,7 +172,6 @@ export default function AdminCatalogScreen() {
       setDistances(d);
       setComplexities(x);
       setVolumeRules(v);
-      setSpecialties(s);
       setNurseCategories(n);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "No fue posible cargar el catálogo.");
@@ -279,8 +269,6 @@ export default function AdminCatalogScreen() {
         return { code: "", displayName: "", multiplier: 1, isActive: true, displayOrder: complexities.length };
       case "volume":
         return { minimumCount: 1, discountPercent: 0, isActive: true, displayOrder: volumeRules.length };
-      case "specialties":
-        return { code: "", displayName: "", alternativeCodes: "", isActive: true, displayOrder: specialties.length };
       case "nurseCategories":
         return { code: "", displayName: "", alternativeCodes: "", isActive: true, displayOrder: nurseCategories.length };
       default:
@@ -314,10 +302,6 @@ export default function AdminCatalogScreen() {
         const volumeRule = item as VolumeDiscountRuleListItemDto;
         return { minimumCount: volumeRule.minimumCount, discountPercent: volumeRule.discountPercent, isActive: volumeRule.isActive, displayOrder: volumeRule.displayOrder };
       }
-      case "specialties": {
-        const specialty = item as NurseSpecialtyListItemDto;
-        return { code: specialty.code, displayName: specialty.displayName, alternativeCodes: specialty.alternativeCodes ?? "", isActive: specialty.isActive, displayOrder: specialty.displayOrder };
-      }
       case "nurseCategories": {
         const nurseCategory = item as NurseCategoryListItemDto;
         return { code: nurseCategory.code, displayName: nurseCategory.displayName, alternativeCodes: nurseCategory.alternativeCodes ?? "", isActive: nurseCategory.isActive, displayOrder: nurseCategory.displayOrder };
@@ -335,7 +319,6 @@ export default function AdminCatalogScreen() {
       case "distance": return createDistanceFactor(data as Parameters<typeof createDistanceFactor>[0]);
       case "complexity": return createComplexityLevel(data as Parameters<typeof createComplexityLevel>[0]);
       case "volume": return createVolumeDiscountRule(data as Parameters<typeof createVolumeDiscountRule>[0]);
-      case "specialties": return createNurseSpecialty(data as Parameters<typeof createNurseSpecialty>[0]);
       case "nurseCategories": return createNurseCategory(data as Parameters<typeof createNurseCategory>[0]);
     }
   };
@@ -348,7 +331,6 @@ export default function AdminCatalogScreen() {
       case "distance": return updateDistanceFactor(id, data as Parameters<typeof updateDistanceFactor>[1]);
       case "complexity": return updateComplexityLevel(id, data as Parameters<typeof updateComplexityLevel>[1]);
       case "volume": return updateVolumeDiscountRule(id, data as Parameters<typeof updateVolumeDiscountRule>[1]);
-      case "specialties": return updateNurseSpecialty(id, data as Parameters<typeof updateNurseSpecialty>[1]);
       case "nurseCategories": return updateNurseCategory(id, data as Parameters<typeof updateNurseCategory>[1]);
     }
   };
@@ -361,7 +343,6 @@ export default function AdminCatalogScreen() {
       case "distance": return distances;
       case "complexity": return complexities;
       case "volume": return volumeRules;
-      case "specialties": return specialties;
       case "nurseCategories": return nurseCategories;
       default: return [];
     }
@@ -383,8 +364,6 @@ export default function AdminCatalogScreen() {
         const volumeRule = item as VolumeDiscountRuleListItemDto;
         return `${volumeRule.discountPercent}% descuento desde ${volumeRule.minimumCount}`;
       }
-      case "specialties":
-        return (item as NurseSpecialtyListItemDto).alternativeCodes ?? "Sin códigos alternativos";
       case "nurseCategories":
         return (item as NurseCategoryListItemDto).alternativeCodes ?? "Sin códigos alternativos";
       default: return "";

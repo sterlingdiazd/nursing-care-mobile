@@ -226,7 +226,6 @@ describe("Admin Nurse Profiles Screen - Card Display Fields", () => {
     const nurse = result.items[0];
     expect(nurse.userId).toBeDefined();
     expect(nurse.email).toBeDefined();
-    expect(nurse.specialty).toBeDefined();
     expect(nurse.category).toBeDefined();
     expect(nurse.isProfileComplete).toBe(true);
     expect(nurse.isAssignmentReady).toBe(true);
@@ -251,7 +250,6 @@ describe("Admin Nurse Profiles Screen - Card Display Fields", () => {
     const result = await getActiveNurseProfiles();
 
     expect(result.items[0].name).toBeNull();
-    expect(result.items[0].specialty).toBeNull();
     expect(result.items[0].workload).toBeUndefined();
   });
 

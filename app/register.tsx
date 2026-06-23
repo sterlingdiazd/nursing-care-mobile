@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -21,8 +21,6 @@ import {
   sanitizeDigitsOnlyInput,
   sanitizeTextOnlyInput,
 } from "@/src/utils/identityValidation";
-import { getNurseProfileOptions } from "@/src/services/catalogOptionsService";
-import type { CatalogCodeNameOption } from "@/src/types/catalog";
 import { hapticFeedback } from "@/src/utils/haptics";
 import { authTestIds } from "@/src/testing/authTestIds";
 import { FormButton, FormInput, DateField } from "@/src/components/form";
@@ -69,7 +67,6 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [profileType, setProfileType] = useState<UserProfileType>(UserProfileType.CLIENT);
   const [hireDate, setHireDate] = useState("");
-  const [specialty, setSpecialty] = useState("");
   const [licenseId, setLicenseId] = useState("");
   const [bankName, setBankName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
@@ -86,18 +83,11 @@ export default function RegisterScreen() {
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
   const [hireDateError, setHireDateError] = useState("");
-  const [specialtyError, setSpecialtyError] = useState("");
   const [licenseIdError, setLicenseIdError] = useState("");
   const [bankNameError, setBankNameError] = useState("");
   const [accountNumberError, setAccountNumberError] = useState("");
-  const [specialtyOptions, setSpecialtyOptions] = useState<CatalogCodeNameOption[]>([]);
   const [generalError, setGeneralError] = useState("");
 
-  useEffect(() => {
-    void getNurseProfileOptions()
-      .then((response) => setSpecialtyOptions(response.specialties))
-      .catch(() => setSpecialtyOptions([]));
-  }, []);
 
   const getEmailError = (value: string) => {
     if (!value) return "El correo es obligatorio";
@@ -144,19 +134,13 @@ export default function RegisterScreen() {
   };
 
   const validateNurseDetails = () => {
-    const nextHireDateError = !hireDate.trim() ? "La fecha de contratación es obligatoria" : "";
-    const nextSpecialtyError = !specialty.trim() ? "La especialidad es obligatoria" : "";
     const nextLicenseIdError = getOptionalDigitsFieldError(licenseId, "La licencia");
-    const nextBankNameError = bankName.trim() ? "" : "El banco es obligatorio";
     const nextAccountNumberError = getOptionalDigitsFieldError(accountNumber, "El número de cuenta");
 
-    setHireDateError(nextHireDateError);
-    setSpecialtyError(nextSpecialtyError);
     setLicenseIdError(nextLicenseIdError);
-    setBankNameError(nextBankNameError);
     setAccountNumberError(nextAccountNumberError);
 
-    return !(nextHireDateError || nextSpecialtyError || nextLicenseIdError || nextBankNameError || nextAccountNumberError);
+    return !(nextLicenseIdError || nextAccountNumberError);
   };
 
   const handleNext = () => {
@@ -220,7 +204,7 @@ export default function RegisterScreen() {
           password,
           confirmPassword,
           isNurseRegistration ? hireDate.trim() : null,
-          isNurseRegistration ? specialty.trim() : null,
+          null,
           isNurseRegistration ? licenseId.trim() || null : null,
           isNurseRegistration ? bankName.trim() : null,
           isNurseRegistration ? accountNumber.trim() || null : null,
@@ -390,39 +374,10 @@ export default function RegisterScreen() {
         testID={authTestIds.register.hireDateInput}
         accessibilityLabel="Fecha de contratación"
         label="Fecha de Contratación"
-        required
         value={hireDate}
         onChange={setHireDate}
         errorMessage={hireDateError}
       />
-
-      <View style={styles.fieldGroup}>
-        <Text style={styles.fieldLabel}>Especialidad</Text>
-        <View style={styles.chipGroup}>
-          {specialtyOptions.map((opt) => (
-            <TouchableOpacity
-              key={opt.code}
-              style={[
-                styles.chip,
-                specialty === opt.code ? styles.chipActive : null,
-              ]}
-              onPress={() => {
-                hapticFeedback.selection();
-                setSpecialty(opt.code);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={opt.displayName}
-              accessibilityState={{ selected: specialty === opt.code }}
-            >
-              <Text style={[
-                styles.chipText,
-                specialty === opt.code ? styles.chipTextActive : null,
-              ]}>{opt.displayName}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-        {specialtyError ? <Text style={styles.fieldError}>{specialtyError}</Text> : null}
-      </View>
 
       <FormInput
         testID="register-license-input"
@@ -442,7 +397,6 @@ export default function RegisterScreen() {
         value={bankName}
         onChange={setBankName}
         errorMessage={bankNameError}
-        required
       />
 
       <FormInput

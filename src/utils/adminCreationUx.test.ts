@@ -73,7 +73,7 @@ describe("getAdminNurseReviewProgress", () => {
     });
 
     expect(progress.ready).toBe(false);
-    expect(progress.missingLabels).toEqual(["Especialidad", "Licencia", "Cuenta", "Categoría"]);
+    expect(progress.missingLabels).toEqual(["Licencia", "Cuenta", "Categoría"]);
   });
 });
 

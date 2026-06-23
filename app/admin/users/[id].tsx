@@ -287,9 +287,6 @@ export default function AdminUserDetailScreen() {
           {detail.nurseProfile ? (
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Perfil de Enfermera</Text>
-              {detail.nurseProfile.specialty ? (
-                <Field label="Especialidad" value={detail.nurseProfile.specialty} />
-              ) : null}
               {detail.nurseProfile.licenseId ? (
                 <Field label="Licencia" value={detail.nurseProfile.licenseId} />
               ) : null}

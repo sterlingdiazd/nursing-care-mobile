@@ -161,7 +161,6 @@ describe("Admin Nurse Profile Detail Screen - Display of All Fields", () => {
     const result = await getNurseProfileForAdmin("nurse-abc-123");
 
     expect(result.hireDate).toBeDefined();
-    expect(result.specialty).toBeDefined();
     expect(result.licenseId).toBeDefined();
     expect(result.category).toBeDefined();
   });
@@ -221,7 +220,6 @@ describe("Admin Nurse Profile Detail Screen - Display of All Fields", () => {
     expect(result.identificationNumber).toBeNull();
     expect(result.phone).toBeNull();
     expect(result.hireDate).toBeNull();
-    expect(result.specialty).toBeNull();
     expect(result.licenseId).toBeNull();
     expect(result.bankName).toBeNull();
     expect(result.accountNumber).toBeNull();

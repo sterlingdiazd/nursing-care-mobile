@@ -147,18 +147,14 @@ export default function AdminEditNurseProfileScreen() {
 
   const validateStep2 = () => {
     const next: Record<string, string> = {};
-    if (!form.hireDate.trim()) next.hireDate = "La fecha de contratación es obligatoria.";
-    if (!form.specialty.trim()) next.specialty = "La especialidad es obligatoria.";
     if (!form.category.trim()) next.category = "La categoría es obligatoria.";
     setErrors(next);
     return Object.keys(next).length === 0;
   };
 
   const validateStep3 = () => {
-    const next: Record<string, string> = {};
-    if (!form.bankName.trim()) next.bankName = "El banco es obligatorio.";
-    setErrors(next);
-    return Object.keys(next).length === 0;
+    setErrors({});
+    return true;
   };
 
   const handleNext = () => {
@@ -364,19 +360,10 @@ export default function AdminEditNurseProfileScreen() {
               <DateField
                 testID="admin-edit-nurse-hire-date-input"
                 label="Fecha de Contratación"
-                required
                 value={form.hireDate}
                 onChange={(v) => updateField("hireDate", v)}
                 errorMessage={errors.hireDate}
                 accessibilityLabel="Fecha de contratación"
-              />
-              <FormInput
-                testID="admin-edit-nurse-specialty-input"
-                label="Especialidad *"
-                value={form.specialty}
-                onChangeText={(v) => updateField("specialty", v)}
-                errorMessage={errors.specialty}
-                accessibilityLabel="Especialidad"
               />
               <FormInput
                 testID="admin-edit-nurse-license-input"
@@ -426,7 +413,6 @@ export default function AdminEditNurseProfileScreen() {
               <BankSelector
                 testID="admin-edit-nurse-bank-input"
                 label="Banco"
-                required
                 value={form.bankName}
                 onChange={(v) => updateField("bankName", v)}
                 errorMessage={errors.bankName}

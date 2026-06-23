@@ -339,10 +339,9 @@ export default function CreateCareRequestScreen() {
     return availableNurses
       .filter((nurse) => {
         const displayName = buildNurseDisplayName(nurse);
-        const specialty = nurse.specialty ?? "";
         const category = nurse.category ?? "";
 
-        return [displayName, specialty, category].some((value) =>
+        return [displayName, category].some((value) =>
           normalizeSearchValue(value).includes(query),
         );
       })
@@ -1175,7 +1174,7 @@ export default function CreateCareRequestScreen() {
                     >
                       {filteredNurseSuggestions.map((nurse) => {
                         const displayName = buildNurseDisplayName(nurse);
-                        const meta = [nurse.specialty, nurse.category].filter(Boolean).join(" • ");
+                        const meta = [nurse.category].filter(Boolean).join(" • ");
 
                         return (
                           <Pressable

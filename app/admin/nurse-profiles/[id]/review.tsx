@@ -89,9 +89,7 @@ export default function AdminReviewNurseProfileScreen() {
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!form.specialty.trim()) newErrors.specialty = "La especialidad es obligatoria";
     if (!form.licenseId?.trim()) newErrors.licenseId = "La licencia es obligatoria";
-    if (!form.bankName.trim()) newErrors.bankName = "El banco es obligatorio";
     if (!form.accountNumber?.trim()) newErrors.accountNumber = "El número de cuenta es obligatorio";
     if (!form.category.trim()) newErrors.category = "La categoría es obligatoria";
     setErrors(newErrors);
@@ -179,12 +177,6 @@ export default function AdminReviewNurseProfileScreen() {
                 <Text style={styles.fieldValue}>{formatDate(profile.hireDate)}</Text>
               </View>
             )}
-            {profile.specialty && (
-              <View style={styles.field}>
-                <Text style={styles.fieldLabel}>Especialidad</Text>
-                <Text style={styles.fieldValue}>{profile.specialty}</Text>
-              </View>
-            )}
           </View>
         )}
 
@@ -210,18 +202,6 @@ export default function AdminReviewNurseProfileScreen() {
           <Text style={styles.cardTitle}>Completar Información Operativa</Text>
 
           <FormInput
-            testID={adminTestIds.nurses.review.specialtyInput}
-            nativeID={adminTestIds.nurses.review.specialtyInput}
-            label="Especialidad"
-            required
-            accessibilityLabel="Especialidad de la enfermera"
-            placeholder="Especialidad de la enfermera"
-            value={form.specialty}
-            onChangeText={(text) => setForm({ ...form, specialty: text })}
-            errorMessage={errors.specialty}
-          />
-
-          <FormInput
             testID={adminTestIds.nurses.review.licenseInput}
             nativeID={adminTestIds.nurses.review.licenseInput}
             label="Licencia"
@@ -236,7 +216,6 @@ export default function AdminReviewNurseProfileScreen() {
           <BankSelector
             testID={adminTestIds.nurses.review.bankNameInput}
             label="Banco"
-            required
             placeholder="Selecciona un banco"
             value={form.bankName}
             onChange={(text) => setForm({ ...form, bankName: text })}

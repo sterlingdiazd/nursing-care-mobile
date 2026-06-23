@@ -72,9 +72,7 @@ export function getAdminCareCreateProgress(form: CreateAdminCareRequestDto): Adm
 
 export function getAdminNurseReviewProgress(form: CompleteNurseProfileRequest): AdminNurseProgress {
   const requiredFields = [
-    ["specialty", "Especialidad", isFilled(form.specialty)],
     ["licenseId", "Licencia", isFilled(form.licenseId ?? undefined)],
-    ["bankName", "Banco", isFilled(form.bankName)],
     ["accountNumber", "Cuenta", isFilled(form.accountNumber ?? undefined)],
     ["category", "Categoría", isFilled(form.category)],
   ] as const;
@@ -106,8 +104,6 @@ export function getAdminNurseCreateProgress(form: CreateNurseProfileRequest): Ad
     ["email", "Correo", isFilled(form.email) && form.email.includes("@")],
     ["password", "Contraseña", isFilled(form.password) && form.password.length >= 8],
     ["confirmPassword", "Confirmación", isFilled(form.confirmPassword) && form.confirmPassword === form.password],
-    ["hireDate", "Fecha de contratación", isFilled(form.hireDate)],
-    ["specialty", "Especialidad", isFilled(form.specialty)],
     ["category", "Categoría", isFilled(form.category)],
   ] as const;
 

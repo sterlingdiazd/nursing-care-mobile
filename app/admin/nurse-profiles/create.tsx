@@ -57,7 +57,6 @@ export default function AdminCreateNurseProfileScreen() {
   const [showBankingInfo, setShowBankingInfo] = useState(false);
   const [optionsLoading, setOptionsLoading] = useState(true);
   const [categoryOptions, setCategoryOptions] = useState<CatalogCodeNameOption[]>([]);
-  const [specialtyOptions, setSpecialtyOptions] = useState<CatalogCodeNameOption[]>([]);
   const [catalogFetchError, setCatalogFetchError] = useState(false);
 
   // Extracted so both the initial mount effect and the retry handler use the same logic.
@@ -67,12 +66,10 @@ export default function AdminCreateNurseProfileScreen() {
     void getNurseProfileOptions()
       .then((response) => {
         setCategoryOptions(response.categories);
-        setSpecialtyOptions(response.specialties);
         AccessibilityInfo.announceForAccessibility('Opciones cargadas.');
       })
       .catch(() => {
         setCategoryOptions([]);
-        setSpecialtyOptions([]);
         setCatalogFetchError(true);
         AccessibilityInfo.announceForAccessibility('No se pudieron cargar las opciones del catálogo.');
       })
@@ -107,8 +104,6 @@ export default function AdminCreateNurseProfileScreen() {
 
     if (form.password && form.confirmPassword !== form.password) newErrors.confirmPassword = "Las contraseñas no coinciden";
 
-    if (!form.hireDate.trim()) newErrors.hireDate = "La fecha de contratación es obligatoria";
-    if (!form.specialty.trim()) newErrors.specialty = "La especialidad es obligatoria";
     if (!form.category.trim()) newErrors.category = "La categoría es obligatoria";
 
     if (!form.bankName.trim() && form.accountNumber?.trim()) {
@@ -356,47 +351,6 @@ export default function AdminCreateNurseProfileScreen() {
           </View>
           {errors.category ? <Text style={styles.errorText}>{errors.category}</Text> : null}
 
-          <Text style={styles.cardLabel}>Especialidad *</Text>
-          <View
-            testID={adminTestIds.nurses.create.specialtyInput}
-            nativeID={adminTestIds.nurses.create.specialtyInput}
-            accessibilityLabel="Especialidad"
-            accessibilityLiveRegion="polite"
-            style={styles.chipsContainer}
-          >
-            {optionsLoading ? (
-              <Text style={styles.helperText}>Cargando...</Text>
-            ) : catalogFetchError ? (
-              <>
-                <Text style={styles.catalogErrorText}>
-                  No se pudieron cargar las opciones. Intente de nuevo.
-                </Text>
-                <Pressable onPress={fetchCatalogOptions} accessibilityRole="button" accessibilityLabel="Reintentar carga de opciones" style={styles.retryPressable}>
-                  <Text style={{ color: designTokens.color.ink.accent }}>Reintentar</Text>
-                </Pressable>
-              </>
-            ) : specialtyOptions.length === 0 ? (
-              <Text style={styles.helperText}>No hay opciones disponibles en el catálogo.</Text>
-            ) : (
-              specialtyOptions.map((opt) => (
-                <Pressable
-                  key={opt.code}
-                  style={[styles.chip, form.specialty === opt.code && styles.chipActive]}
-                  onPress={() => {
-                    hapticFeedback.selection();
-                    setForm({ ...form, specialty: opt.code });
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={opt.displayName}
-                  accessibilityState={{ selected: form.specialty === opt.code }}
-                >
-                  <Text style={[styles.chipText, form.specialty === opt.code && styles.chipTextActive]}>{opt.displayName}</Text>
-                </Pressable>
-              ))
-            )}
-          </View>
-          {errors.specialty ? <Text style={styles.errorText}>{errors.specialty}</Text> : null}
-
           <FormInput
             testID={adminTestIds.nurses.create.licenseInput}
             label="Licencia / Exequátur"
@@ -409,7 +363,6 @@ export default function AdminCreateNurseProfileScreen() {
           <DateField
             testID={adminTestIds.nurses.create.hireDateInput}
             label="Fecha de contratación"
-            required
             accessibilityLabel="Fecha de contratación"
             value={form.hireDate}
             onChange={(iso) => setForm({ ...form, hireDate: iso })}

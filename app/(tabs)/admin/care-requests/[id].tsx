@@ -222,7 +222,7 @@ export default function AdminCareRequestDetailScreen() {
     const query = normalizeSearch(nurseSearch);
     if (!query) return sortedNurses;
     return sortedNurses.filter((n) =>
-      [buildNurseLabel(n), n.email, n.specialty ?? "", n.category ?? ""].some((v) =>
+      [buildNurseLabel(n), n.email, n.category ?? ""].some((v) =>
         normalizeSearch(v).includes(query),
       ),
     );
@@ -909,7 +909,7 @@ function AdminAssignmentSheet({
             nativeID={adminTestIds.careRequests.detail.assignmentSearchInput}
             value={searchQuery}
             onChangeText={onSearchChange}
-            placeholder="Buscar por nombre, correo o especialidad"
+            placeholder="Buscar por nombre o correo"
             placeholderTextColor={designTokens.color.ink.muted}
             style={styles.searchInput}
             accessibilityLabel="Buscar enfermera"
@@ -919,7 +919,7 @@ function AdminAssignmentSheet({
             {nurses.length === 0 ? <Text style={styles.emptyText}>No se encontraron enfermeras.</Text> : null}
             {nurses.map((item) => {
               const selected = selectedNurseId === item.userId;
-              const meta = [item.specialty, item.category, item.email].filter(Boolean).join(" · ");
+              const meta = [item.category, item.email].filter(Boolean).join(" · ");
               return (
                 <Pressable
                   key={item.userId}

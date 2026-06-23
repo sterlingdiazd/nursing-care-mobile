@@ -182,7 +182,6 @@ export default function AdminNurseProfileDetailScreen() {
             {detail.hireDate ? (
               <Field label="Fecha de Contratación" value={formatTimestamp(detail.hireDate)} />
             ) : null}
-            {detail.specialty ? <Field label="Especialidad" value={detail.specialty} /> : null}
             {detail.licenseId ? <Field label="Licencia" value={detail.licenseId} /> : null}
             {detail.category ? <Field label="Categoría" value={detail.category} /> : null}
           </View>

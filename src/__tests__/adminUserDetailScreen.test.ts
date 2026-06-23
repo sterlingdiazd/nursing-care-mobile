@@ -265,7 +265,6 @@ describe("Admin User Detail Screen - Nurse Profile Fields", () => {
     const result = await getAdminUserDetail("user-abc-123");
 
     expect(result.nurseProfile).not.toBeNull();
-    expect(result.nurseProfile?.specialty).toBe("Cuidado intensivo");
     expect(result.nurseProfile?.licenseId).toBe("LIC-001");
     expect(result.nurseProfile?.category).toBe("Senior");
     expect(result.nurseProfile?.assignedCareRequestsCount).toBe(5);
@@ -288,7 +287,6 @@ describe("Admin User Detail Screen - Nurse Profile Fields", () => {
     vi.mocked(httpClient.requestJson).mockResolvedValue(makeMockDetail({ nurseProfile }));
     const result = await getAdminUserDetail("user-abc-123");
 
-    expect(result.nurseProfile?.specialty).toBeNull();
     expect(result.nurseProfile?.licenseId).toBeNull();
     expect(result.nurseProfile?.category).toBeNull();
     expect(result.nurseProfile?.hireDate).toBeNull();

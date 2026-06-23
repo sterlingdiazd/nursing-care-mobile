@@ -7,7 +7,6 @@ import {
   listDistanceFactors,
   listComplexityLevels,
   listVolumeDiscountRules,
-  listNurseSpecialties,
   listNurseCategories,
   createCareRequestCategory,
   updateCareRequestCategory,
@@ -118,14 +117,6 @@ describe("Admin Catalog Screen - Data Loading", () => {
     await listVolumeDiscountRules();
     expect(httpClient.requestJson).toHaveBeenCalledWith(
       expect.objectContaining({ path: expect.stringContaining("/api/admin/catalog/volume-discount-rules"), auth: true }),
-    );
-  });
-
-  it("should call listNurseSpecialties on initial load", async () => {
-    vi.mocked(httpClient.requestJson).mockResolvedValue([]);
-    await listNurseSpecialties();
-    expect(httpClient.requestJson).toHaveBeenCalledWith(
-      expect.objectContaining({ path: expect.stringContaining("/api/admin/catalog/nurse-specialties"), auth: true }),
     );
   });
 
@@ -262,20 +253,18 @@ describe("Admin Catalog Screen - Tab Navigation", () => {
       "distance",
       "complexity",
       "volume",
-      "specialties",
       "nurseCategories",
     ];
 
     // This test verifies that all tab keys are defined
     // The actual tab rendering is tested through integration
-    expect(requiredTabs).toHaveLength(8);
+    expect(requiredTabs).toHaveLength(7);
     expect(requiredTabs).toContain("categories");
     expect(requiredTabs).toContain("types");
     expect(requiredTabs).toContain("units");
     expect(requiredTabs).toContain("distance");
     expect(requiredTabs).toContain("complexity");
     expect(requiredTabs).toContain("volume");
-    expect(requiredTabs).toContain("specialties");
     expect(requiredTabs).toContain("nurseCategories");
   });
 });
@@ -366,19 +355,6 @@ describe("Admin Catalog Screen - Form Validation", () => {
     expect(validVolume.minimumCount).toBeGreaterThan(0);
     expect(validVolume.discountPercent).toBeGreaterThanOrEqual(0);
     expect(validVolume.discountPercent).toBeLessThanOrEqual(100);
-  });
-
-  it("should validate required fields for nurse specialties", () => {
-    const validSpecialty = {
-      code: "geriatria",
-      displayName: "Geriatria",
-      alternativeCodes: null,
-      isActive: true,
-      displayOrder: 0,
-    };
-
-    expect(validSpecialty.code).toBeTruthy();
-    expect(validSpecialty.displayName).toBeTruthy();
   });
 
   it("should validate required fields for nurse categories", () => {
