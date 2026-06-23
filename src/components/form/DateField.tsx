@@ -13,7 +13,7 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { designTokens } from "@/src/design-system/tokens";
 import { hapticFeedback } from "@/src/utils/haptics";
 import { formatDateES } from "@/src/utils/spanishTextValidator";
-import { maskTyped, typedToIso } from "@/src/utils/dateInput";
+import { maskTyped, typedToIso, MIN_YEAR, MAX_YEAR } from "@/src/utils/dateInput";
 
 const toIso = (date: Date): string => {
   const year = date.getFullYear();
@@ -101,11 +101,54 @@ export function DateField({
   const handleTyped = (raw: string) => {
     const masked = maskTyped(raw);
     setText(masked);
+
     if (masked === "") {
       setTypedError(null);
       emit("");
       return;
     }
+
+    const digits = masked.replace(/\D/g, "");
+
+    // Per-segment validation: fire as soon as each 2-digit segment is complete
+    // so the user sees feedback without having to finish the full date.
+    if (digits.length >= 2) {
+      const dd = Number(digits.slice(0, 2));
+      if (dd < 1 || dd > 31) {
+        setTypedError("Día inválido (01–31)");
+        if (lastEmitted.current !== "") emit("");
+        return;
+      }
+    }
+    if (digits.length >= 4) {
+      const mm = Number(digits.slice(2, 4));
+      if (mm < 1 || mm > 12) {
+        setTypedError("Mes inválido (01–12)");
+        if (lastEmitted.current !== "") emit("");
+        return;
+      }
+    }
+
+    // Year: check as each digit arrives so invalid centuries are flagged early.
+    // First digit > 2 → year ≥ 3000 (above MAX_YEAR). First two digits outside
+    // 19–21 → year outside the 1900–2100 window we allow.
+    if (digits.length >= 5) {
+      const firstYearDigit = Number(digits[4]);
+      if (firstYearDigit > 2) {
+        setTypedError(`Año inválido (${MIN_YEAR}–${MAX_YEAR})`);
+        if (lastEmitted.current !== "") emit("");
+        return;
+      }
+    }
+    if (digits.length >= 6) {
+      const yearPrefix = Number(digits.slice(4, 6));
+      if (yearPrefix < 19 || yearPrefix > 21) {
+        setTypedError(`Año inválido (${MIN_YEAR}–${MAX_YEAR})`);
+        if (lastEmitted.current !== "") emit("");
+        return;
+      }
+    }
+
     const { iso, complete } = typedToIso(masked);
     if (iso) {
       setTypedError(null);
@@ -158,7 +201,7 @@ export function DateField({
   };
 
   const resolvedLabel = accessibilityLabel ?? label;
-  const shownError = errorMessage ?? typedError ?? undefined;
+  const shownError = errorMessage || typedError || undefined;
 
   return (
     <View style={styles.group}>
