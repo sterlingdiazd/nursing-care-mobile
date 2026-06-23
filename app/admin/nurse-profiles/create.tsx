@@ -18,8 +18,6 @@ import { getAdminNurseCreateProgress } from "@/src/utils/adminCreationUx";
 import { mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { hapticFeedback } from "@/src/utils/haptics";
 
-const CATEGORIES = ["Auxiliar", "Técnico", "Profesional", "Especialista"];
-
 // Legal working days per month under the DR 44-hour week (Código de Trabajo):
 // 8h Mon–Fri + 4h Sat = 5.5 days/week × 52 ÷ 12 = 23.83 — the standard divisor for daily/hourly pay.
 const DR_WORKING_DAYS_PER_MONTH = 23.83;
@@ -44,7 +42,7 @@ export default function AdminCreateNurseProfileScreen() {
     accountNumber: "",
     accountType: "",
     accountHolderName: "",
-    category: CATEGORIES[0],
+    category: "",
     isOperationallyActive: true,
     visitDailyRate: 0,
     homeCareMonthlyRate: 0,
@@ -56,7 +54,7 @@ export default function AdminCreateNurseProfileScreen() {
 
   // UI States
   const [showBankingInfo, setShowBankingInfo] = useState(false);
-  const [customCategory, setCustomCategory] = useState("");
+  const [categoryOptions, setCategoryOptions] = useState<CatalogCodeNameOption[]>([]);
   const [specialtyOptions, setSpecialtyOptions] = useState<CatalogCodeNameOption[]>([]);
 
   useEffect(() => {
@@ -68,8 +66,14 @@ export default function AdminCreateNurseProfileScreen() {
 
   useEffect(() => {
     void getNurseProfileOptions()
-      .then((response) => setSpecialtyOptions(response.specialties))
-      .catch(() => setSpecialtyOptions([]));
+      .then((response) => {
+        setCategoryOptions(response.categories);
+        setSpecialtyOptions(response.specialties);
+      })
+      .catch(() => {
+        setCategoryOptions([]);
+        setSpecialtyOptions([]);
+      });
   }, []);
 
   const validateAll = () => {
@@ -120,7 +124,6 @@ export default function AdminCreateNurseProfileScreen() {
     }
   };
 
-  const activeCategoryIsCustom = !CATEGORIES.includes(form.category);
   const createProgress = getAdminNurseCreateProgress(form);
 
   if (!isReady || !isAuthenticated || !roles.includes("ADMIN")) return null;
@@ -296,36 +299,30 @@ export default function AdminCreateNurseProfileScreen() {
           </View>
 
           <Text style={styles.cardLabel}>Categoría *</Text>
-          <View style={styles.chipsContainer}>
-            {CATEGORIES.map((cat) => (
+          <View
+            testID={adminTestIds.nurses.create.categoryInput}
+            nativeID={adminTestIds.nurses.create.categoryInput}
+            accessibilityRole="radiogroup"
+            accessibilityLabel="Categoría"
+            style={styles.chipsContainer}
+          >
+            {categoryOptions.map((opt) => (
               <Pressable
-                key={cat}
-                style={[styles.chip, form.category === cat && styles.chipActive]}
+                key={opt.code}
+                style={[styles.chip, form.category === opt.code && styles.chipActive]}
                 onPress={() => {
                   hapticFeedback.selection();
-                  setForm({ ...form, category: cat });
-                  setCustomCategory("");
+                  setForm({ ...form, category: opt.code });
                 }}
-                accessibilityRole="button"
-                accessibilityLabel={`Categoría: ${cat}`}
-                accessibilityState={{ selected: form.category === cat }}
+                accessibilityRole="radio"
+                accessibilityLabel={opt.displayName}
+                accessibilityState={{ checked: form.category === opt.code }}
               >
-                <Text style={[styles.chipText, form.category === cat && styles.chipTextActive]}>{cat}</Text>
+                <Text style={[styles.chipText, form.category === opt.code && styles.chipTextActive]}>{opt.displayName}</Text>
               </Pressable>
             ))}
           </View>
-          <FormInput
-            testID={adminTestIds.nurses.create.categoryInput}
-            accessibilityLabel="Especificar otra categoría profesional"
-            placeholder="Otra categoría"
-            value={activeCategoryIsCustom ? form.category : customCategory}
-            onChangeText={(text) => {
-              setCustomCategory(text);
-              setForm({ ...form, category: text || CATEGORIES[0] });
-            }}
-            onFocus={() => { if (!activeCategoryIsCustom) setForm({ ...form, category: "" }); }}
-            errorMessage={errors.category}
-          />
+          {errors.category ? <Text style={styles.errorText}>{errors.category}</Text> : null}
 
           <Text style={styles.cardLabel}>Especialidad *</Text>
           <View
