@@ -57,6 +57,24 @@ export default function AdminCreateNurseProfileScreen() {
   const [optionsLoading, setOptionsLoading] = useState(true);
   const [categoryOptions, setCategoryOptions] = useState<CatalogCodeNameOption[]>([]);
   const [specialtyOptions, setSpecialtyOptions] = useState<CatalogCodeNameOption[]>([]);
+  const [catalogFetchError, setCatalogFetchError] = useState(false);
+
+  // Extracted so both the initial mount effect and the retry handler use the same logic.
+  const fetchCatalogOptions = () => {
+    setOptionsLoading(true);
+    setCatalogFetchError(false);
+    void getNurseProfileOptions()
+      .then((response) => {
+        setCategoryOptions(response.categories);
+        setSpecialtyOptions(response.specialties);
+      })
+      .catch(() => {
+        setCategoryOptions([]);
+        setSpecialtyOptions([]);
+        setCatalogFetchError(true);
+      })
+      .finally(() => setOptionsLoading(false));
+  };
 
   useEffect(() => {
     if (!isReady) return;
@@ -66,16 +84,9 @@ export default function AdminCreateNurseProfileScreen() {
   }, [isReady, isAuthenticated, requiresProfileCompletion, roles]);
 
   useEffect(() => {
-    void getNurseProfileOptions()
-      .then((response) => {
-        setCategoryOptions(response.categories);
-        setSpecialtyOptions(response.specialties);
-      })
-      .catch(() => {
-        setCategoryOptions([]);
-        setSpecialtyOptions([]);
-      })
-      .finally(() => setOptionsLoading(false));
+    fetchCatalogOptions();
+  // fetchCatalogOptions is stable (only calls setState setters); empty deps array is intentional.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const validateAll = () => {
@@ -145,7 +156,7 @@ export default function AdminCreateNurseProfileScreen() {
           variant="primary"
           onPress={handleSubmit}
           isLoading={submitting}
-          disabled={submitting}
+          disabled={submitting || optionsLoading}
         >
           Registrar Enfermera
         </FormButton>
@@ -300,31 +311,45 @@ export default function AdminCreateNurseProfileScreen() {
             </Pressable>
           </View>
 
+          {/* accessibilityRole="button"+selected is iOS-safe; "radio"+"checked" is broken on iOS ≥ RN 0.73 (github.com/facebook/react-native/issues/43266) */}
           <Text style={styles.cardLabel}>Categoría *</Text>
           <View
             testID={adminTestIds.nurses.create.categoryInput}
             nativeID={adminTestIds.nurses.create.categoryInput}
-            accessibilityRole="radiogroup"
             accessibilityLabel="Categoría"
+            accessibilityLiveRegion="polite"
             style={styles.chipsContainer}
           >
             {optionsLoading ? (
               <Text style={styles.helperText}>Cargando...</Text>
-            ) : categoryOptions.map((opt) => (
-              <Pressable
-                key={opt.code}
-                style={[styles.chip, form.category === opt.code && styles.chipActive]}
-                onPress={() => {
-                  hapticFeedback.selection();
-                  setForm({ ...form, category: opt.code });
-                }}
-                accessibilityRole="radio"
-                accessibilityLabel={opt.displayName}
-                accessibilityState={{ checked: form.category === opt.code }}
-              >
-                <Text style={[styles.chipText, form.category === opt.code && styles.chipTextActive]}>{opt.displayName}</Text>
-              </Pressable>
-            ))}
+            ) : catalogFetchError ? (
+              <>
+                <Text style={{ color: designTokens.color.ink.danger, marginBottom: 8 }}>
+                  No se pudieron cargar las opciones. Intente de nuevo.
+                </Text>
+                <Pressable onPress={fetchCatalogOptions} accessibilityRole="button" accessibilityLabel="Reintentar carga de opciones">
+                  <Text style={{ color: designTokens.color.ink.accent }}>Reintentar</Text>
+                </Pressable>
+              </>
+            ) : categoryOptions.length === 0 ? (
+              <Text style={styles.helperText}>No hay opciones disponibles en el catálogo.</Text>
+            ) : (
+              categoryOptions.map((opt) => (
+                <Pressable
+                  key={opt.code}
+                  style={[styles.chip, form.category === opt.code && styles.chipActive]}
+                  onPress={() => {
+                    hapticFeedback.selection();
+                    setForm({ ...form, category: opt.code });
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={opt.displayName}
+                  accessibilityState={{ selected: form.category === opt.code }}
+                >
+                  <Text style={[styles.chipText, form.category === opt.code && styles.chipTextActive]}>{opt.displayName}</Text>
+                </Pressable>
+              ))
+            )}
           </View>
           {errors.category ? <Text style={styles.errorText}>{errors.category}</Text> : null}
 
@@ -332,27 +357,40 @@ export default function AdminCreateNurseProfileScreen() {
           <View
             testID={adminTestIds.nurses.create.specialtyInput}
             nativeID={adminTestIds.nurses.create.specialtyInput}
-            accessibilityRole="radiogroup"
             accessibilityLabel="Especialidad"
+            accessibilityLiveRegion="polite"
             style={styles.chipsContainer}
           >
             {optionsLoading ? (
               <Text style={styles.helperText}>Cargando...</Text>
-            ) : specialtyOptions.map((opt) => (
-              <Pressable
-                key={opt.code}
-                style={[styles.chip, form.specialty === opt.code && styles.chipActive]}
-                onPress={() => {
-                  hapticFeedback.selection();
-                  setForm({ ...form, specialty: opt.code });
-                }}
-                accessibilityRole="radio"
-                accessibilityLabel={opt.displayName}
-                accessibilityState={{ checked: form.specialty === opt.code }}
-              >
-                <Text style={[styles.chipText, form.specialty === opt.code && styles.chipTextActive]}>{opt.displayName}</Text>
-              </Pressable>
-            ))}
+            ) : catalogFetchError ? (
+              <>
+                <Text style={{ color: designTokens.color.ink.danger, marginBottom: 8 }}>
+                  No se pudieron cargar las opciones. Intente de nuevo.
+                </Text>
+                <Pressable onPress={fetchCatalogOptions} accessibilityRole="button" accessibilityLabel="Reintentar carga de opciones">
+                  <Text style={{ color: designTokens.color.ink.accent }}>Reintentar</Text>
+                </Pressable>
+              </>
+            ) : specialtyOptions.length === 0 ? (
+              <Text style={styles.helperText}>No hay opciones disponibles en el catálogo.</Text>
+            ) : (
+              specialtyOptions.map((opt) => (
+                <Pressable
+                  key={opt.code}
+                  style={[styles.chip, form.specialty === opt.code && styles.chipActive]}
+                  onPress={() => {
+                    hapticFeedback.selection();
+                    setForm({ ...form, specialty: opt.code });
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={opt.displayName}
+                  accessibilityState={{ selected: form.specialty === opt.code }}
+                >
+                  <Text style={[styles.chipText, form.specialty === opt.code && styles.chipTextActive]}>{opt.displayName}</Text>
+                </Pressable>
+              ))
+            )}
           </View>
           {errors.specialty ? <Text style={styles.errorText}>{errors.specialty}</Text> : null}
 
