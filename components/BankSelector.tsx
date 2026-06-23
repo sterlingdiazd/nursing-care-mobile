@@ -98,6 +98,7 @@ export function BankSelector({
         placeholder={placeholder}
         onPress={handleOpen}
         disabled={disabled}
+        expanded={open}
         testID={testID}
         nativeID={testID}
         accessibilityLabel={`${label}: ${value.trim() || placeholder}`}

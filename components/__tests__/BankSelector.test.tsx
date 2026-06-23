@@ -204,6 +204,58 @@ describe("BankSelector", () => {
     expect(errorNode).toBeTruthy();
   });
 
+  // ── 5b. Primary happy-path: tap known bank → onChange called ─────────────────
+  it("selects a known bank from the filtered list and calls onChange", () => {
+    let component!: renderer.ReactTestRenderer;
+    act(() => {
+      component = renderer.create(
+        <BankSelector value="" onChange={onChange} testID="bank" />,
+      );
+    });
+
+    const searchInput = findFirst(
+      component,
+      (n) => n.props.testID === "bank-search" && typeof n.props.onChangeText === "function",
+    );
+
+    act(() => {
+      searchInput.props.onChangeText("popular");
+    });
+
+    // PickerOption renders accessibilityLabel=`Seleccionar ${bank}`.
+    const option = findFirst(
+      component,
+      (n) =>
+        n.props.accessibilityLabel === "Seleccionar Banco Popular Dominicano" &&
+        typeof n.props.onPress === "function",
+    );
+    expect(option).toBeTruthy();
+
+    act(() => {
+      option.props.onPress();
+    });
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith("Banco Popular Dominicano");
+  });
+
+  // ── 5c. required asterisk ─────────────────────────────────────────────────────
+  it("renders required asterisk when required prop is true", () => {
+    let component!: renderer.ReactTestRenderer;
+    act(() => {
+      component = renderer.create(
+        <BankSelector value="" onChange={onChange} required testID="bank" />,
+      );
+    });
+
+    const allTexts = component.root.findAllByType(Text);
+    const reqNode = allTexts.find((n) => {
+      const c = n.props.children;
+      return typeof c === "string" && c.includes("*");
+    });
+    expect(reqNode).toBeTruthy();
+  });
+
   // ── 6. isCustomEntry hint ─────────────────────────────────────────────────────
   it("shows the custom-entry hint when the current value is not found in DR_BANKS", () => {
     let component!: renderer.ReactTestRenderer;

@@ -131,9 +131,9 @@ function IconBox({ icon }: { icon?: IconName }) {
   );
 }
 
-export function SelectRow({ icon, value, subtitle, placeholder, onPress, loading, disabled, testID, nativeID, accessibilityLabel }: { icon?: IconName; value?: string | null; subtitle?: string | null; placeholder: string; onPress: () => void; loading?: boolean; disabled?: boolean; testID?: string; nativeID?: string; accessibilityLabel?: string }) {
+export function SelectRow({ icon, value, subtitle, placeholder, onPress, loading, disabled, expanded, testID, nativeID, accessibilityLabel }: { icon?: IconName; value?: string | null; subtitle?: string | null; placeholder: string; onPress: () => void; loading?: boolean; disabled?: boolean; expanded?: boolean; testID?: string; nativeID?: string; accessibilityLabel?: string }) {
   return (
-    <TouchableOpacity style={styles.row} onPress={withHapticFeedback(onPress, "selection")} disabled={disabled || loading} testID={testID} accessibilityRole="button" accessibilityLabel={accessibilityLabel} {...(nativeID !== undefined ? { nativeID } as any : {})}>
+    <TouchableOpacity style={styles.row} onPress={withHapticFeedback(onPress, "selection")} disabled={disabled || loading} testID={testID} accessibilityRole="button" accessibilityLabel={accessibilityLabel} accessibilityState={{ expanded: expanded ?? false }} {...(nativeID !== undefined ? { nativeID } as any : {})}>
       <IconBox icon={icon} />
       <View style={{ flex: 1 }}>
         {loading ? (
@@ -206,7 +206,7 @@ export function PickerSheet({ visible, title, onClose, children }: { visible: bo
   const handleClose = withHapticFeedback(onClose, "selection");
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
+    <Modal visible={visible} animationType="slide" transparent accessibilityViewIsModal={true} onRequestClose={handleClose}>
       <Pressable style={styles.backdrop} onPress={handleClose} accessibilityLabel="Cerrar selector" />
       <View style={styles.sheet}>
         <View style={styles.grab} />
