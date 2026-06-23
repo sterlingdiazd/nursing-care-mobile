@@ -77,6 +77,7 @@ export default function NurseProfileScreen() {
   const [success, setSuccess] = useState<string | null>(null);
   const [payrollHistory, setPayrollHistory] = useState<PayrollPeriodListItemDto[]>([]);
   const [isLoadingPayroll, setIsLoadingPayroll] = useState(false);
+  const [payrollFetchDone, setPayrollFetchDone] = useState(false);
   const [downloadingVoucherId, setDownloadingVoucherId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -122,8 +123,13 @@ export default function NurseProfileScreen() {
       .then((periods) => {
         if (!cancelled) setPayrollHistory(periods);
       })
-      .catch(() => { /* silent — section stays hidden on error */ })
-      .finally(() => { if (!cancelled) setIsLoadingPayroll(false); });
+      .catch(() => { /* section stays hidden on network error — supplementary data */ })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoadingPayroll(false);
+          setPayrollFetchDone(true);
+        }
+      });
     return () => { cancelled = true; };
   }, [isReady, isAuthenticated, roles]);
 
@@ -361,6 +367,13 @@ export default function NurseProfileScreen() {
             </View>
           ) : null}
 
+          {payrollFetchDone && !isLoadingPayroll && payrollHistory.filter((p) => p.status === "Closed").length === 0 ? (
+            <View style={styles.paymentsCard}>
+              <Text style={styles.sectionTitle}>Mis Pagos</Text>
+              <Text style={styles.emptyPayments}>Aún no hay períodos de pago cerrados.</Text>
+            </View>
+          ) : null}
+
           {!isLoadingPayroll && payrollHistory.filter((p) => p.status === "Closed").length > 0 ? (
             <View style={styles.paymentsCard}>
               <Text style={styles.sectionTitle}>Mis Pagos</Text>
@@ -532,5 +545,10 @@ const styles = StyleSheet.create({
     ...designTokens.typography.label,
     color: designTokens.color.ink.accent,
     fontWeight: "700",
+  },
+  emptyPayments: {
+    ...designTokens.typography.body,
+    color: designTokens.color.ink.muted,
+    paddingVertical: designTokens.spacing.sm,
   },
 });
