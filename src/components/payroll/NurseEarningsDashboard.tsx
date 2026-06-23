@@ -10,7 +10,7 @@ interface NurseEarningsDashboardProps {
 export function NurseEarningsDashboard({ data }: NurseEarningsDashboardProps) {
   const chartData = data.map((item) => ({
     value: item.amount,
-    label: item.date.slice(5), // Simple label (MM-DD)
+    label: `${item.date.slice(8)}-${item.date.slice(5, 7)}`,
     frontColor: designTokens.color.ink.accent,
   }));
 

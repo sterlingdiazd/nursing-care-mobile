@@ -22,7 +22,7 @@ import { logClientEvent } from "@/src/logging/clientLogger";
 import { acceptAssignment, getCareRequests, rejectAssignment } from "@/src/services/careRequestService";
 import { CareRequestDto } from "@/src/types/careRequest";
 import { canAccessCareRequests, canSeeClientPricing } from "@/src/utils/authRedirect";
-import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
+import { formatDateES, formatDateTimeES } from "@/src/utils/spanishTextValidator";
 import { formatDOP } from "@/src/utils/currency";
 import { usePaginatedList } from "@/src/hooks/usePaginatedList";
 import { designTokens } from "@/src/design-system/tokens";
@@ -156,7 +156,7 @@ function CareRequestCard({
       </View>
       <View style={styles.cardFooter}>
         <Text style={styles.cardMeta}>
-          {item.careRequestDate ? `Servicio ${item.careRequestDate}` : `Creada ${formatDateTimeES(item.createdAtUtc)}`}
+          {item.careRequestDate ? `Servicio ${item.careRequestDate ? formatDateES(item.careRequestDate) : "Sin fecha"}` : `Creada ${formatDateTimeES(item.createdAtUtc)}`}
         </Text>
         {paymentBadge ? (
           <StatusBadge

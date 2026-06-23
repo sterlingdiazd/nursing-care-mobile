@@ -40,7 +40,7 @@ import { CareRequestDto, CareRequestTransitionAction } from "@/src/types/careReq
 import { goBackOrReplace, mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
 import { canSeeClientPricing } from "@/src/utils/authRedirect";
 import { formatUnitType } from "@/src/utils/adminCareRequestBilling";
-import { formatDateTimeES } from "@/src/utils/spanishTextValidator";
+import { formatDateES, formatDateTimeES } from "@/src/utils/spanishTextValidator";
 import { formatDOP } from "@/src/utils/currency";
 import { hapticFeedback } from "@/src/utils/haptics";
 
@@ -575,7 +575,7 @@ export default function CareRequestDetailScreen() {
               <View style={styles.servicioCol}>
                 <Text style={styles.servicioLabel}>Fecha</Text>
                 <Text style={styles.servicioValue} numberOfLines={1}>
-                  {careRequest.careRequestDate ?? "Sin fecha"}
+                  {careRequest.careRequestDate ? formatDateES(careRequest.careRequestDate) : "Sin fecha"}
                 </Text>
               </View>
               <View style={styles.servicioCol}>
