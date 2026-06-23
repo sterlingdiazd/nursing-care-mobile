@@ -14,6 +14,7 @@ import { WeekStrip } from "@/src/components/calendar/WeekStrip";
 import { DayDetail } from "@/src/components/calendar/DayDetail";
 import { CategoryLegend } from "@/src/components/calendar/CategoryLegend";
 import { designTokens } from "@/src/design-system/tokens";
+import { nurseTestIds } from "@/src/testing/testIds";
 
 const VIEW_OPTIONS: ReadonlyArray<{ key: CalendarView; label: string }> = [
   { key: "month", label: "Mes" },
@@ -43,8 +44,8 @@ export default function NurseServiceCalendarScreen() {
       title="Mi Calendario"
       onPrimaryReturn={() => goBackOrReplace(router, "/")}
       primaryReturnLabel="Volver"
-      testID="nurse-calendar-screen"
-      nativeID="nurse-calendar-screen"
+      testID={nurseTestIds.calendar.screen}
+      nativeID={nurseTestIds.calendar.screen}
     >
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.navRow}>
@@ -55,8 +56,8 @@ export default function NurseServiceCalendarScreen() {
             }}
             accessibilityRole="button"
             accessibilityLabel="Anterior"
-            testID="nurse-calendar-prev"
-            nativeID="nurse-calendar-prev"
+            testID={nurseTestIds.calendar.prev}
+            nativeID={nurseTestIds.calendar.prev}
             style={({ pressed }) => [styles.navBtn, pressed && styles.pressed]}
           >
             <Text style={styles.navGlyph}>‹</Text>
@@ -71,8 +72,8 @@ export default function NurseServiceCalendarScreen() {
             }}
             accessibilityRole="button"
             accessibilityLabel="Siguiente"
-            testID="nurse-calendar-next"
-            nativeID="nurse-calendar-next"
+            testID={nurseTestIds.calendar.next}
+            nativeID={nurseTestIds.calendar.next}
             style={({ pressed }) => [styles.navBtn, pressed && styles.pressed]}
           >
             <Text style={styles.navGlyph}>›</Text>
@@ -85,8 +86,8 @@ export default function NurseServiceCalendarScreen() {
             }}
             accessibilityRole="button"
             accessibilityLabel="Ir a hoy"
-            testID="nurse-calendar-today"
-            nativeID="nurse-calendar-today"
+            testID={nurseTestIds.calendar.today}
+            nativeID={nurseTestIds.calendar.today}
             style={({ pressed }) => [styles.todayBtn, pressed && styles.pressed]}
           >
             <Text style={styles.todayText}>Hoy</Text>
@@ -98,7 +99,7 @@ export default function NurseServiceCalendarScreen() {
           options={VIEW_OPTIONS}
           value={cal.view}
           onChange={cal.setView}
-          testIDPrefix="nurse-calendar-view"
+          testIDPrefix={nurseTestIds.calendar.viewPrefix}
         />
 
         <Banner tone="error" message={cal.error} />

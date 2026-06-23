@@ -2,6 +2,13 @@ export const nurseTestIds = {
   payroll: {
     screen: "nurse-payroll-screen",
   },
+  calendar: {
+    screen: "nurse-calendar-screen",
+    prev: "nurse-calendar-prev",
+    next: "nurse-calendar-next",
+    today: "nurse-calendar-today",
+    viewPrefix: "nurse-calendar-view",
+  },
   profile: {
     screen: "nurse-profile-screen",
     loadingIndicator: "nurse-profile-loading",
@@ -20,5 +27,7 @@ export const nurseTestIds = {
     editButton: "nurse-profile-edit-button",
     saveButton: "nurse-profile-save-button",
     cancelButton: "nurse-profile-cancel-button",
+    payrollRetry: "nurse-profile-payroll-retry",
+    downloadVoucherPrefix: "nurse-profile-download-voucher",
   },
 } as const;

@@ -17,7 +17,7 @@ import { nurseTestIds } from "@/src/testing/testIds";
 import { automationProps } from "@/src/utils/adminOperationalUx";
 import { goBackOrReplace } from "@/src/utils/navigationEscapes";
 import { formatDOP } from "@/src/utils/currency";
-import { formatShortDate } from "@/src/utils/dateFormat";
+import { formatDateES } from "@/src/utils/spanishTextValidator";
 import { getExactDigitsFieldError, sanitizeDigitsOnlyInput } from "@/src/utils/identityValidation";
 import { hapticFeedback } from "@/src/utils/haptics";
 import { getCachedAuthSession } from "@/src/services/authSession";
@@ -378,8 +378,8 @@ export default function NurseProfileScreen() {
                 accessibilityLabel="Reintentar cargar Mis Pagos"
                 onPress={() => setPayrollReloadKey((key) => key + 1)}
                 style={({ pressed }) => [styles.retryBtn, pressed && styles.pressed]}
-                testID="nurse-profile-payroll-retry"
-                nativeID="nurse-profile-payroll-retry"
+                testID={nurseTestIds.profile.payrollRetry}
+                nativeID={nurseTestIds.profile.payrollRetry}
               >
                 <Text style={styles.retryBtnText}>Reintentar</Text>
               </Pressable>
@@ -406,18 +406,22 @@ export default function NurseProfileScreen() {
                     <View key={rowKey} style={styles.paymentRow}>
                       <View style={styles.paymentInfo}>
                         <Text style={styles.paymentDates}>
-                          {formatShortDate(period.startDate)} – {formatShortDate(period.endDate)}
+                          {formatDateES(period.startDate)} – {formatDateES(period.endDate)}
                         </Text>
                         <Text style={styles.paymentAmount}>{formatDOP(period.totalCompensation)}</Text>
                       </View>
                       <Pressable
                         accessibilityRole="button"
-                        accessibilityLabel="Descargar comprobante"
+                        accessibilityLabel={
+                          downloadingVoucherId === pid
+                            ? `Descargando comprobante del período ${formatDateES(period.startDate)} al ${formatDateES(period.endDate)}`
+                            : `Descargar comprobante del período ${formatDateES(period.startDate)} al ${formatDateES(period.endDate)}`
+                        }
                         onPress={() => { if (pid) void handleDownloadVoucher(pid); }}
                         disabled={!pid || Boolean(downloadingVoucherId)}
                         style={({ pressed }) => [styles.downloadBtn, pressed && styles.pressed]}
-                        testID={`nurse-profile-download-voucher-${rowKey}`}
-                        nativeID={`nurse-profile-download-voucher-${rowKey}`}
+                        testID={`${nurseTestIds.profile.downloadVoucherPrefix}-${rowKey}`}
+                        nativeID={`${nurseTestIds.profile.downloadVoucherPrefix}-${rowKey}`}
                       >
                         <Text style={styles.downloadBtnText}>
                           {downloadingVoucherId === pid ? "Descargando…" : "Descargar comprobante"}
