@@ -48,6 +48,7 @@ const nurseQuickSections: QuickSection[] = [
   { title: "Mi Nómina", path: "/nurse/payroll", icon: "money", hue: "green" },
   { title: "Solicitudes", path: "/care-requests", icon: "list", hue: "blue" },
   { title: "Mi Calendario", path: "/nurse/calendar", icon: "calendar", hue: "teal" },
+  { title: "Cuenta", path: "/nurse/profile", icon: "user", hue: "purple" },
   { title: "Diagnóstico", path: "/admin/diagnostics", icon: "heartbeat", hue: "neutral" },
   { title: "Herramientas", path: "/admin/tools", icon: "wrench", hue: "neutral" },
 ];
@@ -131,7 +132,8 @@ export default function HomeScreen() {
       testID={isClient ? clientTestIds.home.screen : undefined}
       nativeID={isClient ? clientTestIds.home.screen : undefined}
       eyebrow={heroEyebrow}
-      title={heroTitle}
+      title="Inicio"
+      description={heroTitle}
       actions={
         <>
           {hasOperationalAccess ? (

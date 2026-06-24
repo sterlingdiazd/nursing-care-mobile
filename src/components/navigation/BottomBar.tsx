@@ -62,7 +62,17 @@ const TABS: ReadonlyArray<TabConfig> = [
     icon: "user",
     route: "/account",
     activeMatchers: ["/account"],
-    visibleTo: [UserProfileType.CLIENT, UserProfileType.NURSE],
+    visibleTo: [UserProfileType.CLIENT],
+  },
+  {
+    // A nurse's "Cuenta" lands on her profile (identity + contact + payout
+    // account + session/logout), not the generic /account screen.
+    key: "nurse-account",
+    label: "Cuenta",
+    icon: "user",
+    route: "/nurse/profile",
+    activeMatchers: ["/nurse/profile"],
+    visibleTo: [UserProfileType.NURSE],
   },
   {
     key: "admin",

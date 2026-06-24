@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import * as FileSystem from "expo-file-system/legacy";
-import * as Sharing from "expo-sharing";
 
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
-import { FormInput } from "@/src/components/form";
+import { FormInput, FormButton } from "@/src/components/form";
 import { BankSelector } from "@/components/BankSelector";
 import { FormPanel } from "@/src/components/shared/FormPanel";
 import { useAuth } from "@/src/context/AuthContext";
@@ -14,19 +12,13 @@ import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import { getNurseProfile, updateNurseProfile } from "@/src/services/nurseProfileService";
 import type { NurseProfileDto } from "@/src/types/nurse";
 import { nurseTestIds } from "@/src/testing/testIds";
+import { authTestIds } from "@/src/testing/authTestIds";
 import { automationProps } from "@/src/utils/adminOperationalUx";
 import { goBackOrReplace } from "@/src/utils/navigationEscapes";
-import { formatDOP } from "@/src/utils/currency";
-import { formatDateES } from "@/src/utils/spanishTextValidator";
 import { getExactDigitsFieldError, sanitizeDigitsOnlyInput } from "@/src/utils/identityValidation";
 import { hapticFeedback } from "@/src/utils/haptics";
-import { getCachedAuthSession } from "@/src/services/authSession";
-import {
-  getNursePayrollHistory,
-  getNursePayrollVoucherUrl,
-  type PayrollPeriodListItemDto,
-} from "@/src/services/payrollService";
-import { useToast } from "@/src/components/shared/ToastProvider";
+import { formatRoleLabels } from "@/src/utils/roleLabels";
+import { logClientEvent } from "@/src/logging/clientLogger";
 
 type EditableForm = {
   phone: string;
@@ -54,16 +46,15 @@ function detailToForm(detail: NurseProfileDto): EditableForm {
   };
 }
 
-function resolvePeriodId(period: PayrollPeriodListItemDto): string | null {
-  // Both periodId and id are typed on the DTO; prefer periodId.
-  const pid = period.periodId ?? period.id ?? null;
-  if (pid === "undefined" || pid === "null") return null;
-  return pid;
-}
-
+/**
+ * The nurse's "Cuenta" landing — her own profile is the first thing shown (no
+ * internal page hop). It carries identity + contact + payout-account fields, and
+ * ends with the session card that holds the logout button. Pay AMOUNTS (period
+ * totals, rates, vouchers) are intentionally NOT here — that is payroll, and
+ * lives in "Mi Nómina" (/nurse/payroll).
+ */
 export default function NurseProfileScreen() {
-  const { isReady, isAuthenticated, roles } = useAuth();
-  const { showToast } = useToast();
+  const { isReady, isAuthenticated, roles, email, logout } = useAuth();
   const [detail, setDetail] = useState<NurseProfileDto | null>(null);
   const [form, setForm] = useState<EditableForm>(EMPTY_FORM);
   const [isEditing, setIsEditing] = useState(false);
@@ -71,12 +62,6 @@ export default function NurseProfileScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [payrollHistory, setPayrollHistory] = useState<PayrollPeriodListItemDto[]>([]);
-  const [isLoadingPayroll, setIsLoadingPayroll] = useState(false);
-  const [payrollFetchDone, setPayrollFetchDone] = useState(false);
-  const [payrollFetchError, setPayrollFetchError] = useState<string | null>(null);
-  const [downloadingVoucherId, setDownloadingVoucherId] = useState<string | null>(null);
-  const [payrollReloadKey, setPayrollReloadKey] = useState(0);
 
   useEffect(() => {
     if (!isReady) return;
@@ -112,61 +97,6 @@ export default function NurseProfileScreen() {
       cancelled = true;
     };
   }, [isReady, isAuthenticated, roles]);
-
-  useEffect(() => {
-    if (!isReady || !isAuthenticated || !roles.includes("NURSE")) return;
-    let cancelled = false;
-    setIsLoadingPayroll(true);
-    setPayrollFetchError(null);
-    void getNursePayrollHistory("")
-      .then((periods) => {
-        if (!cancelled) setPayrollHistory(periods);
-      })
-      .catch(() => { if (!cancelled) setPayrollFetchError("No se pudo cargar Mis Pagos."); })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLoadingPayroll(false);
-          setPayrollFetchDone(true);
-        }
-      });
-    return () => { cancelled = true; };
-  }, [isReady, isAuthenticated, roles, payrollReloadKey]);
-
-  const handleDownloadVoucher = async (periodId: string) => {
-    if (downloadingVoucherId) return;
-    hapticFeedback.light();
-    setDownloadingVoucherId(periodId);
-    try {
-      const session = getCachedAuthSession();
-      const token = session?.token;
-      if (!token) {
-        showToast({ variant: "error", message: "No hay sesión activa." });
-        return;
-      }
-      const url = getNursePayrollVoucherUrl(periodId);
-      const fileUri = (FileSystem.documentDirectory ?? "") + `comprobante-${periodId}.pdf`;
-      const downloadRes = await FileSystem.downloadAsync(url, fileUri, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (downloadRes.status === 200) {
-        if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(downloadRes.uri);
-        } else {
-          showToast({ variant: "error", message: "Archivo descargado pero compartir no está disponible." });
-        }
-      } else {
-        showToast({ variant: "error", message: "No fue posible descargar el comprobante." });
-      }
-    } catch (e) {
-      console.error(e);
-      // Delete any partial file left by a failed downloadAsync (Android partial-write risk).
-      const partialUri = (FileSystem.documentDirectory ?? "") + `comprobante-${periodId}.pdf`;
-      try { await FileSystem.deleteAsync(partialUri, { idempotent: true }); } catch { /* ignore */ }
-      showToast({ variant: "error", message: "No fue posible descargar el comprobante." });
-    } finally {
-      setDownloadingVoucherId(null);
-    }
-  };
 
   const phoneError = isEditing ? getExactDigitsFieldError(form.phone, "Teléfono", 10) : "";
   const hasErrors = Boolean(phoneError);
@@ -218,14 +148,22 @@ export default function NurseProfileScreen() {
     }
   };
 
+  const onLogout = async () => {
+    hapticFeedback.selection();
+    logClientEvent("mobile.ui", "Nurse account logout tapped");
+    await logout();
+    router.replace("/login");
+  };
+
   return (
     <MobileWorkspaceShell
+      eyebrow="Cuenta"
       title="Mi Perfil"
       description="Tus datos de contacto y la cuenta donde recibes pago."
       testID={nurseTestIds.profile.screen}
       nativeID={nurseTestIds.profile.screen}
       primaryReturnLabel="Volver"
-      onPrimaryReturn={() => goBackOrReplace(router, "/account")}
+      onPrimaryReturn={() => goBackOrReplace(router, "/")}
       systemActions={[
         isEditing
           ? {
@@ -291,16 +229,6 @@ export default function NurseProfileScreen() {
                 label="Correo"
                 value={detail.email}
                 testID={nurseTestIds.profile.emailValue}
-              />
-              <ReadOnlyRow
-                label="Tarifa por visita"
-                value={formatDOP(detail.visitDailyRate)}
-                testID={nurseTestIds.profile.visitRateValue}
-              />
-              <ReadOnlyRow
-                label="Tarifa mensual (hogar)"
-                value={formatDOP(detail.homeCareMonthlyRate)}
-                testID={nurseTestIds.profile.homeCareRateValue}
                 last
               />
             </View>
@@ -362,76 +290,29 @@ export default function NurseProfileScreen() {
             ) : null}
           </FormPanel>
 
-          {/* Mis Pagos — last 3 closed payroll periods */}
-          {isLoadingPayroll ? (
-            <View style={styles.loaderWrap}>
-              <ActivityIndicator color={designTokens.color.ink.accent} accessibilityLabel="Cargando pagos..." />
-            </View>
-          ) : null}
-
-          {payrollFetchDone && !isLoadingPayroll && payrollFetchError ? (
-            <View style={styles.paymentsCard}>
-              <Text style={styles.sectionTitle}>Mis Pagos</Text>
-              <Text style={styles.emptyPayments}>{payrollFetchError}</Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Reintentar cargar Mis Pagos"
-                onPress={() => setPayrollReloadKey((key) => key + 1)}
-                style={({ pressed }) => [styles.retryBtn, pressed && styles.pressed]}
-                testID={nurseTestIds.profile.payrollRetry}
-                nativeID={nurseTestIds.profile.payrollRetry}
-              >
-                <Text style={styles.retryBtnText}>Reintentar</Text>
-              </Pressable>
-            </View>
-          ) : null}
-
-          {payrollFetchDone && !isLoadingPayroll && !payrollFetchError && payrollHistory.filter((p) => p.status === "Closed").length === 0 ? (
-            <View style={styles.paymentsCard}>
-              <Text style={styles.sectionTitle}>Mis Pagos</Text>
-              <Text style={styles.emptyPayments}>Aún no hay períodos de pago cerrados.</Text>
-            </View>
-          ) : null}
-
-          {!isLoadingPayroll && payrollHistory.filter((p) => p.status === "Closed").length > 0 ? (
-            <View style={styles.paymentsCard}>
-              <Text style={styles.sectionTitle}>Mis Pagos</Text>
-              {payrollHistory
-                .filter((p) => p.status === "Closed")
-                .slice(0, 3)
-                .map((period) => {
-                  const pid = resolvePeriodId(period);
-                  const rowKey = pid ?? `${period.startDate}-${period.endDate}`;
-                  return (
-                    <View key={rowKey} style={styles.paymentRow}>
-                      <View style={styles.paymentInfo}>
-                        <Text style={styles.paymentDates}>
-                          {formatDateES(period.startDate)} – {formatDateES(period.endDate)}
-                        </Text>
-                        <Text style={styles.paymentAmount}>{formatDOP(period.totalCompensation)}</Text>
-                      </View>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={
-                          downloadingVoucherId === pid
-                            ? `Descargando comprobante del período ${formatDateES(period.startDate)} al ${formatDateES(period.endDate)}`
-                            : `Descargar comprobante del período ${formatDateES(period.startDate)} al ${formatDateES(period.endDate)}`
-                        }
-                        onPress={() => { if (pid) void handleDownloadVoucher(pid); }}
-                        disabled={!pid || Boolean(downloadingVoucherId)}
-                        style={({ pressed }) => [styles.downloadBtn, pressed && styles.pressed]}
-                        testID={`${nurseTestIds.profile.downloadVoucherPrefix}-${rowKey}`}
-                        nativeID={`${nurseTestIds.profile.downloadVoucherPrefix}-${rowKey}`}
-                      >
-                        <Text style={styles.downloadBtnText}>
-                          {downloadingVoucherId === pid ? "Descargando…" : "Descargar comprobante"}
-                        </Text>
-                      </Pressable>
-                    </View>
-                  );
-                })}
-            </View>
-          ) : null}
+          {/* Session card — always last; holds the logout control. */}
+          <View style={styles.sessionCard}>
+            <Text style={styles.sessionTitle}>Estado de Sesión</Text>
+            <ReadOnlyRow
+              label="Usuario"
+              value={email ?? detail?.email ?? "—"}
+              testID="nurse-account-session-user"
+            />
+            <ReadOnlyRow
+              label="Roles"
+              value={formatRoleLabels(roles) || "Ninguno"}
+              testID="nurse-account-session-roles"
+              last
+            />
+            <FormButton
+              testID={authTestIds.account.logoutButton}
+              onPress={() => void onLogout()}
+              variant="danger"
+              style={styles.logoutButton}
+            >
+              Cerrar Sesión
+            </FormButton>
+          </View>
         </ScrollView>
       )}
     </MobileWorkspaceShell>
@@ -522,70 +403,16 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   pressed: { opacity: 0.75 },
-  paymentsCard: {
+  sessionCard: {
     ...mobileSurfaceCard,
-    padding: designTokens.spacing.lg,
-    gap: designTokens.spacing.sm,
+    padding: designTokens.spacing.xl,
   },
-  sectionTitle: {
-    ...designTokens.typography.label,
-    color: designTokens.color.ink.secondary,
-    fontWeight: "800",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-    marginBottom: designTokens.spacing.xs,
-  },
-  paymentRow: {
-    gap: designTokens.spacing.sm,
-    paddingVertical: designTokens.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: designTokens.color.border.subtle,
-  },
-  paymentInfo: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  paymentDates: {
-    ...designTokens.typography.body,
+  sessionTitle: {
+    ...designTokens.typography.sectionTitle,
     color: designTokens.color.ink.primary,
+    marginBottom: designTokens.spacing.lg,
   },
-  paymentAmount: {
-    ...designTokens.typography.body,
-    color: designTokens.color.ink.primary,
-    fontWeight: "800",
-  },
-  downloadBtn: {
-    alignSelf: "flex-start",
-    paddingHorizontal: designTokens.spacing.md,
-    paddingVertical: designTokens.spacing.sm,
-    borderRadius: designTokens.radius.md,
-    borderWidth: 1,
-    borderColor: designTokens.color.border.strong,
-    backgroundColor: designTokens.color.surface.secondary,
-  },
-  downloadBtnText: {
-    ...designTokens.typography.label,
-    color: designTokens.color.ink.accent,
-    fontWeight: "700",
-  },
-  emptyPayments: {
-    ...designTokens.typography.body,
-    color: designTokens.color.ink.muted,
-    paddingVertical: designTokens.spacing.sm,
-  },
-  retryBtn: {
-    alignSelf: "flex-start",
-    paddingHorizontal: designTokens.spacing.md,
-    paddingVertical: designTokens.spacing.sm,
-    borderRadius: designTokens.radius.md,
-    borderWidth: 1,
-    borderColor: designTokens.color.border.strong,
-    backgroundColor: designTokens.color.surface.secondary,
-  },
-  retryBtnText: {
-    ...designTokens.typography.label,
-    color: designTokens.color.ink.accent,
-    fontWeight: "700",
+  logoutButton: {
+    marginTop: designTokens.spacing.lg,
   },
 });

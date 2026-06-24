@@ -127,29 +127,6 @@ export default function AccountScreen() {
           </View>
         ) : null}
 
-        {isAuthenticated && roles.includes("NURSE") && !roles.includes("CLIENT") ? (
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Tu cuenta</Text>
-            <Pressable
-              testID={authTestIds.account.profileLink}
-              nativeID={authTestIds.account.profileLink}
-              accessibilityRole="button"
-              accessibilityLabel="Abrir mi perfil"
-              onPress={() => {
-                hapticFeedback.selection();
-                router.push("/nurse/profile" as never);
-              }}
-              style={({ pressed }) => [styles.linkRow, pressed && styles.pressed]}
-            >
-              <View>
-                <Text style={styles.linkTitle}>Mi perfil</Text>
-                <Text style={styles.linkBody}>Datos de contacto y cuenta de pago.</Text>
-              </View>
-              <Text style={styles.chevron}>›</Text>
-            </Pressable>
-          </View>
-        ) : null}
-
         <View style={[styles.card, styles.actionsCard]}>
           <Text style={styles.sectionTitle}>Acciones</Text>
           <Text style={styles.copy}>

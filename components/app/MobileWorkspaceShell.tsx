@@ -67,7 +67,13 @@ export default function MobileWorkspaceShell({
   disableScroll = false,
   bodyGap = "lg",
 }: MobileWorkspaceShellProps) {
-  const shouldRenderPrimaryReturn = Boolean(primaryReturnPath || onPrimaryReturn);
+  // Show a back control on ANY screen that has somewhere to go back to, even
+  // when the screen didn't opt in with primaryReturnPath/onPrimaryReturn — so no
+  // pushed/internal screen is ever a dead end. Tab roots reached via
+  // router.replace have no history, so this stays false there (correct: their
+  // navigation is the bottom bar, not a back chevron).
+  const canGoBack = router.canGoBack();
+  const shouldRenderPrimaryReturn = Boolean(primaryReturnPath || onPrimaryReturn || canGoBack);
   const shouldRenderActions = shouldRenderPrimaryReturn || Boolean(actions);
   const headerBack = shouldRenderPrimaryReturn && primaryReturnPlacement === "header";
   const footerBack = shouldRenderPrimaryReturn && primaryReturnPlacement === "footer";
@@ -84,6 +90,12 @@ export default function MobileWorkspaceShell({
       // fallback for when the screen was opened directly (no back stack),
       // never a hard override of where the user actually came from.
       goBackOrReplace(router, primaryReturnPath);
+      return;
+    }
+
+    // No explicit target: just pop the stack (only reachable when canGoBack).
+    if (router.canGoBack()) {
+      router.back();
     }
   };
 
