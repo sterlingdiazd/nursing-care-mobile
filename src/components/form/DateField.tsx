@@ -58,9 +58,10 @@ interface DateFieldProps {
  * enter a date so the user is never forced to swipe month-by-month:
  *
  *  - Type it directly in a `DD-MM-YYYY` masked field with strict format control.
- *  - Tap the calendar button for the native picker — an inline month grid on iOS
- *    (tap the year header to jump years) and the material calendar dialog on
- *    Android (both expose fast year selection).
+ *  - Tap the calendar button for the native picker — iOS shows an inline month
+ *    grid with a year navigation row (< year >) for direct year jumps; Android
+ *    shows the spinner (three drum-roll columns: day, month, year) so the year
+ *    column is always directly accessible.
  *
  * On web it renders the native HTML date input, which already supports typing
  * plus a calendar with a year dropdown.
@@ -286,8 +287,38 @@ export function DateField({
             <Pressable style={styles.backdrop} onPress={closePicker} accessibilityLabel="Cerrar selector de fecha" />
             <View style={styles.sheet} accessibilityViewIsModal={true}>
               <Text style={styles.sheetTitle}>{label}</Text>
-              {/* `inline` shows the month grid with a tappable month/year header so the
-                  user can jump straight to any year instead of swiping month-by-month. */}
+              {/* Year navigation row — lets the user jump directly to any year without
+                  swiping month-by-month through the inline calendar grid. */}
+              <View style={styles.yearNav}>
+                <Pressable
+                  onPress={() => {
+                    const d = new Date(draft);
+                    d.setFullYear(d.getFullYear() - 1);
+                    setDraft(d);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Año anterior"
+                  hitSlop={12}
+                  style={styles.yearNavButton}
+                >
+                  <Text style={styles.yearNavArrow}>{"<"}</Text>
+                </Pressable>
+                <Text style={styles.yearNavLabel}>{draft.getFullYear()}</Text>
+                <Pressable
+                  onPress={() => {
+                    const d = new Date(draft);
+                    d.setFullYear(d.getFullYear() + 1);
+                    setDraft(d);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Año siguiente"
+                  hitSlop={12}
+                  style={styles.yearNavButton}
+                >
+                  <Text style={styles.yearNavArrow}>{">"}</Text>
+                </Pressable>
+              </View>
+              {/* `inline` shows the full month grid; the year nav row above handles year jumps. */}
               <DateTimePicker value={draft} mode="date" display="inline" onChange={handleNativeChange} />
               <View style={styles.sheetActions}>
                 <Pressable
@@ -310,11 +341,12 @@ export function DateField({
             </View>
           </Modal>
         ) : (
-          // Android's material calendar dialog exposes a tappable year header for fast year selection.
+          // Android's spinner shows three drum-roll columns (day, month, year) so the year
+          // is always directly reachable without swiping through months.
           <DateTimePicker
             value={parseIso(value) ?? noonToday()}
             mode="date"
-            display="calendar"
+            display="spinner"
             onChange={handleNativeChange}
           />
         )
@@ -420,5 +452,28 @@ const styles = StyleSheet.create({
     fontSize: designTokens.typography.body.fontSize,
     fontWeight: "700",
     color: designTokens.color.ink.inverse,
+  },
+  yearNav: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: designTokens.spacing.sm,
+    gap: designTokens.spacing.xl,
+  },
+  yearNavButton: {
+    paddingHorizontal: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.sm,
+  },
+  yearNavArrow: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: designTokens.color.ink.accent,
+  },
+  yearNavLabel: {
+    fontSize: designTokens.typography.body.fontSize,
+    fontWeight: "700",
+    color: designTokens.color.ink.primary,
+    minWidth: 56,
+    textAlign: "center",
   },
 });
