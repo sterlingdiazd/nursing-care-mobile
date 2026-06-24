@@ -27,6 +27,8 @@ export default defineConfig({
   },
   test: {
     globals: true,
+    // Never scan agent worktrees that live inside the project directory.
+    exclude: ["**/.claude/worktrees/**", "**/node_modules/**"],
     setupFiles: ["./setupTests.ts"],
     environmentMatchGlobs: [
       ["**/*.test.ts", "node"],
