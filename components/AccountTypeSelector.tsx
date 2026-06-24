@@ -8,7 +8,7 @@ import {
 } from "@/components/payroll/FormModalScaffold";
 import { designTokens } from "@/src/design-system/tokens";
 
-export const DR_ACCOUNT_TYPES = ["Ahorro", "Corriente", "Nómina"] as const;
+export const DR_ACCOUNT_TYPES = ["Ahorro", "Corriente"] as const;
 export type AccountType = (typeof DR_ACCOUNT_TYPES)[number];
 
 interface AccountTypeSelectorProps {
