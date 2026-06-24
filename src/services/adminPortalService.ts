@@ -775,6 +775,7 @@ export interface NurseProfileAdminRecordDto {
   homeCareMonthlyRate?: number;
   homeCareMonthlyExpectedDays?: number;
   optInWhatsApp?: boolean;
+  serviceType?: 'CasaHogar' | 'Domicilio';
   workload?: NurseWorkloadSummaryDto;
 }
 
@@ -798,6 +799,7 @@ export interface NurseProfileIdentityRequest {
   homeCareMonthlyRate?: number;
   homeCareMonthlyExpectedDays?: number;
   optInWhatsApp?: boolean;
+  serviceType?: 'CasaHogar' | 'Domicilio';
 }
 
 export interface CreateNurseProfileRequest extends NurseProfileIdentityRequest {

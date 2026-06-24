@@ -8,6 +8,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { StyleSheet, View } from "react-native";
 import { SafeAreaProvider, initialWindowMetrics } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "@/src/context/AuthContext";
+import { BrandProvider } from "@/src/context/BrandContext";
 import { ToastProvider } from "@/src/components/shared/ToastProvider";
 import { usePushNotifications } from "@/src/hooks/usePushNotifications";
 import BottomBar from "@/src/components/navigation/BottomBar";
@@ -78,7 +79,9 @@ function RootLayoutNav() {
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
     <ToastProvider>
     <AuthProvider>
-      <AuthenticatedRoutes />
+      <BrandProvider>
+        <AuthenticatedRoutes />
+      </BrandProvider>
     </AuthProvider>
     </ToastProvider>
     </SafeAreaProvider>

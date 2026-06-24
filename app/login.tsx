@@ -27,6 +27,7 @@ import {
   getGoogleOAuthStartUrl,
 } from "@/src/services/authService";
 import { t } from "@/src/i18n/translations";
+import { useBrand } from "@/src/context/BrandContext";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -54,6 +55,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const searchParams = useLocalSearchParams();
   const { login, completeOAuthLogin, isLoading, error, clearError } = useAuth();
+  const { showBrand } = useBrand();
   const lastHandledUrlRef = useRef<string | null>(null);
   const lastHandledOauthPayloadRef = useRef<string | null>(null);
 
@@ -189,11 +191,13 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <Image
-              source={require("../assets/images/logo-vertical.png")}
-              style={styles.logo}
-              resizeMode="contain"
-            />
+            {showBrand && (
+              <Image
+                source={require("../assets/images/logo-vertical.png")}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+            )}
             <Text style={styles.title}>{t("actions.iniciar_sesion")}</Text>
             <Text style={styles.subtitle}>
               {t("auth.bienvenido")}

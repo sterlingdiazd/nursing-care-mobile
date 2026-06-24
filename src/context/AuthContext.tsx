@@ -30,6 +30,7 @@ interface AuthContextValue {
   profileType: UserProfileType | null;
   requiresProfileCompletion: boolean;
   requiresAdminReview: boolean;
+  nurseServiceType: 'CasaHogar' | 'Domicilio' | 'unknown';
   isAuthenticated: boolean;
   isReady: boolean;
   isLoading: boolean;
@@ -52,7 +53,8 @@ interface AuthContextValue {
     licenseId: string | null,
     bankName: string | null,
     accountNumber: string | null,
-    profileType: UserProfileType
+    profileType: UserProfileType,
+    serviceType?: 'CasaHogar' | 'Domicilio'
   ) => Promise<AuthResponse>;
   completeProfile: (
     name: string,
@@ -97,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profileType, setProfileType] = useState<UserProfileType | null>(null);
   const [requiresProfileCompletion, setRequiresProfileCompletion] = useState(false);
   const [requiresAdminReview, setRequiresAdminReview] = useState(false);
+  const [nurseServiceType, setNurseServiceType] = useState<'CasaHogar' | 'Domicilio' | 'unknown'>('unknown');
   const [isReady, setIsReady] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -122,6 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfileType(session.profileType);
     setRequiresProfileCompletion(session.requiresProfileCompletion);
     setRequiresAdminReview(session.requiresAdminReview);
+    setNurseServiceType(session.nurseServiceType ?? 'unknown');
   };
 
   // Load auth state from AsyncStorage on mount
@@ -151,6 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRoles(normalizedRoles);
     setRequiresProfileCompletion(response.requiresProfileCompletion);
     setRequiresAdminReview(response.requiresAdminReview);
+    setNurseServiceType((response.nurseServiceType as 'CasaHogar' | 'Domicilio') ?? 'unknown');
     logClientEvent("mobile.auth", "Session loaded", {
       email: response.email,
       roles: normalizedRoles,
@@ -188,6 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profileType: detectedProfileType,
       requiresProfileCompletion: response.requiresProfileCompletion,
       requiresAdminReview: response.requiresAdminReview,
+      nurseServiceType: (response.nurseServiceType as 'CasaHogar' | 'Domicilio') ?? 'unknown',
     });
   };
 
@@ -247,6 +253,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profileType: resolveProfileType(response, null),
         requiresProfileCompletion: response.requiresProfileCompletion,
         requiresAdminReview: response.requiresAdminReview,
+        nurseServiceType: (response.nurseServiceType as 'CasaHogar' | 'Domicilio') ?? 'unknown',
       });
 
       hapticFeedback.success();
@@ -275,7 +282,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     licenseIdInput: string | null,
     bankNameInput: string | null,
     accountNumberInput: string | null,
-    profileTypeInput: UserProfileType
+    profileTypeInput: UserProfileType,
+    serviceTypeInput?: 'CasaHogar' | 'Domicilio'
   ) => {
     setIsLoading(true);
     setError(null);
@@ -299,7 +307,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         bankNameInput,
         accountNumberInput,
         profileTypeInput,
-        passportNumber
+        passportNumber,
+        serviceTypeInput
       );
 
       await persistSession(response, profileTypeInput);
@@ -374,6 +383,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfileType(null);
     setRequiresProfileCompletion(false);
     setRequiresAdminReview(false);
+    setNurseServiceType('unknown');
     setError(null);
 
     await clearAuthSession();
@@ -408,6 +418,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profileType,
       requiresProfileCompletion,
       requiresAdminReview,
+      nurseServiceType,
       isAuthenticated: Boolean(token),
       isReady,
       isLoading,
@@ -421,7 +432,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       clearError,
     }),
-    [token, userId, email, roles, profileType, requiresProfileCompletion, requiresAdminReview, isReady, isLoading, error],
+    [token, userId, email, roles, profileType, requiresProfileCompletion, requiresAdminReview, nurseServiceType, isReady, isLoading, error],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

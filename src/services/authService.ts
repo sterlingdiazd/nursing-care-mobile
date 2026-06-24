@@ -23,6 +23,7 @@ export interface RegisterRequest {
   bankName?: string | null;
   accountNumber?: string | null;
   profileType: UserProfileType;
+  serviceType?: 'CasaHogar' | 'Domicilio';
 }
 
 export async function login(request: LoginRequest): Promise<AuthResponse> {
@@ -84,7 +85,8 @@ export async function registerUser(
   bankName: string | null,
   accountNumber: string | null,
   profileType: UserProfileType,
-  passportNumber: string | null = null
+  passportNumber: string | null = null,
+  serviceType?: 'CasaHogar' | 'Domicilio'
 ): Promise<AuthResponse> {
   let responseMeta:
     | {
@@ -107,6 +109,7 @@ export async function registerUser(
     bankName,
     accountNumber,
     profileType,
+    serviceType,
   };
 
   const response = await requestJson<AuthResponse>({

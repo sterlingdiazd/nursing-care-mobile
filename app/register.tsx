@@ -72,6 +72,7 @@ export default function RegisterScreen() {
   const [licenseId, setLicenseId] = useState("");
   const [bankName, setBankName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
+  const [serviceType, setServiceType] = useState<'CasaHogar' | 'Domicilio'>('Domicilio');
 
   const isNurseRegistration = !isProfileCompletionMode && profileType === UserProfileType.NURSE;
   const effectiveEmail = isProfileCompletionMode ? authEmail ?? "" : email;
@@ -225,7 +226,8 @@ export default function RegisterScreen() {
           isNurseRegistration ? licenseId.trim() || null : null,
           isNurseRegistration ? bankName.trim() : null,
           isNurseRegistration ? accountNumber.trim() || null : null,
-          profileType
+          profileType,
+          isNurseRegistration ? serviceType : undefined
         );
         router.replace(isNurseRegistration ? "/register-success" : "/");
       }
@@ -427,6 +429,32 @@ export default function RegisterScreen() {
     <View style={styles.stepContainer}>
       <Text style={styles.stepTitle}>Datos Profesionales</Text>
       <Text style={styles.stepSubtitle}>Información para validación administrativa</Text>
+
+      <View style={styles.fieldGroup}>
+        <Text style={styles.fieldLabel}>Tipo de Servicio</Text>
+        <View style={styles.chipGroup}>
+          <TouchableOpacity
+            style={[styles.chip, serviceType === 'Domicilio' ? styles.chipActive : null]}
+            onPress={() => setServiceType('Domicilio')}
+            accessibilityRole="button"
+            accessibilityLabel="A Domicilio"
+            accessibilityState={{ selected: serviceType === 'Domicilio' }}
+            testID="register-service-type-domicilio"
+          >
+            <Text style={[styles.chipText, serviceType === 'Domicilio' ? styles.chipTextActive : null]}>A Domicilio</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.chip, serviceType === 'CasaHogar' ? styles.chipActive : null]}
+            onPress={() => setServiceType('CasaHogar')}
+            accessibilityRole="button"
+            accessibilityLabel="Casa Hogar"
+            accessibilityState={{ selected: serviceType === 'CasaHogar' }}
+            testID="register-service-type-casahogar"
+          >
+            <Text style={[styles.chipText, serviceType === 'CasaHogar' ? styles.chipTextActive : null]}>Casa Hogar</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
       <DateField
         testID={authTestIds.register.hireDateInput}

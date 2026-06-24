@@ -7,6 +7,7 @@ export interface AuthResponse {
   roles: string[];
   requiresProfileCompletion: boolean;
   requiresAdminReview: boolean;
+  nurseServiceType?: 'CasaHogar' | 'Domicilio';
   correlationId?: string;
 }
 

@@ -12,6 +12,7 @@ export interface StoredAuthSession {
   profileType: UserProfileType | null;
   requiresProfileCompletion: boolean;
   requiresAdminReview: boolean;
+  nurseServiceType?: 'CasaHogar' | 'Domicilio' | 'unknown';
 }
 
 const STORAGE_KEY = "authSession";
@@ -131,6 +132,7 @@ export async function loadAuthSession() {
       profileType: parsed.profileType ?? null,
       requiresProfileCompletion: parsed.requiresProfileCompletion ?? false,
       requiresAdminReview: parsed.requiresAdminReview ?? false,
+      nurseServiceType: parsed.nurseServiceType ?? 'unknown',
     };
 
     if (parsed.userId !== userId) {
