@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Asset } from "expo-asset";
 import * as Sharing from "expo-sharing";
@@ -75,13 +74,7 @@ function StepRow({
 }
 
 export default function RegisterSuccessScreen() {
-  const router = useRouter();
   const [isLoadingManual, setIsLoadingManual] = useState(false);
-
-  const handleGoToPanel = () => {
-    hapticFeedback.selection();
-    router.replace("/");
-  };
 
   const handleManual = async () => {
     hapticFeedback.selection();
@@ -172,19 +165,10 @@ export default function RegisterSuccessScreen() {
         </View>
 
         <FormButton
-          testID="register-success-go-to-panel"
-          onPress={handleGoToPanel}
-          style={styles.ctaButton}
-        >
-          Entendido, ir al panel
-        </FormButton>
-
-        <FormButton
           testID="register-success-manual-button"
           variant="secondary"
           onPress={() => { void handleManual(); }}
           isLoading={isLoadingManual}
-          style={styles.manualButton}
         >
           Abrir manual de la enfermera
         </FormButton>
@@ -323,11 +307,5 @@ const styles = StyleSheet.create({
     color: T.color.palette.red.text,
     fontWeight: "800",
     letterSpacing: 0.5,
-  },
-  ctaButton: {
-    marginBottom: T.spacing.md,
-  },
-  manualButton: {
-    marginBottom: 0,
   },
 });

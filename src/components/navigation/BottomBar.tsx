@@ -106,6 +106,7 @@ export default function BottomBar() {
   const pathname = usePathname();
 
   if (!isReady || !isAuthenticated) return null;
+  if (pathname === "/register-success") return null;
 
   const effective = profileType ?? UserProfileType.CLIENT;
   const visible = TABS.filter((t) => t.visibleTo.includes(effective));
