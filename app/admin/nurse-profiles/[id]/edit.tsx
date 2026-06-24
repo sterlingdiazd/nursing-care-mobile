@@ -9,6 +9,7 @@ import { designTokens } from "@/src/design-system/tokens";
 import { mobileSurfaceCard } from "@/src/design-system/mobileStyles";
 import { DateField, FormInput, FormSwitch } from "@/src/components/form";
 import { BankSelector } from "@/components/BankSelector";
+import { AccountTypeSelector } from "@/components/AccountTypeSelector";
 import {
   getNurseProfileForAdmin,
   updateNurseProfileForAdmin,
@@ -474,12 +475,11 @@ export default function AdminEditNurseProfileScreen() {
                 keyboardType="numeric"
                 accessibilityLabel="Número de cuenta"
               />
-              <FormInput
+              <AccountTypeSelector
                 testID="admin-edit-nurse-account-type-input"
-                label="Tipo de cuenta (ahorro / corriente)"
+                label="Tipo de cuenta"
                 value={form.accountType ?? ""}
-                onChangeText={(v) => updateField("accountType", v)}
-                accessibilityLabel="Tipo de cuenta"
+                onChange={(v) => updateField("accountType", v)}
               />
               <FormInput
                 testID="admin-edit-nurse-account-holder-input"

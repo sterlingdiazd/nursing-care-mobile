@@ -5,6 +5,7 @@ import { router } from "expo-router";
 import MobileWorkspaceShell from "@/components/app/MobileWorkspaceShell";
 import { FormInput, FormButton } from "@/src/components/form";
 import { BankSelector } from "@/components/BankSelector";
+import { AccountTypeSelector } from "@/components/AccountTypeSelector";
 import { FormPanel } from "@/src/components/shared/FormPanel";
 import { useAuth } from "@/src/context/AuthContext";
 import { designTokens } from "@/src/design-system/tokens";
@@ -259,12 +260,12 @@ export default function NurseProfileScreen() {
               keyboardType="number-pad"
               onChangeText={(value) => updateField("accountNumber", value)}
             />
-            <FormInput
+            <AccountTypeSelector
               testID={nurseTestIds.profile.accountTypeInput}
               label="Tipo de cuenta"
               value={form.accountType}
-              editable={isEditing && !isSaving}
-              onChangeText={(value) => updateField("accountType", value)}
+              onChange={(value) => updateField("accountType", value)}
+              disabled={!isEditing || isSaving}
             />
             <FormInput
               testID={nurseTestIds.profile.accountHolderNameInput}

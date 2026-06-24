@@ -14,6 +14,7 @@ import type { CatalogCodeNameOption } from "@/src/types/catalog";
 import { DateField, FormInput, FormSwitch } from "@/src/components/form";
 import { FormButton } from "@/src/components/form/FormButton";
 import { BankSelector } from "@/components/BankSelector";
+import { AccountTypeSelector } from "@/components/AccountTypeSelector";
 import { adminTestIds } from "@/src/testing/testIds";
 import { getAdminNurseCreateProgress } from "@/src/utils/adminCreationUx";
 import { mobileNavigationEscapes } from "@/src/utils/navigationEscapes";
@@ -490,13 +491,11 @@ export default function AdminCreateNurseProfileScreen() {
                 onChangeText={(text) => setForm({ ...form, accountNumber: text })}
                 keyboardType="numeric"
               />
-              <FormInput
+              <AccountTypeSelector
                 testID="nurse-create-account-type-input"
-                label="Tipo de cuenta (ahorro / corriente)"
-                accessibilityLabel="Tipo de cuenta"
-                placeholder="ahorro o corriente"
+                label="Tipo de cuenta"
                 value={form.accountType ?? ""}
-                onChangeText={(text) => setForm({ ...form, accountType: text })}
+                onChange={(text) => setForm({ ...form, accountType: text })}
               />
               <FormInput
                 testID="nurse-create-account-holder-input"
