@@ -125,8 +125,8 @@ export default function HomeScreen() {
     : isAnonymous
       ? "Cuidado profesional en pocos pasos."
       : canOpenSupportTools
-        ? "Tu cuenta tiene acceso restringido."
-        : "Tu cuenta aún no puede operar.";
+        ? "Tu cuenta está siendo revisada."
+        : "Tu cuenta está pendiente de activación.";
   return (
     <MobileWorkspaceShell
       testID={isClient ? clientTestIds.home.screen : undefined}

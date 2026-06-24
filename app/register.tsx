@@ -227,7 +227,7 @@ export default function RegisterScreen() {
           isNurseRegistration ? accountNumber.trim() || null : null,
           profileType
         );
-        router.replace("/");
+        router.replace(isNurseRegistration ? "/register-success" : "/");
       }
     } catch (error) {
       hapticFeedback.error();
