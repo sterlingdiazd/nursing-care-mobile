@@ -15,11 +15,14 @@ export function NurseEarningsDashboard({ data }: NurseEarningsDashboardProps) {
     frontColor: designTokens.color.ink.accent,
   }));
 
+  // `total` is the SUM across every period in the chart, not a single period —
+  // the current single-period amount is shown separately in the "Período actual"
+  // hero card. Label it "acumulados" so the figure is never read as one period.
   const total = data.reduce((sum, item) => sum + item.amount, 0);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Ingresos del Período</Text>
+      <Text style={styles.title}>Ingresos acumulados</Text>
       <Text style={styles.total}>{new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP" }).format(total)}</Text>
       <BarChart
         data={chartData}

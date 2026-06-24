@@ -108,7 +108,11 @@ export function useNurseServiceCalendar(enabled: boolean): UseNurseServiceCalend
         // Use the service description as the primary label in its place.
         clientName: it.careRequestDescription || "",
         status: mappedStatus,
-        total: it.total ?? 0,
+        // Nurse-facing: show HER expected pay, never the client `total`/`price`.
+        // The backend nulls client pricing for nurse callers (WithoutClientPricing),
+        // so reading `total` here rendered RD$0.00; `nurseExpectedPay` is the
+        // per-request nurse compensation the list endpoint populates for her.
+        total: it.nurseExpectedPay ?? 0,
       };
       (map[date] ??= []).push(a);
     }
