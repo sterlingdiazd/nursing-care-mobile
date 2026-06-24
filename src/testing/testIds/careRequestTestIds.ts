@@ -42,6 +42,8 @@ export const careRequestTestIds = {
     // Nurse assignment accept/reject (status `Asignada`).
     acceptAssignmentButton: "care-detail-accept-assignment-button",
     rejectAssignmentButton: "care-detail-reject-assignment-button",
+    // Nurse service lifecycle (status `Approved` -> `InProgress` -> `Completed`).
+    startServiceButton: "care-detail-start-service-button",
     rejectAssignmentSheet: "care-detail-reject-assignment-sheet",
     rejectAssignmentReasonInput: "care-detail-reject-assignment-reason-input",
     rejectAssignmentConfirmButton: "care-detail-reject-assignment-confirm-button",

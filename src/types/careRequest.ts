@@ -37,6 +37,8 @@ export interface CareRequestDto {
     // Assigned to a nurse, awaiting her accept/reject response (owner's "Uber-style" flow).
     | "Asignada"
     | "Approved"
+    // Nurse has pressed "Iniciar servicio" and is actively providing care.
+    | "InProgress"
     | "Rejected"
     | "Completed"
     | "Cancelled"
@@ -49,6 +51,7 @@ export interface CareRequestDto {
   updatedAtUtc: string;
   approvedAtUtc: string | null;
   rejectedAtUtc: string | null;
+  startedAtUtc?: string | null;
   completedAtUtc: string | null;
   cancelledAtUtc: string | null;
   rejectionReason: string | null;
@@ -93,4 +96,4 @@ export interface CareRequestDto {
   assignmentRejectionReason?: string | null;
 }
 
-export type CareRequestTransitionAction = "approve" | "reject" | "complete" | "cancel";
+export type CareRequestTransitionAction = "approve" | "reject" | "complete" | "cancel" | "start-service";

@@ -60,6 +60,12 @@ function getStatusPalette(status: CareRequestDto["status"]) {
         fg: designTokens.color.status.successText,
         rail: designTokens.color.status.successText,
       };
+    case "InProgress":
+      return {
+        bg: designTokens.color.surface.warning,
+        fg: designTokens.color.status.warningText,
+        rail: designTokens.color.status.warningText,
+      };
     case "Rejected":
       return {
         bg: designTokens.color.surface.danger,
@@ -98,7 +104,8 @@ function getStatusPalette(status: CareRequestDto["status"]) {
 function getStatusLabel(status: CareRequestDto["status"]) {
   switch (status) {
     case "Asignada": return "Asignada";
-    case "Approved": return "Aprobada";
+    case "Approved": return "Aceptada";
+    case "InProgress": return "En curso";
     case "Rejected": return "Rechazada";
     case "Completed": return "Completada";
     case "Cancelled": return "Cancelada";
@@ -257,6 +264,7 @@ export default function CareRequestDetailScreen() {
         reject: "Solicitud rechazada.",
         complete: "Solicitud completada exitosamente.",
         cancel: "Solicitud cancelada.",
+        "start-service": "Servicio iniciado.",
       };
       setSuccessMessage(labels[action]);
     } catch (nextError: any) {
@@ -351,6 +359,18 @@ export default function CareRequestDetailScreen() {
     );
   };
 
+  const runStartServiceWithConfirm = () => {
+    hapticFeedback.selection();
+    Alert.alert(
+      "Iniciar servicio",
+      "¿Confirmas que estás iniciando este servicio ahora?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Confirmar", onPress: () => void runAction("start-service") },
+      ],
+    );
+  };
+
   if (isLoading && !careRequest) {
     return (
       <View style={styles.loadingState}>
@@ -385,9 +405,14 @@ export default function CareRequestDetailScreen() {
   const canRespondToAssignment =
     roles.includes("NURSE") && Boolean(userId) &&
     careRequest.status === "Asignada" && careRequest.assignedNurse === userId;
-  const canComplete =
+  // Nurse accepted; she can now mark the moment she starts providing care (Approved -> InProgress).
+  const canStart =
     roles.includes("NURSE") && Boolean(userId) &&
     careRequest.status === "Approved" && careRequest.assignedNurse === userId;
+  // Nurse is actively providing care; she can mark it done (InProgress -> Completed).
+  const canComplete =
+    roles.includes("NURSE") && Boolean(userId) &&
+    careRequest.status === "InProgress" && careRequest.assignedNurse === userId;
   const canCancel =
     (roles.includes("CLIENT") || isAdmin) &&
     (careRequest.status === "Pending" || careRequest.status === "Approved");
@@ -410,6 +435,14 @@ export default function CareRequestDetailScreen() {
       onPress: () => void runAction("approve"),
       variant: "primary",
       disabled: isActing,
+    };
+  } else if (canStart) {
+    primaryAction = {
+      label: "Iniciar servicio",
+      onPress: runStartServiceWithConfirm,
+      variant: "primary",
+      disabled: isActing,
+      testID: careRequestTestIds.detail.startServiceButton,
     };
   } else if (canComplete) {
     primaryAction = {
